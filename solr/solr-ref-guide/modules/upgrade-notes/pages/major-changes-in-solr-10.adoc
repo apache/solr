@@ -47,8 +47,24 @@ bin/solr snapshot list -c mycollection
 ----
 
 The old spellings still work and are hidden from the help and from this guide.
-They are deprecated in Solr 10.2 and are removed in Solr 11.0.
-The default command line interface is not changed.
+They are deprecated in Solr 10.2 and will be removed in Solr 11.0.
+
+[#solr-cli-now-uses-picocli]
+=== Solr CLI now uses PicoCLI
+
+Solr has migrated the `bin/solr` command line tool from Apache Commons CLI to https://picocli.info/[picocli].
+
+picocli is now the default. Set `SOLR_PICOCLI=false` to fall back to Commons CLI.
+
+* On a sub-command, `-v` means `--verbose`; only the top-level `bin/solr` accepts `-v` as a request for the version.
+* `bin/solr config` has no `-v` short form for `--value`, because `-v` means `--verbose`; use `--value`.
+Before 10.2, `-v` was the short form of `--value`.
+* `--fail-on-exists` on `bin/solr zk mkroot` treats the option as set whenever it is present, whatever value follows it.
+This matches the Commons CLI, but means `--fail-on-exists false` does not disable the check.
+* Error messages for invalid or mutually exclusive options are worded differently.
+* Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
+* Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the Commons CLI prints.
+That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
 == Solr 10.1
 

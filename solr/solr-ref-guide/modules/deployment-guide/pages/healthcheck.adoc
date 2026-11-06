@@ -166,4 +166,4 @@ bin/solr healthcheck -c gettingstarted
 
 TIP: Healthy, well-functioning replicas often disagree on exact document counts due to slightly staggered autoCommit periods or in-flight updates. Small, momentary count discrepancies between replicas are normal and should not automatically be treated as an issue unless the mismatch persists.
 
-See xref:solr-control-script-reference.adoc#healthcheck[the `healthcheck` command reference] for the full list of options.
+See xref:cli/solr-healthcheck.adoc[the `healthcheck` command reference] for the full list of options.
