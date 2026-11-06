@@ -126,7 +126,7 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      LoggingV2.listAllLoggersAndLevels(function(error, data, response) {
+      LoggingV2.listAllLoggersAndLevels({}, function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
           $scope.logging = makeTree(data.loggers, "");
