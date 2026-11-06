@@ -81,6 +81,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // but do we really need to optimize slow-wrapper any more?
   final Map<String, OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
 
+  // Terms and live docs are immutable, thread-safe views of an unchanging reader, so unlike the
+  // doc values iterators they can be built once and shared.
+  final Map<String, Terms> cachedTerms = new ConcurrentHashMap<>();
+
+  private final Bits liveDocs;
+
   /**
    * This method is sugar for getting an {@link LeafReader} from an {@link IndexReader} of any kind.
    * If the reader is already atomic, it is returned unchanged, otherwise wrapped by this class.
@@ -125,6 +131,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           new LeafMetaData(firstLeafMetaData.createdVersionMajor(), minVersion, sort, hasBlocks);
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
+    liveDocs = MultiBits.getLiveDocs(in);
   }
 
   @Override
@@ -154,7 +161,14 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Terms terms(String field) throws IOException {
     ensureOpen();
-    return MultiTerms.getTerms(in, field);
+    Terms terms = cachedTerms.get(field);
+    if (terms == null) {
+      terms = MultiTerms.getTerms(in, field);
+      if (terms != null) {
+        cachedTerms.put(field, terms);
+      }
+    }
+    return terms;
   }
 
   @Override
@@ -352,7 +366,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return MultiBits.getLiveDocs(in); // TODO cache?
+    return liveDocs;
   }
 
   @Override
