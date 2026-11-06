@@ -22,6 +22,7 @@ import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
@@ -157,8 +159,15 @@ public class StatusTool extends ToolBase {
       }
     }
 
-    // No URL or port, scan for running processes
-    Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
+    // No URL or port. Scanning the PID files first prunes stale ones, then the live process list
+    // is authoritative, as it already is for "status -p <port>". Reporting only PID files here
+    // would both miss nodes started in the foreground, which write none, and be non-monotonic:
+    // stopping the last background node would make the listing grow.
+    processMgr.scanSolrPidFiles();
+    Collection<SolrProcess> procs =
+        processMgr.getAllRunning().stream()
+            .sorted(Comparator.comparingInt(SolrProcess::getPort))
+            .collect(Collectors.toList());
     if (!procs.isEmpty()) {
       for (SolrProcess process : procs) {
         if (shortFormat) {
