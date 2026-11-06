@@ -52,6 +52,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.AsyncPostCommitRebuilder;
+import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrResourceLoader;
@@ -784,16 +786,30 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
       }
       // Register event listeners for this SpellChecker
-      core.registerFirstSearcherListener(new SpellCheckerListener(core, checker, false, false));
+      core.registerFirstSearcherListener(
+          new SpellCheckerListener(core, checker, false, false, false));
       boolean buildOnCommit = Boolean.parseBoolean((String) spellchecker.get("buildOnCommit"));
       boolean buildOnOptimize = Boolean.parseBoolean((String) spellchecker.get("buildOnOptimize"));
+      boolean buildOnCommitAsync =
+          Boolean.parseBoolean((String) spellchecker.get("buildOnCommitAsync"));
       if (buildOnCommit || buildOnOptimize) {
         if (log.isInfoEnabled()) {
           log.info(
               "Registering newSearcher listener for spellchecker: {}", checker.getDictionaryName());
         }
-        core.registerNewSearcherListener(
-            new SpellCheckerListener(core, checker, buildOnCommit, buildOnOptimize));
+        SpellCheckerListener listener =
+            new SpellCheckerListener(
+                core, checker, buildOnCommit, buildOnOptimize, buildOnCommitAsync);
+        core.registerNewSearcherListener(listener);
+        if (buildOnCommit) {
+          core.addCloseHook(
+              new CloseHook() {
+                @Override
+                public void preClose(SolrCore core) {
+                  listener.shutdownAsyncRebuilder();
+                }
+              });
+        }
       }
     } else {
       throw new RuntimeException("Can't load spell checker: " + className);
@@ -807,12 +823,29 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     private final boolean buildOnCommit;
     private final boolean buildOnOptimize;
 
+    // Defaults to false (synchronous, like before) so existing users of buildOnCommit keep the
+    // "spellcheck index is fresh immediately after commit" guarantee unless they explicitly opt
+    // into the async, eventually-consistent behavior. See AsyncPostCommitRebuilder for how the
+    // async path avoids blocking commits and stays safe across overlapping ones.
+    private final boolean buildOnCommitAsync;
+    private final AsyncPostCommitRebuilder asyncRebuilder;
+
     public SpellCheckerListener(
-        SolrCore core, SolrSpellChecker checker, boolean buildOnCommit, boolean buildOnOptimize) {
+        SolrCore core,
+        SolrSpellChecker checker,
+        boolean buildOnCommit,
+        boolean buildOnOptimize,
+        boolean buildOnCommitAsync) {
       this.core = core;
       this.checker = checker;
       this.buildOnCommit = buildOnCommit;
       this.buildOnOptimize = buildOnOptimize;
+      this.buildOnCommitAsync = buildOnCommitAsync;
+      this.asyncRebuilder =
+          (buildOnCommit && buildOnCommitAsync)
+              ? new AsyncPostCommitRebuilder(
+                  core, "spellCheckerBuildOnCommit-" + checker.getDictionaryName())
+              : null;
     }
 
     @Override
@@ -833,7 +866,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       } else {
         // newSearcher event
         if (buildOnCommit) {
-          buildSpellIndex(newSearcher);
+          if (buildOnCommitAsync) {
+            asyncRebuilder.maybeRunAsync(newSearcher, () -> buildSpellIndex(newSearcher));
+          } else {
+            buildSpellIndex(newSearcher);
+          }
         } else if (buildOnOptimize) {
           if (newSearcher.getIndexReader().leaves().size() == 1) {
             buildSpellIndex(newSearcher);
@@ -859,6 +896,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             "Exception in building spell check index for spellchecker: {}",
             checker.getDictionaryName(),
             e);
+      }
+    }
+
+    void shutdownAsyncRebuilder() {
+      if (asyncRebuilder != null) {
+        asyncRebuilder.shutdown();
       }
     }
 

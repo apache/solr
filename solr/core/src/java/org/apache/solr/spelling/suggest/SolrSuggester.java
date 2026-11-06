@@ -88,6 +88,13 @@ public class SolrSuggester implements Accountable {
   private DictionaryFactory dictionaryFactory;
   private Analyzer contextFilterQueryAnalyzer;
 
+  // The IndexReader.getVersion() of the searcher this suggester was last built from, so callers
+  // can tell whether a suggestion response reflects the current index or a previous (e.g. still
+  // being rebuilt in the background, see buildOnCommitAsync) one. -1 until the first successful
+  // build; stays -1 for a suggester that was loaded from a persisted storeDir file rather than
+  // built from a live index, since that doesn't correspond to any index version from this run.
+  private volatile long builtFromIndexVersion = -1L;
+
   /**
    * Uses the <code>config</code> and the <code>core</code> to initialize the underlying Lucene
    * suggester
@@ -180,6 +187,7 @@ public class SolrSuggester implements Accountable {
       e2.initCause(e);
       throw e2;
     }
+    builtFromIndexVersion = searcher.getIndexReader().getVersion();
     if (storeDir != null) {
       Path target = getStoreFile();
       if (!lookup.store(Files.newOutputStream(target))) {
@@ -231,23 +239,48 @@ public class SolrSuggester implements Accountable {
     if (options.contextFilterQuery == null) {
       // TODO: this path needs to be fixed to accept query params to override configs such as
       // allTermsRequired, highlight
-      suggestions = lookup.lookup(options.token, false, options.count);
+      try {
+        suggestions = lookup.lookup(options.token, false, options.count);
+      } catch (IllegalStateException e) {
+        suggestions = notYetBuilt(e);
+      }
     } else {
       BooleanQuery query = parseContextFilterQuery(options.contextFilterQuery);
-      suggestions =
-          lookup.lookup(
-              options.token, query, options.count, options.allTermsRequired, options.highlight);
+      try {
+        suggestions =
+            lookup.lookup(
+                options.token, query, options.count, options.allTermsRequired, options.highlight);
+      } catch (IllegalStateException e) {
+        suggestions = notYetBuilt(e);
+      }
       if (suggestions == null) {
-        // Context filtering not supported/configured by lookup
-        // Silently ignore filtering and serve a result by querying without context filtering
+        // Context filtering not supported/configured by lookup (the call above returned null
+        // rather than throwing) - silently ignore filtering and serve a result by querying
+        // without context filtering instead.
         if (log.isDebugEnabled()) {
           log.debug("Context Filtering Query not supported by {}", lookup.getClass());
         }
-        suggestions = lookup.lookup(options.token, false, options.count);
+        try {
+          suggestions = lookup.lookup(options.token, false, options.count);
+        } catch (IllegalStateException e) {
+          suggestions = notYetBuilt(e);
+        }
       }
     }
     res.add(getName(), options.token.toString(), suggestions);
     return res;
+  }
+
+  /**
+   * Some {@link Lookup} implementations (e.g. AnalyzingInfixSuggester) throw {@link
+   * IllegalStateException} if queried before any build()/load() has ever succeeded, rather than
+   * just returning no results. With buildOnCommitAsync=true a query can now land in that window on
+   * the very first commit, so degrade to no suggestions instead of letting this escape as a request
+   * failure.
+   */
+  private List<LookupResult> notYetBuilt(IllegalStateException e) {
+    log.info("Suggester {} has not finished building yet: {}", name, e.getMessage());
+    return Collections.emptyList();
   }
 
   private BooleanQuery parseContextFilterQuery(String contextFilter) {
@@ -272,6 +305,14 @@ public class SolrSuggester implements Accountable {
   /** Returns the unique name of the suggester */
   public String getName() {
     return name;
+  }
+
+  /**
+   * @return the {@code IndexReader.getVersion()} of the searcher this suggester was last built
+   *     from, or -1 if it has never been built.
+   */
+  public long getBuiltFromIndexVersion() {
+    return builtFromIndexVersion;
   }
 
   @Override
@@ -303,6 +344,9 @@ public class SolrSuggester implements Accountable {
         + ", "
         + "sizeInBytes="
         + ((lookup != null) ? String.valueOf(ramBytesUsed()) : "0")
+        + ", "
+        + "builtFromIndexVersion="
+        + builtFromIndexVersion
         + " ]";
   }
 }

@@ -1,0 +1,92 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!--
+ Worst-case config for the buildOnCommitAsync demo (see BuildOnCommitAsyncDemo): a suggester, a
+ spellchecker, and filterCache autowarming all configured to be slow and all synchronous, so a
+ single commit pays for all three, one after another, on SolrCore's single-threaded
+ searcherExecutor. buildOnCommitAsync (both default false, matching production defaults) lets
+ the suggester and spellchecker rebuilds move to the background; filterCache autowarming has no
+ such option today and always runs inline.
+-->
+<config>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+  <dataDir>${solr.data.dir:}</dataDir>
+  <directoryFactory name="DirectoryFactory" class="solr.NRTCachingDirectoryFactory"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <updateHandler class="solr.DirectUpdateHandler2"/>
+
+  <requestHandler name="/select" class="solr.SearchHandler" />
+
+  <searchComponent name="slow_suggester" class="solr.SuggestComponent">
+    <lst name="suggester">
+      <str name="name">slowSuggester</str>
+      <str name="lookupImpl">AnalyzingInfixLookupFactory</str>
+      <str name="dictionaryImpl">org.apache.solr.handler.component.SlowIOSimulatingDictionaryFactory</str>
+      <str name="slowDictNumTerms">${solr.tests.slowDictNumTerms:20}</str>
+      <str name="slowDictSleepMs">${solr.tests.slowDictSleepMs:100}</str>
+      <str name="indexPath">slow_suggester_demo</str>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <str name="buildOnStartup">false</str>
+      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommitAsync">${solr.tests.suggestBuildOnCommitAsync:false}</str>
+    </lst>
+  </searchComponent>
+  <requestHandler name="/suggest_slow" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="suggest">true</str>
+    </lst>
+    <arr name="components">
+      <str>slow_suggester</str>
+    </arr>
+  </requestHandler>
+
+  <searchComponent name="slow_spellcheck" class="solr.SpellCheckComponent">
+    <lst name="spellchecker">
+      <str name="name">slowSpellChecker</str>
+      <str name="classname">org.apache.solr.handler.component.SlowIOSimulatingSpellChecker</str>
+      <str name="field">text</str>
+      <str name="slowSpellCheckerSleepMs">${solr.tests.slowSpellCheckerSleepMs:2000}</str>
+      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommitAsync">${solr.tests.spellcheckBuildOnCommitAsync:false}</str>
+    </lst>
+  </searchComponent>
+  <requestHandler name="/spellcheck_slow" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">slowSpellChecker</str>
+    </lst>
+    <arr name="components">
+      <str>slow_spellcheck</str>
+    </arr>
+  </requestHandler>
+
+  <query>
+    <useColdSearcher>false</useColdSearcher>
+    <!-- Autowarming has no async option: this always runs inline as part of opening the new
+         searcher, before any listener (suggester/spellchecker included) even fires. -->
+    <filterCache
+      size="512"
+      initialSize="512"
+      autowarmCount="${solr.tests.slowCacheAutowarmCount:4}"
+      regenerator="org.apache.solr.handler.component.SlowCacheRegenerator"/>
+  </query>
+
+</config>

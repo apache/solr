@@ -181,7 +181,23 @@ Use `buildOnCommit` to rebuild the dictionary with every soft commit, or `buildO
 +
 Some lookup implementations may take a long time to build, especially with large indexes.
 In such cases, using `buildOnCommit` or `buildOnOptimize`, particularly with a high frequency of soft commits is not recommended.
-Instead, build the suggester at a lower frequency by manually issuing requests with `suggest.build=true`.
+Instead, build the suggester at a lower frequency by manually issuing requests with `suggest.build=true`, or see `buildOnCommitAsync` below.
+
+`buildOnCommitAsync`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, a `buildOnCommit` rebuild runs on a dedicated background thread instead of blocking the commit itself.
+Only takes effect when `buildOnCommit` is also `true`; has no effect on `buildOnOptimize`.
++
+By default, `buildOnCommit`'s rebuild runs synchronously as part of opening the new searcher, so a slow rebuild (a large index, or storage with throttled I/O) blocks every commit until it finishes.
+Setting `buildOnCommitAsync` to `true` avoids that: commits return immediately, and the rebuild catches up in the background.
+If a commit lands while a rebuild is still running, that commit's own rebuild is skipped rather than queued, so a burst of commits can't pile up an ever-growing backlog of stale rebuilds - suggestions simply lag behind by at most the duration of one rebuild.
++
+Because a rebuild is no longer guaranteed to finish before commit returns, suggestions served in the meantime may reflect a slightly older version of the index; see <<Checking Suggester Staleness>> to detect this from the response.
 
 `buildOnStartup`::
 +
@@ -935,3 +951,79 @@ http://localhost:8983/solr/techproducts/suggest?suggest=true&suggest.build=true&
 ----
 
 The suggester will only bring back suggestions for products tagged with 'cat=memory'.
+
+=== Checking Suggester Staleness
+
+Every `/suggest` response includes version information that lets you tell whether the suggestions returned reflect the current index, or an older one that a still-running rebuild (see `buildOnCommitAsync` above) hasn't caught up to yet.
+
+On a direct request to a single core (or any request with `distrib=false`), each queried suggester gets an entry under `suggesterIndexVersions` giving the Lucene index version it was last successfully built from, the current index version, and whether the two differ:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 3
+  },
+  "suggest": {
+    "mySuggester": {
+      "elec": {
+        "numFound": 2,
+        "suggestions": [
+          {
+            "term": "electronics",
+            "weight": 100,
+            "payload": ""
+          },
+          {
+            "term": "electric fan",
+            "weight": 80,
+            "payload": ""
+          }
+        ]
+      }
+    }
+  },
+  "suggesterIndexVersions": {
+    "mySuggester": {
+      "builtFromIndexVersion": 41,
+      "currentIndexVersion": 43,
+      "stale": true
+    }
+  }
+}
+----
+
+On a normal distributed SolrCloud query that fans out to multiple shards, per-shard index versions aren't directly comparable to one another, so the response instead includes a single aggregate `suggesterStale` flag: `true` if *any* shard that answered the query reported a stale suggester, with no indication of which shard or by how much.
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 12
+  },
+  "suggest": {
+    "mySuggester": {
+      "elec": {
+        "numFound": 2,
+        "suggestions": [
+          {
+            "term": "electronics",
+            "weight": 100,
+            "payload": ""
+          },
+          {
+            "term": "electric fan",
+            "weight": 80,
+            "payload": ""
+          }
+        ]
+      }
+    }
+  },
+  "suggesterStale": true
+}
+----
+
+To find out exactly which replica is behind and by how much, query it directly with `distrib=false`, or check that core's `buildOnCommit` gauges under `/admin/metrics`.
