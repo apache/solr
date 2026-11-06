@@ -247,6 +247,21 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   }
 }
 
+// Removes the dangling Solr images that retagging leaves behind, identified by the label from the Dockerfile
+task dockerPrune() {
+  group = 'Docker'
+  description = 'Remove dangling Solr docker images'
+
+  doLast {
+    exec {
+      ignoreExitValue = true
+      standardOutput = new ByteArrayOutputStream()
+      commandLine "docker", "image", "prune", "--force", "--filter", "label=org.opencontainers.image.title=Apache Solr"
+    }
+  }
+}
+tasks.dockerTag.finalizedBy tasks.dockerPrune
+
 task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image built from the local Dockerfile'
