@@ -421,9 +421,9 @@ task buildLocalAntoraSite(type: NpxTask) {
 
   // Use a local build of the Lucene and Solr javadocs for a local refGuide
   def extraArgs = [
-      // This attribute should not include ":link", the other 2 should
+      // This attribute should not include ":link", the others should
       // This attribute should also not be relative, because it is used in multiple path directories in the site
-      "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
+      "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}javadocs/api",
       "--attribute", "solr-docs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
       "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}/javadocs/api",
       "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
