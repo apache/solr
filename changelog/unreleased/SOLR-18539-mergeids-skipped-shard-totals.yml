@@ -1,0 +1,10 @@
+title: >
+  QueryComponent.mergeIds: a skipped partial shard no longer contributes its
+  totals to the merged response, and the approximateTotalHits fallback adds
+  each shard's own numFound instead of the running merged total.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18539
+    url: https://issues.apache.org/jira/browse/SOLR-18539
