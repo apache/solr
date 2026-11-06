@@ -387,11 +387,23 @@ public class DocumentBuilder {
       }
 
       // TODO ban copyField populating uniqueKeyField; too problematic to support
-      addField(
-          out,
-          destinationField,
-          fieldValue,
-          destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+      try {
+        addField(
+            out,
+            destinationField,
+            fieldValue,
+            destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+      } catch (SolrException ex) {
+        throw new SolrException(
+            SolrException.ErrorCode.getErrorCode(ex.code()),
+            "copyField destination '" + destinationField.getName() + "': " + ex.getMessage(),
+            ex);
+      } catch (RuntimeException ex) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "copyField destination '" + destinationField.getName() + "': " + ex.getMessage(),
+            ex);
+      }
       // record the field as having an originalFieldValue
       usedFields.add(destinationField.getName());
       used = true;
