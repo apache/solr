@@ -474,10 +474,8 @@ public class SolrMetricManager {
                 builder.registerMetricReader(
                     PeriodicMetricReader.builder(metricExporter)
                         .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
-                        // Readers all identify themselves with the same static ComponentId, so one
-                        // per registry means several identical self-telemetry series, which the
-                        // Prometheus endpoint rejects and OTLP backends drop. Solr exports none of
-                        // the SDK's own telemetry, so switch it off rather than deduplicate later.
+                        // One reader per registry, all sharing a static ComponentId, means
+                        // identical self-telemetry series that the metrics endpoint rejects
                         .setInternalTelemetryVersion(InternalTelemetryVersion.LEGACY)
                         .build());
               return new MeterProviderAndReaders(builder.build(), reader);
