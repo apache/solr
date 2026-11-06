@@ -50,7 +50,8 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
       int shard = i + 1;
       for (int j = 0; j <= i; j++) {
         int currentId = docId++;
-        index_specific(i, id, currentId, "a_t", "one two three", "shard_i", shard);
+        String grp = "g" + (currentId % 2);
+        index_specific(i, id, currentId, "a_t", "one two three", "shard_i", shard, "grp_s1", grp);
         aDocId = rarely() ? currentId + "" : aDocId;
       }
     }
@@ -69,7 +70,9 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
       int shard = i + 1;
       for (int j = 0; j <= i; j++) {
         int currentId = docId++;
-        index_specific(i, id, currentId, "a_t", "one two three four five", "shard_i", shard);
+        String grp = "g" + (currentId % 2);
+        index_specific(
+            i, id, currentId, "a_t", "one two three four five", "shard_i", shard, "grp_s1", grp);
         aDocId = rarely() ? currentId + "" : aDocId;
       }
     }
@@ -80,8 +83,12 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     }
     dfQuery("q", "a_t:one a_t:four", "debugQuery", "true", "fl", "*,score");
 
+    checkGroupedScores();
     checkDistribStatsException();
   }
+
+  /** Hook for stats caches that must score grouped results with the global stats. */
+  protected void checkGroupedScores() throws Exception {}
 
   // in this case, as the number of shards increases, per-shard scores begin to
   // diverge due to the different docFreq-s per shard.

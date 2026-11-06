@@ -16,10 +16,18 @@
  */
 package org.apache.solr.search.stats;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.response.Group;
+import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Ignore;
 
 @Ignore("Abstract calls should not executed as test")
@@ -67,5 +75,63 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   @Override
   protected void checkDistribStatsException() {
     // doing nothing on distrib stats
+  }
+
+  // grouped queries must be scored with the same global stats as the ungrouped ones
+  @Override
+  protected void checkGroupedScores() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "a_t:one a_t:four");
+    params.set("fl", "id,score");
+    params.set("group", "true");
+    params.set("group.field", "id");
+    params.set("group.limit", "1");
+
+    Map<String, Object> controlScores = topScorePerGroup(controlClient.query(params));
+    params.set("shards", shards);
+    SolrClient client = clients.get(r.nextInt(clients.size()));
+    Map<String, Object> shardScores = topScorePerGroup(client.query(params));
+
+    assertFalse(controlScores.isEmpty());
+    assertEquals(controlScores, shardScores);
+    checkWithinGroupOrder();
+  }
+
+  // the main sort has no score, so the within-group score ranking must get global stats too
+  private void checkWithinGroupOrder() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", "a_t:two a_t:five");
+    params.set("sort", "id asc");
+    params.set("fl", "id");
+    params.set("group", "true");
+    params.set("group.field", "grp_s1");
+    params.set("group.sort", "score desc,id asc");
+    params.set("group.limit", "1");
+
+    List<String> controlDocs = topDocIdPerGroup(controlClient.query(params));
+    params.set("shards", shards);
+    SolrClient client = clients.get(r.nextInt(clients.size()));
+    List<String> shardDocs = topDocIdPerGroup(client.query(params));
+
+    assertEquals(2, controlDocs.size());
+    assertEquals(controlDocs, shardDocs);
+  }
+
+  private static Map<String, Object> topScorePerGroup(QueryResponse rsp) {
+    Map<String, Object> scores = new HashMap<>();
+    GroupCommand command = rsp.getGroupResponse().getValues().get(0);
+    for (Group group : command.getValues()) {
+      scores.put(group.getGroupValue(), group.getResult().get(0).getFieldValue("score"));
+    }
+    return scores;
+  }
+
+  private static List<String> topDocIdPerGroup(QueryResponse rsp) {
+    List<String> docIds = new ArrayList<>();
+    GroupCommand command = rsp.getGroupResponse().getValues().get(0);
+    for (Group group : command.getValues()) {
+      docIds.add(group.getGroupValue() + "=" + group.getResult().get(0).getFieldValue("id"));
+    }
+    return docIds;
   }
 }
