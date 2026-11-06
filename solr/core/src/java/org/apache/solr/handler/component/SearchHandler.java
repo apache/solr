@@ -92,7 +92,6 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
-  private static final String CPU_TIME_CONTEXT = SearchHandler.class.getName() + ".cpuTime";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -168,26 +167,6 @@ public class SearchHandler extends RequestHandlerBase
       return;
     }
     SearchRequestListenerManager.mark(req, rb);
-  }
-
-  /**
-   * Also true when {@link SearchRequestListener}s are registered at the start of the request, so
-   * they see CPU time without {@code solr.log.cputime=true}. Shard CPU is included only from nodes
-   * that measure it.
-   */
-  @Override
-  protected boolean publishCpuTime(SolrQueryRequest req) {
-    return (boolean)
-        req.getContext()
-            .computeIfAbsent(
-                CPU_TIME_CONTEXT,
-                k -> {
-                  CoreContainer cc = req.getCoreContainer();
-                  return super.publishCpuTime(req)
-                      || (notifiesSearchRequestListeners()
-                          && cc != null
-                          && cc.getSearchRequestListenerManager().hasListeners());
-                });
   }
 
   /** Whether requests to this handler are reported to {@link SearchRequestListener}s. */
@@ -588,7 +567,7 @@ public class SearchHandler extends RequestHandlerBase
       for (SearchComponent c : components) {
         if (checkLimitsBefore(c, "distrib", rb.req, rb.rsp, components)) {
           shortCircuitedResults(req, rb);
-          addShardCpuTimeIfAnyResponses(req, rsp, rb, totalShardCpuTime);
+          addShardCpuTimeIfAnyResponses(rsp, rb, totalShardCpuTime);
           return;
         } // the next stage is the minimum of what all components report
         nextStage = Math.min(nextStage, c.distributedProcess(rb));
@@ -720,7 +699,7 @@ public class SearchHandler extends RequestHandlerBase
             }
           }
 
-          if (publishCpuTime(req)) {
+          if (publishCpuTime) {
             totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
           }
 
@@ -735,7 +714,7 @@ public class SearchHandler extends RequestHandlerBase
                 rb.rsp,
                 components)) {
               shortCircuitedResults(req, rb);
-              addShardCpuTimeIfAnyResponses(req, rsp, rb, totalShardCpuTime);
+              addShardCpuTimeIfAnyResponses(rsp, rb, totalShardCpuTime);
               return;
             }
             c.handleResponses(rb, srsp.getShardRequest());
@@ -746,7 +725,7 @@ public class SearchHandler extends RequestHandlerBase
       for (SearchComponent c : components) {
         if (checkLimitsBefore(
             c, "finishStage stage:" + stageToString(nextStage), rb.req, rb.rsp, components)) {
-          addShardCpuTimeIfAnyResponses(req, rsp, rb, totalShardCpuTime);
+          addShardCpuTimeIfAnyResponses(rsp, rb, totalShardCpuTime);
           return;
         }
         c.finishStage(rb);
@@ -755,19 +734,18 @@ public class SearchHandler extends RequestHandlerBase
       // we are done when the next stage is MAX_VALUE
     } while (nextStage != Integer.MAX_VALUE);
 
-    addShardCpuTime(req, rsp, totalShardCpuTime);
+    addShardCpuTime(rsp, totalShardCpuTime);
   }
 
   private void addShardCpuTimeIfAnyResponses(
-      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb, long totalShardCpuTime) {
+      SolrQueryResponse rsp, ResponseBuilder rb, long totalShardCpuTime) {
     if (!rb.finished.isEmpty()) {
-      addShardCpuTime(req, rsp, totalShardCpuTime);
+      addShardCpuTime(rsp, totalShardCpuTime);
     }
   }
 
-  private void addShardCpuTime(
-      SolrQueryRequest req, SolrQueryResponse rsp, long totalShardCpuTime) {
-    if (publishCpuTime(req)) {
+  private void addShardCpuTime(SolrQueryResponse rsp, long totalShardCpuTime) {
+    if (publishCpuTime) {
       rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
     }

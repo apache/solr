@@ -87,14 +87,6 @@ public abstract class RequestHandlerBase
   protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
 
   /**
-   * Whether to measure and publish CPU time for {@code req}. Must return the same value each time
-   * it is called for a request.
-   */
-  protected boolean publishCpuTime(SolrQueryRequest req) {
-    return publishCpuTime;
-  }
-
-  /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link
    * org.apache.solr.common.params.SolrParams} named.
    *
@@ -244,7 +236,7 @@ public abstract class RequestHandlerBase
     req.getContext().putIfAbsent(DISPATCHED_HANDLER, this);
     assert metrics != null
         : "initializeMetrics() must be called before handling requests on " + getClass().getName();
-    if (publishCpuTime(req)) {
+    if (publishCpuTime) {
       ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
     }
 
@@ -276,7 +268,7 @@ public abstract class RequestHandlerBase
       try {
         timer.stop();
 
-        if (publishCpuTime(req)) {
+        if (publishCpuTime) {
           Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
           if (QueryLimits.getCurrentLimits().isLimitsEnabled()) {
             // prefer the value from the limit if available to avoid confusing users with trivial

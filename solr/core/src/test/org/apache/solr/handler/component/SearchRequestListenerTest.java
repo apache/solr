@@ -486,32 +486,27 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   @Test
   public void testCpuTime() throws Exception {
     assumeTrue("thread CPU time unsupported", ThreadCpuTimer.isSupported());
-    resetListeners(
-        null,
-        (info, req, rsp, rb) -> {
-          boolean shardsPublished = !rb.finished.isEmpty();
-          for (ShardRequest shardRequest : rb.finished) {
-            for (ShardResponse shardResponse : shardRequest.responses) {
-              NamedList<?> header =
-                  (NamedList<?>)
-                      shardResponse.getSolrResponse().getResponse().get("responseHeader");
-              shardsPublished &= header.indexOf(ThreadCpuTimer.CPU_TIME, 0) >= 0;
-            }
-          }
-          return new Object[] {rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME), shardsPublished};
-        });
-    QueryResponse rsp = query(COLLECTION, "*:*");
+    query(COLLECTION, "*:*");
+    assertNull(delivered().cpuTimeMs());
+
+    System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
+    String cpuCollection = "listener_cpu";
+    createCollection(cpuCollection);
+    resetListeners(null, (info, req, rsp, rb) -> rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME));
+    QueryResponse rsp = query(cpuCollection, "*:*");
     Delivery delivery = delivery();
-    Object[] captured = (Object[]) delivery.captured();
-    assertEquals(Boolean.TRUE, captured[1]);
     long shardCpuTime = (Long) rsp.getResponseHeader().get(ThreadCpuTimer.CPU_TIME);
-    long localCpuTime = (Long) captured[0];
+    long localCpuTime = (Long) delivery.captured();
     assertEquals(Long.valueOf(shardCpuTime + localCpuTime), delivery.info().cpuTimeMs());
+    CollectionAdminRequest.deleteCollection(cpuCollection).process(cluster.getSolrClient());
   }
 
   @Test
   public void testCpuTimeIncludesShardsWhenLimitStopsCoordinator() throws Exception {
     assumeTrue("thread CPU time unsupported", ThreadCpuTimer.isSupported());
+    System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
+    String cpuCollection = "listener_cpu_limit";
+    createCollection(cpuCollection);
     resetListeners(
         null,
         (info, req, rsp, rb) ->
@@ -543,7 +538,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
         };
     QueryResponse rsp;
     try {
-      rsp = query(COLLECTION, "*:*");
+      rsp = query(cpuCollection, "*:*");
     } finally {
       TestInjection.queryTimeout = null;
     }
@@ -555,6 +550,7 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     long localCpuTime = (Long) captured[1];
     assertEquals(shardCpuTime, rsp.getResponseHeader().get(ThreadCpuTimer.CPU_TIME));
     assertEquals(Long.valueOf(shardCpuTime + localCpuTime), delivery.info().cpuTimeMs());
+    CollectionAdminRequest.deleteCollection(cpuCollection).process(cluster.getSolrClient());
   }
 
   @Test
@@ -615,23 +611,12 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testListenersOnlyAddCpuTimeToResponse() throws Exception {
-    assumeTrue("thread CPU time unsupported", ThreadCpuTimer.isSupported());
-    List<String> withListeners = keys(query(COLLECTION, "*:*").getResponseHeader());
+  public void testNoListenersLeavesResponseUnchanged() throws Exception {
+    NamedList<?> withListeners = query(COLLECTION, "*:*").getResponseHeader();
     removeListeners();
-    List<String> withoutListeners = keys(query(COLLECTION, "*:*").getResponseHeader());
-    assertTrue(withListeners.contains(ThreadCpuTimer.CPU_TIME));
-    assertFalse(withoutListeners.contains(ThreadCpuTimer.CPU_TIME));
-    withListeners.remove(ThreadCpuTimer.CPU_TIME);
-    assertEquals(withListeners, withoutListeners);
+    NamedList<?> withoutListeners = query(COLLECTION, "*:*").getResponseHeader();
+    assertEquals(keys(withListeners), keys(withoutListeners));
     assertEquals(1, captures());
-  }
-
-  @Test
-  public void testCpuTimeMeasuredForRegisteredListener() throws Exception {
-    assumeTrue("thread CPU time unsupported", ThreadCpuTimer.isSupported());
-    query(COLLECTION, "*:*");
-    assertNotNull(delivered().cpuTimeMs());
   }
 
   private static SolrCore jettyCore(String collection) {
