@@ -107,6 +107,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testIgnoredFields() {
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
+    assertU("adding doc with ignored StrField", adoc("id", "43", "ignored_foo", "blah blah"));
     assertU("commit", commit());
 
     // :TODO: the behavior of querying on an unindexed field should be better specified in the
@@ -116,6 +117,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
         req("bar_ignored:yo id:42"),
         "//*[@numFound='1']",
         "//str[@name='id'][.='42']");
+    assertQ("query doc with ignored StrField", req("id:43"), "//*[@numFound='1']");
   }
 
   @Test
