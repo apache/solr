@@ -420,6 +420,7 @@ function print_usage() {
     echo "  -e/--example <name>   Name of the example to run; available examples:"
     echo "      cloud:              SolrCloud example"
     echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
+    echo "      secure:             Two-node HTTPS example with Basic Authentication and ZooKeeper ACLs"
     echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
     echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
     echo ""
@@ -635,6 +636,15 @@ if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD
 fi
 
 # Everything below here is to support start, stop and restart.
+
+if [[ "$SCRIPT_CMD" == "start" ]]; then
+  for example_arg in "$@"; do
+    if [[ "$example_arg" == "-e" || "$example_arg" == "--example" ]]; then
+      export SOLR_ULIMIT_CHECKS=false
+      break
+    fi
+  done
+fi
 
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
 
