@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.not;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -151,7 +152,15 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testMatchAllDocs() throws Exception {
     for (String sow : Arrays.asList("true", "false")) {
       for (String q : Arrays.asList("*:*", "*")) {
-        try (SolrQueryRequest req = req("sow", sow, "qf", "id")) {
+        // pf, pf2, pf3, and an all-stopword bq must not add empty clauses
+        try (SolrQueryRequest req =
+            req(
+                "sow", sow,
+                "qf", "id",
+                "pf", "id^10 text^5",
+                "pf2", "id^10",
+                "pf3", "id^10",
+                "bq", "text:a")) {
           QParser qParser = QParser.getParser(q, "edismax", req);
           assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
         }
@@ -1191,6 +1200,31 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "//str[@name='id'][.='145']",
         "//str[@name='id'][.='146']");
+  }
+
+  // When no phrase qualifies for the pf boost, no empty phrase clause should be added
+  public void testNoEmptyPhraseBoostClause() throws Exception {
+    // Single-token query: minClauseSize discards the one-position phrase
+    String singleTokenParsed =
+        getParsedQuery(
+            req(
+                "q", "wireless",
+                "qf", "subject",
+                "pf", "subject^10",
+                "defType", "edismax",
+                "debugQuery", "true"));
+    assertThat(singleTokenParsed, allOf(not(containsString("^10.0")), not(containsString("()"))));
+
+    // Whitespace-free query that analyzes into multiple tokens keeps its phrase boost
+    String multiTokenParsed =
+        getParsedQuery(
+            req(
+                "q", "wi-fi",
+                "qf", "subject",
+                "pf", "subject^10",
+                "defType", "edismax",
+                "debugQuery", "true"));
+    assertThat(multiTokenParsed, containsString("(subject:\"wi fi\")^10.0"));
   }
 
   // test phrase fields including pf2 pf3 and phrase slop
