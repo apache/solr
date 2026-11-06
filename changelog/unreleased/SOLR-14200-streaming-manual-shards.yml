@@ -1,0 +1,7 @@
+title: Streaming expressions given a manual shards map no longer modify the caller's shard list when filtering by core, and a collection missing from the map now fails with a clear message instead of a NullPointerException
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-14200
+    url: https://issues.apache.org/jira/browse/SOLR-14200

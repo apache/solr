@@ -192,6 +192,9 @@ public class SqlStream extends TupleStream implements Expressible {
     try {
 
       List<String> shardUrls = getShards(this.solrConnection, this.collection, this.streamContext);
+      if (shardUrls.isEmpty()) {
+        throw new IOException("No shards available for collection " + this.collection);
+      }
       Collections.shuffle(shardUrls, new Random());
       String url = shardUrls.get(0);
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
