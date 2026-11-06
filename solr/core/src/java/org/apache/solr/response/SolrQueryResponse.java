@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.common.SolrException;
@@ -30,6 +31,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
+import org.apache.solr.util.ThreadCpuTimer;
 
 /**
  * <code>SolrQueryResponse</code> is used by a query handler to return the response to a query
@@ -201,6 +203,26 @@ public class SolrQueryResponse {
     return header != null && header.get(RESPONSE_HEADER_QTIME_KEY) instanceof Number qtime
         ? qtime.longValue()
         : -1;
+  }
+
+  /** The hit count added to the request log, or null if none was. */
+  public Long getHits() {
+    return toLog.get("hits") instanceof Number hits ? hits.longValue() : null;
+  }
+
+  /**
+   * CPU time from the request log: this thread's plus, when distributed, the last shard total
+   * reported. Null unless {@code solr.log.cputime=true}.
+   */
+  public Long getCpuTimeMs() {
+    if (!(toLog.get(ThreadCpuTimer.LOCAL_CPU_TIME) instanceof Long local)) {
+      return null;
+    }
+    List<Object> shardCpuTimes = toLog.getAll(ThreadCpuTimer.CPU_TIME);
+    if (!shardCpuTimes.isEmpty() && shardCpuTimes.getLast() instanceof Long shardCpuTime) {
+      return shardCpuTime + local;
+    }
+    return local;
   }
 
   /**
