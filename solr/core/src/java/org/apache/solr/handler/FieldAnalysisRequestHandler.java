@@ -211,27 +211,26 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return NamedList containing the tokens produced by the analyzers of the given field, separated
    *     into an index and a query group
    */
-  // package access for testing
   @SuppressWarnings({"rawtypes"})
-  NamedList<NamedList> analyzeValues(
+  protected NamedList<NamedList> analyzeValues(
       FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
     final String queryValue = analysisRequest.getQuery();
     final Set<BytesRef> termsToMatch =
         (queryValue != null && analysisRequest.isShowMatch())
-            ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+            ? getQueryTokenSet(queryValue, getQueryAnalyzer(fieldType))
             : EMPTY_BYTES_SET;
 
     NamedList<NamedList> analyzeResults = new SimpleOrderedMap<>();
     if (analysisRequest.getFieldValue() != null) {
       AnalysisContext context =
-          new AnalysisContext(fieldName, fieldType, fieldType.getIndexAnalyzer(), termsToMatch);
+          new AnalysisContext(fieldName, fieldType, getIndexAnalyzer(fieldType), termsToMatch);
       NamedList analyzedTokens = analyzeValue(analysisRequest.getFieldValue(), context);
       analyzeResults.add("index", analyzedTokens);
     }
     if (analysisRequest.getQuery() != null) {
       AnalysisContext context =
-          new AnalysisContext(fieldName, fieldType, fieldType.getQueryAnalyzer());
+          new AnalysisContext(fieldName, fieldType, getQueryAnalyzer(fieldType));
       NamedList analyzedTokens = analyzeValue(analysisRequest.getQuery(), context);
       analyzeResults.add("query", analyzedTokens);
     }
