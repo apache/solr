@@ -237,244 +237,260 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to request node to buffer updates");
     }
-    ZkNodeProps m =
-        new ZkNodeProps(
-            Overseer.QUEUE_OPERATION,
-            OverseerAction.ADDROUTINGRULE.toLower(),
-            COLLECTION_PROP,
-            sourceCollection.getName(),
-            SHARD_ID_PROP,
-            sourceSlice.getName(),
-            "routeKey",
-            sourceRouter.getRouteKeyNoSuffix(splitKey) + "!",
-            "range",
-            splitRange.toString(),
-            "targetCollection",
-            targetCollection.getName(),
-            "expireAt",
-            RoutingRule.makeExpiryAt(timeout));
-    log.info("Adding routing rule: {}", m);
-    if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      ccc.getDistributedClusterStateUpdater()
-          .doSingleStateUpdate(
-              DistributedClusterStateUpdater.MutatingCommand.SliceAddRoutingRule,
-              m,
-              ccc.getSolrCloudManager(),
-              ccc.getZkStateReader());
-    } else {
-      ccc.offerStateUpdate(m);
-    }
-
-    // wait for a while until we see the new rule
-    log.info("Waiting to see routing rule updated in clusterstate");
-
+    // From here on, the target leader is buffering updates. If MIGRATE fails before it is asked
+    // to apply them, undo the routing rule and the buffering, or the target stays buffering.
     try {
-      sourceCollection =
-          zkStateReader.waitForState(
+      ZkNodeProps m =
+          new ZkNodeProps(
+              Overseer.QUEUE_OPERATION,
+              OverseerAction.ADDROUTINGRULE.toLower(),
+              COLLECTION_PROP,
               sourceCollection.getName(),
-              60,
-              TimeUnit.SECONDS,
-              c -> {
-                Slice s = c.getSlice(sourceSlice.getName());
-                Map<String, RoutingRule> rules = s.getRoutingRules();
-                if (rules != null) {
-                  RoutingRule rule = rules.get(sourceRouter.getRouteKeyNoSuffix(splitKey) + "!");
-                  return rule != null && rule.getRouteRanges().contains(splitRange);
-                }
-                return false;
-              });
-    } catch (TimeoutException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Could not add routing rule: " + m, e);
-    }
-    log.info("Routing rule added successfully");
-
-    // Create temp core on source shard
-    Replica sourceLeader =
-        zkStateReader.getLeaderRetry(sourceCollection.getName(), sourceSlice.getName(), 10000);
-
-    // create a temporary collection with just one node on the shard leader
-    String configName = sourceCollection.getConfigName();
-    Map<String, Object> props =
-        Utils.makeMap(
-            Overseer.QUEUE_OPERATION,
-            CREATE.toLower(),
-            NAME,
-            tempSourceCollectionName,
-            Replica.Type.defaultType().numReplicasPropertyName,
-            1,
-            CollectionHandlingUtils.NUM_SLICES,
-            1,
-            CollectionAdminParams.COLL_CONF,
-            configName,
-            CollectionHandlingUtils.CREATE_NODE_SET,
-            sourceLeader.getNodeName());
-    String internalAsyncId = null;
-    if (adminCmdContext.getAsyncId() != null) {
-      internalAsyncId = adminCmdContext.getAsyncId() + Math.abs(System.nanoTime());
-    }
-
-    log.info("Creating temporary collection: {}", props);
-    new CreateCollectionCmd(ccc)
-        .call(
-            adminCmdContext.subRequestContext(CREATE, internalAsyncId),
-            new ZkNodeProps(props),
-            results);
-    // refresh cluster state
-    adminCmdContext.withClusterState(zkStateReader.getClusterState());
-    Slice tempSourceSlice =
-        adminCmdContext
-            .getClusterState()
-            .getCollection(tempSourceCollectionName)
-            .getSlices()
-            .iterator()
-            .next();
-    Replica tempSourceLeader =
-        zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
-
-    String tempCollectionReplica1 = tempSourceLeader.getCoreName();
-    String coreNodeName =
-        CollectionHandlingUtils.waitForCoreNodeName(
-            tempSourceCollectionName,
-            sourceLeader.getNodeName(),
-            tempCollectionReplica1,
-            ccc.getZkStateReader());
-    // wait for the replicas to be seen as active on temp source leader
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Asking source leader to wait for: {} to be alive on: {}",
-          tempCollectionReplica1,
-          sourceLeader.getNodeName());
-    }
-    CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
-    cmd.setCoreName(tempCollectionReplica1);
-    cmd.setNodeName(sourceLeader.getNodeName());
-    cmd.setCoreNodeName(coreNodeName);
-    cmd.setState(Replica.State.ACTIVE);
-    cmd.setCheckLive(true);
-    cmd.setOnlyIfLeader(true);
-    {
-      final ShardRequestTracker syncRequestTracker =
-          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
-      // we don't want this to happen asynchronously
-      syncRequestTracker.sendShardRequest(
-          tempSourceLeader, new ModifiableSolrParams(cmd.getParams()), shardHandler);
-
-      syncRequestTracker.processResponses(
-          results,
-          shardHandler,
-          true,
-          "MIGRATE failed to create temp collection leader"
-              + " or timed out waiting for it to come up");
-    }
-
-    log.info("Asking source leader to split index");
-    params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
-    params.set(CoreAdminParams.CORE, sourceLeader.getStr("core"));
-    params.add(CoreAdminParams.TARGET_CORE, tempSourceLeader.getStr("core"));
-    params.set(CoreAdminParams.RANGES, splitRange.toString());
-    params.set("split.key", splitKey);
-
-    {
-      final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
-      shardRequestTracker.sendShardRequest(sourceLeader, params, shardHandler);
-      shardRequestTracker.processResponses(
-          results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
-    }
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Creating a replica of temporary collection: {} on the target leader node: {}",
-          tempSourceCollectionName,
-          targetLeader.getNodeName());
-    }
-    String tempCollectionReplica2 =
-        Assign.buildSolrCoreName(
-            ccc.getSolrCloudManager().getDistribStateManager(),
-            zkStateReader.getClusterState().getCollection(tempSourceCollectionName),
-            tempSourceSlice.getName(),
-            Replica.Type.defaultType());
-    props = new HashMap<>();
-    props.put(COLLECTION_PROP, tempSourceCollectionName);
-    props.put(SHARD_ID_PROP, tempSourceSlice.getName());
-    props.put("node", targetLeader.getNodeName());
-    props.put(CoreAdminParams.NAME, tempCollectionReplica2);
-    // copy over property params:
-    for (String key : message.keySet()) {
-      if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
-        props.put(key, message.getStr(key));
+              SHARD_ID_PROP,
+              sourceSlice.getName(),
+              "routeKey",
+              sourceRouter.getRouteKeyNoSuffix(splitKey) + "!",
+              "range",
+              splitRange.toString(),
+              "targetCollection",
+              targetCollection.getName(),
+              "expireAt",
+              RoutingRule.makeExpiryAt(timeout));
+      log.info("Adding routing rule: {}", m);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater()
+            .doSingleStateUpdate(
+                DistributedClusterStateUpdater.MutatingCommand.SliceAddRoutingRule,
+                m,
+                ccc.getSolrCloudManager(),
+                ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(m);
       }
-    }
-    // add async param
-    new AddReplicaCmd(ccc)
-        .addReplica(
-            adminCmdContext.subRequestContext(ADDREPLICA), new ZkNodeProps(props), results, null);
 
-    {
-      final ShardRequestTracker syncRequestTracker =
-          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
-      syncRequestTracker.processResponses(
-          results,
-          shardHandler,
-          true,
-          "MIGRATE failed to create replica of " + "temporary collection in target leader node.");
-    }
-    coreNodeName =
-        CollectionHandlingUtils.waitForCoreNodeName(
+      // wait for a while until we see the new rule
+      log.info("Waiting to see routing rule updated in clusterstate");
+
+      try {
+        sourceCollection =
+            zkStateReader.waitForState(
+                sourceCollection.getName(),
+                60,
+                TimeUnit.SECONDS,
+                c -> {
+                  Slice s = c.getSlice(sourceSlice.getName());
+                  Map<String, RoutingRule> rules = s.getRoutingRules();
+                  if (rules != null) {
+                    RoutingRule rule = rules.get(sourceRouter.getRouteKeyNoSuffix(splitKey) + "!");
+                    return rule != null && rule.getRouteRanges().contains(splitRange);
+                  }
+                  return false;
+                });
+      } catch (TimeoutException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Could not add routing rule: " + m, e);
+      }
+      log.info("Routing rule added successfully");
+
+      // Create temp core on source shard
+      Replica sourceLeader =
+          zkStateReader.getLeaderRetry(sourceCollection.getName(), sourceSlice.getName(), 10000);
+
+      // create a temporary collection with just one node on the shard leader
+      String configName = sourceCollection.getConfigName();
+      Map<String, Object> props =
+          Utils.makeMap(
+              Overseer.QUEUE_OPERATION,
+              CREATE.toLower(),
+              NAME,
+              tempSourceCollectionName,
+              Replica.Type.defaultType().numReplicasPropertyName,
+              1,
+              CollectionHandlingUtils.NUM_SLICES,
+              1,
+              CollectionAdminParams.COLL_CONF,
+              configName,
+              CollectionHandlingUtils.CREATE_NODE_SET,
+              sourceLeader.getNodeName());
+      String internalAsyncId = null;
+      if (adminCmdContext.getAsyncId() != null) {
+        internalAsyncId = adminCmdContext.getAsyncId() + Math.abs(System.nanoTime());
+      }
+
+      log.info("Creating temporary collection: {}", props);
+      new CreateCollectionCmd(ccc)
+          .call(
+              adminCmdContext.subRequestContext(CREATE, internalAsyncId),
+              new ZkNodeProps(props),
+              results);
+      // refresh cluster state
+      adminCmdContext.withClusterState(zkStateReader.getClusterState());
+      Slice tempSourceSlice =
+          adminCmdContext
+              .getClusterState()
+              .getCollection(tempSourceCollectionName)
+              .getSlices()
+              .iterator()
+              .next();
+      Replica tempSourceLeader =
+          zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
+
+      String tempCollectionReplica1 = tempSourceLeader.getCoreName();
+      String coreNodeName =
+          CollectionHandlingUtils.waitForCoreNodeName(
+              tempSourceCollectionName,
+              sourceLeader.getNodeName(),
+              tempCollectionReplica1,
+              ccc.getZkStateReader());
+      // wait for the replicas to be seen as active on temp source leader
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Asking source leader to wait for: {} to be alive on: {}",
+            tempCollectionReplica1,
+            sourceLeader.getNodeName());
+      }
+      CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
+      cmd.setCoreName(tempCollectionReplica1);
+      cmd.setNodeName(sourceLeader.getNodeName());
+      cmd.setCoreNodeName(coreNodeName);
+      cmd.setState(Replica.State.ACTIVE);
+      cmd.setCheckLive(true);
+      cmd.setOnlyIfLeader(true);
+      {
+        final ShardRequestTracker syncRequestTracker =
+            CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
+        // we don't want this to happen asynchronously
+        syncRequestTracker.sendShardRequest(
+            tempSourceLeader, new ModifiableSolrParams(cmd.getParams()), shardHandler);
+
+        syncRequestTracker.processResponses(
+            results,
+            shardHandler,
+            true,
+            "MIGRATE failed to create temp collection leader"
+                + " or timed out waiting for it to come up");
+      }
+
+      log.info("Asking source leader to split index");
+      params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
+      params.set(CoreAdminParams.CORE, sourceLeader.getStr("core"));
+      params.add(CoreAdminParams.TARGET_CORE, tempSourceLeader.getStr("core"));
+      params.set(CoreAdminParams.RANGES, splitRange.toString());
+      params.set("split.key", splitKey);
+
+      {
+        final ShardRequestTracker shardRequestTracker =
+            CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+        shardRequestTracker.sendShardRequest(sourceLeader, params, shardHandler);
+        shardRequestTracker.processResponses(
+            results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
+      }
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Creating a replica of temporary collection: {} on the target leader node: {}",
             tempSourceCollectionName,
-            targetLeader.getNodeName(),
+            targetLeader.getNodeName());
+      }
+      String tempCollectionReplica2 =
+          Assign.buildSolrCoreName(
+              ccc.getSolrCloudManager().getDistribStateManager(),
+              zkStateReader.getClusterState().getCollection(tempSourceCollectionName),
+              tempSourceSlice.getName(),
+              Replica.Type.defaultType());
+      props = new HashMap<>();
+      props.put(COLLECTION_PROP, tempSourceCollectionName);
+      props.put(SHARD_ID_PROP, tempSourceSlice.getName());
+      props.put("node", targetLeader.getNodeName());
+      props.put(CoreAdminParams.NAME, tempCollectionReplica2);
+      // copy over property params:
+      for (String key : message.keySet()) {
+        if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
+          props.put(key, message.getStr(key));
+        }
+      }
+      // add async param
+      new AddReplicaCmd(ccc)
+          .addReplica(
+              adminCmdContext.subRequestContext(ADDREPLICA), new ZkNodeProps(props), results, null);
+
+      {
+        final ShardRequestTracker syncRequestTracker =
+            CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
+        syncRequestTracker.processResponses(
+            results,
+            shardHandler,
+            true,
+            "MIGRATE failed to create replica of " + "temporary collection in target leader node.");
+      }
+      coreNodeName =
+          CollectionHandlingUtils.waitForCoreNodeName(
+              tempSourceCollectionName,
+              targetLeader.getNodeName(),
+              tempCollectionReplica2,
+              ccc.getZkStateReader());
+      // wait for the replicas to be seen as active on temp source leader
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Asking temp source leader to wait for: {} to be alive on: {}",
             tempCollectionReplica2,
-            ccc.getZkStateReader());
-    // wait for the replicas to be seen as active on temp source leader
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Asking temp source leader to wait for: {} to be alive on: {}",
-          tempCollectionReplica2,
-          targetLeader.getNodeName());
-    }
-    cmd = new CoreAdminRequest.WaitForState();
-    cmd.setCoreName(tempSourceLeader.getStr("core"));
-    cmd.setNodeName(targetLeader.getNodeName());
-    cmd.setCoreNodeName(coreNodeName);
-    cmd.setState(Replica.State.ACTIVE);
-    cmd.setCheckLive(true);
-    cmd.setOnlyIfLeader(true);
-    params = new ModifiableSolrParams(cmd.getParams());
+            targetLeader.getNodeName());
+      }
+      cmd = new CoreAdminRequest.WaitForState();
+      cmd.setCoreName(tempSourceLeader.getStr("core"));
+      cmd.setNodeName(targetLeader.getNodeName());
+      cmd.setCoreNodeName(coreNodeName);
+      cmd.setState(Replica.State.ACTIVE);
+      cmd.setCheckLive(true);
+      cmd.setOnlyIfLeader(true);
+      params = new ModifiableSolrParams(cmd.getParams());
 
-    {
-      final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
-      shardRequestTracker.sendShardRequest(tempSourceLeader, params, shardHandler);
+      {
+        final ShardRequestTracker shardRequestTracker =
+            CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+        shardRequestTracker.sendShardRequest(tempSourceLeader, params, shardHandler);
 
-      shardRequestTracker.processResponses(
-          results,
-          shardHandler,
-          true,
-          "MIGRATE failed to create temp collection"
-              + " replica or timed out waiting for them to come up");
-    }
-    log.info("Successfully created replica of temp source collection on target leader node");
+        shardRequestTracker.processResponses(
+            results,
+            shardHandler,
+            true,
+            "MIGRATE failed to create temp collection"
+                + " replica or timed out waiting for them to come up");
+      }
+      log.info("Successfully created replica of temp source collection on target leader node");
 
-    log.info("Requesting merge of temp source collection replica to target leader");
-    params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString());
-    params.set(CoreAdminParams.CORE, targetLeader.getStr("core"));
-    params.set(CoreAdminParams.SRC_CORE, tempCollectionReplica2);
+      log.info("Requesting merge of temp source collection replica to target leader");
+      params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString());
+      params.set(CoreAdminParams.CORE, targetLeader.getStr("core"));
+      params.set(CoreAdminParams.SRC_CORE, tempCollectionReplica2);
 
-    {
-      final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+      {
+        final ShardRequestTracker shardRequestTracker =
+            CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
 
-      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
-      String msg =
-          "MIGRATE failed to merge "
-              + tempCollectionReplica2
-              + " to "
-              + targetLeader.getStr("core")
-              + " on node: "
-              + targetLeader.getNodeName();
-      shardRequestTracker.processResponses(results, shardHandler, true, msg);
+        shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
+        String msg =
+            "MIGRATE failed to merge "
+                + tempCollectionReplica2
+                + " to "
+                + targetLeader.getStr("core")
+                + " on node: "
+                + targetLeader.getNodeName();
+        shardRequestTracker.processResponses(results, shardHandler, true, msg);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw e;
+    } catch (Exception e) {
+      cleanupFailedMigrate(
+          adminCmdContext,
+          sourceCollection,
+          sourceSlice,
+          sourceRouter.getRouteKeyNoSuffix(splitKey) + "!",
+          targetLeader,
+          e);
+      throw e;
     }
     log.info("Asking target leader to apply buffered updates");
     params = new ModifiableSolrParams();
@@ -504,6 +520,92 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
           tempSourceCollectionName,
           e);
     }
+  }
+
+  /**
+   * Undoes what a failed MIGRATE did before it asked the target leader to apply its buffered
+   * updates: removes the routing rule from the source shard, then drops the target leader's
+   * buffered updates, so that the target leaves the buffering state and a retry can start again.
+   * The source shard still has the documents that were forwarded. Errors are added to the failure
+   * as suppressed exceptions.
+   */
+  private void cleanupFailedMigrate(
+      AdminCmdContext adminCmdContext,
+      DocCollection sourceCollection,
+      Slice sourceSlice,
+      String routeKey,
+      Replica targetLeader,
+      Exception failure) {
+    try {
+      ZkNodeProps m =
+          new ZkNodeProps(
+              Overseer.QUEUE_OPERATION,
+              OverseerAction.REMOVEROUTINGRULE.toLower(),
+              COLLECTION_PROP,
+              sourceCollection.getName(),
+              SHARD_ID_PROP,
+              sourceSlice.getName(),
+              "routeKey",
+              routeKey);
+      log.info("Removing routing rule of failed MIGRATE: {}", m);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater()
+            .doSingleStateUpdate(
+                DistributedClusterStateUpdater.MutatingCommand.SliceRemoveRoutingRule,
+                m,
+                ccc.getSolrCloudManager(),
+                ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(m);
+      }
+      // Updates forwarded until the rule is gone would be indexed by the target once it is no
+      // longer buffering, so wait for the removal before dropping the buffered updates.
+      ccc.getZkStateReader()
+          .waitForState(
+              sourceCollection.getName(),
+              60,
+              TimeUnit.SECONDS,
+              c -> {
+                if (c == null || c.getSlice(sourceSlice.getName()) == null) return true;
+                Map<String, RoutingRule> rules =
+                    c.getSlice(sourceSlice.getName()).getRoutingRules();
+                return rules == null || !rules.containsKey(routeKey);
+              });
+    } catch (Exception e) {
+      addCleanupFailure(failure, e);
+    }
+
+    try {
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Asking target leader node: {} core: {} to drop buffered updates",
+            targetLeader.getNodeName(),
+            targetLeader.getStr("core"));
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(
+          CoreAdminParams.ACTION,
+          CoreAdminParams.CoreAdminAction.REQUESTDROPBUFFEREDUPDATES.toString());
+      params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
+      ShardHandler shardHandler = ccc.newShardHandler();
+      ShardRequestTracker shardRequestTracker =
+          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
+      shardRequestTracker.processResponses(
+          new NamedList<>(),
+          shardHandler,
+          true,
+          "MIGRATE failed to request node to drop buffered updates");
+    } catch (Exception e) {
+      addCleanupFailure(failure, e);
+    }
+  }
+
+  private static void addCleanupFailure(Exception failure, Exception cleanupFailure) {
+    if (cleanupFailure instanceof InterruptedException) {
+      Thread.currentThread().interrupt();
+    }
+    failure.addSuppressed(cleanupFailure);
   }
 
   DocRouter.Range intersect(DocRouter.Range a, DocRouter.Range b) {
