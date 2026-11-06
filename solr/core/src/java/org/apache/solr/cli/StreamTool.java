@@ -499,12 +499,7 @@ public class StreamTool extends ToolBase {
   }
 
   private static ModifiableSolrParams params(String... params) {
-    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-    for (int i = 0; i < params.length; i += 2) {
-      msp.add(params[i], params[i + 1]);
-    }
-    return msp;
+    return ModifiableSolrParams.of(params);
   }
 
   public static class StandardInStream extends TupleStream implements Expressible {

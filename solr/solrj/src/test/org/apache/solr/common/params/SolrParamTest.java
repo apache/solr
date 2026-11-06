@@ -417,4 +417,25 @@ public class SolrParamTest extends SolrTestCase {
     List<String> keys = iterToList(p.getParameterNamesIterator());
     assertEquals(msg + " " + keys.toString(), expectedSize, keys.size());
   }
+
+  public void testOfNamesAndValues() {
+    assertFalse(SolrParams.of(new String[0]).iterator().hasNext());
+
+    SolrParams p = SolrParams.of("a", "1", "b", "2", "a", "3");
+    assertFalse(p instanceof ModifiableSolrParams);
+    assertArrayEquals(new String[] {"1", "3"}, p.getParams("a"));
+    assertEquals("2", p.get("b"));
+
+    // Not modifiable, even through the backing map
+    assertTrue(p instanceof MultiMapSolrParams);
+    Map<String, String[]> map = ((MultiMapSolrParams) p).getMap();
+    expectThrows(UnsupportedOperationException.class, () -> map.put("c", new String[] {"4"}));
+    expectThrows(UnsupportedOperationException.class, () -> map.remove("a"));
+
+    expectThrows(IllegalArgumentException.class, () -> SolrParams.of("a", "1", "b"));
+
+    assertEquals("", SolrParams.of("a", (String) null).get("a"));
+    assertEquals("1", SolrParams.of((String) null, "1").get(""));
+    assertEquals("", SolrParams.of("a", "1", "b", null).get("b"));
+  }
 }

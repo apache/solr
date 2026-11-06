@@ -22,6 +22,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -511,8 +512,19 @@ public abstract class SolrParams
     return EmptySolrParams.INSTANCE;
   }
 
-  /** An immutable SolrParams holding one pair (not null). */
+  /** An immutable SolrParams holding one pair. A null name or value is treated as "". */
   public static SolrParams of(String k, String v) {
-    return new MapSolrParams(Map.of(k, v));
+    return new MapSolrParams(Map.of(k == null ? "" : k, v == null ? "" : v));
+  }
+
+  /**
+   * An immutable SolrParams from alternating names and values. A repeated name yields multiple
+   * values. A null name or value is treated as "".
+   *
+   * @throws IllegalArgumentException if the length is odd
+   */
+  public static SolrParams of(String... namesAndValues) {
+    return new MultiMapSolrParams(
+        Collections.unmodifiableMap(ModifiableSolrParams.of(namesAndValues).getMap()));
   }
 }
