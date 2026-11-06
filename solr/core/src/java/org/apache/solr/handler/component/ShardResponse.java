@@ -78,7 +78,7 @@ public final class ShardResponse {
     this.shard = shard;
   }
 
-  void setException(Throwable exception) {
+  public void setException(Throwable exception) {
     this.exception = exception;
   }
 
@@ -97,7 +97,7 @@ public final class ShardResponse {
     return this.shardAddress;
   }
 
-  void setShardAddress(String addr) {
+  public void setShardAddress(String addr) {
     this.shardAddress = addr;
   }
 }
