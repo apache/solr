@@ -2386,6 +2386,10 @@ public class CoreContainer {
     return authenticationPlugin == null ? null : authenticationPlugin.plugin;
   }
 
+  public SecurityConfHandler getSecurityConfHandler() {
+    return securityConfHandler;
+  }
+
   public AuditLoggerPlugin getAuditLoggerPlugin() {
     return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
   }
