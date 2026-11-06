@@ -112,13 +112,34 @@ class TriageTest(unittest.TestCase):
                 self.assertTrue(result["results"]["needs_changelog"]["included"])
                 self.assertEqual(0, result["mismatches"])
 
+    def test_agreeing_reason_is_hidden_and_high_confidence_is_not_shown(self):
+        result, _, _ = self.run_main([changed_file("changelog/unreleased/fix.yml", "added")])
+        self.assertIn("<!-- Changes search results&#46;", result["comment"])
+        self.assertNotIn("confidence", result["comment"])
+        self.assertNotIn("Changes search results", result["comment"].split("<!--")[0])
+
+    def test_agreeing_row_states_what_the_pr_has(self):
+        self.cfg["judgements"] = [j for j in load_config()["judgements"] if j["id"] == "needs_tests"]
+        test_file = changed_file("solr/core/src/test/org/apache/solr/FooTest.java", "added")
+        for verdict, files, expected in ((True, [test_file], "- ✅ Tests: included"),
+                                         (False, [], "- ✅ Tests: not needed")):
+            with self.subTest(verdict=verdict):
+                answer = {"verdict": verdict, "confidence": "high", "reason": "Because."}
+                result, _, _ = self.run_main(files, json.dumps({"needs_tests": answer}))
+                self.assertIn(expected, result["comment"])
+
+    def test_mismatch_shows_reason_and_non_high_confidence(self):
+        answer = dict(self.answers["needs_changelog"], confidence="medium")
+        result, _, _ = self.run_main([], json.dumps({"needs_changelog": answer}))
+        self.assertIn("(confidence: medium): Changes search results", result["comment"])
+
     def test_missing_answer_is_unknown(self):
         result, _, _ = self.run_main([], '{"unrelated": {}}')
         row = result["results"]["needs_changelog"]
         self.assertIsNone(row["warranted"])
         self.assertIsNone(row["mismatch"])
-        self.assertIn("unknown", result["comment"])
-        self.assertIn("human review", result["comment"])
+        self.assertIn("❔", result["comment"])
+        self.assertIn("please assess", result["comment"])
 
     def test_invalid_answer_fields_are_unknown(self):
         for patch in ({"verdict": "maybe"}, {"verdict": 0}, {"confidence": "certain"},
@@ -218,11 +239,11 @@ class TriageTest(unittest.TestCase):
         self.assertIn("❔", result["comment"])
         self.assertIn("probably not needed", result["comment"])
 
-    def test_non_main_notice_precedes_model_table(self):
+    def test_non_main_notice_precedes_judgements(self):
         self.pr["base"]["ref"] = "branch_9x"
         result, _, _ = self.run_main([])
         self.assertIn("Prefer PRs against `main`", result["comment"])
-        self.assertLess(result["comment"].index("Prefer PRs"), result["comment"].index("Warranted?"))
+        self.assertLess(result["comment"].index("Prefer PRs"), result["comment"].index("- "))
 
     def test_main_does_not_warn(self):
         result, _, _ = self.run_main([])
@@ -290,7 +311,7 @@ class TriageTest(unittest.TestCase):
         result, model, _ = self.run_main([])
         self.assertNotIn("needs_jira", str(model.call_args[0][0]))
         self.assertEqual(0, result["unanswered"])
-        self.assertIn("Already present; not judged.", result["comment"])
+        self.assertIn(": already present", result["comment"])
         self.pr["title"] = "fix"
         result, model, _ = self.run_main([])
         self.assertIn("needs_jira", str(model.call_args[0][0]))
@@ -322,7 +343,7 @@ class TriageTest(unittest.TestCase):
         self.assertTrue(row["mismatch"])
         self.assertEqual(1, result["mismatches"])
         self.assertIn("differs from the entry", result["comment"])
-        self.assertIn("| added | fixed |", result["comment"])
+        self.assertIn("(suggest type: added; PR has type: fixed): ", result["comment"])
         prompt = str(model.call_args[0][0])
         self.assertIn("exactly one of: added, changed, fixed", prompt)
         self.assertNotIn("type: fixed", prompt)
@@ -330,18 +351,21 @@ class TriageTest(unittest.TestCase):
     def test_changelog_type_agreeing_with_entry(self):
         result, _ = self.changelog_type("fixed", "fixed")
         self.assertFalse(result["results"]["needs_changelog"]["mismatch"])
+        self.assertIn("): type: fixed <!--", result["comment"])
         self.assertEqual(0, result["mismatches"])
 
     def test_changelog_type_without_entry_is_missing(self):
         result, _ = self.changelog_type("changed")
         self.assertTrue(result["results"]["needs_changelog"]["mismatch"])
-        self.assertIn("| changed | no entry |", result["comment"])
+        self.assertIn("(suggest type: changed): ", result["comment"])
         self.assertIn("missing", result["comment"])
 
     def test_changelog_not_worthy(self):
         result, _ = self.changelog_type("(not-worthy)")
         self.assertFalse(result["results"]["needs_changelog"]["mismatch"])
         self.assertEqual(0, result["mismatches"])
+        self.assertIn("): not needed", result["comment"])
+        self.assertNotIn("(not-worthy)", result["comment"])
         result, _ = self.changelog_type("(not-worthy)", "other")
         self.assertTrue(result["results"]["needs_changelog"]["mismatch"])
         self.assertIn("probably not needed", result["comment"])
@@ -379,7 +403,7 @@ class TriageTest(unittest.TestCase):
 
     def test_exact_revision_is_reported(self):
         result, _, _ = self.run_main([])
-        self.assertIn("Assessed commit `" + "a" * 40 + "`", result["comment"])
+        self.assertIn("<!-- Assessed commit " + "a" * 40 + " -->", result["comment"])
 
     def test_configured_jira_evidence(self):
         cfg = load_config()
