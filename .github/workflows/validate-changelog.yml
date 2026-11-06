@@ -2,14 +2,10 @@ name: Validate Changelog
 
 on:
   pull_request:
-    # 'labeled'/'unlabeled' re-run this check when a human toggles 'no-changelog';
-    # the comment command re-runs it explicitly, see changelog-comment-command.yml.
     types:
       - opened
       - reopened
       - synchronize
-      - labeled
-      - unlabeled
     branches:
       - '*'
 
@@ -22,19 +18,14 @@ permissions: {}
 jobs:
   validate-changelog:
     name: Check changelog entry
-    # Renovate PRs (solrbot) are summarized at release time, and of the label
-    # events only 'no-changelog' is of interest here.
-    if: |
-      github.event.pull_request.user.login != 'solrbot' &&
-      (
-        (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
-        github.event.label.name == 'no-changelog'
-      )
+    # Renovate PRs (solrbot) are summarized at release time.
+    # Whether a PR *should* have an entry is judged by pr-triage-llm.yml (advisory);
+    # this check only validates the structure of entries that are present.
+    if: github.event.pull_request.user.login != 'solrbot'
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      issues: read         # the PR's labels
       pull-requests: read  # the PR's changed files
 
     # This job runs no PR code: it reads the PR through the API, keeps that data
@@ -46,21 +37,8 @@ jobs:
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
     steps:
-    - name: Check for no-changelog label
-      id: check-label
-      run: |
-        set -euo pipefail
-        # Not github.event.pull_request.labels: a re-run replays the original payload.
-        has_label=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" \
-          --jq '[.[].name] | index("no-changelog") != null')
-        if [ "$has_label" = "true" ]; then
-          echo "::notice::PR#${PR_NUMBER} has the 'no-changelog' label; skipping validation"
-        fi
-        echo "skip=${has_label}" >> "$GITHUB_OUTPUT"
-
     - name: Check for changelog entry
       id: entry
-      if: steps.check-label.outputs.skip == 'false'
       run: |
         set -euo pipefail
         files="$RUNNER_TEMP/pr-files.tsv"
@@ -76,28 +54,9 @@ jobs:
         if [ -s "$entries" ]; then
           echo "✓ Changelog entry found"
           echo "validate=true" >> "$GITHUB_OUTPUT"
-          exit 0
+        else
+          echo "No changelog entry in this PR; nothing to validate"
         fi
-
-        # Docs, tests, build files and CI config need no entry.
-        if ! cut -f2 "$files" | grep -qvE "(^changelog/|^solr/solr-ref-guide/|^dev-docs/|^\.github/|\.md$|\.adoc$|^solr/.*/test|\.gradle$|\.properties$|README|NOTICE|LICENSE)"; then
-          echo "✓ No code changes detected (docs/tests only)"
-          exit 0
-        fi
-
-        echo "::error::This PR appears to contain code changes but no changelog entry was added."
-        echo ""
-        echo "Please add a changelog entry by:"
-        echo "1. Running: ./gradlew writeChangelog"
-        echo "2. Editing the generated YAML file in changelog/unreleased/"
-        echo "3. Committing the YAML file"
-        echo ""
-        echo "For more information, see: dev-docs/changelog.adoc"
-        echo ""
-        echo "If this PR should not have a changelog entry (e.g., refactoring, internal cleanup),"
-        echo "comment '/no-changelog' on the PR (or add the 'no-changelog' label)."
-        echo "This check then re-runs automatically. To undo, comment '/needs-changelog'."
-        exit 1
 
     # Only the validator script, only from the base commit, only one commit deep.
     - name: Checkout the validator

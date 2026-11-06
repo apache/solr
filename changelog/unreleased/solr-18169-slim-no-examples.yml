@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: "Slim distributions no longer include examples"
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18169
+    url: https://issues.apache.org/jira/browse/SOLR-18169

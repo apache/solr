@@ -23,24 +23,24 @@ setup() {
 
 @test "solr help flag prints help" {
   run -1 solr --help
-  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  assert_output_for_cli 'Usage: solr COMMAND OPTIONS' 'usage: bin/solr'
   refute_output --partial 'ERROR'
 }
 @test "solr with no flags prints help" {
   run -1 solr
-  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  assert_output_for_cli 'Usage: solr COMMAND OPTIONS' 'usage: bin/solr'
   refute_output --partial 'ERROR'
 }
 
 @test "start help flag prints help" {
   run solr start --help
-  assert_output --partial 'Usage: solr start'
+  assert_output_for_cli 'Usage: solr start' 'usage: bin/solr start'
   refute_output --partial 'ERROR'
 }
 
 @test "start h flag prints help" {
   run solr start -h
-  assert_output --partial 'Usage: solr start'
+  assert_output_for_cli 'Usage: solr start' 'usage: bin/solr start'
   refute_output --partial 'ERROR: Hostname is required when using the -h option!'
 }
 
@@ -48,13 +48,14 @@ setup() {
 
 @test "stop help flag prints help" {
   run solr stop --help
-  assert_output --partial 'Usage: solr stop'
+  assert_output_for_cli 'Usage: solr stop' 'usage: bin/solr stop'
   refute_output --partial 'ERROR'
 }
 
 @test "restart help flag prints help" {
+  [ -z "${SOLR_PICOCLI:-}" ] || skip "restart is not migrated to picocli yet"
   run solr restart --help
-  assert_output --partial 'Usage: solr restart'
+  assert_output_for_cli 'Usage: solr restart' 'usage: bin/solr restart'
   refute_output --partial 'ERROR'
 }
 
@@ -85,13 +86,13 @@ setup() {
 @test "zk help flag prints help" {
   run solr zk --help
   assert_output --partial 'usage:'
-  assert_output --partial 'bin/solr zk ls'
+  assert_output_for_cli 'bin/solr zk ls' 'usage: bin/solr zk'
   refute_output --partial 'ERROR'
 }
 
 @test "auth help flag prints help" {
   run solr auth --help
-  assert_output --partial 'bin/solr auth enable'
+  assert_output_for_cli 'bin/solr auth enable' 'usage: bin/solr auth'
   refute_output --partial 'ERROR'
 }
 
