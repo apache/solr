@@ -1,0 +1,26 @@
+name: PR Triage Tests
+
+on:
+  pull_request:
+    paths:
+      - '.github/pr-triage/**'
+      - '.github/workflows/pr-triage-*.yml'
+      - 'dev-tools/scripts/pr-triage-llm.py'
+      - 'dev-tools/scripts/tests/test_pr_triage.py'
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      # Untrusted PR code runs only here, with no secrets or write permissions.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test triage without GitHub or model credentials
+        run: |
+python3 -m unittest discover -s dev-tools/scripts/tests -p test_pr_triage.py -v
