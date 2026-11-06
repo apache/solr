@@ -67,6 +67,10 @@ public class CollectionMutator {
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
+      if (shardState == null) {
+        // A brand-new slice has no replicas yet; keep it out of query routing until they are added
+        shardState = Slice.State.CONSTRUCTION.toString();
+      }
       String shardParent = message.getStr(ZkStateReader.SHARD_PARENT_PROP);
       String shardParentZkSession = message.getStr("shard_parent_zk_session");
       String shardParentNode = message.getStr("shard_parent_node");
