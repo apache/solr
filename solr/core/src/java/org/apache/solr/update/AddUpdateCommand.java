@@ -100,7 +100,7 @@ public class AddUpdateCommand extends UpdateCommand {
     }
     final boolean forInPlaceUpdate = true;
     final boolean ignoreNestedDocs = false; // throw an exception if found
-    return DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
+    return toLuceneDocument(solrDoc, forInPlaceUpdate, ignoreNestedDocs);
   }
 
   /**
@@ -209,8 +209,7 @@ public class AddUpdateCommand extends UpdateCommand {
       // note if the doc is nested despite this, we'll throw an exception elsewhere
       final boolean forInPlaceUpdate = false;
       final boolean ignoreNestedDocs = false; // throw an exception if found
-      Document doc =
-          DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
+      Document doc = toLuceneDocument(solrDoc, forInPlaceUpdate, ignoreNestedDocs);
       return Set.of(doc);
     }
 
@@ -229,8 +228,23 @@ public class AddUpdateCommand extends UpdateCommand {
       // instead.
     }
 
-    return () ->
-        all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
+    return () -> all.stream().map(sdoc -> toLuceneDocument(sdoc, false, true)).iterator();
+  }
+
+  /** Builds the Lucene document; a bad document error also names the core it was sent to. */
+  private Document toLuceneDocument(
+      SolrInputDocument doc, boolean forInPlaceUpdate, boolean ignoreNestedDocs) {
+    try {
+      return DocumentBuilder.toDocument(doc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
+    } catch (SolrException e) {
+      if (e.code() == SolrException.ErrorCode.BAD_REQUEST.code && req.getCore() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "core " + req.getCore().getName() + ": " + e.getMessage(),
+            e);
+      }
+      throw e;
+    }
   }
 
   private void addRootField(SolrInputDocument sdoc, String rootId) {
