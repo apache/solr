@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
 import org.apache.lucene.document.FieldType;
@@ -80,6 +81,8 @@ public class DenseVectorField extends FloatPointField {
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
   static final String HNSW_M = "hnswM";
   static final String HNSW_EF_CONSTRUCTION = "hnswEfConstruction";
+  private static final Pattern LUCENE_MAX_CONN = Pattern.compile("\\bmaxConn\\b");
+  private static final Pattern LUCENE_BEAM_WIDTH = Pattern.compile("\\bbeamWidth\\b");
   static final String VECTOR_ENCODING = "vectorEncoding";
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
@@ -100,19 +103,19 @@ public class DenseVectorField extends FloatPointField {
 
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
-  private String knnAlgorithm;
+  private String knnAlgorithm = DEFAULT_KNN_ALGORITHM;
 
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
-  private int hnswM;
+  private int hnswM = DEFAULT_MAX_CONN;
 
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.
    */
-  private int hnswEfConstruction;
+  private int hnswEfConstruction = DEFAULT_BEAM_WIDTH;
 
   /**
    * Encoding for vector value representation. The possible values are FLOAT32 or BYTE. The default
@@ -341,6 +344,30 @@ public class DenseVectorField extends FloatPointField {
         }
         break;
     }
+
+    try {
+      // format does not expose any validation, however by constructing
+      // we will run lucene level argument validation
+      buildKnnVectorsFormat();
+    } catch (IllegalArgumentException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          getClass().getSimpleName()
+              + " "
+              + toSolrParamNames(e.getMessage())
+              + ": "
+              + field.getName(),
+          e);
+    }
+  }
+
+  /** Replaces Lucene's HNSW argument names with the corresponding Solr parameter names. */
+  private static String toSolrParamNames(String luceneMessage) {
+    if (luceneMessage == null) {
+      return null;
+    }
+    String message = LUCENE_MAX_CONN.matcher(luceneMessage).replaceAll(HNSW_M);
+    return LUCENE_BEAM_WIDTH.matcher(message).replaceAll(HNSW_EF_CONSTRUCTION);
   }
 
   @Override

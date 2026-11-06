@@ -62,7 +62,7 @@ Across a large corpora, these "multi-vector" representations of the original sem
 Apache Solr supports multiple relative field types designed to support dense vector search with navigable small world graphs:
 
 === DenseVectorField
-The dense vector field gives the possibility of indexing and searching dense vectors of float elements.
+The dense vector field gives the possibility of indexing and searching dense vectors of float or byte elements.
 
 For example:
 
@@ -85,6 +85,7 @@ The dimension of the dense vector to pass in.
 +
 Accepted values:
 Any positive integer.
+Values above 1024 log a warning; `LuceneDefaultCodecFactory` and `SimpleTextCodecFactory` (see xref:configuration-guide:codec-factory.adoc[Codec Factory]) reject them when documents are indexed.
 
 [[similarityFunction-caveats]]`similarityFunction`::
 +
@@ -100,12 +101,14 @@ Accepted values:
 * `euclidean`: https://en.wikipedia.org/wiki/Euclidean_distance[Euclidean distance]
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 * `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]
+* `maximum_inner_product`: dot product without the unit length requirement; use it when the vector magnitude carries information.
 
 [NOTE]
 ====
-* the preferred way to perform `cosine` similarity is to normalize all vectors to unit length, and instead use `doc_product`. You should only specify `cosine` if you need to preserve the original vectors and cannot normalize them in advance.
+* the preferred way to perform `cosine` similarity is to normalize all vectors to unit length, and instead use `dot_product`. You should only specify `cosine` if you need to preserve the original vectors and cannot normalize them in advance.
 * `dot_product` is intended as an optimized way to perform `cosine` similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results.
 * the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
+* the `maximum_inner_product` scores are scaled to be positive: `1 / (1 - dot_product)` when the dot product is negative, `dot_product + 1` otherwise.
 ====
 
 To use the following advanced parameters that customise the codec format
@@ -158,7 +161,7 @@ Controls how many of the nearest neighbor candidates are connected to the new no
 For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `M` is defined.
 +
 Accepted values:
-Any integer.
+An integer between `1` and `512`.
 
 `hnswEfConstruction`::
 +
@@ -174,9 +177,11 @@ It is the number of nearest neighbor candidates to track while searching the gra
 For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `efConstruction` is defined.
 +
 Accepted values:
-Any integer.
+An integer between `1` and `3200`.
 
 `DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
+
+A `DenseVectorField` can be the source of a `copyField` only if the destination is also a dense vector field with the same `vectorDimension`; otherwise indexing fails. `copyField` rules with `source="*"` skip vector fields.
 
 Here's how a `DenseVectorField` should be indexed when single valued:
 
@@ -310,6 +315,8 @@ As a specific type of DenseVectorField, this field type supports `knnAlgorithm` 
 
 NOTE: Scalar quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized, and with `knnAlgorithm="flat"` they do not support the KNN query parsers. Use `vectorSimilarity()` function queries instead.
 
+NOTE: With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory` (see xref:configuration-guide:codec-factory.adoc[Codec Factory]), this field type is accepted but its vectors are stored unquantized, without any warning.
+
 Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
 
 [source,xml]
@@ -325,7 +332,13 @@ s|Optional |Default: `7`
 +
 The number of bits to use for each quantized dimension value
 +
-Accepted values: 4 (half byte) or 7 (unsigned byte).
+Accepted values:
++
+* `1`: one bit per dimension. It is the same encoding used by `BinaryQuantizedDenseVectorField`.
+* `2`: two bits per dimension.
+* `4`: half a byte per dimension.
+* `7`: seven bits per dimension (signed byte).
+* `8`: one unsigned byte per dimension.
 
 `NOTE:` Existing Solr 10 schemas may still contain legacy scalar-quantization parameters such as
 `confidenceInterval`, `dynamicConfidenceInterval`, or `compress`. They are now deprecated and ignored.
@@ -348,14 +361,16 @@ This vector type is best utilized for data sets consisting of large amounts of h
 Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
 
 [source,xml]
-<fieldType name="binary_quantized_vector" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4"/>
+<fieldType name="binary_quantized_vector" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
 <field name="vector" type="binary_quantized_vector" indexed="true" stored="true"/>
 
-BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField` with the only notable exception being
-`similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
-param.
+BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField`.
 
 NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorField`.
+
+NOTE: Binary quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized.
+
+NOTE: With `LuceneDefaultCodecFactory` or `SimpleTextCodecFactory` (see xref:configuration-guide:codec-factory.adoc[Codec Factory]), this field type is accepted but its vectors are stored unquantized, without any warning.
 
 [[query-hnsw-fields]]
 == Querying Vectors in Navigable Small-world Graphs
