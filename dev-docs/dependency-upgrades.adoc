@@ -80,6 +80,15 @@ the schedule, the milestone and the lockfile/license commands. Grouping rules de
 Please note that Solr version prior to 10.X use a versions resolution plugin that uses `versions.lock` instead of
 `libs.version.toml`. Therefore, changes cannot be backported via cherry-pick.
 
+=== Changelog entries
+
+Renovate PRs do not need a changelog entry, and the `validate-changelog` workflow exempts `solrbot` accordingly.
+One entry per bump would be noisy and incomplete: the same dependency is often bumped several times per release, a
+grouped PR covers many libraries at once, and test-only upgrades are not user facing. Instead, the Release Manager
+generates a handful of `dependency_update` entries at release time with `dev-tools/scripts/dependencyChanges.py`,
+which diffs `solr/licenses/` and therefore reports exactly the dependencies Solr ships. See
+`dev-docs/changelog.adoc` for details.
+
 === Configuring renovate.json
 
 While the bot runs on a https://github.com/solrbot/renovate-github-action[GitHub repo external to the project],
