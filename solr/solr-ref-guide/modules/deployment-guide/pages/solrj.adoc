@@ -228,7 +228,7 @@ It is also suggested that Solr administrators commit documents using Solr's auto
 
 == Java Object Binding
 While the `UpdateResponse` and `QueryResponse` interfaces that SolrJ provides are useful, it is often more convenient to work with domain-specific objects that can more easily be understood by your application.
-Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/org/apache/solr/client/solrj//beans/Field.html[`Field`] annotations.
+Thankfully, SolrJ supports this by implicitly converting documents to and from any class that has been specially marked with {solr-javadocs}/org/apache/solr/client/solrj/beans/Field.html[`Field`] annotations.
 
 Each instance variable in a Java object can be mapped to a corresponding Solr field, using the `Field` annotation.
 The Solr field shares the name of the annotated variable by default, however, this can be overridden by providing the annotation with an explicit field name.
