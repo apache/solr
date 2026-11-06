@@ -48,7 +48,7 @@ public class SnapshotToolsPicocliTest extends SnapshotToolsTest {
             return CommandLine.defaultFactory().create(cls);
           }
         };
-    return new CommandLine(new SolrCLI(), factory);
+    return SolrCLI.rootCommandLine(factory);
   }
 
   /** Runs a commons-cli style {@code snapshot-<x> ...} command line as {@code snapshot <x> ...}. */

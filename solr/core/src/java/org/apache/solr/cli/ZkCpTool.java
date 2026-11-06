@@ -74,7 +74,9 @@ public class ZkCpTool extends ToolBase {
           .desc("Required to look up configuration for compressing state.json.")
           .get();
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -264,7 +266,12 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    doCp(zkOpts.resolveZkHost(), src, dst, recursiveOpt.recursive, solrHome);
+    doCp(
+        connectionOptions.resolveZkHost(credentialsOptions.credentials),
+        src,
+        dst,
+        recursiveOpt.recursive,
+        solrHome);
     return 0;
   }
 }

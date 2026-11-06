@@ -43,4 +43,14 @@ public class ExportToolPicocliTest extends ExportToolTest {
     // picocli reads --limit as a number, so it rejects "abc" before the tool runs: usage error 2
     assertEquals(2, exportTo(createTempDir(), "--limit", "abc"));
   }
+
+  @Test
+  public void testMissingConnectionIsAUsageError() throws Exception {
+    System.clearProperty("solr.connection");
+    System.clearProperty("zkHost");
+    System.clearProperty("solr.url");
+    ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
+    assertEquals(
+        2, new CommandLine(new ExportTool(runtime)).execute("-c", "coll", "-o", "out.json"));
+  }
 }

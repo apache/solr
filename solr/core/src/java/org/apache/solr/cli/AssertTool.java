@@ -63,7 +63,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option IS_NOT_ROOT_OPTION =
       Option.builder().desc("Asserts that we are NOT the root user.").longOpt("not-root").get();
 
@@ -71,7 +71,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option IS_ROOT_OPTION =
       Option.builder().desc("Asserts that we are the root user.").longOpt("root").get();
 
@@ -79,7 +79,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final OptionGroup ROOT_OPTION =
       new OptionGroup().addOption(IS_NOT_ROOT_OPTION).addOption(IS_ROOT_OPTION);
 
@@ -87,7 +87,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option IS_NOT_RUNNING_ON_OPTION =
       Option.builder()
           .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
@@ -100,7 +100,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option IS_RUNNING_ON_OPTION =
       Option.builder()
           .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
@@ -113,7 +113,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final OptionGroup RUNNING_OPTION =
       new OptionGroup().addOption(IS_NOT_RUNNING_ON_OPTION).addOption(IS_RUNNING_ON_OPTION);
 
@@ -121,7 +121,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option SAME_USER_OPTION =
       Option.builder()
           .desc("Asserts that we run as same user that owns <directory>.")
@@ -134,7 +134,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option DIRECTORY_EXISTS_OPTION =
       Option.builder()
           .desc("Asserts that directory <directory> exists.")
@@ -147,7 +147,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option DIRECTORY_NOT_EXISTS_OPTION =
       Option.builder()
           .desc("Asserts that directory <directory> does NOT exist.")
@@ -160,7 +160,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final OptionGroup DIRECTORY_OPTION =
       new OptionGroup().addOption(DIRECTORY_EXISTS_OPTION).addOption(DIRECTORY_NOT_EXISTS_OPTION);
 
@@ -168,7 +168,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option IS_CLOUD_OPTION =
       Option.builder()
           .desc(
@@ -182,7 +182,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option IS_NOT_CLOUD_OPTION =
       Option.builder()
           .desc(
@@ -196,7 +196,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final OptionGroup CLOUD_OPTION =
       new OptionGroup().addOption(IS_CLOUD_OPTION).addOption(IS_NOT_CLOUD_OPTION);
 
@@ -204,7 +204,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option MESSAGE_OPTION =
       Option.builder()
           .desc("Exception message to be used in place of the default error message.")
@@ -217,7 +217,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option TIMEOUT_OPTION =
       Option.builder()
           .desc("Timeout in ms for commands supporting a timeout.")
@@ -231,7 +231,7 @@ public class AssertTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option EXIT_CODE_OPTION =
       Option.builder()
           .desc("Return an exit code instead of printing error message on assert fail.")
