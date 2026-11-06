@@ -25,7 +25,7 @@ Reference exploration: `SOLR-8442` at `7957aa68e34`.
 Teach a new user to configure self-signed HTTPS on two SolrCloud nodes using
 the existing Solr distribution, including verification of encrypted inter-node
 communication. Provide `bin/solr start -e secure` as a shortcut through the same
-steps. Preserve Solr's Java implementation and existing command semantics.
+steps. Preserve Solr's runtime implementation and existing command semantics.
 
 ## Review of the exploration
 
@@ -54,11 +54,11 @@ installation, the default SolrCloud mode, loopback binding, and embedded
 ZooKeeper hosted by the first node. Both nodes participate throughout the
 walkthrough. Explain each configuration file, command, and expected result.
 
-1. Start the first node with `bin/solr start` on port `8983`. Prepare a separate
-   Solr home and start the second node on port `8984`, explicitly connecting it
-   to the first node's embedded ZooKeeper on port `9983`. Configure the `/solr`
-   namespace in `solr.xml` before joining the second node; restart the first
-   node with chroot creation enabled. Verify that both nodes
+1. Prepare homes at `example/secure/node1/solr` and `example/secure/node2/solr`.
+   Start the first node with `bin/solr start --solr-home` on port `8983`.
+   Start the second node on port `8984`, connecting it to the first node's
+   embedded ZooKeeper with `-z localhost:9983`. Use the root namespace without
+   editing `solr.xml`. Verify that both nodes
    have joined the same cluster over HTTP. Explain their homes and ports, and
    stop both nodes when configuration requires a restart.
 2. Create a private working directory, a self-signed certificate covering
@@ -73,7 +73,7 @@ walkthrough. Explain each configuration file, command, and expected result.
    accepts plaintext HTTP. Keep hostname and certificate verification enabled
    for inter-node clients as well as curl.
 5. Enable Basic Authentication with the existing `auth` command, then show the
-   authentication and authorization API calls that establish `solr`, `index`,
+   authentication and authorization API calls that establish `admin`, `index`,
    and `search` accounts. The administrator manages security and collections;
    `index` indexes and searches; `search` searches. Document any deliberate
    differences from the built-in authentication template.
@@ -107,19 +107,19 @@ Use existing reference-guide links and command block conventions.
 
 ## Shortcut
 
-Add a packaged Bash script under `solr/example/secure/` and a small dispatch
-change in `solr/bin/solr` for `start -e secure`. Keep the steps readable and in
-the same order as the tutorial, using existing commands and APIs. Avoid Java
-changes, new general CLI flags, dependencies, and installation-wide include
-file edits.
+Implement `RunExampleTool.runSecureExample` through the normal example dispatch
+for `start -e secure`, following the user's revised implementation request.
+Run the tutorial's commands directly with the existing command executor.
+Do not ship a setup shell script or add general security tooling, dependencies,
+or installation-wide include file edits.
 
-The script starts two nodes with isolated homes under `example/secure`, supplies
+The example starts two nodes with isolated homes under `example/secure`, supplies
 the same local demonstration credentials, prints configuration paths and
 commands for verifying both HTTPS endpoints and distributed HTTPS shard
 requests, and supports noninteractive execution for integration tests. It
 validates prerequisites and refuses to silently overwrite unrelated or partial
 configuration. Restarting reuses certificates, credentials, and indexed data.
-Keep launcher options limited to those the script actually supports, with
+Keep launcher options limited to those the example actually supports, with
 clear errors for unsupported combinations.
 
 ## Verification
@@ -157,6 +157,6 @@ Report any check that cannot run with its actual error.
   them.
 - Use a new branch from main and a separate temporary worktree so the
   exploratory branch remains available and unchanged.
-- Use the existing `/solr` ZooKeeper namespace configuration: runtime validation
-  showed it is necessary for the existing ACL provider to distinguish sensitive
-  paths without changing Java code.
+- Use ZooKeeper's root namespace as requested. Explicitly apply administrator-only
+  ACLs to `/security.json`, since the current ACL provider does not automatically
+  distinguish sensitive paths without a chroot. Do not change runtime code.

@@ -31,13 +31,20 @@ teardown() {
 }
 
 @test "secure example starts two HTTPS nodes with authentication and ZooKeeper ACLs" {
-  run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
+  run env SOLR_ULIMIT_CHECKS=true solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
   assert_success
   assert_output --partial 'Two-node secure example is ready'
+  refute_output --partial 'set SOLR_ULIMIT_CHECKS to false'
   assert_output --partial 'shards.info=true'
 
   run cat "$SOLR_INCLUDE"
   assert_output ''
+
+  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user admin:SolrRocks "https://localhost:$SOLR_PORT/api/cluster/security/authentication"
+  assert_success
+  assert_output --partial '"admin"'
+  refute_output --partial '"solr"'
 
   for port in "$SOLR_PORT" "$SOLR2_PORT"; do
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
@@ -48,14 +55,30 @@ teardown() {
     assert_output --partial "https://127.0.0.1:$SOLR2_PORT/"
     refute_output --partial 'http://'
 
-    run curl --noproxy '*' --silent --show-error --fail --max-time 5 "https://localhost:$port/api/node/system"
+    run curl --noproxy '*' --silent --show-error --fail --max-time 5 "https://localhost:$port/api/node/health"
     assert_failure
     assert_output --partial 'certificate'
 
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      "https://localhost:$port/api/node/system"
+      "https://localhost:$port/api/node/health"
     assert_failure
     assert_output --partial '401'
+
+    run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+      --user solr:SolrRocks "https://localhost:$port/api/node/health"
+    assert_failure
+    assert_output --partial '401'
+
+    run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+      --user admin:SolrRocks "https://localhost:$port/solr/techproducts/select?q=*:*"
+    assert_failure
+    assert_output --partial '403'
+
+    run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+      --user admin:SolrRocks -H 'Content-Type: application/json' --data-binary '[{"id":"forbidden-admin"}]' \
+      "https://localhost:$port/solr/techproducts/update"
+    assert_failure
+    assert_output --partial '403'
 
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
       --user search:SolrRocks -H 'Content-Type: application/json' --data-binary '[{"id":"forbidden"}]' \
@@ -63,29 +86,29 @@ teardown() {
     assert_failure
     assert_output --partial '403'
 
-    run curl --noproxy '*' --silent --show-error --fail --max-time 5 "http://localhost:$port/api/node/system"
+    run curl --noproxy '*' --silent --show-error --fail --max-time 5 "http://localhost:$port/api/node/health"
     assert_failure
   done
 
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT/solr"
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT"
   assert_success
   assert_output --partial 'collections'
 
-  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:$ZK_PORT/solr"
+  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:$ZK_PORT"
   assert_failure
   assert_output --partial 'NoAuth'
 
   local readonly_opts='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=SolrRocks'
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk ls /collections --zk-host "localhost:$ZK_PORT/solr"
+    solr zk ls /collections --zk-host "localhost:$ZK_PORT"
   assert_success
   assert_output --partial 'techproducts'
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" --zk-host "localhost:$ZK_PORT/solr"
+    solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" --zk-host "localhost:$ZK_PORT"
   assert_failure
   assert_output --partial 'NoAuth'
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT/solr"
+    solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT"
   assert_failure
   assert_output --partial 'NoAuth'
 
@@ -114,11 +137,11 @@ teardown() {
     SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=SolrRocks SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12 \
     SOLR_TOOL_OPTS="-Djavax.net.ssl.trustStore=$SOLR_HOME/tls/solr-ssl.truststore.p12" \
     SOLR_LOGS_DIR="$SOLR_HOME/node2/logs" \
-    solr start --solr-home "$SOLR_HOME/node2/solr" -p "$SOLR2_PORT" -z "localhost:$ZK_PORT/solr"
+    solr start --solr-home "$SOLR_HOME/node2/solr" -p "$SOLR2_PORT" -z "localhost:$ZK_PORT"
   assert_success
   for port in "$SOLR_PORT" "$SOLR2_PORT"; do
     run wait_for 60 1 curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user solr:SolrRocks "https://localhost:$port/api/node/system"
+      --user admin:SolrRocks "https://localhost:$port/api/node/health"
     assert_success
   done
   run wait_for 60 1 curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
@@ -133,7 +156,7 @@ teardown() {
   run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr stop -p "$SOLR2_PORT"
   assert_success
   run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" SOLR_LOGS_DIR="$SOLR_HOME/node2/logs" \
-    solr start --solr-home "$SOLR_HOME/node2/solr" -p "$SOLR2_PORT" -z "localhost:$ZK_PORT/solr"
+    solr start --solr-home "$SOLR_HOME/node2/solr" -p "$SOLR2_PORT" -z "localhost:$ZK_PORT"
   assert_success
   run wait_for 60 1 curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
     --user search:SolrRocks "https://localhost:$SOLR2_PORT/solr/techproducts/select?q=*:*&rows=0&shards.info=true&shards.tolerant=false"
@@ -146,10 +169,10 @@ teardown() {
 @test "secure example rejects unsupported options and incomplete homes" {
   run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" --host other-host
   assert_failure
-  assert_output --partial 'Unsupported secure example option'
-  run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" --data-home "$BATS_TEST_TMPDIR"
+  assert_output --partial 'host'
+  run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" --user-managed
   assert_failure
-  assert_output --partial 'Unsupported secure example option'
+  assert_output --partial 'requires its own embedded ZooKeeper'
   mkdir -p "$SOLR_HOME/node1"
   touch "$SOLR_HOME/node1/unrelated-file"
   run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"

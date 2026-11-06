@@ -632,6 +632,15 @@ fi
 
 # Everything below here is to support start, stop and restart.
 
+if [[ "$SCRIPT_CMD" == "start" ]]; then
+  for example_arg in "$@"; do
+    if [[ "$example_arg" == "-e" || "$example_arg" == "--example" ]]; then
+      export SOLR_ULIMIT_CHECKS=false
+      break
+    fi
+  done
+fi
+
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
 
 : "${SOLR_RECOMMENDED_MAX_PROCESSES:=65000}"
@@ -685,7 +694,6 @@ PASS_TO_RUN_EXAMPLE=()
 SOLR_MODE="solrcloud"
 CLOUD_FLAG_SET=false
 USER_MANAGED_FLAG_SET=false
-START_ARGS=("$@")
 
 if [ $# -gt 0 ]; then
   while true; do
@@ -912,10 +920,6 @@ fi
 # otherwise let this script proceed to process the user request
 #
 if [ -n "${EXAMPLE:-}" ] && [ "$SCRIPT_CMD" == "start" ]; then
-  if [ "$EXAMPLE" == "secure" ]; then
-    bash "$SOLR_TIP/example/secure/start.sh" "$SOLR_TIP" "$SOLR_SERVER_DIR" "${START_ARGS[@]}"
-    exit $?
-  fi
   run_tool run_example -e "$EXAMPLE" --server-dir "$SOLR_SERVER_DIR" --url-scheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
   exit $?
 fi

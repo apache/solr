@@ -33,7 +33,6 @@ task assemblePackaging(type: Sync) {
     include "exampledocs/**"
     include "files/**"
     include "films/**"
-    include "secure/**"
     include "README.md"
   })
 
