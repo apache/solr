@@ -51,6 +51,16 @@ teardown() {
   assert_output --partial "{"
 }
 
+@test "assert admin console static assets are revalidated and versioned" {
+  run solr start
+
+  run curl -s -I http://localhost:${SOLR_PORT}/solr/libs/solr/index.js
+  assert_output --partial "Cache-Control: no-cache"
+
+  run curl -s http://localhost:${SOLR_PORT}/solr/
+  refute_output --regexp '(src|href)="[^"]+\.(js|css)"'
+}
+
 @test "assert CSP header contains custom connect src URLs" {
   # Set custom CSP connect-src URLs via system property
   local csp_urls="http://example1.com/token,https://example2.com/path/uri1,http://example3.com/oauth2/uri2"
