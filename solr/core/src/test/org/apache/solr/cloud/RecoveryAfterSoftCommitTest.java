@@ -101,9 +101,8 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     // add more than ULOG_NUM_RECORDS_TO_KEEP docs so that peer sync cannot be used for recovery
     // Use a client that sends direct updates only to shard leaders: closing the proxy also cuts the
     // client's pooled connections to the replica, and an add routed to the cut replica can fail
-    // with a ClosedChannelException after the write has committed, which no client layer retries
-    // (SOLR-18530). The leader forwards to the cut replica, which is the partition path this test
-    // exercises.
+    // with a ClosedChannelException (SOLR-18530). The outcome of the failed add is unknown. The
+    // leader forwards to the cut replica, which is the partition path this test exercises.
     int MAX_DOCS = 2 + MAX_BUFFERED_DOCS + ULOG_NUM_RECORDS_TO_KEEP;
     try (CloudSolrClient leaderClient =
         createNewCloudSolrClient(

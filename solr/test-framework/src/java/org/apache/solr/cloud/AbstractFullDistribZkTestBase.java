@@ -2443,11 +2443,15 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         idleTimeoutMillis);
   }
 
+  /**
+   * Creates a client with randomized direct-update routing unless {@code
+   * forceDirectUpdatesToLeadersOnly} is true.
+   */
   public static CloudSolrClient createNewCloudSolrClient(
       String zkHost,
       String defaultCollection,
       boolean shardLeadersOnly,
-      boolean directUpdatesToLeadersOnly,
+      boolean forceDirectUpdatesToLeadersOnly,
       int connectionTimeoutMillis,
       int idleTimeoutMillis) {
     var builder = new RandomizingCloudSolrClientBuilder(List.of(zkHost), Optional.empty());
@@ -2457,7 +2461,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     } else {
       builder.sendUpdatesToAnyReplica();
     }
-    if (directUpdatesToLeadersOnly) {
+    if (forceDirectUpdatesToLeadersOnly) {
       builder.sendDirectUpdatesToShardLeadersOnly();
     }
     builder.withHttpClientBuilder(
