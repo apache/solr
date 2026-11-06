@@ -92,6 +92,158 @@ solrAdminServices.factory('Metrics',
       }
       return {handle: handle};
     }])
+.factory('NodeTarget',
+    ['$rootScope', function($rootScope) {
+      var STORAGE_KEY = 'adminui.selectedNode';
+      var state = {
+        localNode: null,
+        selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
+        liveNodes: [],
+        ready: false
+      };
+
+      function isRemote() {
+        return !!(state.selectedNode && state.localNode && state.selectedNode !== state.localNode);
+      }
+
+      function persistSelected() {
+        if (state.selectedNode) {
+          sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      function isNodeScopedUrl(url) {
+        url = url || '';
+        return /\/api\/node\/(system|threads|properties|logging\/messages)(?:\?|$)/.test(url)
+            || /\/api\/cores(?:\?|$)/.test(url);
+      }
+
+      var pendingTarget = null;
+
+      function withNodes(opts) {
+        opts = opts || {};
+        if (isRemote()) {
+          pendingTarget = state.selectedNode;
+        }
+        return opts;
+      }
+
+      function unwrap(data, response) {
+        if (!isRemote()) {
+          return data;
+        }
+        var body = (response && response.body) || data || {};
+        if (state.selectedNode && body[state.selectedNode]) {
+          return body[state.selectedNode];
+        }
+        return data;
+      }
+
+      function needsSelection() {
+        return state.liveNodes.length > 1 && !state.selectedNode;
+      }
+
+      function publish() {
+        $rootScope.localNode = state.localNode;
+        $rootScope.selectedNode = state.selectedNode;
+        $rootScope.liveNodes = state.liveNodes;
+        $rootScope.viewingRemoteNode = isRemote();
+        $rootScope.needsNodeSelection = needsSelection();
+      }
+
+      function markReady() {
+        if (!state.ready) {
+          state.ready = true;
+          publish();
+        }
+      }
+
+      function whenReady(fn, scope) {
+        if (state.ready) {
+          fn();
+          return angular.noop;
+        }
+        var unwatch = $rootScope.$watch(function() { return state.ready; }, function(ready) {
+          if (!ready) {
+            return;
+          }
+          unwatch();
+          fn();
+        });
+        if (scope) {
+          scope.$on('$destroy', unwatch);
+        }
+        return unwatch;
+      }
+
+      function setLocalNode(nodeName) {
+        state.localNode = nodeName;
+        publish();
+      }
+
+      function setLiveNodes(nodes) {
+        state.liveNodes = (nodes || []).slice().sort();
+        if (state.liveNodes.length <= 1) {
+          state.selectedNode = state.localNode || state.liveNodes[0] || null;
+          persistSelected();
+        } else if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+          state.selectedNode = null;
+          persistSelected();
+        }
+        publish();
+        markReady();
+      }
+
+      function selectNode(nodeName) {
+        if (!nodeName || nodeName === state.selectedNode) {
+          return false;
+        }
+        state.selectedNode = nodeName;
+        persistSelected();
+        publish();
+        return true;
+      }
+
+      function clear() {
+        state.localNode = null;
+        state.selectedNode = null;
+        state.liveNodes = [];
+        persistSelected();
+        publish();
+        markReady();
+      }
+
+      var plugins = solrApi.ApiClient.instance.plugins || [];
+      plugins.push(function(request) {
+        var target = pendingTarget;
+        pendingTarget = null;
+        if (!target) {
+          return request;
+        }
+        var method = (request.method || 'GET').toUpperCase();
+        if (method === 'GET' && isNodeScopedUrl(request.url)) {
+          request.set('X-Solr-targetNode', target);
+        }
+        return request;
+      });
+      solrApi.ApiClient.instance.plugins = plugins;
+
+      return {
+        state: state,
+        isRemote: isRemote,
+        needsSelection: needsSelection,
+        withNodes: withNodes,
+        unwrap: unwrap,
+        setLocalNode: setLocalNode,
+        setLiveNodes: setLiveNodes,
+        selectNode: selectNode,
+        clear: clear,
+        markReady: markReady,
+        whenReady: whenReady
+      };
+    }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';

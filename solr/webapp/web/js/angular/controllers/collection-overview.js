@@ -23,7 +23,11 @@ function($scope, $routeParams, $timeout, CollectionsV2, Constants, ApiErrorHandl
     CollectionsV2.listCollections({detailed: true, collection: $routeParams.core}, function(error, data, response) {
       $timeout(function() {
         if (error) { ApiErrorHandler.handle(response); return; }
-        $scope.selectedCollection = data.collectionsDetail[$routeParams.core];
+        var collection = data.collectionsDetail && data.collectionsDetail[$routeParams.core];
+        if (!collection) {
+          return;
+        }
+        $scope.selectedCollection = collection;
         $scope.selectedCollection.name = $routeParams.core;
         $scope.rootUrl = Constants.ROOT_URL;
       });
