@@ -2434,12 +2434,35 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       boolean shardLeadersOnly,
       int connectionTimeoutMillis,
       int idleTimeoutMillis) {
+    return createNewCloudSolrClient(
+        zkHost,
+        defaultCollection,
+        shardLeadersOnly,
+        false,
+        connectionTimeoutMillis,
+        idleTimeoutMillis);
+  }
+
+  /**
+   * Creates a client with randomized direct-update routing unless {@code
+   * forceDirectUpdatesToLeadersOnly} is true.
+   */
+  public static CloudSolrClient createNewCloudSolrClient(
+      String zkHost,
+      String defaultCollection,
+      boolean shardLeadersOnly,
+      boolean forceDirectUpdatesToLeadersOnly,
+      int connectionTimeoutMillis,
+      int idleTimeoutMillis) {
     var builder = new RandomizingCloudSolrClientBuilder(List.of(zkHost), Optional.empty());
     builder.withDefaultCollection(defaultCollection);
     if (shardLeadersOnly) {
       builder.sendUpdatesOnlyToShardLeaders();
     } else {
       builder.sendUpdatesToAnyReplica();
+    }
+    if (forceDirectUpdatesToLeadersOnly) {
+      builder.sendDirectUpdatesToShardLeadersOnly();
     }
     builder.withHttpClientBuilder(
         new HttpJettySolrClient.Builder()
