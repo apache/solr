@@ -61,6 +61,7 @@ import scriptutil
 # tested on Linux and on Cygwin under Windows 7.
 
 BASE_JAVA_VERSION = "21"
+BUILD_JAVA_VERSION = "25"
 SOLRJ_JAVA_VERSION = "17"
 
 cygwin = platform.system().lower().startswith('cygwin')
@@ -174,7 +175,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'X-Compile-Source-JDK: %s' % compileJDK,
       'X-Compile-Target-JDK: %s' % compileJDK,
       'Specification-Version: %s' % version.replace('-SNAPSHOT', ''),
-      'X-Build-JDK: %s' % BASE_JAVA_VERSION,
+      'X-Build-JDK: %s.' % BUILD_JAVA_VERSION,
       'Extension-Name: org.apache.solr'):
       if type(verify) is not tuple:
         verify = (verify,)
@@ -1004,8 +1005,8 @@ def make_java_config(parser):
   actual_version = re.search(r'version "([1-9][0-9]*)', s).group(1)
   print('Java %s JAVA_HOME=%s' % (actual_version, java_home))
 
-  if int(actual_version) < int(BASE_JAVA_VERSION):
-    parser.error('got wrong version for java %s, must be at least base version %s:\n%s' % (actual_version, BASE_JAVA_VERSION, s))
+  if int(actual_version) < int(BUILD_JAVA_VERSION):
+    parser.error('got wrong version for java %s, must be at least version %s:\n%s' % (actual_version, BUILD_JAVA_VERSION, s))
 
   def run_java(cmd, logfile):
     run('%s; %s' % (cmd_prefix, cmd), logfile)
