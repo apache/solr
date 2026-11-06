@@ -99,15 +99,17 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     proxy.close();
 
     // add more than ULOG_NUM_RECORDS_TO_KEEP docs so that peer sync cannot be used for recovery
-    // Use a leaders-only client for these adds: closing the proxy also cuts the client's pooled
-    // connections to the replica, and an add routed to the cut replica can fail with a
-    // ClosedChannelException after the write has committed, which no client layer retries
-    // (SOLR-18530). The leader forwards to the cut replica, which is the partition path this
-    // test exercises.
+    // Use a client that sends direct updates only to shard leaders: closing the proxy also cuts the
+    // client's pooled connections to the replica, and an add routed to the cut replica can fail
+    // with a ClosedChannelException after the write has committed, which no client layer retries
+    // (SOLR-18530). The leader forwards to the cut replica, which is the partition path this test
+    // exercises.
     int MAX_DOCS = 2 + MAX_BUFFERED_DOCS + ULOG_NUM_RECORDS_TO_KEEP;
     try (CloudSolrClient leaderClient =
         createNewCloudSolrClient(
-            zkServer.getZkAddress(), DEFAULT_COLLECTION, true, 30000, 120000)) {
+            zkServer.getZkAddress(), DEFAULT_COLLECTION, true, true, 30000, 120000)) {
+      assertTrue(leaderClient.isUpdatesToLeaders());
+      assertTrue(leaderClient.isDirectUpdatesToLeadersOnly());
       for (; i < MAX_DOCS; i++) {
         SolrInputDocument document = new SolrInputDocument();
         document.addField("id", String.valueOf(i));
