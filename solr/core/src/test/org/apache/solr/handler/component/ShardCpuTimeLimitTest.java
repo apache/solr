@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -149,18 +150,27 @@ public class ShardCpuTimeLimitTest extends SolrCloudTestCase {
     assertShardCpuTime("afterGetFields", GET_FIELDS_CPU_MS);
   }
 
+  public void testStopWithPartialResultsOmitted() throws Exception {
+    assertShardCpuTime("handleResponses", false, TOP_IDS_CPU_MS);
+  }
+
   public void testStopBeforeAnyShardResponse() throws Exception {
-    SolrQueryResponse rsp = stopAt("start");
+    SolrQueryResponse rsp = stopAt("start", true);
     assertNull(rsp.getToLog().get(ThreadCpuTimer.CPU_TIME));
   }
 
   private void assertShardCpuTime(String stopAt, long expected) throws Exception {
-    SolrQueryResponse rsp = stopAt(stopAt);
+    assertShardCpuTime(stopAt, true, expected);
+  }
+
+  private void assertShardCpuTime(String stopAt, boolean partialResults, long expected)
+      throws Exception {
+    SolrQueryResponse rsp = stopAt(stopAt, partialResults);
     assertEquals(List.of(expected), rsp.getResponseHeader().getAll(ThreadCpuTimer.CPU_TIME));
     assertEquals(expected, rsp.getToLog().get(ThreadCpuTimer.CPU_TIME));
   }
 
-  private SolrQueryResponse stopAt(String stopAt) throws Exception {
+  private SolrQueryResponse stopAt(String stopAt, boolean partialResults) throws Exception {
     TestInjection.queryTimeout = new StopAtLimit();
     Replica replica = getCollectionState(COLLECTION).replicaStream().findFirst().orElseThrow();
     try (SolrCore core =
@@ -175,6 +185,8 @@ public class ShardCpuTimeLimitTest extends SolrCloudTestCase {
                     HANDLER,
                     ShardParams.DISTRIB_SINGLE_PASS,
                     "false",
+                    CommonParams.PARTIAL_RESULTS,
+                    String.valueOf(partialResults),
                     STOP_AT_PARAM,
                     stopAt)) {}) {
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -184,7 +196,9 @@ public class ShardCpuTimeLimitTest extends SolrCloudTestCase {
       } finally {
         SolrRequestInfo.clearRequestInfo();
       }
-      assertTrue(SolrQueryResponse.isPartialResults(rsp.getResponseHeader()));
+      assertEquals(
+          SolrQueryResponse.partialResultsStatus(!partialResults),
+          rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
       return rsp;
     }
   }
