@@ -17,6 +17,8 @@
 package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,16 +26,27 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.ResponseUtils;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JavabinLoaderTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
@@ -114,5 +127,70 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.4 + "']",
         "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.4 + "']",
         "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.4 + "']");
+  }
+
+  @Test
+  @LogLevel("org.apache.solr.handler.loader.JavabinLoader=INFO")
+  public void testIOExceptionDoesNotLeakDocumentContents() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "7");
+    doc.addField("name", "secret customer value");
+
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(doc);
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+
+    UpdateRequestProcessor failingProcessor =
+        new BufferingRequestProcessor(null) {
+          @Override
+          public void processAdd(AddUpdateCommand cmd) throws IOException {
+            throw new IOException("simulated failure for secret customer value");
+          }
+        };
+
+    SolrQueryRequest req = req();
+    try {
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  new JavabinLoader()
+                      .load(
+                          req,
+                          new SolrQueryResponse(),
+                          new ContentStreamBase.ByteArrayStream(os.toByteArray(), "test"),
+                          failingProcessor));
+      assertEquals("ERROR adding document [doc=7]", ex.getMessage());
+      assertFalse(ex.getMessage().contains("secret customer value"));
+      assertEquals(500, ex.code());
+
+      try (LogListener errors =
+              LogListener.error(JavabinLoader.class).substring("ERROR adding document [doc=7]");
+          LogListener leakedValues =
+              LogListener.error(JavabinLoader.class).substring("secret customer value")) {
+        var logger = LoggerFactory.getLogger(JavabinLoader.class);
+        NamedList<Object> errorInfo = new NamedList<>();
+        assertEquals(500, ResponseUtils.getErrorInfo(ex, errorInfo, logger, false));
+        assertNotNull(
+            "Exercise response traces, not just the outer message", errorInfo.get("trace"));
+        assertFalse(Utils.toJSONString(errorInfo).contains("secret customer value"));
+        var typedErrorInfo = ResponseUtils.getTypedErrorInfo(ex, logger, false);
+        assertNotNull(typedErrorInfo.trace);
+        assertFalse(Utils.toJSONString(typedErrorInfo).contains("secret customer value"));
+        assertEquals(2, errors.getCount());
+        int leakedValueCount = leakedValues.getCount();
+        assertEquals("500 Exception", errors.pollMessage());
+        assertEquals("500 Exception", errors.pollMessage());
+        while (leakedValues.pollMessage() != null) {
+          // Drain matches before asserting to avoid close-time secondary failures.
+        }
+        assertEquals("Sensitive value present in ERROR log", 0, leakedValueCount);
+      }
+      assertNull(ex.getCause());
+    } finally {
+      req.close();
+    }
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,14 +35,17 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Builds a Lucene {@link Document} from a {@link SolrInputDocument}. */
 public class DocumentBuilder {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // accessible only for tests
   static int MIN_LENGTH_TO_MOVE_LAST =
       Integer.getInteger("solr.docBuilder.minLengthToMoveLast", 4 * 1024); // internal setting
-  static int MAX_VALUES_AS_STRING_LENGTH = 256;
 
   /**
    * Add a field value to a given document.
@@ -91,6 +95,18 @@ public class DocumentBuilder {
       id = "[doc=" + doc.getFieldValue(sf.getName()) + "] ";
     }
     return id;
+  }
+
+  private static String getFieldErrorMessage(
+      SolrInputDocument doc, IndexSchema schema, String fieldName) {
+    return "ERROR: " + getID(doc, schema) + "Error adding field '" + fieldName + "'";
+  }
+
+  /** The error message omits field values, so keep them available for debugging at TRACE. */
+  private static void traceFieldError(String message, SolrInputField field, Exception ex) {
+    if (log.isTraceEnabled()) {
+      log.trace("{}: value={}", message, field.getValue(), ex);
+    }
   }
 
   /**
@@ -163,21 +179,12 @@ public class DocumentBuilder {
           && field.getValueCount() > 1
           && !(sfield.getType() instanceof DenseVectorField)) {
 
-        // Ensure we do not flood the logs with extremely long values
-        String fieldValue = field.getValue().toString();
-        if (fieldValue.length() > MAX_VALUES_AS_STRING_LENGTH) {
-          assert fieldValue.endsWith("]");
-          fieldValue = fieldValue.substring(0, MAX_VALUES_AS_STRING_LENGTH - 4) + "...]";
-        }
-
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "
                 + getID(doc, schema)
                 + "multiple values encountered for non multiValued field "
-                + sfield.getName()
-                + ": "
-                + fieldValue);
+                + sfield.getName());
       }
 
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
@@ -272,29 +279,14 @@ public class DocumentBuilder {
           }
         }
       } catch (SolrException ex) {
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(ex.code()),
-            "ERROR: "
-                + getID(doc, schema)
-                + "Error adding field '"
-                + field.getName()
-                + "'='"
-                + field.getValue()
-                + "' msg="
-                + ex.getMessage(),
-            ex);
+        String message = getFieldErrorMessage(doc, schema, name);
+        traceFieldError(message, field, ex);
+        // Causes can contain field values and are logged and serialized by request handlers.
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()), message);
       } catch (Exception ex) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "ERROR: "
-                + getID(doc, schema)
-                + "Error adding field '"
-                + field.getName()
-                + "'='"
-                + field.getValue()
-                + "' msg="
-                + ex.getMessage(),
-            ex);
+        String message = getFieldErrorMessage(doc, schema, name);
+        traceFieldError(message, field, ex);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
       }
 
       // make sure the field was used somehow...
@@ -376,9 +368,7 @@ public class DocumentBuilder {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Multiple values encountered for non multiValued copy field "
-                + destinationField.getName()
-                + ": "
-                + originalFieldValue);
+                + destinationField.getName());
       }
       Object fieldValue = originalFieldValue;
       // Perhaps trim the length of a copy field

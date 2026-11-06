@@ -21,6 +21,7 @@ import static org.hamcrest.core.Is.is;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
@@ -726,14 +727,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               });
 
       assertThat(
-          thrown.getCause().getMessage(),
-          is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored,omitNorms,omitTermFreqAndPositions,useDocValuesAsStored}' from value '[128, 6, 7, 8]'"));
-
-      assertThat(
-          thrown.getCause().getCause().getMessage(),
-          is(
-              "incorrect vector element: '128'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+          thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
+      assertNull(thrown.getCause());
 
       SolrInputDocument doc1 = new SolrInputDocument();
       doc1.addField("id", "1");
@@ -748,13 +743,62 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               });
 
       assertThat(
-          thrown.getCause().getMessage(),
-          is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored,omitNorms,omitTermFreqAndPositions,useDocValuesAsStored}' from value '[1, -129, 7, 8]'"));
+          thrown.getMessage(), is("ERROR: [doc=1] Error adding field 'vector_byte_encoding'"));
+      assertNull(thrown.getCause());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void fieldTypeCreateFieldErrorDoesNotLeakFieldValue() throws Exception {
+    try {
+      initCore("solrconfig.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      // A field type whose conversion fails with a RuntimeException, so the failure surfaces
+      // through FieldType.createField's error wrapping.
+      FieldType failingType =
+          new StrField() {
+            @Override
+            public String toInternal(String val) {
+              throw new IllegalArgumentException("cannot convert: " + val);
+            }
+          };
+      failingType.init(schema, new HashMap<>());
+      SchemaField field =
+          new SchemaField(
+              "failing_field", failingType, FieldProperties.INDEXED | FieldProperties.STORED, null);
+      SolrException thrown =
+          assertThrows(
+              "A failing conversion should throw an exception",
+              SolrException.class,
+              () -> failingType.createField(field, "secret-value"));
+      assertTrue(thrown.getMessage().contains("Error while creating field"));
+      assertFalse(thrown.getMessage().contains("secret-value"));
+      assertEquals(500, thrown.code());
+      assertNull(thrown.getCause());
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void denseVectorCreateFieldsErrorDoesNotLeakFieldValue() throws Exception {
+    try {
+      initCore("solrconfig.xml", "schema-densevector.xml");
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "0");
+      doc.addField("vector_byte_encoding", Arrays.asList(128, 6, 7, 8));
+      RuntimeException thrown =
+          assertThrows(
+              "Incorrect elements should throw an exception",
+              SolrException.class,
+              () -> {
+                assertU(adoc(doc));
+              });
       assertThat(
-          thrown.getCause().getCause().getMessage(),
-          is(
-              "incorrect vector element: '-129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+          thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
+      assertNull(thrown.getCause());
     } finally {
       deleteCore();
     }
@@ -777,14 +821,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
               });
 
       assertThat(
-          thrown.getCause().getMessage(),
-          is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored,omitNorms,omitTermFreqAndPositions,useDocValuesAsStored}' from value '[14.3, 6.2, 7.2, 8.1]'"));
-
-      assertThat(
-          thrown.getCause().getCause().getMessage(),
-          is(
-              "incorrect vector element: '14.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+          thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector_byte_encoding'"));
+      assertNull(thrown.getCause());
     } finally {
       deleteCore();
     }

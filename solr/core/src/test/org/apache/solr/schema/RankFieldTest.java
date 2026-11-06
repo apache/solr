@@ -22,6 +22,7 @@ import javax.xml.xpath.XPathConstants;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.util.LogListener;
@@ -59,9 +60,22 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         RankField.class, h.getCore().getLatestSchema().getField(RANK_1).getType().getClass());
   }
 
+  public void testCreateFieldErrorDoesNotLeakFieldValue() {
+    RankField type = (RankField) h.getCore().getLatestSchema().getField(RANK_1).getType();
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> type.createField(RANK_1, "not-a-float-secret", null));
+    assertTrue(ex.getMessage().contains("Error while creating field '" + RANK_1 + "'"));
+    assertTrue(ex.getMessage().contains("Expecting float."));
+    assertFalse(ex.getMessage().contains("not-a-float-secret"));
+    assertEquals(400, ex.code());
+    assertNull(ex.getCause());
+  }
+
   public void testBadFormat() {
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("Expecting float")) {
+        LogListener.error(RequestHandlerBase.class)
+            .substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, "foo"));
 
       assertFailedU(adoc("id", "1", RANK_1, "1.2.3"));
@@ -70,7 +84,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     }
 
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("must be finite")) {
+        LogListener.error(RequestHandlerBase.class)
+            .substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.POSITIVE_INFINITY)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(Float.NEGATIVE_INFINITY)));
@@ -81,7 +96,8 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     }
 
     try (LogListener errors =
-        LogListener.error(RequestHandlerBase.class).substring("must be a positive")) {
+        LogListener.error(RequestHandlerBase.class)
+            .substring("Error adding field '" + RANK_1 + "'")) {
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-0.0f)));
 
       assertFailedU(adoc("id", "1", RANK_1, Float.toString(-1f)));
