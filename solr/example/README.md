@@ -49,7 +49,6 @@ After starting a Solr example, direct your Web browser to:
   http://localhost:8983/solr/
 ```
 
-
 To add documents to the index, use bin/solr post, for example:
 
 ```

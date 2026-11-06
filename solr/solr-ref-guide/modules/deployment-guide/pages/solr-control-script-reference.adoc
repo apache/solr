@@ -379,8 +379,7 @@ The data used can be found in `$SOLR_HOME/example/exampledocs/`.
 
 * *secure*: This example starts two local SolrCloud nodes with PKCS12 certificates, Basic Authentication, and ZooKeeper digest ACLs.
 It uses demonstration passwords and keeps ZooKeeper transport on loopback without TLS.
-See xref:getting-started:tutorial-securing-solr.adoc[] for the manual setup and verification steps.
-The example requires Bash, JDK `keytool`, OpenSSL, and `curl`; its supported start options are `--no-prompt`, `-p`, `--solr-home`, and `--force`.
+See xref:getting-started:tutorial-securing-solr.adoc[] for the equivalent manual steps.
 
 * *schemaless*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
 Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
