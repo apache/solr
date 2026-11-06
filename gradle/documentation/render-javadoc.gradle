@@ -577,11 +577,24 @@ gradle.projectsEvaluated {
     title = "Solr ${host.version} API"
   }
 
+  // The test-framework tree links against the unified tree's element list, so
+  // that tree has to be rendered first.
+  project(':solr:test-framework').tasks.renderSiteJavadoc.configure {
+    dependsOn host.tasks.renderSiteJavadoc
+  }
+
   // The per-module renderJavadoc output is what the Maven javadoc jars package;
   // point its external links at the unified tree.
   project(':solr').subprojects.each {prj ->
     prj.tasks.matching {it.name == 'renderJavadoc'}.configureEach {
       unifiedJavadocDir = host.tasks.renderSiteJavadoc.outputDir
+
+      // Only a release build links to the published tree, and only then is the
+      // local tree read for its element list. javadocJar reaches renderJavadoc
+      // without going through the site tasks, so declare the dependency here.
+      if (solrDocUrl.isPresent()) {
+        dependsOn host.tasks.renderSiteJavadoc
+      }
     }
   }
 }
