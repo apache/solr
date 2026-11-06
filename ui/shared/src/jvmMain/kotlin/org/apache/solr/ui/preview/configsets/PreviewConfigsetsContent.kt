@@ -18,6 +18,9 @@
 package org.apache.solr.ui.preview.configsets
 
 import androidx.compose.runtime.Composable
+import org.apache.solr.ui.components.indexquery.data.IndexQueryRepository
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
+import org.apache.solr.ui.domain.RequestHandlerOption
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
@@ -63,6 +66,14 @@ private class PreviewConfigsetsComponent(
     )
 
     override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent = PreviewConfigsetsOverviewComponent(configsets)
+
+    override fun createIndexQueryViewModel(): IndexQueryViewModel = IndexQueryViewModel(
+        repository = object : IndexQueryRepository {
+            override suspend fun listCollections(): Result<List<String>> = Result.success(emptyList())
+            override suspend fun listRequestHandlers(collection: String): Result<List<RequestHandlerOption>> =
+                Result.success(emptyList())
+        },
+    )
 }
 
 private class PreviewConfigsetsOverviewComponent(configsets: List<Configset> = emptyList()) : ConfigsetsOverviewComponent {
