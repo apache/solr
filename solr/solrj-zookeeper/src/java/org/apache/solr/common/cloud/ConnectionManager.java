@@ -23,6 +23,7 @@ import static org.apache.zookeeper.Watcher.Event.KeeperState.Expired;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -48,6 +49,12 @@ public class ConnectionManager implements Watcher {
   private final BeforeReconnect beforeReconnect;
 
   private volatile boolean isClosed = false;
+
+  // Connection state events are handed to a multi-threaded pool, so they can be processed out of
+  // order. Each event is numbered in the order ZooKeeper delivered it, and state changes from an
+  // event older than one already applied are ignored.
+  private final AtomicLong eventSequence = new AtomicLong();
+  private long lastStateEventSequence = 0; // guarded by this
 
   // Track the likely expired state
   private static class LikelyExpiredState {
@@ -102,13 +109,30 @@ public class ConnectionManager implements Watcher {
     this.isClosedCheck = isClosed;
   }
 
-  private synchronized void connected() {
+  /**
+   * Numbers an event in delivery order. Must be called from the thread that ZooKeeper delivers
+   * events on, before the event is handed off to another thread.
+   */
+  long nextEventSequence() {
+    return eventSequence.incrementAndGet();
+  }
+
+  /** Returns false, without changing state, if a newer state event has already been applied. */
+  private synchronized boolean connected(long sequence) {
+    if (!acceptStateEvent(sequence)) {
+      return false;
+    }
     connected = true;
     likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
     notifyAll();
+    return true;
   }
 
-  private synchronized void disconnected() {
+  /** Returns false, without changing state, if a newer state event has already been applied. */
+  private synchronized boolean disconnected(long sequence) {
+    if (!acceptStateEvent(sequence)) {
+      return false;
+    }
     connected = false;
     // record the time we expired unless we are already likely expired
     if (!likelyExpiredState.isLikelyExpired(0)) {
@@ -116,10 +140,34 @@ public class ConnectionManager implements Watcher {
           new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.nanoTime());
     }
     notifyAll();
+    return true;
+  }
+
+  /** Returns false, without changing state, if a newer state event has already been applied. */
+  private synchronized boolean expired(long sequence) {
+    if (!acceptStateEvent(sequence)) {
+      return false;
+    }
+    // we don't call disconnected here, because we know we are expired
+    connected = false;
+    likelyExpiredState = LikelyExpiredState.EXPIRED;
+    return true;
+  }
+
+  private synchronized boolean acceptStateEvent(long sequence) {
+    if (sequence < lastStateEventSequence) {
+      return false;
+    }
+    lastStateEventSequence = sequence;
+    return true;
   }
 
   @Override
   public void process(WatchedEvent event) {
+    process(event, nextEventSequence());
+  }
+
+  void process(WatchedEvent event, long sequence) {
     if (event.getState() == AuthFailed
         || event.getState() == Disconnected
         || event.getState() == Expired) {
@@ -150,16 +198,20 @@ public class ConnectionManager implements Watcher {
     KeeperState state = event.getState();
 
     if (state == KeeperState.SyncConnected) {
+      if (!connected(sequence)) {
+        log.warn("Ignoring stale connected event {}", event);
+        return;
+      }
       log.info("zkClient has connected");
-      connected();
       connectionStrategy.connected();
     } else if (state == Expired) {
       if (isClosed()) {
         return;
       }
-      // we don't call disconnected here, because we know we are expired
-      connected = false;
-      likelyExpiredState = LikelyExpiredState.EXPIRED;
+      if (!expired(sequence)) {
+        log.warn("Ignoring stale expired event {}", event);
+        return;
+      }
 
       log.warn(
           "Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
@@ -230,8 +282,11 @@ public class ConnectionManager implements Watcher {
       } while (!isClosed());
       log.info("zkClient Connected: {}", connected);
     } else if (state == KeeperState.Disconnected) {
+      if (!disconnected(sequence)) {
+        log.warn("Ignoring stale disconnected event {}", event);
+        return;
+      }
       log.warn("zkClient has disconnected");
-      disconnected();
       connectionStrategy.disconnected();
     } else if (state == KeeperState.AuthFailed) {
       log.warn("zkClient received AuthFailed");
