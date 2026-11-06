@@ -23,8 +23,8 @@ import org.gradle.internal.jvm.Jvm
 def resources = scriptResources(buildscript)
 
 // Where the two published javadoc trees land under the documentation root.
-ext.UNIFIED_DOC_PATH = 'javadocs/api'
-ext.TEST_FRAMEWORK_DOC_PATH = 'javadocs/test-framework'
+def UNIFIED_DOC_PATH = RenderJavadocTask.UNIFIED_DOC_PATH
+def TEST_FRAMEWORK_DOC_PATH = RenderJavadocTask.TEST_FRAMEWORK_DOC_PATH
 
 allprojects {
   plugins.withType(JavaPlugin) {
@@ -209,6 +209,10 @@ class OfflineLink implements Serializable {
 
 @CacheableTask
 class RenderJavadocTask extends DefaultTask {
+  /** Where the two published javadoc trees land under the documentation root. */
+  static final String UNIFIED_DOC_PATH = 'javadocs/api'
+  static final String TEST_FRAMEWORK_DOC_PATH = 'javadocs/test-framework'
+
   @InputFiles
   @PathSensitive(PathSensitivity.RELATIVE)
   @IgnoreEmptyDirectories
