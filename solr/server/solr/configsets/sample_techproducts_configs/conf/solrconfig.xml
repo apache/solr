@@ -653,6 +653,12 @@
     </lst>
   </initParams>
 
+  <initParams path="/update/json/docs">
+    <lst name="defaults">
+      <str name="update.chain">json-docs-uuid</str>
+    </lst>
+  </initParams>
+
   <!-- The following are some of the implicit Update Request Handlers
   <requestHandler name="/update/json" class="solr.UpdateRequestHandler">
         <lst name="invariants">
@@ -1164,6 +1170,14 @@ via parameters.  The below configuration supports hl.method=original and fastVec
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
   -->
+
+  <updateRequestProcessorChain name="json-docs-uuid">
+    <processor class="solr.UUIDUpdateProcessorFactory">
+      <str name="fieldName">id</str>
+    </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
   <!-- Response Writers
 
