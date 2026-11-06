@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,19 +29,25 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
@@ -242,6 +249,57 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     List<String> collectionList = aliases.resolveAliases(aliasName);
     assertEquals(1, collectionList.size());
     assertTrue(collectionList.contains(initialCollectionName));
+  }
+
+  /** A node whose cached aliases are stale must still accept updates for an existing alias. */
+  @Test
+  @SuppressForbidden(reason = "Reflection needed to make a node's cached aliases stale")
+  public void testUpdateOnNodeWithStaleAliases() throws Exception {
+    final String aliasName = getSaferTestName();
+    CollectionAdminRequest.createTimeRoutedAlias(
+            aliasName,
+            "2017-10-23T00:00:00Z",
+            "+1DAY",
+            "evt_dt",
+            CollectionAdminRequest.createCollection("_unused_", "_default", 1, 1))
+        .process(solrClient);
+    final String collectionName = aliasName + TIME.getSeparatorPrefix() + "2017-10-23";
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    // send the update to the node hosting the collection, so that node handles it itself
+    String nodeName =
+        cluster
+            .getZkStateReader()
+            .getCollection(collectionName)
+            .replicaStream()
+            .findFirst()
+            .orElseThrow()
+            .getNodeName();
+    JettySolrRunner jetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> j.getNodeName().equals(nodeName))
+            .findFirst()
+            .orElseThrow();
+    ZkStateReader reader = jetty.getCoreContainer().getZkController().getZkStateReader();
+    int zkVersion = cluster.getZkClient().exists(ZkStateReader.ALIASES, null).getVersion();
+    new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "node did not catch up with aliases.json",
+            () -> reader.getAliases().getZNodeVersion() == zkVersion);
+
+    // simulate a node whose cached aliases don't include the alias yet: nothing changes in ZK, so
+    // no later watch event will repair its cached aliases
+    Field aliasesField = ZkStateReader.AliasesManager.class.getDeclaredField("aliases");
+    aliasesField.setAccessible(true);
+    aliasesField.set(reader.aliasesManager, Aliases.EMPTY);
+    assertSame(
+        "the node's cached aliases were refreshed before the document was sent",
+        Aliases.EMPTY,
+        reader.getAliases());
+
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "evt_dt", "2017-10-23T00:00:00Z");
+    assertEquals(0, jetty.getSolrClient().add(collectionName, doc).getStatus());
+    assertFalse(reader.getAliases().getCollectionAliasProperties(aliasName).isEmpty());
   }
 
   public void testCantAddRoutingToNonRouted() throws Exception {
