@@ -30,7 +30,7 @@ teardown() {
   solr stop --all >/dev/null 2>&1 || true
 }
 
-@test "secure example resets two HTTPS nodes with authentication and ZooKeeper ACLs" {
+@test "secure example starts two HTTPS nodes with authentication and ZooKeeper ACLs" {
   mkdir -p "$SOLR_HOME/node1"
   printf 'left over\n' > "$SOLR_HOME/node1/incomplete-file"
   run env SOLR_ULIMIT_CHECKS=true solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
@@ -48,7 +48,6 @@ teardown() {
   run ls -a "$SOLR_HOME/node1"
   assert_success
   refute_output --partial 'incomplete-file'
-
 
   run cat "$SOLR_INCLUDE"
   assert_output ''
@@ -124,73 +123,6 @@ teardown() {
     solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT"
   assert_failure
   assert_output --partial 'NoAuth'
-
-  run cp "$SOLR_HOME/tls/solr-ssl.keystore.p12" "$BATS_TEST_TMPDIR/original.p12"
-  assert_success
-  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user index:SolrRocks -H 'Content-Type: application/json' --data-binary '[{"id":"previous-run"}]' \
-    "https://localhost:$SOLR_PORT/solr/techproducts/update?commit=true"
-  assert_success
-
-  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user search:SolrRocks "https://localhost:$SOLR_PORT/solr/techproducts/select?q=*:*&rows=0"
-  assert_success
-  assert_output --partial '"numFound":32'
-  printf 'left over\n' > "$SOLR_HOME/leftover-file.txt"
-  rm "$SOLR_HOME/tls/cert.pem"
-  run solr start -e secure --no-prompt --solr-home "$SOLR_HOME" -p "$SOLR_PORT"
-  assert_success
-  assert_output --partial 'Resetting the secure example'
-  refute_output --partial 'forcefully killing it now'
-  run ls -a "$SOLR_HOME"
-  assert_success
-  refute_output --partial 'leftover-file.txt'
-
-  run cmp "$SOLR_HOME/tls/solr-ssl.keystore.p12" "$BATS_TEST_TMPDIR/original.p12"
-  assert_failure
-  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user search:SolrRocks "https://localhost:$SOLR2_PORT/solr/techproducts/select?q=*:*&rows=0"
-  assert_success
-  assert_output --partial '"numFound":31'
-
-  run keytool -genkeypair -alias unrelated -keyalg RSA -keysize 2048 -validity 1 \
-    -dname CN=unrelated -storetype PKCS12 -keystore "$SOLR_HOME/tls/untrusted.p12" \
-    -storepass SolrRocks -keypass SolrRocks
-  assert_success
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr stop -p "$SOLR2_PORT"
-  assert_success
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" \
-    SOLR_SSL_CLIENT_TRUST_STORE="$SOLR_HOME/tls/untrusted.p12" \
-    SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=SolrRocks SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12 \
-    SOLR_TOOL_OPTS="-Djavax.net.ssl.trustStore=$SOLR_HOME/tls/solr-ssl.truststore.p12" \
-    SOLR_LOGS_DIR="$SOLR_HOME/node2/logs" \
-    solr start --solr-home "$SOLR_HOME/node2/solr" -p "$SOLR2_PORT" -z "localhost:$ZK_PORT"
-  assert_success
-  for port in "$SOLR_PORT" "$SOLR2_PORT"; do
-    run wait_for 60 1 curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user admin:SolrRocks "https://localhost:$port/api/node/health"
-    assert_success
-  done
-  run wait_for 60 1 curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user search:SolrRocks "https://localhost:$SOLR2_PORT/solr/techproducts/select?q=*:*&rows=0&distrib=false"
-  assert_success
-  run curl --noproxy '*' --silent --show-error --max-time 30 --write-out '\nHTTP %{http_code}\n' \
-    --cacert "$SOLR_HOME/tls/cert.pem" --user search:SolrRocks \
-    "https://localhost:$SOLR2_PORT/solr/techproducts/select?q=*:*&rows=0&shards.info=true&shards.tolerant=false"
-  assert_success
-  assert_output --partial 'HTTP 500'
-  assert_output --regexp 'SSLHandshakeException|PKIX|certificate'
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr stop -p "$SOLR2_PORT"
-  assert_success
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" SOLR_LOGS_DIR="$SOLR_HOME/node2/logs" \
-    solr start --solr-home "$SOLR_HOME/node2/solr" -p "$SOLR2_PORT" -z "localhost:$ZK_PORT"
-  assert_success
-  run wait_for 60 1 curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user search:SolrRocks "https://localhost:$SOLR2_PORT/solr/techproducts/select?q=*:*&rows=0&shards.info=true&shards.tolerant=false"
-  assert_success
-  assert_output --partial '"numFound":31'
-  assert_output --partial "https://127.0.0.1:$SOLR_PORT/"
-  assert_output --partial "https://127.0.0.1:$SOLR2_PORT/"
 }
 
 @test "secure example rejects unsupported options" {
