@@ -17,9 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.security.Principal;
+import java.util.List;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ThreadCpuTimer;
 
 /**
  * A completed search request, as passed to {@link SearchRequestListener}. It holds only values
@@ -73,12 +76,27 @@ public record SearchRequestInfo(
         MDCLoggingContext.getTraceId(),
         req.getStartTime(),
         rsp.getQTime(),
-        rsp.getCpuTimeMs(),
-        rsp.getHits(),
+        cpuTimeMs(rsp.getToLog()),
+        hits(rsp.getToLog()),
         distributed ? rb.shards.length : 0,
         failure == null ? null : failure.getClass().getName(),
         failure == null ? null : truncate(failure.getMessage()),
         rsp.isPartialResults());
+  }
+
+  private static Long cpuTimeMs(NamedList<Object> toLog) {
+    if (!(toLog.get(ThreadCpuTimer.LOCAL_CPU_TIME) instanceof Long local)) {
+      return null;
+    }
+    List<Object> shardCpuTimes = toLog.getAll(ThreadCpuTimer.CPU_TIME);
+    if (!shardCpuTimes.isEmpty() && shardCpuTimes.getLast() instanceof Long shardCpuTime) {
+      return shardCpuTime + local;
+    }
+    return local;
+  }
+
+  private static Long hits(NamedList<Object> toLog) {
+    return toLog.get("hits") instanceof Number hits ? hits.longValue() : null;
   }
 
   private static String truncate(String message) {

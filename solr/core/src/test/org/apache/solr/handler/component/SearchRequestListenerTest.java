@@ -559,10 +559,10 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
 
   @Test
   public void testNoListenersLeavesResponseUnchanged() throws Exception {
-    NamedList<?> withListeners = query(COLLECTION, "*:*").getResponseHeader();
+    List<String> expected = List.of("zkConnected", "status", "QTime", "params");
+    assertEquals(expected, keys(query(COLLECTION, "*:*").getResponseHeader()));
     removeListeners();
-    NamedList<?> withoutListeners = query(COLLECTION, "*:*").getResponseHeader();
-    assertEquals(keys(withListeners), keys(withoutListeners));
+    assertEquals(expected, keys(query(COLLECTION, "*:*").getResponseHeader()));
     assertEquals(1, captures());
   }
 
