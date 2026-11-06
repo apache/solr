@@ -71,6 +71,7 @@ public final class CountFieldValuesUpdateProcessorFactory
           SolrInputField result = new SolrInputField(src.getName());
           result.setValue(src.getValueCount());
           return result;
-        });
+        },
+        false);
   }
 }
