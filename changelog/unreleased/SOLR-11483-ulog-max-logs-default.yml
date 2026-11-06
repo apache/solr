@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: When updateLog numRecordsToKeep is set and maxNumLogsToKeep is not, maxNumLogsToKeep now defaults to 1000 instead of 10, so the configured number of records is not cut short by the log file limit.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-11483
+    url: https://issues.apache.org/jira/browse/SOLR-11483
