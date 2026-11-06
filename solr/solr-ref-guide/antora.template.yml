@@ -42,6 +42,19 @@ asciidoc:
     page-solr-javadocs: '${solr_docs_link}/javadocs/api'
     solr-docs: '${solr_docs_link}'
     solr-javadocs: '${solr_docs_link}/javadocs/api'
+    # Every module's Javadocs are published as one tree, so these all resolve to
+    # the same base. They are kept apart so that a later layout can move a
+    # module's pages without touching the guide.
+    solr-core-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-solrj-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-solrj-jetty-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-solrj-streaming-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-solrj-zookeeper-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-analysis-extras-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-langid-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-language-models-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-ltr-javadocs: '${solr_docs_link}/javadocs/api'
+    solr-scripting-javadocs: '${solr_docs_link}/javadocs/api'
     lucene-javadocs: '${lucene_javadocs_link}'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     solr-docs-version: '${solr_version_major}.${solr_version_minor}'

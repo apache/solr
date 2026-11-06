@@ -88,9 +88,9 @@ However this causes the following changes in configuration and authentication se
 
 * The `updateShardHandler` parameter `maxConnections` is no longer used and has been removed.
 * The `HttpShardHandler` parameter `maxConnections` parameter is no longer being used and has been removed.
-*  Custom {solr-javadocs}/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`]
+*  Custom {solr-core-javadocs}/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`]
 implementations must provide their own setup for `Http2SolrClient` through implementing
-{solr-javadocs}/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`], or
+{solr-core-javadocs}/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`], or
 internal requests will not be able to be authenticated.
 
 ==== Metrics Changes for HTTP/2

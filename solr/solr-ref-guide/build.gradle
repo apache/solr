@@ -87,6 +87,14 @@ ext {
   playbookTemplate = "playbook.template.yml"
   localPlaybook = "local-playbook.yml"
   officialPlaybook = "official-playbook.yml"
+
+  // Modules the guide links Javadocs for, one 'solr-<module>-javadocs'
+  // attribute each. Modifying this list also requires modifying
+  // `antora.template.yml`.
+  javadocModules = [
+      'core', 'solrj', 'solrj-jetty', 'solrj-streaming', 'solrj-zookeeper',
+      'analysis-extras', 'langid', 'language-models', 'ltr', 'scripting'
+  ]
 }
 
 /*
@@ -428,6 +436,15 @@ task buildLocalAntoraSite(type: NpxTask) {
       "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}/javadocs/api",
       "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
   ]
+
+  // The per-module attributes listed in antora.template.yml, pointed at the
+  // same local tree as solr-javadocs.
+  javadocModules.each {module ->
+    extraArgs.addAll([
+        "--attribute",
+        "solr-${module}-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}/javadocs/api"
+    ])
+  }
 
   if (buildLocalUI) {
     dependsOn tasks.buildUIBundle
