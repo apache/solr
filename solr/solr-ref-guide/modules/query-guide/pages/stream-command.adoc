@@ -26,14 +26,14 @@ It may change in backwards-incompatible ways as it evolves to cover additional f
 
 To run it, open a terminal and enter:
 
-[,console]
+[,bash]
 ----
-$ bin/solr stream -c techproducts --header --fields price,name --delimiter=\| 'search(techproducts,q="iPod",fl="name,price")'
+bin/solr stream -c techproducts --header --fields price,name --delimiter=\| 'search(techproducts,q="iPod",fl="name,price")'
 ----
 
 This will run the provided streaming expression on the `techproducts` collection on your local Solr and produce:
 
-[,console]
+[,text]
 ----
 price|name
 11.5|iPod & iPod Mini USB 2.0 Cable
@@ -70,14 +70,14 @@ Notice the various ways to format comments in the file?
 
 Then you can run it on the Solr collection `techproducts`, specifying you want a header row:
 
-[,console]
+[,bash]
 ----
-$ bin/solr stream --header -c techproducts stream.expr
+bin/solr stream --header -c techproducts stream.expr
 ----
 
 And this will produce:
 
-[,console]
+[,text]
 ----
 name   price
 CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail   185.0
@@ -151,9 +151,9 @@ Running this expression will read in the local file and send the first two lines
 TIP: Want to send data to a remote Solr?  pass in `--solr-url http://solr.remote:8983`.
 
 
-[,console]
+[,bash]
 ----
-$ bin/solr stream --execution local --header load_data.expr
+bin/solr stream --execution local --header load_data.expr
 ----
 
 
@@ -171,9 +171,9 @@ Caveats:
 
 Index a CSV file into `gettingstarted` collection.
 
-[,console]
+[,bash]
 ----
-$ cat example/exampledocs/books.csv | bin/solr stream -e local 'update(gettingstarted,parseCSV(stdin()))'
+cat example/exampledocs/books.csv | bin/solr stream -e local 'update(gettingstarted,parseCSV(stdin()))'
 ----
 
 === Variable interpolation
@@ -200,7 +200,7 @@ update(
 )
 ----
 
-[,console]
+[,bash]
 ----
-$ bin/solr stream -c techproducts file.expr ./example/exampledocs/books.csv 10
+bin/solr stream -c techproducts file.expr ./example/exampledocs/books.csv 10
 ----

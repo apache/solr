@@ -147,6 +147,11 @@ public class S3BackupRepository extends AbstractBackupRepository {
   }
 
   @Override
+  public boolean supportsEmptyDirectories() {
+    return false;
+  }
+
+  @Override
   public void deleteDirectory(URI path) throws IOException {
     Objects.requireNonNull(path, "cannot delete directory with a null URI");
 
@@ -285,7 +290,6 @@ public class S3BackupRepository extends AbstractBackupRepository {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
       }
 
-      client.createDirectory(getS3Path(dest));
       try (OutputStream outputStream = client.pushStream(s3Path)) {
 
         byte[] buffer = new byte[CHUNK_SIZE];

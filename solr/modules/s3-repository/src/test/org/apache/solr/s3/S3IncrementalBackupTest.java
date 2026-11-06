@@ -19,14 +19,33 @@ package org.apache.solr.s3;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.BackupRestoreUtils;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Test;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.Nightly
@@ -140,5 +159,179 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   @Override
   public String getBackupLocation() {
     return "/";
+  }
+
+  /**
+   * Copying a backup to another bucket or prefix with tools such as {@code aws s3 sync} only copies
+   * the real files, not zero-byte directory marker objects. Such a copy, configset included, must
+   * still restore.
+   */
+  @Test
+  public void testRestoreBackupCopiedWithoutDirectoryMarkers() throws Exception {
+    setTestSuffix("testcopiedwithoutmarkers");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+    final String restoreConfigName = "conf1_restored";
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+    final String copyLocation = "copied-backups";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+        .setLocation(getBackupLocation())
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(solrClient, 100);
+
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      List<String> keys =
+          s3
+              .listObjectsV2Paginator(b -> b.bucket(BUCKET_NAME).prefix(backupName + "/"))
+              .contents()
+              .stream()
+              .map(S3Object::key)
+              .toList();
+      assertTrue(
+          "Backup should contain the configset",
+          keys.stream().anyMatch(k -> k.contains("/configs/conf1/")));
+      assertFalse(
+          "Backup should not contain directory marker objects: " + keys,
+          keys.stream().anyMatch(k -> k.endsWith("/")));
+
+      for (String key : keys) {
+        s3.copyObject(
+            b ->
+                b.sourceBucket(BUCKET_NAME)
+                    .sourceKey(key)
+                    .destinationBucket(BUCKET_NAME)
+                    .destinationKey(copyLocation + "/" + key));
+      }
+    }
+
+    // Restoring under a new config name makes the restore upload the configset from the backup
+    CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setLocation(copyLocation)
+        .setConfigName(restoreConfigName)
+        .setRepositoryName(BACKUP_REPO_NAME)
+        .processAndWait(solrClient, 500);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
+
+    assertTrue(
+        new ConfigSetAdminRequest.List()
+            .process(solrClient)
+            .getConfigSets()
+            .contains(restoreConfigName));
+    assertEquals(
+        numDocs,
+        solrClient.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound());
+  }
+
+  /**
+   * S3 can't hold an empty directory, so a backup location doesn't have to be created first: it
+   * comes into existence with the first file of the backup. Restoring from a location that holds
+   * nothing still fails.
+   */
+  @Test
+  public void testBackupToLocationThatDoesNotExistYet() throws Exception {
+    setTestSuffix("testnewlocation");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+    final String newLocation = "new-location/nested";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+            .setLocation(newLocation)
+            .setRepositoryName(BACKUP_REPO_NAME)
+            .processAndWait(solrClient, 100));
+
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+            .setLocation(newLocation)
+            .setRepositoryName(BACKUP_REPO_NAME)
+            .processAndWait(solrClient, 500));
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
+    assertEquals(
+        numDocs,
+        solrClient.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound());
+
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () ->
+                CollectionAdminRequest.restoreCollection(restoreCollectionName + "_2", backupName)
+                    .setLocation("missing-location")
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .processAndWait(solrClient, 100));
+    assertTrue(e.getMessage(), e.getMessage().contains("does not exist"));
+  }
+
+  /**
+   * A core backup in the non-incremental format to a location that does not exist yet. On S3 the
+   * location only comes into existence with the first file of the backup.
+   */
+  @Test
+  public void testNonIncrementalCoreBackupToLocationThatDoesNotExistYet() throws Exception {
+    setTestSuffix("testcorenewlocation");
+    final String collectionName = getCollectionName();
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+    final String newLocation = "new-core-location/nested";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1).process(solrClient);
+    int numDocs = indexDocs(collectionName, true);
+    Replica replica =
+        solrClient.getClusterState().getCollection(collectionName).getLeader("shard1");
+
+    runCoreAdminCommand(
+        replica,
+        CoreAdminAction.BACKUPCORE,
+        Map.of(
+            "name", backupName,
+            "repository", BACKUP_REPO_NAME,
+            "location", newLocation,
+            "incremental", "false"));
+
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      assertFalse(
+          "Backup should contain the snapshot's index files",
+          s3.listObjectsV2(
+                  b -> b.bucket(BUCKET_NAME).prefix(newLocation + "/snapshot." + backupName + "/"))
+              .contents()
+              .isEmpty());
+    }
+
+    solrClient.deleteByQuery(collectionName, "*:*");
+    solrClient.commit(collectionName);
+    runCoreAdminCommand(
+        replica,
+        CoreAdminAction.RESTORECORE,
+        Map.of(
+            "name", "snapshot." + backupName,
+            "repository", BACKUP_REPO_NAME,
+            "location", newLocation));
+    BackupRestoreUtils.verifyDocs(numDocs, solrClient, collectionName);
+  }
+
+  private void runCoreAdminCommand(
+      Replica replica, CoreAdminAction action, Map<String, String> params) throws Exception {
+    ModifiableSolrParams coreParams = new ModifiableSolrParams();
+    coreParams.set("action", action.toString());
+    coreParams.set("core", replica.getCoreName());
+    params.forEach(coreParams::set);
+    cluster
+        .getJetty(replica.getNodeName())
+        .getSolrClient()
+        .request(
+            new GenericSolrRequest(METHOD.GET, "/admin/cores", SolrRequestType.ADMIN, coreParams));
   }
 }

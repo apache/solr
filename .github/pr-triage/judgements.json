@@ -1,0 +1,80 @@
+{
+  "_doc": "Each judgement is a question about what the change warrants on its merits, whatever the author included; the comment compares the verdict with what the PR includes.\nJudgement keys: id, title, question, help_url (the title links there).\nWhat the PR includes: evidence_files (globs; a changed file counts unless removed) minus evidence_exclude, or evidence_title (regex on the PR title). Matching files are hidden from the model. skip_when_included: the model is not asked when the evidence is present.\nChoice questions: choices (the verdict is one of these strings); evidence_value {files, pattern} gives the values the PR provides (group 1 of pattern, matched on added lines); absent_choice is the choice meaning nothing is warranted.\nTop level: model_defaults; max_diff_chars; exclude_patches (patches listed by name only); min_confidence (below it a mismatch is a weak signal); summary_from {files, pattern}: text given to every judgement as the author's own summary (the changelog entry title).",
+  "model_defaults": {
+    "temperature": 0,
+    "max_tokens": 2000,
+    "extra_body": {"chat_template_kwargs": {"enable_thinking": false}}
+  },
+  "max_diff_chars": 60000,
+  "exclude_patches": [
+    "**/*.lockfile",
+    "solr/licenses/**",
+    "**/*.sha1",
+    "gradle/libs.versions.toml"
+  ],
+  "min_confidence": "medium",
+  "summary_from": {
+    "files": ["changelog/unreleased/**"],
+    "pattern": "^\\+title:[ \\t]*(.*(?:\\n\\+[ \\t]+\\S.*)*)"
+  },
+  "judgements": [
+    {
+      "id": "needs_jira",
+      "title": "Jira issue in title",
+      "help_url": "https://github.com/apache/solr/blob/main/CONTRIBUTING.md",
+      "evidence_title": "\\bSOLR-[1-9][0-9]*\\b",
+      "skip_when_included": true,
+      "question": "Is this change substantial enough to warrant a Solr Jira issue under the contribution guidelines? A Jira issue is warranted only for a change that also warrants a changelog entry, i.e. one that Solr users or operators would notice. If it needs no release note (pure refactoring, test-only, build/CI, internal cleanup, typo fixes, documentation-only), the verdict is false. Judge the change itself. This is advisory, not verification that an issue exists or that the referenced issue matches the change."
+    },
+    {
+      "id": "needs_changelog",
+      "title": "Changelog",
+      "help_url": "https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc#_changelog_types_reference",
+      "choices": [
+        "added",
+        "changed",
+        "fixed",
+        "deprecated",
+        "removed",
+        "dependency_update",
+        "other",
+        "(not-worthy)"
+      ],
+      "absent_choice": "(not-worthy)",
+      "evidence_value": {
+        "files": [
+          "changelog/unreleased/**"
+        ],
+        "pattern": "^\\+type:\\s*([a-z_]+)"
+      },
+      "question": "Which changelog type fits this change? Choose a type only if the change is one that Solr users or operators would notice and so warrants a release-note entry. added: a change requiring a user to take action to use it (opt-in), such as a new feature or new configuration value, typically documented in the Reference Guide. changed: an improvement that is not opt-in, modifying behavior or performance of existing requests or configuration. fixed: fixes buggy behavior with a user-visible symptom, such as a NullPointerException, data corruption, or a UI glitch. A fix to the build, tests, or developer tooling is not fixed; use other. deprecated: marks a configuration option, class, or API endpoint deprecated ahead of removal. removed: removes something previously deprecated, such as a parameter, class, or legacy module. dependency_update: a non-trivial dependency update, such as Lucene, Jetty, or Jackson. other: anything else worth a note, e.g. a large refactoring, or a build change or build fix worth a note. Answer (not-worthy) when no entry is warranted: pure refactoring, test-only changes, build/CI changes, internal cleanup, typo fixes, and documentation-only changes."
+    },
+    {
+      "id": "needs_ref_guide",
+      "title": "Reference Guide update",
+      "help_url": "https://github.com/apache/solr/tree/main/solr/solr-ref-guide",
+      "evidence_files": ["solr/solr-ref-guide/**"],
+      "evidence_exclude": ["solr/solr-ref-guide/modules/upgrade-notes/**"],
+      "question": "Does this PR add, change, or remove something documented (or that ought to be documented) in the Solr Reference Guide, such as a request parameter, a solrconfig.xml or schema setting, a system property or env var, a V1/V2 API, a CLI option, a metric, or a user-facing behavior, such that the Reference Guide (solr/solr-ref-guide) should be updated? Internal changes do not count."
+    },
+    {
+      "id": "needs_upgrade_notes",
+      "title": "Upgrade notes",
+      "help_url": "https://github.com/apache/solr/tree/main/solr/solr-ref-guide/modules/upgrade-notes/pages",
+      "evidence_files": ["solr/solr-ref-guide/modules/upgrade-notes/**"],
+      "question": "Is this PR a backwards-incompatible change that users must act on when upgrading: a removed or renamed parameter, API, config element, class used by plugins, or a changed default that alters existing behavior? The verdict is false for additive changes and for changes to internal classes that plugins would not reasonably use."
+    },
+    {
+      "id": "needs_tests",
+      "title": "Tests",
+      "evidence_files": [
+        "**/src/test*/**",
+        "**/src/commonTest/**",
+        "**/src/jvmTest/**",
+        "**/src/wasmJsTest/**",
+        "dev-tools/scripts/tests/test_*.py"
+      ],
+      "question": "Does this PR change non-trivial production logic (beyond refactoring, renames, logging, or comments) such that it should come with new or changed tests, whether or not the diff already includes some? Build, CI and developer tooling (workflows, Gradle build logic, scripts under dev-tools) does not need tests: the verdict is false."
+    }
+  ]
+}

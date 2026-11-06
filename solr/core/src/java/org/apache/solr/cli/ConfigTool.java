@@ -25,6 +25,8 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -34,8 +36,23 @@ import org.noggit.JSONWriter;
  *
  * <p>Sends a POST to the Config API to perform a specified action.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "config",
+    description = "Sends a POST to the Config API to perform a specified action.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Set a config property",
+      "  bin/solr config -c mycollection --property updateHandler.autoSoftCommit.maxTime --value"
+          + " 10000"
+    })
 public class ConfigTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -45,6 +62,11 @@ public class ConfigTool extends ToolBase {
           .desc("Name of the collection.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option ACTION_OPTION =
       Option.builder("a")
           .longOpt("action")
@@ -54,6 +76,11 @@ public class ConfigTool extends ToolBase {
               "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option PROPERTY_OPTION =
       Option.builder()
           .longOpt("property")
@@ -64,6 +91,11 @@ public class ConfigTool extends ToolBase {
               "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option VALUE_OPTION =
       Option.builder("v")
           .longOpt("value")
@@ -80,6 +112,68 @@ public class ConfigTool extends ToolBase {
       String property,
       String value,
       String credentials) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "NAME",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  /** The values of {@code --action}, spelled on the command line as {@link #toString()} says. */
+  enum Action {
+    SET_PROPERTY("set-property"),
+    UNSET_PROPERTY("unset-property"),
+    SET_USER_PROPERTY("set-user-property"),
+    UNSET_USER_PROPERTY("unset-user-property");
+
+    private final String id;
+
+    Action(String id) {
+      this.id = id;
+    }
+
+    @Override
+    public String toString() {
+      return id;
+    }
+  }
+
+  @picocli.CommandLine.Option(
+      names = {"-a", "--action"},
+      defaultValue = "set-property",
+      paramLabel = "ACTION",
+      description =
+          "Config API action, one of: ${COMPLETION-CANDIDATES}; default is '${DEFAULT-VALUE}'.")
+  private Action actionOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--property",
+      required = true,
+      paramLabel = "PROP",
+      description =
+          "Name of the Config API property to apply the action to, such as:"
+              + " 'updateHandler.autoSoftCommit.maxTime'.")
+  private String propertyOpt;
+
+  // Long-only: "-v" is ToolBase's --verbose, and picocli rejects a duplicate short name. Under
+  // commons-cli the later-added VALUE_OPTION wins, so there "-v" still means --value.
+  @picocli.CommandLine.Option(
+      names = "--value",
+      paramLabel = "VALUE",
+      description = "Set the property to this value; accepts JSON objects and strings.")
+  private String valueOpt;
+
+  public ConfigTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ConfigTool(ToolRuntime runtime) {
     super(runtime);
@@ -161,5 +255,43 @@ public class ConfigTool extends ToolBase {
         throw new Exception("Failed to " + action + " property due to:\n" + result);
       }
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    String solrUrl = resolveSolrUrl(credentialsOptions.credentials);
+
+    // value is required unless the property is one of the "unset-" type.
+    String action = actionOpt.toString();
+    if (!action.contains("unset-") && valueOpt == null) {
+      throw new MissingArgumentException("'value' is a required option.");
+    }
+
+    ConfigParams params =
+        new ConfigParams(
+            solrUrl, action, nameOpt, propertyOpt, valueOpt, credentialsOptions.credentials);
+    updateConfig(params);
+    return 0;
+  }
+
+  private String resolveSolrUrl(String credentials) throws Exception {
+    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
+    if (solrUrlArg != null) {
+      return CLIUtils.normalizeSolrUrl(solrUrlArg);
+    }
+    String zkHostArg =
+        (connectionOptions != null)
+            ? connectionOptions.effectiveZkHost()
+            : EnvUtils.getProperty("zkHost");
+    if (zkHostArg != null) {
+      return CLIUtils.solrUrlFromConnection(
+          CloudSolrClient.CloudSolrClientConnection.parse(zkHostArg), credentials);
+    }
+    String defaultSolrUrl = CLIUtils.getDefaultSolrUrl();
+    CLIO.err(
+        "Neither --zk-host or --solr-url parameters, nor ZK_HOST env var provided, so assuming solr url is "
+            + defaultSolrUrl
+            + ".");
+    return defaultSolrUrl;
   }
 }

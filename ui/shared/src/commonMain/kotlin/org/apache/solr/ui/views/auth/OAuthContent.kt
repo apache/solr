@@ -24,15 +24,10 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import org.apache.solr.ui.components.auth.OAuthComponent
-import org.apache.solr.ui.components.auth.store.OAuthStore
+import org.apache.solr.ui.components.auth.viewmodel.OAuthUiState
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.action_sign_in_with_identity_provider
 import org.apache.solr.ui.shared.generated.resources.action_sign_in_with_realm
@@ -46,7 +41,8 @@ import org.jetbrains.compose.resources.stringResource
  * The Oauth content is an input button where the user can click to authenticate and sign in to a
  * Solr instance via an identity provider.
  *
- * @param component The [OAuthComponent] that is handling the interactions with this composable.
+ * @param uiState The state of the OAuth authentication to render.
+ * @param onAuthenticate Called when the user wants to authenticate via the identity provider.
  * @param modifier Modifier that is applied to the root of this composable.
  * @param isAuthenticating Whether the user is currently being authenticated. This disables the inputs
  * and updates the text shown in the button.
@@ -55,7 +51,8 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Composable
 fun OAuthContent(
-    component: OAuthComponent,
+    uiState: OAuthUiState,
+    onAuthenticate: () -> Unit,
     modifier: Modifier = Modifier,
     isAuthenticating: Boolean = true,
     showSupportingText: Boolean = true,
@@ -63,11 +60,9 @@ fun OAuthContent(
     modifier = modifier,
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
-    val model by component.model.collectAsState()
-
     if (showSupportingText) {
         Text(
-            text = model.realm?.let {
+            text = uiState.realm?.let {
                 stringResource(Res.string.desc_sign_in_with_oauth_to_realm, it)
             } ?: stringResource(Res.string.desc_sign_in_with_oauth),
             style = MaterialTheme.typography.bodyMedium,
@@ -77,14 +72,14 @@ fun OAuthContent(
     Column {
         SolrButton(
             modifier = Modifier.fillMaxWidth().testTag(tag = "oauth_sign_in_button"),
-            onClick = component::onAuthenticate,
+            onClick = onAuthenticate,
             enabled = !isAuthenticating,
         ) {
             Text(
                 text = if (isAuthenticating) {
                     stringResource(Res.string.authenticating)
                 } else {
-                    model.realm?.let {
+                    uiState.realm?.let {
                         stringResource(Res.string.action_sign_in_with_realm, it)
                     } ?: stringResource(Res.string.action_sign_in_with_identity_provider)
                 },
@@ -94,17 +89,6 @@ fun OAuthContent(
             LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth().testTag(tag = "loading_indicator"),
             )
-        }
-    }
-
-    val uriHandler = LocalUriHandler.current
-    // Listen for labels once per composition
-    LaunchedEffect(component) {
-        component.labels.collect { label ->
-            when (label) {
-                is OAuthStore.Label.AuthenticationStarted -> uriHandler.openUri(uri = label.url.toString())
-                else -> Unit
-            }
         }
     }
 }

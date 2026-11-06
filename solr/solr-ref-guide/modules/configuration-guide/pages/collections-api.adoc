@@ -45,8 +45,6 @@ However, there is a limit of 10,000 on the number of async call responses stored
 
 === Examples of Async Requests
 
-*Input*
-
 [tabs#asyncexample]
 ======
 V1 API::
@@ -65,7 +63,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/{collectionName}/shards -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/shards' -H 'Content-Type: application/json' -d '
   {
     "split": {
       "shard": "shard1",
@@ -117,7 +115,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/commands/1000
+curl 'http://localhost:8983/api/cluster/commands/1000'
 ----
 ====
 ======
@@ -205,13 +203,13 @@ V2 API::
 Delete a single request response:
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/commands/1000
+curl -X DELETE 'http://localhost:8983/api/cluster/commands/1000'
 ----
 
 Flush out all stored completed and failed async request responses:
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/commands
+curl -X DELETE 'http://localhost:8983/api/cluster/commands'
 ----
 ====
 ======

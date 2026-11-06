@@ -25,7 +25,6 @@ package org.apache.solr.handler.tagger;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import org.apache.lucene.document.Field;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -130,6 +129,6 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     QueryResponse rsp = req.process(solrServer);
     assertNotNull(rsp.getResponse().get("tags"));
     assertNotNull(refDoc.get());
-    assertEquals("Boston", ((Field) refDoc.get().getFieldValue("name")).stringValue());
+    assertEquals("Boston", refDoc.get().getFieldValue("name"));
   }
 }

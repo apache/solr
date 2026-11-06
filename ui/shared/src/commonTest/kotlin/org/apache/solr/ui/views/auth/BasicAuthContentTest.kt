@@ -17,6 +17,7 @@
 
 package org.apache.solr.ui.views.auth
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
@@ -26,8 +27,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import org.apache.solr.ui.components.auth.BasicAuthComponent
-import org.apache.solr.ui.components.auth.BasicAuthComponent.Model
+import org.apache.solr.ui.components.auth.viewmodel.BasicAuthUiState
 import org.apache.solr.ui.isErrorSemantics
 
 @OptIn(ExperimentalTestApi::class)
@@ -36,7 +36,7 @@ class BasicAuthContentTest {
     @Test
     fun `WHEN initialized THEN input is empty`() = runComposeUiTest {
         setContent {
-            BasicAuthContent(createComponent())
+            TestBasicAuthContent()
         }
 
         assertEquals(
@@ -61,7 +61,7 @@ class BasicAuthContentTest {
     @Test
     fun `GIVEN isAuthenticating THEN inputs disabled`() = runComposeUiTest {
         setContent {
-            BasicAuthContent(component = createComponent(), isAuthenticating = true)
+            TestBasicAuthContent(isAuthenticating = true)
         }
 
         onNodeWithTag("username_input_field").assertIsNotEnabled()
@@ -72,7 +72,7 @@ class BasicAuthContentTest {
     @Test
     fun `GIVEN isAuthenticating THEN loading indicator displayed`() = runComposeUiTest {
         setContent {
-            BasicAuthContent(component = createComponent(), isAuthenticating = true)
+            TestBasicAuthContent(isAuthenticating = true)
         }
 
         onNodeWithTag("loading_indicator").assertIsDisplayed()
@@ -81,12 +81,22 @@ class BasicAuthContentTest {
     @Test
     fun `GIVEN has error THEN input fields highlighted as error`() = runComposeUiTest {
         setContent {
-            BasicAuthContent(component = createComponent(Model(hasError = true)))
+            TestBasicAuthContent(uiState = BasicAuthUiState(hasError = true))
         }
 
         onNodeWithTag("username_input_field").assert(matcher = isErrorSemantics)
         onNodeWithTag("password_input_field").assert(matcher = isErrorSemantics)
     }
 
-    private fun createComponent(model: Model = Model()): BasicAuthComponent = TestBasicAuthComponent(model = model)
+    @Composable
+    private fun TestBasicAuthContent(
+        uiState: BasicAuthUiState = BasicAuthUiState(),
+        isAuthenticating: Boolean = true,
+    ) = BasicAuthContent(
+        uiState = uiState,
+        onChangeUsername = {},
+        onChangePassword = {},
+        onAuthenticate = {},
+        isAuthenticating = isAuthenticating,
+    )
 }

@@ -171,11 +171,16 @@ The V2 `/metrics` endpoint is equivalent to the V1 `/admin/metrics` endpoint.
 Examples on this page show only the V2 endpoint.
 ====
 
+Metrics collection can be switched off for a node with `<metrics enabled="false"/>` in `solr.xml`.
+Both endpoints then respond with `HTTP 510` and the message `Metrics collection is disabled`, which a Prometheus scraper reports as a target that is down.
+
 === Prometheus
 
 See https://prometheus.io/docs/concepts/data_model/[Prometheus Data Model] documentation for more information on its data model.
 
 This endpoint can be used to pull/scrape metrics to a Prometheus server or any Prometheus-compatible backend directly from Solr.
+
+TIP: For a worked Prometheus and Grafana setup, including the dashboard and alert rules Solr ships, see xref:monitoring-with-prometheus-and-grafana.adoc[].
 
 ==== Prometheus Setup
 

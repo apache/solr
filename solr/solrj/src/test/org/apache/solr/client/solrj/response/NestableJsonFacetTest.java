@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
 public class NestableJsonFacetTest extends SolrTestCaseJ4 {
@@ -29,46 +30,14 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
   public void testParsing() {
     NamedList<Object> list = new NamedList<>();
     list.add("count", 12);
-    NamedList<Object> buckets =
-        new NamedList<>() {
-          {
-            add("val", "Nike");
-          }
-        };
-    NamedList<Object> vals =
-        new NamedList<>() {
-          {
-            add("numBuckets", 10);
-            add(
-                "allBuckets",
-                new NamedList<>() {
-                  {
-                    add("count", 12);
-                  }
-                });
-            add(
-                "before",
-                new NamedList<>() {
-                  {
-                    add("count", 1);
-                  }
-                });
-            add(
-                "after",
-                new NamedList<>() {
-                  {
-                    add("count", 2);
-                  }
-                });
-            add(
-                "between",
-                new NamedList<>() {
-                  {
-                    add("count", 9);
-                  }
-                });
-          }
-        };
+    NamedList<Object> buckets = new NamedList<>();
+    buckets.add("val", "Nike");
+    NamedList<Object> vals = new NamedList<>();
+    vals.add("numBuckets", 10);
+    vals.add("allBuckets", SimpleOrderedMap.of("count", 12));
+    vals.add("before", SimpleOrderedMap.of("count", 1));
+    vals.add("after", SimpleOrderedMap.of("count", 2));
+    vals.add("between", SimpleOrderedMap.of("count", 9));
     vals.add("buckets", List.of(buckets));
     list.add("test", vals);
     NestableJsonFacet facet = new NestableJsonFacet(list);
@@ -78,46 +47,14 @@ public class NestableJsonFacetTest extends SolrTestCaseJ4 {
     list.clear();
 
     list.add("count", 12L);
-    buckets =
-        new NamedList<>() {
-          {
-            add("val", "Nike");
-          }
-        };
-    vals =
-        new NamedList<>() {
-          {
-            add("numBuckets", 10L);
-            add(
-                "allBuckets",
-                new NamedList<>() {
-                  {
-                    add("count", 12L);
-                  }
-                });
-            add(
-                "before",
-                new NamedList<>() {
-                  {
-                    add("count", 1L);
-                  }
-                });
-            add(
-                "after",
-                new NamedList<>() {
-                  {
-                    add("count", 2L);
-                  }
-                });
-            add(
-                "between",
-                new NamedList<>() {
-                  {
-                    add("count", 9L);
-                  }
-                });
-          }
-        };
+    buckets = new NamedList<>();
+    buckets.add("val", "Nike");
+    vals = new NamedList<>();
+    vals.add("numBuckets", 10L);
+    vals.add("allBuckets", SimpleOrderedMap.of("count", 12L));
+    vals.add("before", SimpleOrderedMap.of("count", 1L));
+    vals.add("after", SimpleOrderedMap.of("count", 2L));
+    vals.add("between", SimpleOrderedMap.of("count", 9L));
     vals.add("buckets", List.of(buckets));
     list.add("test", vals);
     facet = new NestableJsonFacet(list);
