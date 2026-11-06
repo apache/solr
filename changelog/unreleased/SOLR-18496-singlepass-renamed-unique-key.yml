@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: Fix a NullPointerException in single-pass distributed queries when fl renames the unique key.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18496
+    url: https://issues.apache.org/jira/browse/SOLR-18496

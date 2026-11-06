@@ -470,6 +470,30 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
         "true");
   }
 
+  /**
+   * The unique key is renamed by {@code fl} and not requested as itself: the single-pass merge must
+   * read it under the new name, as the two-pass one does.
+   */
+  @Test
+  public void testSinglePassWithRenamedUniqueKey() throws Exception {
+    SolrQuery twoPassQuery =
+        new SolrQuery("q", "*:*", "fl", "key:id", "sort", "payload asc", "rows", "20");
+    QueryResponse twoPass = cluster.getSolrClient().query(COLLECTION, twoPassQuery);
+    QueryResponse onePass =
+        cluster
+            .getSolrClient()
+            .query(COLLECTION, twoPassQuery.getCopy().set(ShardParams.DISTRIB_SINGLE_PASS, true));
+
+    assertTrue(twoPass.getResults().size() > 0);
+    assertEquals(twoPass.getResults().size(), onePass.getResults().size());
+    for (int i = 0; i < twoPass.getResults().size(); i++) {
+      assertEquals(
+          twoPass.getResults().get(i).getFieldValue("key"),
+          onePass.getResults().get(i).getFieldValue("key"));
+      assertNull(onePass.getResults().get(i).getFieldValue("id"));
+    }
+  }
+
   @Test
   public void testWildcardFieldList() throws Exception {
 

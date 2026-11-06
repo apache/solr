@@ -968,6 +968,23 @@ public class QueryComponent extends SearchComponent {
     };
   }
 
+  /**
+   * The name under which a shard's response documents carry the unique key. A single-pass request
+   * sends the original {@code fl} to the shards, so a key renamed there (e.g. {@code fl=aliasId:id}
+   * without {@code id}) comes back under the new name; otherwise the shards only return the key
+   * itself.
+   */
+  static String shardResponseKeyName(ResponseBuilder rb, SchemaField uniqueKeyField) {
+    String keyName = uniqueKeyField.getName();
+    if (rb.onePassDistributedQuery) {
+      String renamed = rb.rsp.getReturnFields().getFieldRenames().get(keyName);
+      if (renamed != null) {
+        return renamed;
+      }
+    }
+    return keyName;
+  }
+
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
@@ -1009,6 +1026,7 @@ public class QueryComponent extends SearchComponent {
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
+    String keyNameInShardDocs = shardResponseKeyName(rb, uniqueKeyField);
 
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
@@ -1202,7 +1220,7 @@ public class QueryComponent extends SearchComponent {
       // put it in the priority queue so it can be ordered.
       for (int i = 0; i < docs.size(); i++) {
         SolrDocument doc = docs.get(i);
-        Object id = doc.getFieldValue(uniqueKeyField.getName());
+        Object id = doc.getFieldValue(keyNameInShardDocs);
         ShardDoc shardDoc = new ShardDoc();
         shardDoc.id = id;
         shardDoc.shard = srsp.getShard();
