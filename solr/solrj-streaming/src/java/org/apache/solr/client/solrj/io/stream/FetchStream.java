@@ -150,6 +150,14 @@ public class FetchStream extends TupleStream implements Expressible {
       leftKey = rightKey = on;
     }
 
+    if (containsBatchBreakingChar(rightKey)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "fetch on parameter has an invalid join field name [%s]: whitespace, '}', a leading quote and a leading '$' are not allowed",
+              rightKey));
+    }
+
     for (int i = 0; i < fields.length; i++) {
       fields[i] = fields[i].trim();
       if (fields[i].equals(VERSION_FIELD)) {
@@ -160,6 +168,22 @@ public class FetchStream extends TupleStream implements Expressible {
         appendKey = false;
       }
     }
+  }
+
+  // The batch query embeds the join field name as an unquoted local-params value. That reader
+  // ends an unquoted literal at whitespace or '}', a leading quote starts a quoted string, and
+  // a leading $ dereferences a request parameter, so reject exactly those shapes.
+  private static boolean containsBatchBreakingChar(String name) {
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if (Character.isWhitespace(c) || c == '}') {
+        return true;
+      }
+      if (i == 0 && (c == '\'' || c == '"' || c == '$')) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -244,6 +268,9 @@ public class FetchStream extends TupleStream implements Expressible {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", buf.toString());
+      // The local-params prefix above is only honored by the lucene parser; do not inherit another
+      // defType (e.g. edismax) from the target request handler defaults.
+      params.add("defType", "lucene");
       params.add("fl", fieldList + appendFields());
       params.add("rows", Integer.toString(batchSize));
       params.add(SORT, "_version_ desc");
