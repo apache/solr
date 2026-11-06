@@ -1,0 +1,7 @@
+title: Field mutating update processors now apply their field selectors inside anonymous and labelled child documents, independently of the parent field name
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-16655
+    url: https://issues.apache.org/jira/browse/SOLR-16655
