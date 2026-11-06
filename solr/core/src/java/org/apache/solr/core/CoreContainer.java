@@ -770,8 +770,8 @@ public class CoreContainer {
 
     solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
     solrMetricsContext.observableLongCounter(
-        "solr.search.listener.lost",
-        "Searches not delivered to search request listeners",
+        SearchRequestListenerManager.LOST_METRIC,
+        SearchRequestListenerManager.LOST_METRIC_DESCRIPTION,
         measurement -> measurement.record(searchRequestListenerManager.lost()));
 
     initGpuMetricsService(); // Initialize GPU metrics service

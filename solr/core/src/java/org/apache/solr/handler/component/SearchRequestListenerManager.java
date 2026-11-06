@@ -40,6 +40,11 @@ public class SearchRequestListenerManager implements Closeable {
 
   public static final String QUEUE_SIZE_PROP = "solr.search.listener.queue.size";
 
+  public static final String LOST_METRIC = "solr.search.listener.lost";
+
+  public static final String LOST_METRIC_DESCRIPTION =
+      "Searches not delivered to search request listeners";
+
   static final int DEFAULT_QUEUE_SIZE = 1000;
 
   static final long CLOSE_TIMEOUT_MS = 5000;

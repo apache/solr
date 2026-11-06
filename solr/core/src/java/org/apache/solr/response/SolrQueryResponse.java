@@ -82,6 +82,8 @@ public class SolrQueryResponse {
 
   public static final String RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY = "approximateTotalHits";
 
+  public static final String RESPONSE_HEADER_QTIME_KEY = "QTime";
+
   public static final String RESPONSE_HEADER_KEY = "responseHeader";
   private static final String RESPONSE_KEY = "response";
 
@@ -198,7 +200,9 @@ public class SolrQueryResponse {
   /** The QTime in the response header, or -1 before it is set. */
   public long getQTime() {
     NamedList<Object> header = getResponseHeader();
-    return header != null && header.get("QTime") instanceof Number qtime ? qtime.longValue() : -1;
+    return header != null && header.get(RESPONSE_HEADER_QTIME_KEY) instanceof Number qtime
+        ? qtime.longValue()
+        : -1;
   }
 
   /** The hit count added to the request log, or null if none was. */

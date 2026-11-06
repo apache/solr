@@ -2972,11 +2972,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
       else status = 500;
     }
     responseHeader.add("status", status);
-    responseHeader.add("QTime", qtime);
+    responseHeader.add(SolrQueryResponse.RESPONSE_HEADER_QTIME_KEY, qtime);
 
     if (rsp.getToLog().size() > 0) {
       rsp.getToLog().add("status", status);
-      rsp.getToLog().add("QTime", qtime);
+      rsp.getToLog().add(SolrQueryResponse.RESPONSE_HEADER_QTIME_KEY, qtime);
     }
 
     SolrParams params = req.getParams();
