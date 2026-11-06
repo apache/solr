@@ -107,69 +107,77 @@ public class TestThinCache extends SolrTestCaseJ4 {
     ThinCache<Object, Integer, String> lfuCache = new ThinCache<>();
     String lfuCacheName = "lfu_cache";
     lfuCache.setBacking(cacheScope, backing);
-    var solrMetricsContext = new SolrMetricsContext(metricManager, registry);
-    solrMetricsContext.registerCloseable(lfuCache);
-    lfuCache.initializeMetrics(
-        solrMetricsContext,
-        Attributes.of(
-            CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString(), NAME_ATTR, lfuCacheName),
-        "solr_node_cache");
+    try (var solrMetricsContext = new SolrMetricsContext(metricManager, registry)) {
+      solrMetricsContext.registerCloseable(lfuCache);
+      lfuCache.initializeMetrics(
+          solrMetricsContext,
+          Attributes.of(
+              CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString(), NAME_ATTR, lfuCacheName),
+          "solr_node_cache");
 
-    Object cacheScope2 = new Object();
-    ThinCache<Object, Integer, String> newLFUCache = new ThinCache<>();
-    solrMetricsContext.registerCloseable(newLFUCache);
-    String newLfuCacheName = "new_lfu_cache";
-    newLFUCache.setBacking(cacheScope2, backing);
-    newLFUCache.initializeMetrics(
-        solrMetricsContext,
-        Attributes.of(
-            CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString(), NAME_ATTR, newLfuCacheName),
-        "solr_node_cache");
+      Object cacheScope2 = new Object();
+      ThinCache<Object, Integer, String> newLFUCache = new ThinCache<>();
+      solrMetricsContext.registerCloseable(newLFUCache);
+      String newLfuCacheName = "new_lfu_cache";
+      newLFUCache.setBacking(cacheScope2, backing);
+      newLFUCache.initializeMetrics(
+          solrMetricsContext,
+          Attributes.of(
+              CATEGORY_ATTR, SolrInfoBean.Category.CACHE.toString(), NAME_ATTR, newLfuCacheName),
+          "solr_node_cache");
 
-    Map<String, String> params = new HashMap<>();
-    params.put("size", "100");
-    params.put("initialSize", "10");
+      Map<String, String> params = new HashMap<>();
+      params.put("size", "100");
+      params.put("initialSize", "10");
 
-    NoOpRegenerator regenerator = new NoOpRegenerator();
-    backing.init(params, null, null);
-    Object initObj = lfuCache.init(Map.of("autowarmCount", "25"), null, regenerator);
-    lfuCache.setState(SolrCache.State.LIVE);
-    for (int i = 0; i < 101; i++) {
-      lfuCache.put(i + 1, Integer.toString(i + 1));
+      NoOpRegenerator regenerator = new NoOpRegenerator();
+      backing.init(params, null, null);
+      Object initObj = lfuCache.init(Map.of("autowarmCount", "25"), null, regenerator);
+      lfuCache.setState(SolrCache.State.LIVE);
+      for (int i = 0; i < 101; i++) {
+        lfuCache.put(i + 1, Integer.toString(i + 1));
+      }
+      assertEquals("15", lfuCache.get(15));
+      assertEquals("75", lfuCache.get(75));
+      assertNull(lfuCache.get(110));
+
+      var hits = getNodeCacheLookups(metricManager, registry, lfuCacheName, "hit");
+      var miss = getNodeCacheLookups(metricManager, registry, lfuCacheName, "miss");
+      var inserts = getNodeCacheOp(metricManager, registry, lfuCacheName, "inserts");
+      assertEquals(3L, hits + miss);
+      assertEquals(2L, hits);
+      assertEquals(101L, inserts);
+
+      assertNull(lfuCache.get(1)); // first item put in should be the first out
+
+      // Warming and the put below used to run against a full backing cache, so each put evicted
+      // an entry. Which entry is evicted depends on key hashes, and the scopes here hash by
+      // identity, so occasionally the victim was one of the second cache's own entries and its
+      // evictions metric read 1 instead of 0 (SOLR-18506). Size the backing above everything
+      // this test puts so that nothing is evicted from here on.
+      backing.setMaxSize(200);
+
+      // Test autowarming
+      newLFUCache.init(Map.of("autowarmCount", "25"), initObj, regenerator);
+      newLFUCache.warm(null, lfuCache);
+      newLFUCache.setState(SolrCache.State.LIVE);
+
+      newLFUCache.put(103, "103");
+      assertEquals("15", newLFUCache.get(15));
+      assertEquals("75", newLFUCache.get(75));
+      assertNull(newLFUCache.get(50));
+
+      var newhits = getNodeCacheLookups(metricManager, registry, newLfuCacheName, "hit");
+      var newmiss = getNodeCacheLookups(metricManager, registry, newLfuCacheName, "miss");
+      var newinserts = getNodeCacheOp(metricManager, registry, newLfuCacheName, "inserts");
+      var evictions = getNodeCacheOp(metricManager, registry, newLfuCacheName, "evictions");
+      assertEquals(7L, newhits + newmiss);
+      assertEquals(4L, newhits);
+      assertEquals(102L, newinserts);
+      // 0: the first cache is never registered for removals, and nothing is evicted after the
+      // resize.
+      assertEquals(0L, evictions);
     }
-    assertEquals("15", lfuCache.get(15));
-    assertEquals("75", lfuCache.get(75));
-    assertNull(lfuCache.get(110));
-
-    var hits = getNodeCacheLookups(metricManager, registry, lfuCacheName, "hit");
-    var miss = getNodeCacheLookups(metricManager, registry, lfuCacheName, "miss");
-    var inserts = getNodeCacheOp(metricManager, registry, lfuCacheName, "inserts");
-    assertEquals(3L, hits + miss);
-    assertEquals(2L, hits);
-    assertEquals(101L, inserts);
-
-    assertNull(lfuCache.get(1)); // first item put in should be the first out
-
-    // Test autowarming
-    newLFUCache.init(Map.of("autowarmCount", "25"), initObj, regenerator);
-    newLFUCache.warm(null, lfuCache);
-    newLFUCache.setState(SolrCache.State.LIVE);
-
-    newLFUCache.put(103, "103");
-    assertEquals("15", newLFUCache.get(15));
-    assertEquals("75", newLFUCache.get(75));
-    assertNull(newLFUCache.get(50));
-
-    var newhits = getNodeCacheLookups(metricManager, registry, newLfuCacheName, "hit");
-    var newmiss = getNodeCacheLookups(metricManager, registry, newLfuCacheName, "miss");
-    var newinserts = getNodeCacheOp(metricManager, registry, newLfuCacheName, "inserts");
-    var evictions = getNodeCacheOp(metricManager, registry, newLfuCacheName, "evictions");
-    assertEquals(7L, newhits + newmiss);
-    assertEquals(4L, newhits);
-    assertEquals(102L, newinserts);
-    assertEquals(0L, evictions);
-
-    solrMetricsContext.close();
   }
 
   @Test
