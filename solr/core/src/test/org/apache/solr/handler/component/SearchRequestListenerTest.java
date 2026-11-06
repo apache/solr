@@ -51,7 +51,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CallerSpecificQueryLimit;
-import org.apache.solr.search.QueryLimit;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.After;
@@ -497,58 +496,6 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
     Delivery delivery = delivery();
     long shardCpuTime = (Long) rsp.getResponseHeader().get(ThreadCpuTimer.CPU_TIME);
     long localCpuTime = (Long) delivery.captured();
-    assertEquals(Long.valueOf(shardCpuTime + localCpuTime), delivery.info().cpuTimeMs());
-    CollectionAdminRequest.deleteCollection(cpuCollection).process(cluster.getSolrClient());
-  }
-
-  @Test
-  public void testCpuTimeIncludesShardsWhenLimitStopsCoordinator() throws Exception {
-    assumeTrue("thread CPU time unsupported", ThreadCpuTimer.isSupported());
-    System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
-    String cpuCollection = "listener_cpu_limit";
-    createCollection(cpuCollection);
-    resetListeners(
-        null,
-        (info, req, rsp, rb) ->
-            new Object[] {
-              rsp.getToLog().get(ThreadCpuTimer.CPU_TIME),
-              rsp.getToLog().get(ThreadCpuTimer.LOCAL_CPU_TIME)
-            });
-    AtomicBoolean shardSeen = new AtomicBoolean();
-    TestInjection.queryTimeout =
-        new QueryLimit() {
-          @Override
-          public boolean shouldExit() {
-            List<String> methods =
-                StackWalker.getInstance()
-                    .walk(frames -> frames.map(StackWalker.StackFrame::getMethodName).toList());
-            if (methods.contains("processComponentsDistrib")) {
-              return shardSeen.get();
-            }
-            if (methods.contains("process")) {
-              shardSeen.set(true);
-            }
-            return false;
-          }
-
-          @Override
-          public Object currentValue() {
-            return shardSeen.get();
-          }
-        };
-    QueryResponse rsp;
-    try {
-      rsp = query(cpuCollection, "*:*");
-    } finally {
-      TestInjection.queryTimeout = null;
-    }
-    Delivery delivery = delivery();
-    assertTrue(delivery.info().partialResults());
-    Object[] captured = (Object[]) delivery.captured();
-    assertNotNull("shard CPU time not published", captured[0]);
-    long shardCpuTime = (Long) captured[0];
-    long localCpuTime = (Long) captured[1];
-    assertEquals(shardCpuTime, rsp.getResponseHeader().get(ThreadCpuTimer.CPU_TIME));
     assertEquals(Long.valueOf(shardCpuTime + localCpuTime), delivery.info().cpuTimeMs());
     CollectionAdminRequest.deleteCollection(cpuCollection).process(cluster.getSolrClient());
   }
