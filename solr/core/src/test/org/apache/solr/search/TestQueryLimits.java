@@ -16,15 +16,25 @@
  */
 package org.apache.solr.search;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.PivotFacet;
+import org.apache.solr.handler.component.PivotFacetProcessor;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.After;
@@ -112,6 +122,265 @@ public class TestQueryLimits extends SolrCloudTestCase {
   }
 
   @Test
+  public void testPivotFacetRespectsLimits() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    CallerSpecificQueryLimit limit =
+        new CallerSpecificQueryLimit(Set.of("PivotFacetProcessor.doPivots"));
+    TestInjection.queryTimeout = limit;
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q", "id:*", "facet", "true", "facet.pivot", "val_i,id", "multiThreaded", "false"));
+    assertNotNull(
+        "pivot faceting should stop with partial results: " + rsp.jsonStr(),
+        rsp.getHeader().get("partialResults"));
+    assertFalse("should have trippedBy info", limit.getCallerMatcher().getTrippedBy().isEmpty());
+  }
+
+  @Test
+  public void testPivotFacetTruncatesWhenLimitsTrip() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    // distrib=false keeps the request on one shard replica, so the pivot pass runs
+    // locally and its result (or absence) is directly observable in the response
+    ModifiableSolrParams pivotParams =
+        params(
+            "q", "id:*",
+            "facet", "true",
+            "facet.pivot", "val_i,id",
+            "multiThreaded", "false",
+            "distrib", "false");
+    // control: with no limit installed, the shard returns top level pivots
+    QueryResponse rsp = solrClient.query(COLLECTION, pivotParams);
+    assertNull("should have full results", rsp.getHeader().get("partialResults"));
+    List<PivotField> controlPivots = rsp.getFacetPivot().get("val_i,id");
+    assertNotNull("pivot results missing: " + rsp.jsonStr(), controlPivots);
+    assertFalse("expected top level pivots from the shard", controlPivots.isEmpty());
+
+    CallerSpecificQueryLimit limit =
+        new CallerSpecificQueryLimit(Set.of("PivotFacetProcessor.doPivots"));
+    TestInjection.queryTimeout = limit;
+    rsp = solrClient.query(COLLECTION, pivotParams);
+    assertNotNull(
+        "pivot faceting should stop with partial results: " + rsp.jsonStr(),
+        rsp.getHeader().get("partialResults"));
+    assertFalse("should have trippedBy info", limit.getCallerMatcher().getTrippedBy().isEmpty());
+    // The header assertions above hold with or without the in-loop check in doPivots:
+    // the matcher trips on any stack that has doPivots as an ancestor frame, which
+    // includes the searches the pivot loop calls. The pivot data is what discriminates.
+    // Without the check, the first subset search inside the loop trips the limit and
+    // throws QueryLimitsExceededException out of doPivots, so the response is marked
+    // partial by the handler but carries no pivot data at all. With the check, doPivots
+    // stops at the top of the first iteration and returns the values built so far (none)
+    // as a well formed partial pivot result, labeled with the limit detail.
+    NamedList<List<PivotField>> facetPivot = rsp.getFacetPivot();
+    List<PivotField> pivots = (facetPivot == null) ? null : facetPivot.get("val_i,id");
+    assertNotNull(
+        "expected a truncated pivot list in the partial response, but the response carried "
+            + "no pivot data at all (the pivot pass died on the tripped limit): "
+            + rsp.jsonStr(),
+        pivots);
+    assertEquals(
+        "expected the pivot list to be truncated to no values once the limit trips, but got "
+            + pivots.size()
+            + " top level pivot values: "
+            + rsp.jsonStr(),
+        0,
+        pivots.size());
+    assertTrue(
+        "expected the partial results detail to name the pivot limit check: " + rsp.jsonStr(),
+        String.valueOf(rsp.getHeader().get("partialResultsDetails")).contains("Faceting pivots"));
+  }
+
+  @Test
+  public void testPivotFacetStopsBelowTopLevel() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    TestInjection.queryTimeout = new NestedPivotQueryLimit();
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q", "id:*",
+                "facet", "true",
+                "facet.pivot", "val_i,id",
+                "multiThreaded", "false",
+                "distrib", "false"));
+    assertNotNull(
+        "pivot faceting should stop with partial results: " + rsp.jsonStr(),
+        rsp.getHeader().get("partialResults"));
+    assertNotNull("pivot results missing: " + rsp.jsonStr(), rsp.getFacetPivot());
+    List<PivotField> pivots = rsp.getFacetPivot().get("val_i,id");
+    assertNotNull("pivot results missing: " + rsp.jsonStr(), pivots);
+    assertEquals(
+        "expected the top level pivot list to stop after its first value: " + rsp.jsonStr(),
+        1,
+        pivots.size());
+    List<PivotField> subPivots = pivots.get(0).getPivot();
+    assertTrue(
+        "expected no values below the tripped level: " + rsp.jsonStr(),
+        subPivots == null || subPivots.isEmpty());
+  }
+
+  @Test
+  public void testPivotFacetOmitsResultsWhenPartialResultsDisallowed() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    TestInjection.queryTimeout =
+        new CallerSpecificQueryLimit(Set.of("PivotFacetProcessor.doPivots"));
+    // With partialResults=false the request does not throw: a tripped limit is
+    // reported in the response header as "omitted" and no pivot data is
+    // returned, so partial pivots are never handed back as if they were
+    // usable results.
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "facet",
+                "true",
+                "facet.pivot",
+                "val_i,id",
+                "multiThreaded",
+                "false",
+                "distrib",
+                "false",
+                CommonParams.PARTIAL_RESULTS,
+                "false"));
+    assertEquals(
+        "partial results should be reported as omitted: " + rsp.jsonStr(),
+        "omitted",
+        String.valueOf(rsp.getHeader().get("partialResults")));
+    assertTrue(
+        "expected the partial results detail to name the pivot limit check: " + rsp.jsonStr(),
+        String.valueOf(rsp.getHeader().get("partialResultsDetails")).contains("Faceting pivots"));
+    assertNull("no pivot data should be returned: " + rsp.jsonStr(), rsp.getFacetPivot());
+  }
+
+  @Test
+  public void testPivotFacetRefinementStopsWhenPartial() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    RefinementPivotQueryLimit limit = new RefinementPivotQueryLimit();
+    TestInjection.queryTimeout = limit;
+    // The per-field limits with the overrequest zeroed make each shard return
+    // only its own top values, so the first refinement round (one request per
+    // shard) comes back partial from every shard, and a second round of
+    // refinements for the next pivot level is still outstanding at that
+    // point. A coordinator that ignores the partial marker goes on to send
+    // that second round; each of its requests trips the limit as well, so
+    // the tripped count grows past the first round's one-per-shard count.
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q", "id:*",
+                "facet", "true",
+                "facet.pivot", "val_i,id",
+                "f.val_i.facet.limit", "2",
+                "f.val_i.facet.overrequest.ratio", "0",
+                "f.val_i.facet.overrequest.count", "0",
+                "f.id.facet.limit", "1",
+                "f.id.facet.overrequest.ratio", "0",
+                "f.id.facet.overrequest.count", "0",
+                "multiThreaded", "false"));
+    assertTrue(
+        "pivot refinement should reach the shards: " + limit.getTrippedRequests(),
+        limit.getTrippedRequests() > 0);
+    assertTrue(
+        "refinement should not be requested again after a partial response: "
+            + limit.getTrippedRequests(),
+        limit.getTrippedRequests() <= 3);
+    assertNotNull(
+        "refinement stopped on partial results should be marked partial: " + rsp.jsonStr(),
+        rsp.getHeader().get("partialResults"));
+  }
+
+  @Test
+  public void testPivotFacetRefinementStopsWhenOmittedPartialResults() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    RefinementPivotQueryLimit limit = new RefinementPivotQueryLimit();
+    TestInjection.queryTimeout = limit;
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "facet",
+                "true",
+                "facet.pivot",
+                "val_i,id",
+                "f.val_i.facet.limit",
+                "2",
+                "f.val_i.facet.overrequest.ratio",
+                "0",
+                "f.val_i.facet.overrequest.count",
+                "0",
+                "f.id.facet.limit",
+                "1",
+                "f.id.facet.overrequest.ratio",
+                "0",
+                "f.id.facet.overrequest.count",
+                "0",
+                "multiThreaded",
+                "false",
+                CommonParams.PARTIAL_RESULTS,
+                "false"));
+    assertTrue(
+        "pivot refinement should reach the shards: " + limit.getTrippedRequests(),
+        limit.getTrippedRequests() > 0);
+    assertTrue(
+        "refinement should not be requested again after an omitted response: "
+            + limit.getTrippedRequests(),
+        limit.getTrippedRequests() <= 3);
+    assertEquals(
+        "refinement stopped on omitted results should be marked omitted: " + rsp.jsonStr(),
+        "omitted",
+        String.valueOf(rsp.getHeader().get("partialResults")));
+    assertNull("no pivot data should be returned: " + rsp.jsonStr(), rsp.getFacetPivot());
+  }
+
+  @Test
+  public void testPivotFacetRefinementWithholdsPivotDataWhenAnyShardOmits() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    RefinementPivotQueryLimit limit = new RefinementPivotQueryLimit();
+    TestInjection.queryTimeout = limit;
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "facet",
+                "true",
+                "facet.pivot",
+                "val_i,id",
+                "f.val_i.facet.limit",
+                "1",
+                "f.val_i.facet.overrequest.ratio",
+                "0",
+                "f.val_i.facet.overrequest.count",
+                "0",
+                "f.id.facet.limit",
+                "1",
+                "f.id.facet.overrequest.ratio",
+                "0",
+                "f.id.facet.overrequest.count",
+                "0",
+                "multiThreaded",
+                "false",
+                CommonParams.PARTIAL_RESULTS,
+                "false"));
+    assertTrue(
+        "pivot refinement should reach the shards: " + limit.getTrippedRequests(),
+        limit.getTrippedRequests() > 0);
+    assertEquals(
+        "an omitted shard refinement answer should mark the response omitted: " + rsp.jsonStr(),
+        "omitted",
+        String.valueOf(rsp.getHeader().get("partialResults")));
+    assertNull("no pivot data should be returned: " + rsp.jsonStr(), rsp.getFacetPivot());
+  }
+
+  @Test
   public void testAdjustShardRequestLimits() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
     String timeAllowed = "10000"; // ms - generous; must complete fully even on slow CI
@@ -158,5 +427,71 @@ public class TestQueryLimits extends SolrCloudTestCase {
     assertTrue(
         "partialResultsDetails should contain 'skipped': " + rsp2.jsonStr(),
         rsp2.getHeader().get("partialResultsDetails").toString().contains("skipped"));
+  }
+
+  private static int pivotDepth() {
+    int depth = 0;
+    for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
+      if (PivotFacetProcessor.class.getName().equals(frame.getClassName())
+          && "doPivots".equals(frame.getMethodName())) {
+        depth++;
+      }
+    }
+    return depth;
+  }
+
+  private static boolean isRefinementRequest(SolrQueryRequest req) {
+    Iterator<String> names = req.getParams().getParameterNamesIterator();
+    while (names.hasNext()) {
+      if (names.next().startsWith(PivotFacet.REFINE_PARAM)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Trips pivot processing once it is nested below the top level. */
+  private static final class NestedPivotQueryLimit implements QueryLimit {
+    @Override
+    public boolean shouldExit() {
+      return pivotDepth() > 1;
+    }
+
+    @Override
+    public Object currentValue() {
+      return "This class just for testing, not a real limit";
+    }
+  }
+
+  /** Trips pivot processing of a bounded number of distributed refinement requests. */
+  private static final class RefinementPivotQueryLimit implements QueryLimit {
+    private static final int MAX_TRIPPED_REQUESTS = 10;
+    private final Set<SolrQueryRequest> trippedRequests =
+        Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    @Override
+    public boolean shouldExit() {
+      SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+      if (info == null || !isRefinementRequest(info.getReq()) || pivotDepth() == 0) {
+        return false;
+      }
+      SolrQueryRequest req = info.getReq();
+      if (trippedRequests.contains(req)) {
+        return true;
+      }
+      if (trippedRequests.size() >= MAX_TRIPPED_REQUESTS) {
+        return false;
+      }
+      return trippedRequests.add(req);
+    }
+
+    int getTrippedRequests() {
+      return trippedRequests.size();
+    }
+
+    @Override
+    public Object currentValue() {
+      return "This class just for testing, not a real limit";
+    }
   }
 }
