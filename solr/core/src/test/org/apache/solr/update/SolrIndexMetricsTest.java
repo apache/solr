@@ -205,4 +205,32 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
           flushCounter.getValue() >= 10);
     }
   }
+
+  @Test
+  public void testUpdatesBypassingIndexWriterAreNotErrors() throws Exception {
+    initCore("solrconfig-indexmetrics.xml", "schema.xml");
+    try (SolrQueryRequest req = lrf.makeRequest();
+        SolrCore core = h.getCoreContainer().getCore("collection1")) {
+      UpdateHandler uh = core.getUpdateHandler();
+      AddUpdateCommand add = new AddUpdateCommand(req);
+      for (int i = 0; i < 5; i++) {
+        add.clear();
+        add.setFlags(UpdateCommand.IGNORE_INDEXWRITER);
+        add.solrDoc = new SolrInputDocument();
+        add.solrDoc.addField("id", "" + i);
+        uh.addDoc(add);
+      }
+
+      var errors =
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_update_errors",
+              SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                  .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.UPDATE.toString())
+                  .build());
+      assertTrue(
+          "updates that bypass the IndexWriter must not be counted as errors",
+          errors == null || errors.getValue() == 0);
+    }
+  }
 }
