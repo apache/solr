@@ -45,12 +45,15 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.QuerySenderListener;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CallerSpecificQueryLimit;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.After;
@@ -415,6 +418,26 @@ public class SearchRequestListenerTest extends SolrCloudTestCase {
       core.execute(core.getRequestHandler("/select"), req, rsp);
       assertNull(rsp.getException());
       assertNotNull(rsp.getValues().get("response"));
+    }
+    assertEquals(0, captures());
+  }
+
+  @Test
+  public void testWarmingQueryNotReported() throws Exception {
+    NamedList<Object> query = new NamedList<>();
+    query.add("q", "*:*");
+    query.add("qt", "/select");
+    NamedList<Object> args = new NamedList<>();
+    args.add("queries", new ArrayList<>(List.of(query)));
+    try (SolrCore core = jettyCore(COLLECTION)) {
+      QuerySenderListener warmer = new QuerySenderListener(core);
+      warmer.init(args);
+      RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+      try {
+        warmer.newSearcher(searcher.get(), null);
+      } finally {
+        searcher.decref();
+      }
     }
     assertEquals(0, captures());
   }
