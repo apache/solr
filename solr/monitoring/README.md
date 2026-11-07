@@ -16,25 +16,25 @@
  -->
 # Solr Monitoring
 
-This directory provides two ready-to-use monitoring artifacts for Solr that you can drop into
+This directory provides three ready-to-use monitoring artifacts for Solr that you can drop into
 your existing Prometheus + Grafana installation:
 
 | File | Description |
 |---|---|
 | **`grafana-solr-dashboard.json`** | Grafana dashboard — import directly into Grafana |
 | **`prometheus-solr-alerts.yml`** | Prometheus alert rules — reference from your `prometheus.yml` |
+| **`otel-collector-config.yaml`** | Example OpenTelemetry Collector config — receives Solr's OTLP push and exposes the metrics in Prometheus format under the same metric names as `/solr/admin/metrics`; a starting point to adapt, not a production setup |
 
 These are the **main artifacts**. Everything else in this directory supports their creation
 or testing.
 
 | File / Directory | Description |
 |---|---|
-| `mixin/` | Jsonnet source (single source of truth used to regenerate the artifacts above) |
+| `mixin/` | Jsonnet source (single source of truth used to regenerate the dashboard and alert rules) |
 | `dev/` | **Developer convenience only** — docker-compose stack for testing changes to the artifacts |
 
 > **The dashboard is still a placeholder**, enough to exercise the build pipeline. The real one
-> arrives in [SOLR-18534](https://issues.apache.org/jira/browse/SOLR-18534) and OTLP push support
-> in [SOLR-18536](https://issues.apache.org/jira/browse/SOLR-18536). The alert rules are complete.
+> arrives in [SOLR-18534](https://issues.apache.org/jira/browse/SOLR-18534). The alert rules are complete.
 
 For the full integration guide see the Solr Reference Guide:
 **[Monitoring Solr with Prometheus and Grafana](../solr-ref-guide/modules/deployment-guide/pages/monitoring-with-prometheus-and-grafana.adoc)**
@@ -91,6 +91,15 @@ young and old pool; committed is a partition of one heap under every collector, 
 `-Xms` to `-Xmx`. The request counters and the latency histogram carry `core!=""`, because a handler
 with `aggregateNodeLevelMetricsEnabled` emits a node rollup under the same metric name, without the
 `core`, `collection` and `shard` attributes.
+
+---
+
+## Scraping via the OpenTelemetry Collector
+
+Nodes can push metrics over OTLP to a Collector running `otel-collector-config.yaml`, which you
+then scrape instead of the nodes. Its `transform` processor keeps the metric names identical to a
+direct scrape, so the dashboard and alert rules work either way. See the Reference Guide page
+linked above for the setup.
 
 ---
 
@@ -192,33 +201,47 @@ and the MiB units of the index-size gauge — so run `make test` after editing `
 ## Developer Convenience Stack
 
 The `dev/` directory contains a docker-compose stack that starts a local Solr + Prometheus
-+ Grafana + Alertmanager environment. **This is solely for contributors who want to
-visually test changes to the two artifacts above.** It is not a reference deployment
-or a recommended production setup, and is excluded from the source release.
++ Grafana + Alertmanager + OpenTelemetry Collector + Aspire Dashboard environment. **This is solely for
+contributors who want to visually test changes to the artifacts above.** It is not a reference
+deployment or a recommended production setup, and is excluded from the source release.
 
 ```bash
 cd dev
-./stack.sh                  # bundled Solr nodes + monitoring + traffic generator
-./stack.sh --local-solr     # monitoring only, scraping a Solr you already run on :8983
-./stack.sh --down           # stop and remove everything
+./stack.sh                        # bundled Solr nodes + monitoring + traffic generator
+./stack.sh --local-solr           # monitoring only, scraping a Solr you already run on :8983
+./stack.sh --metrics-scrape=otel  # Prometheus scrapes the Collector the Solr nodes push to
+./stack.sh --down                 # stop and remove everything
 ```
+
+The bundled Solr nodes always push metrics and traces to the Collector, which forwards both to
+Aspire (`:18888`) for a raw view; `--metrics-scrape` (`solr`, the default, or `otel`) only decides
+what Prometheus scrapes, and the job is named `solr` either way.
+Put `METRICS_SCRAPE=otel` in a `dev/.env` file (gitignored) to change the default.
+`./check-otel-parity.sh` diffs the metric names, types and label keys of a Solr node against the
+Collector's output, which is how the shipped Collector config is validated.
+
+> Until a nightly image carries the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
+> fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the default
+> `--metrics-scrape=solr` mode needs a locally built `SOLR_IMAGE`.
 
 Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes sit behind the
 `bundled-solr` compose profile, so a plain `docker compose up` would start the monitoring services
 with no Solr to scrape.
 
 Services: Solr (`:8983`, `:8984`), Prometheus (`:9090`), Grafana (`:3000`), Alertmanager
-(`:9093`). Grafana opens straight on the provisioned dashboard with no login — anonymous viewing
+(`:9093`), OpenTelemetry Collector (OTLP in on `:4318`, Prometheus format out on `:9464`),
+Aspire Dashboard (`:18888`). Grafana opens straight on the provisioned dashboard with no login — anonymous viewing
 is enabled because this stack is local and throwaway; sign in as `admin`/`admin` to edit. The
-Prometheus datasource is provisioned too, and Prometheus loads the alert rules. Both artifacts are bind-mounted as single
-files, which the containers resolve once at start, so after regenerating one, recreate them:
+Prometheus datasource is provisioned too, and Prometheus loads the alert rules. All three artifacts are bind-mounted as single
+files, which the containers resolve once at start, so after regenerating or editing one, recreate them:
 
 ```bash
-docker compose up -d --force-recreate grafana prometheus
+docker compose up -d --force-recreate grafana prometheus otel-collector
 ```
 
 The monitoring images are pinned for reproducibility. Override `SOLR_IMAGE`, `PROMETHEUS_IMAGE`,
-`GRAFANA_IMAGE` or `ALERTMANAGER_IMAGE` to test against other versions:
+`GRAFANA_IMAGE`, `ALERTMANAGER_IMAGE`, `OTEL_COLLECTOR_IMAGE` or `ASPIRE_IMAGE` to test against other
+versions:
 
 ```bash
 GRAFANA_IMAGE=grafana/grafana:latest ./stack.sh

@@ -381,41 +381,18 @@ Endpoint to send OTLP metrics to using the HTTP protocol.
 
 === OpenTelemetry Collector setup
 
-The https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] is a powerful process that allows users to decouple their metrics pipeline and route to their preferred backend. It natively supports metrics being pushed to it via OTLP and/or scraping the `/metrics` Prometheus endpoint supported by Solr. You can push both metrics and traces to the collector via OTLP as a single pipeline.
+The https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] decouples the metrics pipeline from the backend: it receives Solr's OTLP push and can forward to any backend, or expose the metrics in Prometheus format for scraping.
+Solr ships an example Collector configuration for the latter, `solr/monitoring/otel-collector-config.yaml`, that reproduces the metric names of the `/metrics` endpoint; see xref:monitoring-with-prometheus-and-grafana.adoc#otlp-push[Monitoring Solr with Prometheus and Grafana].
+Traces can go through the same Collector; see xref:opentelemetry.adoc[].
 
-A simple setup to route metrics from Solr -> OpenTelemetry Collector -> Prometheus can be configured with the following OpenTelemetry Collector configuration file:
-
-[source,plain]
-----
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-exporters:
-  prometheus:
-    endpoint: 0.0.0.0:9464
-    send_timestamps: true
-    enable_open_metrics: true
-
-service:
-  pipelines:
-    metrics:
-      receivers: [otlp]
-      exporters: [prometheus]
-----
-
-You can then request the metrics in Prometheus format from the collector:
+With that configuration the metrics are available from the Collector in Prometheus format:
 
 [source,bash]
 ----
 curl 'localhost:9464/metrics'
 ----
 
-Or request OpenMetrics format to also see exemplars by passing the Accept header:
+Or in OpenMetrics format, which also includes exemplars:
 
 [source,bash]
 ----
