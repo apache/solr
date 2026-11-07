@@ -75,13 +75,10 @@ public class HttpShardHandler extends ShardHandler {
 
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
-   * #prepDistributed(ResponseBuilder)} will only include {@link
-   * org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible destination of the
-   * distributed request (or a leader replica of type {@link
-   * org.apache.solr.common.cloud.Replica.Type#TLOG}). This is used by the RealtimeGet handler,
-   * since other types of replicas shouldn't respond to RTG requests
+   * #prepDistributed(ResponseBuilder)} will only include replicas that serve the latest data. This
+   * is used by the {@link org.apache.solr.handler.RealTimeGetHandler} (RTG).
    */
-  public static final String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
+  public static final String ONLY_RTG_REPLICAS = "distribOnlyRealtime";
 
   /**
    * This is a fake ShardResponse used internally to trigger the {@link #take(boolean)} method to
@@ -496,7 +493,7 @@ public class HttpShardHandler extends ShardHandler {
 
     ReplicaSource replicaSource;
     if (zkController != null) {
-      boolean onlyNrt = Boolean.TRUE.equals(req.getContext().get(ONLY_NRT_REPLICAS));
+      boolean onlyRtg = Boolean.TRUE.equals(req.getContext().get(ONLY_RTG_REPLICAS));
 
       replicaSource =
           new CloudReplicaSource.Builder()
@@ -505,11 +502,11 @@ public class HttpShardHandler extends ShardHandler {
               .allowListUrlChecker(urlChecker)
               .replicaListTransformer(replicaListTransformer)
               .collection(cloudDescriptor.getCollectionName())
-              .onlyNrt(onlyNrt)
+              .onlyRtg(onlyRtg)
               .build();
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
 
-      if (!rb.isForcedDistrib() && canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
+      if (!rb.isForcedDistrib() && canShortCircuit(rb.slices, onlyRtg, params, cloudDescriptor)) {
         rb.isDistrib = false;
         rb.shortCircuitedURL =
             ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
@@ -528,7 +525,7 @@ public class HttpShardHandler extends ShardHandler {
                     .allowListUrlChecker(AllowListUrlChecker.ALLOW_ALL)
                     .replicaListTransformer(NoOpReplicaListTransformer.INSTANCE)
                     .collection(cloudDescriptor.getCollectionName())
-                    .onlyNrt(false)
+                    .onlyRtg(false)
                     .build();
             final String adjective =
                 (allActiveReplicaSource.getReplicasBySlice(i).isEmpty() ? "active" : "eligible");
@@ -574,21 +571,24 @@ public class HttpShardHandler extends ShardHandler {
   /** Can we avoid distributed search / coordinator? */
   private boolean canShortCircuit(
       String[] slices,
-      boolean onlyNrtReplicas,
+      boolean onlyRtgReplicas,
       SolrParams params,
       CloudDescriptor cloudDescriptor) {
     // Are we hosting the shard that this request is for, and are we active? If so, then handle it
     // ourselves and make it a non-distributed request.
     String ourSlice = cloudDescriptor.getShardId();
     String ourCollection = cloudDescriptor.getCollectionName();
-    // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
+    // Real-time requests may only be fulfilled by an NRT replica or the shard leader (e.g. a TLOG
+    // leader), matching the replica selection in CloudReplicaSource.
     if (slices.length == 1
         && slices[0] != null
         && (slices[0].equals(ourSlice)
             || slices[0].equals(
                 ourCollection + "_" + ourSlice)) // handle the <collection>_<slice> format
         && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
-        && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
+        && (!onlyRtgReplicas
+            || cloudDescriptor.getReplicaType() == Replica.Type.NRT
+            || cloudDescriptor.isLeader())) {
       // currently just a debugging parameter to check distrib search on a single node
       boolean shortCircuit = params.getBool("shortCircuit", true);
 
