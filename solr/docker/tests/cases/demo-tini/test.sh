@@ -20,6 +20,11 @@ TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
 
 echo "Running $container_name"
+if [[ "${SOLR_DOCKER_TEST_SLIM:-false}" == true ]]; then
+  assert_demo_unavailable -e TINI=yes
+  exit 0
+fi
+
 docker run --name "$container_name" -d -e TINI=yes "$tag" "solr-demo"
 
 wait_for_container_and_solr "$container_name"
