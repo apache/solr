@@ -757,6 +757,7 @@ abstract class TestDockerImageTask extends DefaultTask {
         "false").toBoolean()
 
     def imageId = idFile.getAsFile().get().text
+    def testSlimImage = getSlimImage().get()
     // Print information on the image before it is tested
     logger
         .lifecycle("Testing Solr Image ID: $imageId ${-> runConcurrentTests ? '(concurrently)' : '(sequentially)'}")
@@ -780,7 +781,7 @@ abstract class TestDockerImageTask extends DefaultTask {
           params.getTestDir().set(file.getPath())
           params.getWorkDir().set(testCaseWorkDir.getAsFile().getPath())
           params.getImageId().set(imageId)
-          params.getSlimImage().set(slimImage.get())
+          params.getSlimImage().set(testSlimImage)
         }
         workQueue.submit(SingleTestAction.class, paramSetup);
         if (!runConcurrentTests) {

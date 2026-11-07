@@ -23,16 +23,14 @@ function post_test_document {
 }
 
 function assert_demo_unavailable {
-  local status
-  status=$(docker wait "$container_name")
+  local status=0
   local logs
-  logs=$(docker logs "$container_name" 2>&1)
+  logs=$(docker run --rm "$@" "$tag" solr-demo 2>&1) || status=$?
   if [[ "$status" != 1 ]] || ! grep -Fq 'solr-demo requires the full Solr distribution' <<<"$logs"; then
     echo "Expected solr-demo to fail with the full distribution message; status=$status"
     echo "$logs"
     exit 1
   fi
-  container_cleanup "$container_name"
 }
 
 function container_cleanup {

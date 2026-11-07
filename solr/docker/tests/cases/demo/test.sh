@@ -21,7 +21,6 @@ source "${TEST_DIR}/../../shared.sh"
 
 echo "Running $container_name"
 if [[ "${SOLR_DOCKER_TEST_SLIM:-false}" == true ]]; then
-  docker run --name "$container_name" -d "$tag" "solr-demo"
   assert_demo_unavailable
   exit 0
 fi
