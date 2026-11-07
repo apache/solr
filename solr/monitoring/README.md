@@ -207,22 +207,31 @@ deployment or a recommended production setup, and is excluded from the source re
 
 ```bash
 cd dev
-./stack.sh                        # bundled Solr nodes + monitoring + traffic generator
-./stack.sh --local-solr           # monitoring only, scraping a Solr you already run on :8983
-./stack.sh --metrics-scrape=otel  # Prometheus scrapes the Collector the Solr nodes push to
-./stack.sh --down                 # stop and remove everything
+./stack.sh                  # bundled Solr nodes + monitoring + traffic generator
+./stack.sh --local-solr     # monitoring only, scraping a Solr you already run on :8983
+./stack.sh --down           # stop and remove everything
 ```
 
 The bundled Solr nodes always push metrics and traces to the Collector, which forwards both to
-Aspire (`:18888`) for a raw view; `--metrics-scrape` (`solr`, the default, or `otel`) only decides
-what Prometheus scrapes, and the job is named `solr` either way.
-Put `METRICS_SCRAPE=otel` in a `dev/.env` file (gitignored) to change the default.
-`./check-otel-parity.sh` diffs the metric names, types and label keys of a Solr node against the
-Collector's output, which is how the shipped Collector config is validated.
+Aspire (`:18888`) for a raw view. Prometheus scrapes both collection routes at once — the nodes
+directly as job `solr`, the Collector as job `solr-otlp` — so the two can be compared without
+reconfiguring anything. The shipped dashboard and alert rules select `job="solr"`, so only the
+direct route drives them. To check the Collector config still reproduces Solr's metric names, ask
+Prometheus which names one route has and the other does not — empty means parity:
+
+```promql
+label_replace(count by (__name__) ({job="solr"}),      "name", "$1", "__name__", "(.*)")
+  unless
+label_replace(count by (__name__) ({job="solr-otlp"}), "name", "$1", "__name__", "(.*)")
+```
+
+The `label_replace` is not decoration: binary operators ignore `__name__`, so comparing on it
+directly always matches and always returns empty. Before SOLR-18594 this reports `target_info`,
+which the Collector cannot emit until Solr sends `service.instance.id`.
 
 > Until a nightly image carries the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
-> fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the default
-> `--metrics-scrape=solr` mode needs a locally built `SOLR_IMAGE`.
+> fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the `solr` job needs a
+> locally built `SOLR_IMAGE`.
 
 Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes sit behind the
 `bundled-solr` compose profile, so a plain `docker compose up` would start the monitoring services

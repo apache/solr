@@ -48,12 +48,11 @@
 #   trafficgen   (no port — continuously indexes/searches the 'test' collection)
 #
 # The bundled Solr nodes always push metrics and traces over OTLP to otel-collector,
-# which forwards both to the Aspire Dashboard. Prometheus scrapes either the nodes
-# directly or the collector, depending on ./stack.sh --metrics-scrape=solr|otel.
+# which forwards both to the Aspire Dashboard. Prometheus scrapes both routes: the
+# nodes directly as job "solr", and the collector as job "solr-otlp".
 #
 # Environment variables (set by stack.sh, or override manually):
 #   PROMETHEUS_CONFIG   Path to the prometheus config to mount (default: ./prometheus/prometheus.yml)
-#   METRICS_SCRAPE      solr (default) or otel — read by stack.sh, also from a ./.env file
 #   SOLR_URL            Solr base URL for trafficgen (default: http://solr1:8983/solr)
 #   SOLR_IMAGE          Solr image for the bundled nodes (default: apache/solr-nightly:10.2.0-SNAPSHOT, tracks branch_10x)
 #   PROMETHEUS_IMAGE    Prometheus image (default: pinned, see below)
@@ -68,11 +67,10 @@
 
 name: solr-telemetry-dev
 
-# Push stays on in both --metrics-scrape modes, so the collector and Aspire always have
-# data. OTEL_SERVICE_NAME activates the module's tracer, which pushes traces the same way.
+# OTEL_SERVICE_NAME activates the module's tracer, which pushes traces the same way.
 #
 # TODO SOLR-18595: until a nightly image carries that fix, pushing makes
-# /solr/admin/metrics answer HTTP 500, so --metrics-scrape=solr needs a local image.
+# /solr/admin/metrics answer HTTP 500, so the "solr" job needs a local image.
 x-solr-otlp-env: &solr-otlp-env
   SOLR_MODULES: opentelemetry
   SOLR_METRICS_OTLP_EXPORTER_ENABLED: "true"

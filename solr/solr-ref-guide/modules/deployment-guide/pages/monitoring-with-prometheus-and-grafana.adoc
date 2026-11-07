@@ -194,8 +194,8 @@ cd solr/monitoring/dev
 
 Grafana is then on `http://localhost:3000`, opening directly on the provisioned dashboard, with Prometheus on `:9090` and Alertmanager on `:9093`.
 `./stack.sh --local-solr` skips the bundled Solr nodes and scrapes a Solr you are already running.
-`./stack.sh --metrics-scrape=otel` makes Prometheus scrape the stack's OpenTelemetry Collector, which the Solr nodes push to, instead of the nodes — the two options above side by side.
-The Collector also forwards what the nodes push, metrics and traces, to an Aspire Dashboard on `:18888`, a convenient raw view of the OTLP data.
+Prometheus scrapes both of the options above at once, the nodes as job `solr` and the Collector the nodes push to as job `solr-otlp`, so they can be compared side by side.
+The Collector also forwards what it receives to an Aspire Dashboard on `:18888`, a raw view of the OTLP data.
 
 [[distributed-tracing]]
 == Metrics and Tracing Together
