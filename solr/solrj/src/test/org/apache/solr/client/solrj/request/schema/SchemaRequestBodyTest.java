@@ -67,15 +67,13 @@ public class SchemaRequestBodyTest extends SolrTestCase {
                 "similarity",
                 map("class", "solr.BM25SimilarityFactory", "k1", 1.2)));
 
-    assertEquals(Utils.toJSONString(expected), body(new SchemaRequest.AddFieldType(fieldType)));
+    assertEquals(json(expected), body(new SchemaRequest.AddFieldType(fieldType)));
   }
 
   @Test
   public void testAddFieldBodyMatchesPlainMaps() throws IOException {
     Map<String, Object> attributes = map("name", "f1", "type", "string", "stored", true);
-    assertEquals(
-        Utils.toJSONString(map("add-field", attributes)),
-        body(new SchemaRequest.AddField(attributes)));
+    assertEquals(json(map("add-field", attributes)), body(new SchemaRequest.AddField(attributes)));
   }
 
   @Test
@@ -104,8 +102,13 @@ public class SchemaRequestBodyTest extends SolrTestCase {
 
   /** The {@code "key":value} text of a one-entry object, without its braces. */
   private static String entry(String key, Object value) {
-    String object = Utils.toJSONString(map(key, value));
+    String object = json(map(key, value));
     return object.substring(1, object.length() - 1);
+  }
+
+  /** Compact JSON, as the request writers produce it. */
+  private static String json(Object o) {
+    return Utils.toJSONString(o, -1);
   }
 
   private static String body(SchemaRequest.Update request) throws IOException {
