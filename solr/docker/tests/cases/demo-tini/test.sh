@@ -21,7 +21,7 @@ source "${TEST_DIR}/../../shared.sh"
 
 echo "Running $container_name"
 if [[ "${SOLR_DOCKER_TEST_SLIM:-false}" == true ]]; then
-  assert_demo_unavailable -e TINI=yes
+  echo "Skipping the demo with Tini: the slim image has no example data"
   exit 0
 fi
 

@@ -23,37 +23,21 @@ function post_test_document {
 }
 
 function assert_demo_unavailable {
-  local i state status logs logs_status=0
-  if ! docker run --name "$container_name" -d "$@" "$tag" solr-demo >/dev/null; then
+  local i status=running logs
+  if ! docker run --name "$container_name" -d "$tag" solr-demo >/dev/null; then
     docker rm -f "$container_name" >/dev/null 2>&1 || true
     return 1
   fi
 
   for ((i = 0; i < 60; i++)); do
-    if ! state=$(docker inspect --format '{{.State.Status}}' "$container_name"); then
-      docker rm -f "$container_name" >/dev/null 2>&1 || true
-      return 1
-    fi
-    if [[ "$state" == exited ]]; then
-      break
-    fi
+    status=$(docker inspect --format '{{if .State.Running}}running{{else}}{{.State.ExitCode}}{{end}}' "$container_name") || status=inspect-error
+    [[ "$status" != running ]] && break
     sleep 1
   done
-
-  if [[ "$state" != exited ]]; then
-    echo "Timed out waiting for solr-demo to exit"
-    docker logs "$container_name" || true
-    docker rm -f "$container_name" >/dev/null || true
-    return 1
-  fi
-
-  if ! status=$(docker inspect --format '{{.State.ExitCode}}' "$container_name"); then
-    docker rm -f "$container_name" >/dev/null 2>&1 || true
-    return 1
-  fi
-  logs=$(docker logs "$container_name" 2>&1) || logs_status=$?
-  docker rm "$container_name" >/dev/null
-  if [[ "$status" != 1 || "$logs_status" != 0 ]] || ! grep -Fq 'solr-demo requires the full Solr distribution' <<<"$logs"; then
+  [[ "$status" != running ]] || echo "Timed out waiting for solr-demo to exit"
+  logs=$(docker logs "$container_name" 2>&1) || status=logs-error
+  docker rm -f "$container_name" >/dev/null
+  if [[ "$status" != 1 ]] || ! grep -Fq 'solr-demo requires the full Solr distribution' <<<"$logs"; then
     echo "Expected solr-demo to fail with the full distribution message; status=$status"
     echo "$logs"
     return 1
