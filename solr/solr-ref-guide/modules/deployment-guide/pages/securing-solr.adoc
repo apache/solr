@@ -125,5 +125,5 @@ The bind host is controlled via the `SOLR_ZOOKEEPER_EMBEDDED_HOST` value in your
  SOLR_ZOOKEEPER_EMBEDDED_HOST="0.0.0.0"
  ----
 
-The same setting is also available as the `-Dsolr.zk.embedded.host` System Property.
+The same setting is also available as the `-Dsolr.zookeeper.embedded.host` System Property.
 // end::security-network-binding-1[]

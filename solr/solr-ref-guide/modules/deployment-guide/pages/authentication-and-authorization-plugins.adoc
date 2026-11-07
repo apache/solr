@@ -145,7 +145,7 @@ Specify the authentication plugin in `/security.json` as in this example:
 
 All of the content in the `authentication` block of `security.json` will be passed as a map to the plugin during initialization.
 
-An authentication plugin can also be used with standalone Solr instance by passing in `-DauthenticationPlugin=<plugin class name>` during startup.
+An authentication plugin can also be used with standalone Solr instance by passing in `-Dsolr.security.auth.plugin=<plugin class name>` during startup.
 
 Currently available authentication plugins are:
 
