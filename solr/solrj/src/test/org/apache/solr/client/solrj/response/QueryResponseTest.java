@@ -47,6 +47,17 @@ import org.junit.Test;
 @Limit(bytes = 20000)
 public class QueryResponseTest extends SolrTestCase {
   @Test
+  public void testCursorDirections() {
+    NamedList<Object> response = new NamedList<>();
+    response.add("nextCursorMark", "next");
+    response.add("previousCursorMark", "previous");
+    QueryResponse parsed = new QueryResponse(response);
+    assertEquals("next", parsed.getNextCursorMark());
+    assertEquals("previous", parsed.getPreviousCursorMark());
+    assertNull(new QueryResponse(new NamedList<>()).getPreviousCursorMark());
+  }
+
+  @Test
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;

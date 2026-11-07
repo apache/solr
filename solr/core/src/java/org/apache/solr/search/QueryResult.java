@@ -26,6 +26,7 @@ public class QueryResult {
   private Boolean terminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
+  private CursorMark previousCursorMark;
   private Boolean maxHitsTerminatedEarly;
   private Long approximateTotalHits;
 
@@ -90,12 +91,37 @@ public class QueryResult {
     return docListAndSet;
   }
 
-  public void setNextCursorMark(CursorMark next) {
+  public void setCursorMarkResult(CursorMark previous, CursorMark next) {
+    this.previousCursorMark = previous;
     this.nextCursorMark = next;
+  }
+
+  public void setCursorMarkNoResults(CursorMark providedCursorMark, int numRequested) {
+    if (providedCursorMark != null) {
+      if (numRequested == 0) {
+        // No page boundary was observed. Keep the supplied boundary in both directions.
+        setCursorMarkResult(
+            providedCursorMark.createPrevious(providedCursorMark.getSortValues()),
+            providedCursorMark.createNext(providedCursorMark.getSortValues()));
+      } else {
+        // An empty page after requesting documents marks the beginning or end of the results.
+        if (providedCursorMark.isReverse()) {
+          // A forward request can restart from the beginning after an empty reverse page.
+          setCursorMarkResult(providedCursorMark, providedCursorMark.initial(false));
+        } else {
+          // A reverse request can restart from the end after an empty forward page.
+          setCursorMarkResult(providedCursorMark.initial(true), providedCursorMark);
+        }
+      }
+    }
   }
 
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
+  }
+
+  public CursorMark getPreviousCursorMark() {
+    return previousCursorMark;
   }
 
   public Boolean getTerminatedEarly() {
