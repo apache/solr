@@ -84,10 +84,11 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
       initCallables.add(() -> UnInvertedField.getUnInvertedField(proto.field(), searcher));
     }
 
+    final int numThreads = TestUtil.nextInt(random(), 3, 6);
     final ThreadPoolExecutor pool =
         new MDCAwareThreadPoolExecutor(
-            3,
-            TestUtil.nextInt(random(), 3, 6),
+            numThreads,
+            numThreads,
             10,
             TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),
