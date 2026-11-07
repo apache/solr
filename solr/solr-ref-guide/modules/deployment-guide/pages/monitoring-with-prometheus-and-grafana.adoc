@@ -77,9 +77,9 @@ If metrics collection is switched off for a node, both endpoints answer `HTTP 51
 With the xref:opentelemetry.adoc[`opentelemetry` module] enabled and `solr.metrics.otlpExporterEnabled=true` on every node (see xref:metrics-reporting.adoc#otlp[OTLP]), each node pushes its metrics to an https://opentelemetry.io/docs/collector/[OpenTelemetry Collector], and Prometheus scrapes the Collector instead of the nodes.
 The Collector can forward the same stream to any other OTLP-compatible backend as well.
 
-Start from the example `solr/monitoring/otel-collector-config.yaml` (it needs the `otel/opentelemetry-collector-contrib` distribution, and is a starting point to adapt rather than a production configuration).
-It receives OTLP on `:4317` (gRPC) and `:4318` (HTTP), serves the result in Prometheus format on `:9464`, and forwards the raw stream to an https://aspire.dev/dashboard/[Aspire Dashboard], which you can remove.
-Its `transform` processor is what makes the names identical to Option 1: the Collector would otherwise append `_ratio` to dimensionless metrics such as `jvm_cpu_recent_utilization`, which Solr's own endpoint does not, and it supplies `service.name=solr` for Solr versions that send the SDK default, so the `job` label stays `solr`.
+`solr/monitoring/otel-collector-config.yaml` is an example to adapt, and needs the `otel/opentelemetry-collector-contrib` distribution.
+It receives OTLP on `:4317` (gRPC) and `:4318` (HTTP) and serves Prometheus format on `:9464`.
+Its `transform` processor is what keeps the metric names identical to Option 1, by undoing the `_ratio` suffix the Collector adds to dimensionless metrics and supplying `service.name=solr` where Solr sends the SDK default.
 
 Then scrape the Collector:
 
@@ -95,18 +95,14 @@ scrape_configs:
 <1> Keep the `job` and `instance` labels the Collector derives from Solr's `service.name` and `service.instance.id` resource attributes, rather than Prometheus overwriting them with the Collector's own address.
 
 The series Prometheus stores then carry the same metric names, types and label keys as a direct scrape.
-Two differences remain until https://issues.apache.org/jira/browse/SOLR-18594[SOLR-18594] makes Solr send `service.instance.id`: the `instance` label is the Collector's address rather than the node's, so per-node panels show one merged series, and no `target_info` series is produced.
 
-[WARNING]
+[NOTE]
 ====
-Node liveness is not preserved by this route.
-Prometheus only scrapes the Collector, so `up{job="solr"}` describes the Collector, and the <<alert-rules,`SolrNodeDown`>> rule reports whether the Collector is reachable — not whether any Solr node is.
-A node that stops pushing leaves its last series behind and fires nothing; a Collector restart alerts as though every node were down.
-Keep a direct scrape of the nodes alongside the push if you rely on that alert, or alert on each node's own series once SOLR-18594 gives the nodes distinct `instance` labels.
+Until https://issues.apache.org/jira/browse/SOLR-18594[SOLR-18594] makes Solr send `service.instance.id`, every pushed series carries the Collector's `instance` label rather than the node's.
+Per-node panels therefore merge into one series, no `target_info` is produced, and <<alert-rules,`SolrNodeDown`>> reports the fleet rather than naming a node — `up{job="solr"}` describes the Collector here.
 ====
 
-Alternatively the Collector can push into Prometheus instead of being scraped — with its `prometheusremotewrite` exporter against Prometheus started with `--web.enable-remote-write-receiver`, or its `otlphttp` exporter against `--web.enable-otlp-receiver`.
-The shipped configuration and the name parity above are only verified for the scrape setup; Prometheus's OTLP receiver applies its own name translation.
+The Collector can also push into Prometheus rather than be scraped, through its `prometheusremotewrite` or `otlphttp` exporter; the name parity above is only verified for the scrape setup.
 
 [[alert-rules]]
 == Alert Rules

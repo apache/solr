@@ -13,16 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# otel-collector-config.yaml — example OpenTelemetry Collector configuration for
-# Solr. A starting point to copy and adapt, not a production setup.
+# otel-collector-config.yaml — example OpenTelemetry Collector configuration for Solr,
+# to copy and adapt. Not a production setup.
 #
-# What it does:
-#   * receives Solr's OTLP push (metrics, and traces if enabled) on 4317/4318
-#   * re-exposes the metrics in Prometheus format on :9464, with the same metric
-#     names Solr's own /solr/admin/metrics endpoint produces, so scraping the
-#     collector works with the dashboard and alert rules in this directory
-#   * forwards the raw metrics and traces to an Aspire Dashboard for inspection
-#     (used by the dev stack; drop the otlp/aspire parts if you have no Aspire)
+# Receives Solr's OTLP push and re-exposes the metrics in Prometheus format on :9464,
+# under the same names /solr/admin/metrics produces, so the dashboard and alert rules
+# in this directory work against either. Also forwards the raw metrics and traces to an
+# Aspire Dashboard; drop the otlp/aspire parts if you have no Aspire.
 #
 # Requires the collector "contrib" distribution (otel/opentelemetry-collector-contrib).
 
@@ -37,13 +34,11 @@ receivers:
 processors:
   transform:
     metric_statements:
-      # Solr versions without SOLR-18594 send the SDK default service.name, which
-      # would become job="unknown_service:java" in Prometheus. Replace only that.
+      # Without SOLR-18594 Solr sends the SDK default, which becomes job="unknown_service:java"
       - context: resource
         statements:
           - set(attributes["service.name"], "solr") where attributes["service.name"] == "unknown_service:java"
-      # Solr's own Prometheus endpoint adds no suffix for the dimensionless unit "1",
-      # whereas the collector would append "_ratio". Clear the unit so names match.
+      # Solr's endpoint adds no suffix for the dimensionless unit "1"; the collector appends "_ratio"
       - context: metric
         statements:
           - set(unit, "") where unit == "1"
@@ -54,8 +49,7 @@ exporters:
     endpoint: 0.0.0.0:9464
     send_timestamps: true
     enable_open_metrics: true
-  # Aspire Dashboard (https://aspire.dev/dashboard/) shows the pushed data as-is,
-  # which is handy for seeing what Solr actually sends. Plain OTLP/gRPC forward.
+  # Aspire Dashboard (https://aspire.dev/dashboard/) shows the pushed data as-is
   otlp/aspire:
     endpoint: aspire-dashboard:18889
     tls:

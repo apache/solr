@@ -24,11 +24,10 @@
 # (the bundled solr1 and otel-collector of this stack). Exit code 1 on any difference,
 # 2 if either endpoint cannot be read.
 #
-# Both endpoints are fetched with the Accept header Prometheus sends, and compared the
-# way Prometheus ingests them: empty-valued labels are dropped, and the job/instance
-# labels are ignored since Prometheus sets those itself on a direct scrape. Metrics
-# that only exist on one side because the event never happened there (e.g. no errors
-# yet) show up as differences; let the trafficgen run a minute first.
+# Compared the way Prometheus ingests them: empty-valued labels dropped, job/instance
+# ignored since Prometheus sets those itself on a direct scrape. Metrics that exist on
+# only one side because the event never happened there show up as differences, so let
+# the trafficgen run a minute first.
 
 set -euo pipefail
 
@@ -52,11 +51,9 @@ fetch "$COLLECTOR_URL" "$tmp/collector.txt"
 
 # One line per series: <name> <sorted label keys>, plus one per family: TYPE <name> <type>
 #
-# Label values are quoted and may contain commas, spaces, braces and escaped quotes
-# (e.g. jvm_memory_pool_name="G1 Eden Space"), so the label list is parsed
-# quote-aware rather than split on whitespace: squash() first reduces every value to
-# "" or "x", after which splitting on commas is safe. Keys are sorted, since their
-# order on the wire is not significant to Prometheus.
+# Values may contain commas and spaces (jvm_memory_pool_name="G1 Eden Space"), so squash()
+# reduces every value to "" or "x" before splitting on commas. Keys are sorted; their
+# order on the wire is not significant.
 signature() {
   awk '
     function squash(line,   out, i, c, inq, hasval) {

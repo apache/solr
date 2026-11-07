@@ -96,13 +96,10 @@ with `aggregateNodeLevelMetricsEnabled` emits a node rollup under the same metri
 
 ## Scraping via the OpenTelemetry Collector
 
-Instead of scraping every Solr node, let the nodes push metrics over OTLP to a Collector and
-scrape the Collector on `:9464` with `honor_labels: true`. `otel-collector-config.yaml` is an
-example to start from (needs the `otel/opentelemetry-collector-contrib` distribution): its
-`transform` processor keeps the metric names identical to a direct scrape (the Collector would
-otherwise append `_ratio` to dimensionless metrics), and it also forwards the raw stream to an
-Aspire Dashboard, which you can drop. Enable the push on each node with the `opentelemetry`
-module and `solr.metrics.otlpExporterEnabled=true`; see the Reference Guide page linked above.
+Nodes can push metrics over OTLP to a Collector running `otel-collector-config.yaml`, which you
+then scrape instead of the nodes. Its `transform` processor keeps the metric names identical to a
+direct scrape, so the dashboard and alert rules work either way. See the Reference Guide page
+linked above for the setup.
 
 ---
 
@@ -223,17 +220,13 @@ Put `METRICS_SCRAPE=otel` in a `dev/.env` file (gitignored) to change the defaul
 `./check-otel-parity.sh` diffs the metric names, types and label keys of a Solr node against the
 Collector's output, which is how the shipped Collector config is validated.
 
-> Pushing and scraping at once needs the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
-> fix, so until a nightly image carrying it is published, `SOLR_IMAGE` must point at a locally built
-> image for the default `--metrics-scrape=solr` mode to show the nodes up.
+> Until a nightly image carries the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
+> fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the default
+> `--metrics-scrape=solr` mode needs a locally built `SOLR_IMAGE`.
 
 Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes sit behind the
 `bundled-solr` compose profile, so a plain `docker compose up` would start the monitoring services
 with no Solr to scrape.
-
-The compose project is named `solr-telemetry-dev`. If you ran this stack before that name was
-introduced, stop the old one with `docker compose -p dev down` first, or its containers will hold
-the ports this one needs.
 
 Services: Solr (`:8983`, `:8984`), Prometheus (`:9090`), Grafana (`:3000`), Alertmanager
 (`:9093`), OpenTelemetry Collector (OTLP in on `:4318`, Prometheus format out on `:9464`),
