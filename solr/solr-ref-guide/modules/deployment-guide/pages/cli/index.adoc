@@ -52,6 +52,7 @@ Each command has its own reference page.
 |xref:cli/solr-package.adoc[bin/solr package]
 |xref:cli/solr-post.adoc[bin/solr post]
 |xref:cli/solr-postlogs.adoc[bin/solr postlogs]
+|xref:cli/solr-restart.adoc[bin/solr restart]
 |xref:cli/solr-snapshot-create.adoc[bin/solr snapshot create]
 |xref:cli/solr-snapshot-delete.adoc[bin/solr snapshot delete]
 |xref:cli/solr-snapshot-describe.adoc[bin/solr snapshot describe]

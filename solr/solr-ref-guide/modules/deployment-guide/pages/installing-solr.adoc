@@ -31,7 +31,7 @@ Download the latest release https://solr.apache.org/downloads.html.
 There are three separate packages:
 
 * `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories.
-* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories are not included.
+* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules, accessories, and bundled examples are not included; use the full package to run the bundled examples.
 * `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 

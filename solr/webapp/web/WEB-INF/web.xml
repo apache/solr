@@ -91,6 +91,11 @@
       <param-name>dirAllowed</param-name>
       <param-value>false</param-value>
     </init-param>
+    <!-- Revalidate on each load so a browser never mixes UI assets from different Solr versions -->
+    <init-param>
+      <param-name>cacheControl</param-name>
+      <param-value>no-cache</param-value>
+    </init-param>
   </servlet>
   <!-- Map static Admin UI resources to the static servlet -->
   <servlet-mapping>

@@ -22,6 +22,9 @@ the changelog.
 . Commit the YAML fragment along with the code change.
 . Open your PR as usual.
 
+You can also run `./gradlew writeChangelogPr` to generate a changelog entry in a followup commit after the PR is published.
+This is the ideal approach when there's no JIRA.
+
 == 2. Directory Layout
 
 [source]
@@ -79,8 +82,8 @@ links:
 | Removing a previously deprecated parameter, class, or legacy module.
 
 | `dependency_update`
-| For updates to dependencies.
-| Bumping third-party library versions (e.g., Lucene, Jetty, Jackson).
+| For updates to dependencies (non-trivial).
+| Updating major third-party library versions (e.g., Lucene, Jetty, Jackson).
 
 | `other`
 | For anything else. Most such changes are too small/minor to bother with a changelog entry.
@@ -118,30 +121,14 @@ The changelog has comments to help you fill it out.  Remove them after filling o
 
 TIP: Aliases for the `writeChangelog` task are `changelog` and `newChangelog`.
 
-== 4. Changelog Validation in Pull Requests
+== 4. Changelog Checks in Pull Requests
 
-The `validate-changelog` GitHub workflow checks that code changes come with a
-changelog entry, and that any entry added under `changelog/unreleased/` is
-structurally valid.
+The `validate-changelog` GitHub workflow checks that any entry added under
+`changelog/unreleased/` is structurally valid. It does not require an entry.
 
-Pull requests that only touch documentation, tests, build files or CI configuration
-are exempt and pass without an entry.  Subjectively, some minor changes don't need one either.
-
-=== 4.1 Opting out of the changelog requirement
-
-If your change does not require a changelog entry (refactoring, internal cleanup,
-and so on), it is still possible to merge the PR. Mark it by adding the
-`no-changelog` label, which you can set in either of two ways:
-
-* Comment `/no-changelog` on the pull request, alone on its own line. This works
-  for the PR author as well as for committers, so a contributor without write
-  access does not need to ask anyone to set the label. Comment `/needs-changelog`
-  to undo it. Use a regular comment in the "Conversation" tab; commands inside
-  code review comments are not picked up.
-* Add or remove the `no-changelog` label directly (committers only).
-
-Either way the check re-runs automatically on the label change, so an already
-failed "Check changelog entry" run turns green without pushing a new commit.
+Whether a change warrants an entry is a judgement call; it's not mandatory and for minor things, it's discouraged!
+See the changelog types for further guidance.
+There may be PR automation that offers a suggestion either-way.
 
 == 5. For release managers
 

@@ -41,6 +41,7 @@
 **** xref:cli/solr-package-uninstall.adoc[uninstall]
 *** xref:cli/solr-post.adoc[post]
 *** xref:cli/solr-postlogs.adoc[postlogs]
+*** xref:cli/solr-restart.adoc[restart]
 *** xref:cli/solr-snapshot.adoc[snapshot]
 **** xref:cli/solr-snapshot-create.adoc[create]
 **** xref:cli/solr-snapshot-delete.adoc[delete]
