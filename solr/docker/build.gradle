@@ -274,6 +274,7 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image built from the local Dockerfile'
 
+  slimImage.set(isImageSlim())
   idFile = tasks.dockerBuild.outputs.files.singleFile
   outputDir = file("$buildDir/test-results")
 
@@ -640,6 +641,7 @@ task testDockerfileOfficialFull(type: TestDockerImageTask,
     dependsOn: configurations.dockerOfficialFullSmokeCheckImage) {
   description = 'Smoke Test Full Solr docker image built from the official Dockerfile'
 
+  slimImage.set(false)
   idFile = file(imageIdFileOfficial("Full"))
   outputDir = file("$smokeTestOfficial/full/test-results")
 
@@ -653,6 +655,7 @@ task testDockerfileOfficialSlim(type: TestDockerImageTask,
     dependsOn: configurations.dockerOfficialSlimSmokeCheckImage) {
   description = 'Smoke Test Slim Solr docker image built from the official Slim Dockerfile'
 
+  slimImage.set(true)
   idFile = file(imageIdFileOfficial("Slim"))
   outputDir = file("$smokeTestOfficial/slim/test-results")
 
@@ -668,6 +671,9 @@ task testDockerfileOfficial {
 
 // Re-usable class for running tests...
 abstract class TestDockerImageTask extends DefaultTask {
+
+  @Input
+  abstract public Property<Boolean> getSlimImage()
 
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
   @InputFile
@@ -702,6 +708,8 @@ abstract class TestDockerImageTask extends DefaultTask {
     Property<String> getWorkDir();
 
     Property<String> getImageId();
+
+    Property<Boolean> getSlimImage();
   }
 
   public abstract static class SingleTestAction implements WorkAction<SingleTestParameters> {
@@ -723,6 +731,7 @@ abstract class TestDockerImageTask extends DefaultTask {
         environment "DEBUG", "true"
         environment "TEST_DIR", testCaseDir
         environment "BUILD_DIR", testCaseBuildDir
+        environment "SOLR_DOCKER_TEST_SLIM", getParameters().getSlimImage().get().toString()
 
         standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
         errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
@@ -771,6 +780,7 @@ abstract class TestDockerImageTask extends DefaultTask {
           params.getTestDir().set(file.getPath())
           params.getWorkDir().set(testCaseWorkDir.getAsFile().getPath())
           params.getImageId().set(imageId)
+          params.getSlimImage().set(slimImage.get())
         }
         workQueue.submit(SingleTestAction.class, paramSetup);
         if (!runConcurrentTests) {
