@@ -64,7 +64,7 @@ public class StrField extends PrimitiveFieldType {
 
       fval = docval;
     }
-    return List.of(fval);
+    return fval == null ? List.of() : List.of(fval);
   }
 
   public static BytesRef getBytesRef(Object value) {
