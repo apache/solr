@@ -20,9 +20,6 @@
 # Solr pushes metrics over OTLP to the otel-collector container, which re-exposes
 # them in Prometheus format on :9464. The job is still named "solr" so the dashboard
 # and the alert rules match the same series. Works for bundled and local Solr alike.
-#
-# Until SOLR-18594 the pushed series carry the collector's instance label rather than
-# each node's, so alerts name the fleet, not a node.
 
 global:
   scrape_interval: 15s

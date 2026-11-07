@@ -41,7 +41,6 @@ trap 'rm -rf "$tmp"' EXIT
 fetch() {
   if ! curl -sf -H "Accept: $ACCEPT" "$1" > "$2"; then
     echo "Could not read $1" >&2
-    echo "(Solr answers HTTP 500 there with OTLP push enabled on a build predating SOLR-18595)" >&2
     exit 2
   fi
 }
