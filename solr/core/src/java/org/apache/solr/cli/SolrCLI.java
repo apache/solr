@@ -112,6 +112,7 @@ import org.slf4j.LoggerFactory;
     subcommands = {
       StartCommand.class,
       StopCommand.class,
+      RestartCommand.class,
       StatusTool.class,
       VersionTool.class,
       ZkTool.class,

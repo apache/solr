@@ -51,8 +51,6 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
@@ -68,6 +66,8 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 
 public class TestApiFramework extends SolrTestCaseJ4 {
 

@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  `solr stop -p <port>` again finds nodes started in the foreground, which write no PID file.
+  `solr status` now lists every running node, and `solr stop --all` reports when it stopped nothing.
+type: fixed
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18607
+    url: https://issues.apache.org/jira/browse/SOLR-18607
