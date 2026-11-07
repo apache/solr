@@ -16,6 +16,25 @@
 
 # Shared functions for testing
 
+function post_test_document {
+  local core=$1
+  docker exec --user=solr "$container_name" bin/solr post -c "$core" --mode args --type application/xml \
+    '<add><doc><field name="id">dell</field><field name="address_s">One Dell Way Round Rock, Texas 78682</field></doc></add>'
+}
+
+function assert_demo_unavailable {
+  local status
+  status=$(docker wait "$container_name")
+  local logs
+  logs=$(docker logs "$container_name" 2>&1)
+  if [[ "$status" != 1 ]] || ! grep -Fq 'solr-demo requires the full Solr distribution' <<<"$logs"; then
+    echo "Expected solr-demo to fail with the full distribution message; status=$status"
+    echo "$logs"
+    exit 1
+  fi
+  container_cleanup "$container_name"
+}
+
 function container_cleanup {
   local container_name
   container_name=$1
