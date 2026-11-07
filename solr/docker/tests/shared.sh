@@ -18,8 +18,8 @@
 
 function post_test_document {
   local core=$1
-  docker exec --user=solr "$container_name" bin/solr post -c "$core" --mode args --type application/xml \
-    '<add><doc><field name="id">dell</field><field name="address_s">One Dell Way Round Rock, Texas 78682</field></doc></add>'
+  docker exec --user=solr "$container_name" bin/solr post -c "$core" --mode args --type application/json \
+    '[{"id":"dell","address_s":"One Dell Way Round Rock, Texas 78682"}]'
 }
 
 function assert_demo_unavailable {
