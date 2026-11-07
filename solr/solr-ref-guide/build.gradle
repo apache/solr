@@ -777,7 +777,9 @@ String postProcessCliManPage(File rawFile, Set stems, String asfHeader, String d
 
   // Inserted last, after the blanket 'xref:solr-' -> 'xref:cli/solr-' rewrite above, which would
   // otherwise redirect this notice's own link into pages/cli/.
-  content = content.replace(":page-toclevels: 2\n", ":page-toclevels: 2\n\n" + experimentalNotice)
+  if (baseName != 'solr-ssl') {
+    content = content.replace(":page-toclevels: 2\n", ":page-toclevels: 2\n\n" + experimentalNotice)
+  }
 
   return asfHeader + doNotEditNotice + "\n" + content.stripTrailing() + "\n"
 }

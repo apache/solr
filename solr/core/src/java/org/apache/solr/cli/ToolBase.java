@@ -132,10 +132,14 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
   }
 
   /**
+   * Runs the legacy commons-cli implementation. Picocli-only tools inherit the unsupported default.
+   *
    * @deprecated Implement {@link #callTool()} instead, which picocli invokes.
    */
   @Deprecated
-  public abstract void runImpl(org.apache.commons.cli.CommandLine cli) throws Exception;
+  public void runImpl(org.apache.commons.cli.CommandLine cli) throws Exception {
+    throw new UnsupportedOperationException("This command is only supported by picocli.");
+  }
 
   /**
    * Called by picocli to execute the tool's logic.

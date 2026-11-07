@@ -17,9 +17,7 @@
 package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +40,8 @@ public class ZkLsTool extends ToolBase {
 
   @CommandLine.Mixin ZkConnectionOptions zkOpts;
 
+  @CommandLine.Mixin private ZkCredentialsOptions zkAuth;
+
   @CommandLine.Parameters(
       index = "0",
       arity = "1",
@@ -61,6 +61,8 @@ public class ZkLsTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
@@ -108,11 +110,7 @@ public class ZkLsTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth).build()) {
       doLs(zkClient, zkHost, path, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {

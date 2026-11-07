@@ -24,9 +24,17 @@ import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.junit.Test;
 
 public class CLIUtilsTest extends SolrCloudTestCase {
+
+  @Test
+  public void testNoCaFileDoesNotEnableZkTls() {
+    System.setProperty("zookeeper.client.secure", "false");
+    CLIUtils.configureZkTls(null);
+    assertEquals("false", EnvUtils.getProperty("zookeeper.client.secure"));
+  }
 
   @Test
   public void testDefaultSolrUrlWithNoProperties() {

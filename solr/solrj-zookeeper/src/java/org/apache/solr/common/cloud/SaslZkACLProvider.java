@@ -25,13 +25,14 @@ import org.apache.zookeeper.data.Id;
 
 /**
  * ZkACLProvider that gives all permissions for the user specified in System property
- * "solr.auth.superuser" (default: "solr") when using sasl, and gives read permissions for anyone
- * else. Designed for a setup where configurations have already been set up and will not be
- * modified, or where configuration changes are controlled via Solr APIs.
+ * "solr.zookeeper.acl.sasl.superuser" (default: "solr") when using sasl, and gives read permissions
+ * for anyone else. Designed for a setup where configurations have already been set up and will not
+ * be modified, or where configuration changes are controlled via Solr APIs.
  */
 public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 
-  private static final String superUser = EnvUtils.getProperty("solr.auth.superuser", "solr");
+  private static final String superUser =
+      EnvUtils.getProperty("solr.zookeeper.acl.sasl.superuser", "solr");
 
   @Override
   protected List<ACL> createNonSecurityACLsToAdd() {

@@ -34,8 +34,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.auth.jwt.outbound.http.enabled|solr.auth.jwt.allowOutboundHttp|false|Controls whether JWT authentication for outbound HTTP connections is enabled.
 
-|solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
-
 |solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
 |solr.cloud.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
@@ -121,6 +119,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 |solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
 
 |solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
+
+|solr.zookeeper.acl.sasl.superuser|solr.auth.superuser, solr.authorization.superuser|solr|Specifies the SASL identity granted all ZooKeeper permissions by `SaslZkACLProvider`, including access to security configuration. This does not create a Solr user or grant Solr API permissions.
 
 |solr.zookeeper.client.connect.timeout|zkConnectTimeout|15 seconds.|How long before timing out opening connection to ZooKeeper.
 

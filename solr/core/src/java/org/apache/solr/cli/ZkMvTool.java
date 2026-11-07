@@ -20,11 +20,9 @@ import static org.apache.solr.cli.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +51,8 @@ public class ZkMvTool extends ToolBase {
 
   @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
 
+  @picocli.CommandLine.Mixin private ZkCredentialsOptions zkAuth;
+
   @picocli.CommandLine.Parameters(
       index = "0",
       arity = "1",
@@ -76,6 +76,8 @@ public class ZkMvTool extends ToolBase {
   @Override
   public Options getOptions() {
     return super.getOptions()
+        .addOption(CommonCLIOptions.ZK_CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.ZK_TLS_CA_FILE_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(getConnectionOptions());
   }
@@ -144,11 +146,7 @@ public class ZkMvTool extends ToolBase {
   public int callTool() throws Exception {
     String zkHost = zkOpts.resolveZkHost();
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = CLIUtils.zkClientBuilder(zkHost, zkAuth).build()) {
       doMv(zkClient, zkHost, src, dst);
       return 0;
     } catch (Exception e) {

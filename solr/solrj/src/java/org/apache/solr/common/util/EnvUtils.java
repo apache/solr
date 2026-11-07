@@ -75,7 +75,12 @@ public class EnvUtils {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
         for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(deprecatedProps.getProperty(key)), key);
+          String value = deprecatedProps.getProperty(key);
+          boolean negated = value.startsWith("!");
+          for (String legacyKey : (negated ? value.substring(1) : value).split(",")) {
+            String dotKey = camelCaseToDotSeparated(legacyKey.trim());
+            DEPRECATED_MAPPINGS.put(negated ? "!" + dotKey : dotKey, key);
+          }
         }
         init(false, System.getenv(), System.getProperties());
       }

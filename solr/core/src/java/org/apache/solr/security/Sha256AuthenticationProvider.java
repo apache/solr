@@ -107,9 +107,7 @@ public class Sha256AuthenticationProvider
 
   @Override
   public boolean authenticate(String username, String password) {
-    if (username != null
-        && username.equals(password)
-        && !EnvUtils.getPropertyAsBool(ALLOW_USER_AS_PASSWORD_PROP, false)) {
+    if (!isPasswordAllowed(username, password)) {
       return false;
     }
     String cred = credentials.get(username);
@@ -124,6 +122,13 @@ public class Sha256AuthenticationProvider
       }
     }
     return cred.equals(sha256(password, salt));
+  }
+
+  /** Checks the username/password equality policy, including its compatibility override. */
+  public static boolean isPasswordAllowed(String username, String password) {
+    return username == null
+        || !username.equals(password)
+        || EnvUtils.getPropertyAsBool(ALLOW_USER_AS_PASSWORD_PROP, false);
   }
 
   @Override
@@ -184,8 +189,7 @@ public class Sha256AuthenticationProvider
             cmd.addError("name and password must be non-null");
             return null;
           }
-          if (e.getKey().equals(String.valueOf(e.getValue()))
-              && !EnvUtils.getPropertyAsBool(ALLOW_USER_AS_PASSWORD_PROP, false)) {
+          if (!isPasswordAllowed(e.getKey(), String.valueOf(e.getValue()))) {
             cmd.addError("Password must not be the same as the username");
             return null;
           }
