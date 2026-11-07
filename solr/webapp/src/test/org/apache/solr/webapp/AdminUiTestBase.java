@@ -322,10 +322,56 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     if (samePage) {
       driver.navigate().refresh();
     }
-    // ng-view (#content) is empty until the app has booted and rendered its first route
-    waitFor(By.cssSelector("#content > *"));
+    if (standaloneMode) {
+      waitFor(By.cssSelector("#content > *"));
+    } else {
+      waitUntilDisplayed(By.id("login"), By.id("node-selector-item"));
+    }
+    boolean onLogin = isDisplayed(By.id("login"));
+    if (!standaloneMode && !onLogin) {
+      selectLocalNodeIfPickerShown();
+    }
+    if (route.isEmpty()) {
+      if (!standaloneMode && !onLogin) {
+        click(By.cssSelector("#menu #index a"));
+      }
+      return waitFor(anchor);
+    }
     driver.get(baseUrl + "/index.html#/" + route);
     return waitFor(anchor);
+  }
+
+  protected static void selectLocalNodeIfPickerShown() {
+    if (!isDisplayed(By.id("node-selector-item"))) {
+      return;
+    }
+    waitFor(By.id("node_selector_select_chosen"));
+    String nodeName = cluster.getJettySolrRunner(0).getNodeName();
+    chosenSelect("node_selector_select", nodeName);
+    waitForTextContains(By.id("node_selector_select_chosen"), nodeName);
+  }
+
+  private static void waitUntilDisplayed(By... locators) {
+    long deadlineNanos = System.nanoTime() + WAIT_TIMEOUT.toNanos();
+    while (System.nanoTime() < deadlineNanos) {
+      for (By locator : locators) {
+        if (isDisplayed(locator)) {
+          return;
+        }
+      }
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    throw new AssertionError("Timed out waiting for any of " + Arrays.toString(locators));
+  }
+
+  private static boolean isDisplayed(By locator) {
+    List<WebElement> found = driver.findElements(locator);
+    return !found.isEmpty() && found.get(0).isDisplayed();
   }
 
   /** Waits for the given element to be visible, up to {@link #WAIT_TIMEOUT}. */

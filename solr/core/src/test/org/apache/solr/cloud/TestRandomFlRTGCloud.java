@@ -203,7 +203,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs =
         Arrays.asList(
-            "child" // way too complicated to check with this test, see SOLR-9379 instead
+            "child", // way too complicated to check with this test, see SOLR-9379 instead
+            "hl" // presently can only highlight via reading data from the index.
             );
 
     for (String buggy : knownBugs) {

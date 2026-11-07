@@ -777,7 +777,7 @@ groups:
         cmd: git diff --stat changelog CHANGELOG.md
         stdout: true
       - !Command
-        cmd: "{{ gradle_cmd }} :solr:documentation:changesToHtml"
+        cmd: python3 -u dev-tools/scripts/changes2html.py CHANGELOG.md --output-dir solr/documentation/build/site/changes
         logfile: changes-to-html.log
         tee: true
       - !Command
@@ -915,7 +915,9 @@ groups:
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
+      commands_text: |-
+        Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
+        Optionally, have a Docker daemon running first; some integration tests use Docker and are skipped without it.
       remove_files:
       - '{{ tmp_dir }}'
       commands:
@@ -988,6 +990,9 @@ groups:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
       {{ release_candidate_location }}
+
+      Optionally, have a Docker daemon running before starting the smoke tester;
+      some integration tests use Docker and are skipped without it.
 
       You can build a release-candidate of the official docker images (full & slim) using the following command:
 

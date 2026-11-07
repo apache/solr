@@ -275,8 +275,14 @@ public class PackageUtils {
     return collections;
   }
 
+  /** Path for setting/unsetting request param sets (POST), per {@code ModifyParamSetAPI}. */
   public static String getCollectionParamsPath(String collection) {
     return "/api/collections/" + collection + "/config/params";
+  }
+
+  /** Path for reading request param sets (GET), per {@code ParamSetsApi.Get}. */
+  public static String getCollectionParamSetsPath(String collection) {
+    return "/api/collections/" + collection + "/config/paramsets";
   }
 
   public static void uploadKey(byte[] bytes, String path, Path home) throws IOException {

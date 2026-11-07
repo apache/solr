@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.trace.Span;
@@ -37,6 +38,8 @@ import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse.ReplicationDetails;
+import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
+import org.apache.solr.client.api.model.ReplicationPollingRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
@@ -101,6 +104,67 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     ReplicationDetailsResponse withFollowerFalse =
         coreReplicationAPI.fetchReplicationDetails(false);
     assertSame(expectedResponse, withFollowerFalse);
+  }
+
+  @Test
+  public void testSetReplicationEnabled() {
+    for (boolean enabled : new boolean[] {true, false}) {
+      final var body = new ReplicationEnabledRequestBody();
+      body.enabled = enabled;
+      assertNotNull(coreReplicationAPI.setReplicationEnabled(body));
+    }
+  }
+
+  @Test
+  public void testSetReplicationEnabledRejectsNullBody() {
+    SolrException ex =
+        expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(null));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
+
+  @Test
+  public void testSetReplicationEnabledRejectsBadBody() {
+    final var emptyBody = new ReplicationEnabledRequestBody();
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> coreReplicationAPI.setReplicationEnabled(emptyBody));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
+
+  @Test
+  public void testSetReplicationPolling() {
+    for (boolean enabled : new boolean[] {true, false}) {
+      when(mockReplicationHandler.setPollingEnabled(enabled)).thenReturn(true);
+      final var body = new ReplicationPollingRequestBody();
+      body.enabled = enabled;
+      assertNotNull(coreReplicationAPI.setReplicationPolling(body));
+      verify(mockReplicationHandler).setPollingEnabled(enabled);
+    }
+  }
+
+  @Test
+  public void testSetReplicationPollingRejectsNoFollower() {
+    final var body = new ReplicationPollingRequestBody();
+    body.enabled = true;
+    SolrException ex =
+        expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationPolling(body));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
+
+  @Test
+  public void testSetReplicationPollingRejectsNullBody() {
+    SolrException ex =
+        expectThrows(SolrException.class, () -> coreReplicationAPI.setReplicationPolling(null));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
+
+  @Test
+  public void testSetReplicationPollingRejectsBadBody() {
+    final var emptyBody = new ReplicationPollingRequestBody();
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> coreReplicationAPI.setReplicationPolling(emptyBody));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
   }
 
   @Test
