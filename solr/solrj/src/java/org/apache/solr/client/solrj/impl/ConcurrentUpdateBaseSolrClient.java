@@ -45,6 +45,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -507,7 +508,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     }
 
     // RETURN A DUMMY result
-    NamedList<Object> dummy = new NamedList<>();
+    NamedList<Object> dummy = new SimpleOrderedMap<>();
     dummy.add("NOTE", "the request is processed in a background stream");
     return dummy;
   }
