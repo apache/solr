@@ -550,7 +550,7 @@ public class RunExampleTool extends ToolBase {
    * Resolves and validates the server, example and Solr home directories plus the bin/solr script
    * from the given raw values, seeding the corresponding tool state.
    */
-  void initDirs(
+  public void initDirs(
       String serverDirArg,
       String scriptArg,
       String exampleDirArg,
