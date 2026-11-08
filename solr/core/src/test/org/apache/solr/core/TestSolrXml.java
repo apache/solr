@@ -31,6 +31,7 @@ import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
@@ -596,6 +597,21 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals(
         "The replicaPlacementFactory name attribute must be .placement-plugin",
         thrown.getMessage());
+  }
+
+  public void testStartUpZkTimeOutDefaultsToZkClientTimeout() {
+    System.clearProperty("solr.cloud.wait.for.zk.seconds");
+    assertEquals(
+        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, NodeConfig.getStartUpZkTimeOutMillis());
+  }
+
+  public void testStartUpZkTimeOutConvertsSecondsToMillis() {
+    System.setProperty("solr.cloud.wait.for.zk.seconds", "60");
+    try {
+      assertEquals(60_000, NodeConfig.getStartUpZkTimeOutMillis());
+    } finally {
+      System.clearProperty("solr.cloud.wait.for.zk.seconds");
+    }
   }
 
   public static class CS implements ClusterSingleton {

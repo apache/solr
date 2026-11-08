@@ -244,10 +244,7 @@ public class NodeConfig {
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut =
-          1000
-              * Integer.getInteger(
-                  "solr.cloud.wait.for.zk.seconds", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT);
+      int startUpZkTimeOut = getStartUpZkTimeOutMillis();
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
@@ -264,6 +261,11 @@ public class NodeConfig {
     }
 
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
+  }
+
+  static int getStartUpZkTimeOutMillis() {
+    Integer waitSeconds = Integer.getInteger("solr.cloud.wait.for.zk.seconds");
+    return waitSeconds != null ? waitSeconds * 1000 : SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
   }
 
   public String getConfigSetServiceClass() {

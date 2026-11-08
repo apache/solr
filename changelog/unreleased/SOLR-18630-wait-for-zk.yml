@@ -1,0 +1,8 @@
+title: The default wait for ZooKeeper at node startup is 30 seconds again instead of 30000, and the deprecated -DwaitForZk system property works again with a deprecation warning
+type: fixed
+authors:
+  - name: Julian Chandra Sutadi
+    nick: julianchandras
+links:
+  - name: SOLR-18630
+    url: https://issues.apache.org/jira/browse/SOLR-18630

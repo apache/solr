@@ -20,6 +20,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -143,6 +144,30 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
+  public void deprecatedWaitForZkSystemPropertyIsMigratedWithWarning() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("waitForZk", "60");
+    try (LogListener warnLog =
+        LogListener.warn(EnvUtils.class).substring("solr.cloud.wait.for.zk.seconds")) {
+      EnvUtils.init(false, Map.of(), sysprops);
+      assertEquals("60", EnvUtils.getProperty("solr.cloud.wait.for.zk.seconds"));
+      assertEquals(1, warnLog.getCount());
+      assertTrue(warnLog.pollMessage().contains("waitForZk"));
+    }
+  }
+
+  @Test
+  public void deprecatedWaitForZkEnvVarIsMigratedWithWarning() {
+    try (LogListener warnLog =
+        LogListener.warn(EnvUtils.class).substring("solr.cloud.wait.for.zk.seconds")) {
+      EnvUtils.init(false, Map.of("SOLR_WAIT_FOR_ZK", "45"), System.getProperties());
+      assertEquals("45", EnvUtils.getProperty("solr.cloud.wait.for.zk.seconds"));
+      assertEquals(1, warnLog.getCount());
+      assertTrue(warnLog.pollMessage().contains("solr.wait.for.zk"));
+    }
+  }
+
+  @Test
   public void testFlippingDisabledToEnabledPropertyName() {
 
     var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");
@@ -207,9 +232,12 @@ public class EnvUtilsTest extends SolrTestCase {
   public void envToSyspropMappingsDoNotMapToDeprecatedSystemProperties() throws IOException {
     Properties envMappings = loadProperties("EnvToSyspropMappings.properties");
     Properties deprecatedMappings = loadProperties("DeprecatedSystemPropertyMappings.properties");
-    Map<String, String> reverseDeprecatedMappings =
-        deprecatedMappings.entrySet().stream()
-            .collect(Collectors.toMap(e -> (String) e.getValue(), e -> (String) e.getKey()));
+    Map<String, String> reverseDeprecatedMappings = new HashMap<>();
+    for (String newSysProp : deprecatedMappings.stringPropertyNames()) {
+      for (String legacyName : deprecatedMappings.getProperty(newSysProp).split(",")) {
+        reverseDeprecatedMappings.put(legacyName.trim(), newSysProp);
+      }
+    }
 
     for (String envVar : envMappings.stringPropertyNames()) {
       String sysProp = envMappings.getProperty(envVar);
