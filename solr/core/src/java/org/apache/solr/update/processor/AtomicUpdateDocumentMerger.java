@@ -159,6 +159,20 @@ public class AtomicUpdateDocumentMerger {
         for (Entry<String, Object> entry : ((Map<String, Object>) val).entrySet()) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
+          if (isNestedAtomicOperation(fieldVal)) {
+            // Name the nested operation(s) only; the operand's value must not be echoed into
+            // the error response (or any log that records it).
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "Error:"
+                    + getID(toDoc, schema)
+                    + " The value of atomic update operation '"
+                    + key
+                    + "' on field '"
+                    + sif.getName()
+                    + "' is itself an atomic update operation map with operation(s): "
+                    + ((Map<?, ?>) fieldVal).keySet());
+          }
           switch (key) {
             case "add":
               doAdd(toDoc, sif, fieldVal);
@@ -691,6 +705,18 @@ public class AtomicUpdateDocumentMerger {
               + ex.getMessage(),
           ex);
     }
+  }
+
+  private static final Set<String> ATOMIC_OPERATIONS =
+      Set.of("set", "add", "add-distinct", "remove", "removeregex", "inc");
+
+  /** True if the value is a map whose keys are all atomic update operations, e.g. {"set": 1}. */
+  private static boolean isNestedAtomicOperation(Object value) {
+    if (!(value instanceof Map) || value instanceof SolrDocumentBase) {
+      return false;
+    }
+    Map<?, ?> map = (Map<?, ?>) value;
+    return !map.isEmpty() && ATOMIC_OPERATIONS.containsAll(map.keySet());
   }
 
   private static boolean isChildDoc(Object obj) {
