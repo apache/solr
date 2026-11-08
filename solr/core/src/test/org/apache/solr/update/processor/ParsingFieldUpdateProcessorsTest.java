@@ -639,6 +639,85 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//double[@name='double2_d'][.='" + value + "']");
   }
 
+  public void testParseDoubleExponentForms() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull("double1_d")); // should match dynamic field "*_d"
+    assertNotNull(schema.getFieldOrNull("double2_d")); // should match dynamic field "*_d"
+    assertNull(schema.getFieldOrNull("not_in_schema"));
+    SolrInputDocument d =
+        processAdd(
+            "parse-double-no-run-processor",
+            doc(
+                f("id", "129"),
+                f("double1_d", "4.5E+10"),
+                f("double2_d", "4.5e+3"),
+                f("not_in_schema", "-1.25E+2")));
+    assertNotNull(d);
+    assertTrue(d.getFieldValue("double1_d") instanceof Double);
+    assertEquals(4.5E10, (Double) d.getFieldValue("double1_d"), 0);
+    assertTrue(d.getFieldValue("double2_d") instanceof Double);
+    assertEquals(4500.0, (Double) d.getFieldValue("double2_d"), 0);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Double);
+    assertEquals(-125.0, (Double) d.getFieldValue("not_in_schema"), 0);
+
+    // a lowercase exponent marker parses with or without a sign, like the uppercase marker
+    d =
+        processAdd(
+            "parse-double-no-run-processor",
+            doc(
+                f("id", "132"),
+                f("double1_d", "4.5e3"),
+                f("double2_d", "4.5e-3"),
+                f("not_in_schema", "2.5e2")));
+    assertNotNull(d);
+    assertTrue(d.getFieldValue("double1_d") instanceof Double);
+    assertEquals(4500.0, (Double) d.getFieldValue("double1_d"), 0);
+    assertTrue(d.getFieldValue("double2_d") instanceof Double);
+    assertEquals(4.5E-3, (Double) d.getFieldValue("double2_d"), 0);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Double);
+    assertEquals(250.0, (Double) d.getFieldValue("not_in_schema"), 0);
+
+    // a plus sign that is not part of a trailing exponent must still prevent parsing,
+    // and an exponent marker with no digits after it is not an exponent
+    d =
+        processAdd(
+            "parse-double-no-run-processor",
+            doc(
+                f("id", "130"),
+                f("not_in_schema", "4.5+E10"),
+                f("other_not_in_schema", "4.5E+"),
+                f("another_not_in_schema", "4.5e")));
+    assertNotNull(d);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof String);
+    assertTrue(d.getFieldValue("other_not_in_schema") instanceof String);
+    assertTrue(d.getFieldValue("another_not_in_schema") instanceof String);
+  }
+
+  public void testParseFloatExponentForms() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull("float1_f")); // should match dynamic field "*_f"
+    SolrInputDocument d =
+        processAdd(
+            "parse-float-no-run-processor",
+            doc(f("id", "131"), f("float1_f", "1.5E+3"), f("not_in_schema", "2.5E+1")));
+    assertNotNull(d);
+    assertTrue(d.getFieldValue("float1_f") instanceof Float);
+    assertEquals(1500.0f, (Float) d.getFieldValue("float1_f"), 0);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Float);
+    assertEquals(25.0f, (Float) d.getFieldValue("not_in_schema"), 0);
+
+    // a lowercase exponent marker parses with or without a sign, like the uppercase marker
+    d =
+        processAdd(
+            "parse-float-no-run-processor",
+            doc(f("id", "133"), f("float1_f", "1.5e3"), f("not_in_schema", "2.5e-1")));
+    assertNotNull(d);
+    assertTrue(d.getFieldValue("float1_f") instanceof Float);
+    assertEquals(1500.0f, (Float) d.getFieldValue("float1_f"), 0);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Float);
+    assertEquals(0.25f, (Float) d.getFieldValue("not_in_schema"), 0);
+  }
+
   public void testParseDoubleNonRootLocale() throws Exception {
     final DecimalFormatSymbols fr_FR =
         DecimalFormatSymbols.getInstance(new Locale.Builder().setLanguageTag("fr-FR").build());
