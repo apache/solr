@@ -48,7 +48,9 @@ import org.apache.solr.common.cloud.SolrZkClient;
 public class UpdateACLTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  @picocli.CommandLine.Mixin ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
   @picocli.CommandLine.Parameters(
       index = "0",
@@ -104,7 +106,7 @@ public class UpdateACLTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    String zkHost = zkOpts.resolveZkHost();
+    String zkHost = connectionOptions.resolveZkHost(credentialsOptions.credentials);
 
     if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(

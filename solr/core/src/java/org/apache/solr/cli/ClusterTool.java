@@ -48,7 +48,7 @@ public class ClusterTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option PROPERTY_OPTION =
       Option.builder()
           .longOpt("property")
@@ -62,7 +62,7 @@ public class ClusterTool extends ToolBase {
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
    */
-  @Deprecated
+  @Deprecated(since = "10.2")
   private static final Option VALUE_OPTION =
       Option.builder()
           .longOpt("value")
@@ -89,7 +89,9 @@ public class ClusterTool extends ToolBase {
       description = "Set the property to this value.")
   private String valueOpt;
 
-  @picocli.CommandLine.Mixin private ZkConnectionOptions zkOpts;
+  @picocli.CommandLine.Mixin private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
 
   public ClusterTool() {
     this(new DefaultToolRuntime());
@@ -151,7 +153,9 @@ public class ClusterTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    ClusterParams params = new ClusterParams(propertyOpt, valueOpt, zkOpts.resolveZkHost());
+    ClusterParams params =
+        new ClusterParams(
+            propertyOpt, valueOpt, connectionOptions.resolveZkHost(credentialsOptions.credentials));
     setClusterProperty(params);
     return 0;
   }

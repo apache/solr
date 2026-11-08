@@ -35,8 +35,8 @@ See xref:cli/index.adoc[] to enable this implementation and for its known limita
 ....
 bin/solr export [-hv] [--compress] -c=NAME [--fields=FIELDA,FIELDB]
                 [--format=FORMAT] [--limit=#] [--output=PATH] [--query=QUERY]
-                [-u=<credentials>] (-s=<solrConnection> | --solr-url=<solrUrl> |
-                -z=<zkHost>)
+                [-s=<solrConnection>] [--solr-url=<solrUrl>] [-u=<credentials>]
+                [-z=<zkHost>]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -52,7 +52,7 @@ Exports documents from a collection to a local file.
 == Options
 
 *-c*, *--name*=_NAME_::
-  *(required)* Name of the collection.
+  *(required)* Name of the collection or core.
 
 *--compress*::
   Compress the output. Defaults to false.

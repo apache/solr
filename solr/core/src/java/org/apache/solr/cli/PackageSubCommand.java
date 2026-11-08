@@ -34,8 +34,7 @@ abstract class PackageSubCommand extends ToolBase {
 
   @picocli.CommandLine.Mixin CredentialsOptions credentialsOptions;
 
-  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-  ConnectionOptions connectionOptions;
+  @picocli.CommandLine.Mixin ConnectionOptions connectionOptions;
 
   PackageSubCommand() {
     super(new DefaultToolRuntime());
@@ -51,14 +50,16 @@ abstract class PackageSubCommand extends ToolBase {
     String credentials =
         credentialsOptions.credentials != null
             ? credentialsOptions.credentials
-            : packageTool.credentialsOptions != null
-                ? packageTool.credentialsOptions.credentials
-                : null;
+            : packageTool.credentialsOptions.credentials;
+    // Options given on the subcommand win; the parent's are kept for the legacy
+    // `bin/solr package --solr-url X install ...` order
+    ConnectionOptions connection =
+        !connectionOptions.hasExplicitConnection()
+                && packageTool.connectionOptions.hasExplicitConnection()
+            ? packageTool.connectionOptions
+            : connectionOptions;
 
-    packageTool.runWithManagers(
-        connectionOptions != null ? connectionOptions : packageTool.connectionOptions,
-        credentials,
-        action);
+    packageTool.runWithManagers(connection, credentials, action);
     return 0;
   }
 }
