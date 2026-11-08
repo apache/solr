@@ -127,7 +127,7 @@ public class RootFieldTest extends SolrTestCase {
     docToUpdate.addChildDocument(child);
     if (!useRootSchema) {
       String message =
-          "Unable to index docs with children:"
+          "core collection1: Unable to index docs with children:"
               + " the schema must include definitions for both a uniqueKey field"
               + " and the '_root_' field, using the exact same fieldType";
       SolrException thrown =
