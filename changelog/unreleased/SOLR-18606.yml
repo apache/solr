@@ -1,0 +1,9 @@
+title: >
+  CloudSolrClient sends requests for locally unknown collections to a live node
+  for server-side resolution instead of rejecting them locally.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18606
+    url: https://issues.apache.org/jira/browse/SOLR-18606

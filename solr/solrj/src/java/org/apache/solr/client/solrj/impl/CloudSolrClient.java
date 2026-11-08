@@ -277,6 +277,15 @@ public abstract class CloudSolrClient extends SolrClient {
 
     DocCollection col = getDocCollection(collection, null);
 
+    if (col == null) {
+      if (directUpdatesToLeadersOnly) {
+        throw new SolrException(
+            SolrException.ErrorCode.INVALID_STATE,
+            "Cannot route updates directly to leaders without collection state: " + collection);
+      }
+      return null;
+    }
+
     DocRouter router = col.getRouter();
 
     if (router instanceof ImplicitDocRouter) {
@@ -649,8 +658,10 @@ public abstract class CloudSolrClient extends SolrClient {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getDocCollection(requestedCollection, null);
         if (coll == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+          // A node may know about a collection before this client's cluster state does.
+          requestedCollections = null;
+          stateVerParamBuilder = null;
+          break;
         }
         int collVer = coll.getZNodeVersion();
         if (requestedCollections == null)
@@ -989,8 +1000,19 @@ public abstract class CloudSolrClient extends SolrClient {
       for (String collectionName : collectionNames) {
         DocCollection col = getDocCollection(collectionName, null);
         if (col == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
+          // Preserve the requested collection or alias for server-side resolution.
+          String joinedInputCollections = StrUtils.join(inputCollections, ',');
+          for (String liveNode : liveNodes) {
+            String nodeBaseUrl = URLUtil.getBaseUrlForNodeName(liveNode, urlScheme);
+            requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl, joinedInputCollections));
+          }
+          if (requestEndpoints.isEmpty()) {
+            throw new SolrException(
+                SolrException.ErrorCode.INVALID_STATE,
+                "Could not find a healthy node to handle the request.");
+          }
+          LBSolrClient.Req req = new LBSolrClient.Req(request, requestEndpoints);
+          return getLbClient().request(req).getResponse();
         }
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams, col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);

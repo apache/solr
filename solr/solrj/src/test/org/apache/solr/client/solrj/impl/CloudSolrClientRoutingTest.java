@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -55,6 +56,32 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
     create.process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("test-collection", 2, 2);
+  }
+
+  @Test
+  public void testRouteWhenClientCollectionStateIsMissing() throws Exception {
+    String collection = "test-collection";
+    ClusterStateProvider staleProvider =
+        new DelegatingClusterStateProvider(cluster.getSolrClient().getClusterStateProvider()) {
+          @Override
+          public ClusterState.CollectionRef getState(String name) {
+            return collection.equals(name) ? null : super.getState(name);
+          }
+
+          @Override
+          public void close() {
+            // The cluster owns the delegate.
+          }
+        };
+    try (CloudSolrClient client = new CloudSolrClient.Builder(staleProvider).build()) {
+      client.add(collection, new SolrInputDocument("id", "solr-18606"));
+      client.commit(collection);
+      assertEquals(
+          1, client.query(collection, new SolrQuery("id:solr-18606")).getResults().getNumFound());
+    } finally {
+      cluster.getSolrClient().deleteById(collection, "solr-18606");
+      cluster.getSolrClient().commit(collection);
+    }
   }
 
   @Test

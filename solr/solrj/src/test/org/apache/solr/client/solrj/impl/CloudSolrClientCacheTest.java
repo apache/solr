@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -136,6 +137,84 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       int fetchCount = refs.get(collName).getCount();
       assertTrue("Expected 1 or 2 fetches, got " + fetchCount, fetchCount >= 1 && fetchCount <= 2);
     }
+  }
+
+  public void testMissingCollectionRoutesThroughLiveNode() throws Exception {
+    Set<String> liveNodes = Set.of("192.168.1.108:8983_solr", "192.168.1.108:7574_solr");
+    AtomicReference<LBSolrClient.Req> sent = new AtomicReference<>();
+    LBJettySolrClient lb = mock(LBJettySolrClient.class);
+    when(lb.request(any(LBSolrClient.Req.class)))
+        .thenAnswer(
+            invocation -> {
+              sent.set(invocation.getArgument(0));
+              LBSolrClient.Rsp response = new LBSolrClient.Rsp();
+              response.rsp = new NamedList<>();
+              return response;
+            });
+    try (ClusterStateProvider provider = getStateProvider(liveNodes, Map.of());
+        CloudSolrClient client = clientWithLb(provider, lb, false)) {
+      DummyRequest query = new DummyRequest("missing,other");
+      query.getParams().set(CloudSolrClient.STATE_VERSION, "old:1");
+      client.request(query, null);
+      assertNull(query.getParams().get(CloudSolrClient.STATE_VERSION));
+      assertEquals(2, sent.get().getEndpoints().size());
+      for (LBSolrClient.Endpoint endpoint : sent.get().getEndpoints()) {
+        assertEquals("missing,other", endpoint.getCore());
+        assertTrue(endpoint.getBaseUrl().startsWith("http://"));
+      }
+
+      sent.set(null);
+      client.request(new UpdateRequest().add("id", "1"), "missing");
+      assertNotNull(sent.get());
+      for (LBSolrClient.Endpoint endpoint : sent.get().getEndpoints()) {
+        assertEquals("missing", endpoint.getCore());
+      }
+    }
+  }
+
+  public void testMissingCollectionHonorsStrictLeaderRouting() throws Exception {
+    LBJettySolrClient lb = mock(LBJettySolrClient.class);
+    try (ClusterStateProvider provider =
+            getStateProvider(Set.of("192.168.1.108:8983_solr"), Map.of());
+        CloudSolrClient client = clientWithLb(provider, lb, true)) {
+      SolrException error =
+          expectThrows(
+              SolrException.class,
+              () -> client.request(new UpdateRequest().add("id", "1"), "missing"));
+      assertEquals(SolrException.ErrorCode.INVALID_STATE.code, error.code());
+      verifyNoInteractions(lb);
+    }
+  }
+
+  public void testMissingCollectionWithoutLiveNodesFails() throws Exception {
+    LBJettySolrClient lb = mock(LBJettySolrClient.class);
+    try (ClusterStateProvider provider = getStateProvider(Set.of(), Map.of());
+        CloudSolrClient client = clientWithLb(provider, lb, false)) {
+      SolrException error =
+          expectThrows(SolrException.class, () -> client.request(new DummyRequest("missing"), null));
+      assertEquals(SolrException.ErrorCode.INVALID_STATE.code, error.code());
+      verifyNoInteractions(lb);
+    }
+  }
+
+  private CloudSolrClient clientWithLb(
+      ClusterStateProvider provider, LBSolrClient lb, boolean strictLeaders) {
+    return new CloudSolrClient(true, false, strictLeaders, 2) {
+      @Override
+      protected LBSolrClient getLbClient() {
+        return lb;
+      }
+
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return provider;
+      }
+
+      @Override
+      public HttpSolrClient getHttpClient() {
+        throw new UnsupportedOperationException();
+      }
+    };
   }
 
   public void testStaleStateRetrySkipsStateVersionBeforeWait() throws Exception {
@@ -333,6 +412,11 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       @Override
       public Set<String> getLiveNodes() {
         return livenodes;
+      }
+
+      @Override
+      public String getUrlScheme() {
+        return "http";
       }
 
       @Override
