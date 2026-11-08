@@ -1,0 +1,7 @@
+title: A delete-by-query that runs while its core is closing no longer logs an error with a stack trace when the update log cannot open a new realtime searcher
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-16356
+    url: https://issues.apache.org/jira/browse/SOLR-16356
