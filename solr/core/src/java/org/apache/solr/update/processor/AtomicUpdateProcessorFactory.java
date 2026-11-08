@@ -21,10 +21,12 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -128,7 +130,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory
                   + req.getParams().get(param)
                   + "'");
         }
-        if (orgdoc.get(field) == null || orgdoc.get(field).getValue() instanceof Map) {
+        if (orgdoc.get(field) == null || isAlreadyAtomicUpdate(orgdoc.get(field).getValue())) {
           // no value for the field or it's already an atomic update operation
           // continue processing other fields
           continue;
@@ -149,6 +151,29 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory
         super.processAdd(cmd);
       }
       // else send it for doc to get inserted for the first time
+    }
+
+    /**
+     * Whether a field value already carries atomic update operations: a single operation map, or
+     * the collection of operation maps that repeated addField calls produce, which {@code
+     * getValue()} returns as a whole instead of as one map.
+     */
+    private static boolean isAlreadyAtomicUpdate(Object value) {
+      if (value instanceof Map) {
+        return true;
+      }
+      if (value instanceof Collection<?> values) {
+        if (values.isEmpty()) {
+          return false;
+        }
+        for (Object element : values) {
+          if (!(element instanceof Map) || element instanceof SolrDocumentBase) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return false;
     }
 
     private void processAddWithRetry(
