@@ -38,6 +38,7 @@ import datetime
 import filecmp
 import hashlib
 import http.client
+import json
 import os
 import platform
 import random
@@ -669,7 +670,7 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs, tmpDir):
   java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
   print("    build binary release w/ Java %s" % java.version)
   java.run_java('./gradlew dev -Dversion.release=%s' % version, '%s/assemble.log' % logDir)
-  testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
+  testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home)
 
   testChangelogMd('.', version)
 
@@ -691,7 +692,7 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
   is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGELOG.md'])
 
   if isSlim:
-    is_in_list(in_root_folder, ['bin', 'docker', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'docker', 'licenses', 'server', 'lib'])
   else:
     is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'example', 'licenses', 'server', 'lib'])
 
@@ -700,8 +701,12 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
 
   checkAllJARs(os.getcwd(), gitRevision, version)
 
-  print('    test solr example w/ Java %s...' % java.version)
-  testSolrExample(unpackPath, java.java_home, isSlim)
+  if isSlim:
+    print('    test slim solr w/ Java %s...' % java.version)
+    testSolrSlim(unpackPath, java.java_home)
+  else:
+    print('    test solr example w/ Java %s...' % java.version)
+    testSolrExample(unpackPath, java.java_home)
 
   testChangelogMd('.', version)
 
@@ -726,7 +731,51 @@ def find_available_port(max_attempts=100):
   raise RuntimeError('Could not find an available port after %d attempts in range 8901-8999' % max_attempts)
 
 
-def testSolrExample(binaryDistPath, javaPath, isSlim):
+def testSolrSlim(binaryDistPath, javaPath):
+  port = find_available_port()
+  solrUrl = 'http://localhost:%d/solr' % port
+  coreUrl = '%s/smoke' % solrUrl
+  env = os.environ.copy()
+  env['JAVA_HOME'] = javaPath
+  env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
+
+  def solr(args):
+    if cygwin:
+      command = 'env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd ' + ' '.join(args)
+      return subprocess.call(command, shell=True, cwd=binaryDistPath, env=env)
+    return subprocess.call(['bin/solr'] + args, cwd=binaryDistPath, env=env)
+
+  if solr(['start', '--user-managed', '-p', str(port)]) != 0:
+    raise RuntimeError('Failed to start slim Solr on port %d' % port)
+  try:
+    if solr(['create', '-c', 'smoke', '--solr-url', solrUrl]) != 0:
+      raise RuntimeError('Failed to create the slim smoke core')
+
+    request = urllib.request.Request(
+        coreUrl + '/update?commit=true&wt=json',
+        data=json.dumps([{'id': 'slim-smoke'}]).encode('utf-8'),
+        headers={'Content-Type': 'application/json'})
+    with urllib.request.urlopen(request, timeout=30) as response:
+      result = json.load(response)
+    if result['responseHeader']['status'] != 0:
+      raise RuntimeError('Failed to index the slim smoke document: %s' % result)
+
+    query = urllib.parse.urlencode({'q': 'id:slim-smoke', 'fl': 'id', 'wt': 'json'})
+    with urllib.request.urlopen(coreUrl + '/select?' + query, timeout=30) as response:
+      result = json.load(response)
+    if result['response']['numFound'] != 1 or result['response']['docs'][0]['id'] != 'slim-smoke':
+      raise RuntimeError('Failed to query the slim smoke document: %s' % result)
+
+    with urllib.request.urlopen('http://localhost:%d/api/cores?wt=json' % port, timeout=30) as response:
+      result = json.load(response)
+    if result['responseHeader']['status'] != 0:
+      raise RuntimeError('Slim cores API request failed: %s' % result)
+  finally:
+    if solr(['stop', '-p', str(port)]) != 0:
+      raise RuntimeError('Failed to stop slim Solr on port %d' % port)
+
+
+def testSolrExample(binaryDistPath, javaPath):
   # test solr using some examples it comes with
   port = find_available_port()
   logFile = '%s/solr-example.log' % binaryDistPath
@@ -740,8 +789,6 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
 
   example = "techproducts"
-  if isSlim:
-    example = "films"
 
   print('      Running %s example on port %d from %s' % (example, port, binaryDistPath))
   try:
@@ -756,7 +803,7 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
     os.chdir('example')
     print('      run query...')
     s = load('http://localhost:%d/solr/%s/select/?q=video' % (port, example))
-    if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
+    if s.find('"numFound":3,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:%d/api/cores?wt=json' % port)
