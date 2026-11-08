@@ -624,8 +624,9 @@ public class MiniSolrCloudCluster implements SolrBackend {
               });
       solrClientByCollection.clear();
 
-      List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
-      for (final JettySolrRunner jetty : jettys) {
+      List<JettySolrRunner> stoppedJettys = new ArrayList<>(jettys);
+      List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(stoppedJettys.size());
+      for (final JettySolrRunner jetty : stoppedJettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
       jettys.clear();
@@ -635,6 +636,14 @@ public class MiniSolrCloudCluster implements SolrBackend {
       ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
       Exception shutdownError =
           checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
+      // A stopped runner holds its port in reserve for a restart; this cluster will not
+      // restart its runners, so release the reservations instead of keeping the ports
+      // until the JVM exits. This covers only the runners still in the cluster: a runner
+      // removed earlier by stopJettySolrRunner is not in this list, and its reservation
+      // stays in place until that runner is closed or the JVM exits.
+      for (final JettySolrRunner jetty : stoppedJettys) {
+        jetty.releasePortReservation();
+      }
       if (shutdownError != null) {
         throw shutdownError;
       }
