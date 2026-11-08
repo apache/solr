@@ -20,7 +20,7 @@ TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
 
 echo "Running $container_name"
-if [[ "${SOLR_DOCKER_TEST_SLIM:-false}" == true ]]; then
+if [[ "${SOLR_DOCKER_DIST:-full}" == "slim" ]]; then
   assert_demo_unavailable
   exit 0
 fi

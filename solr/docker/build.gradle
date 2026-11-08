@@ -724,6 +724,8 @@ abstract class TestDockerImageTask extends DefaultTask {
       def testCaseBuildDir = "${testCaseWorkDir}/build_dir"
       System.out.println("Starting Solr Docker test: ${testCaseName}")
 
+      def solrDockerDist = getParameters().getSlimImage().get() ? "slim" : "full"
+
       def res = getExec().exec {
         // we'll handle it ourselves so we can report the details of which test failed
         ignoreExitValue true
@@ -731,7 +733,7 @@ abstract class TestDockerImageTask extends DefaultTask {
         environment "DEBUG", "true"
         environment "TEST_DIR", testCaseDir
         environment "BUILD_DIR", testCaseBuildDir
-        environment "SOLR_DOCKER_TEST_SLIM", getParameters().getSlimImage().get().toString()
+        environment "SOLR_DOCKER_DIST", solrDockerDist
 
         standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
         errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
