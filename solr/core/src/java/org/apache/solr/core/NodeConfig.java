@@ -244,13 +244,13 @@ public class NodeConfig {
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut = getStartUpZkTimeOutMillis();
+      int startUpZkTimeOutSeconds = getStartUpZkTimeOutSeconds();
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withTimeout(startUpZkTimeOutSeconds, TimeUnit.SECONDS)
+              .withConnTimeOut(startUpZkTimeOutSeconds, TimeUnit.SECONDS)
               .withSolrClassLoader(loader)
               .build()) {
         zkClient.exists("/configs");
@@ -263,9 +263,11 @@ public class NodeConfig {
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
   }
 
-  static int getStartUpZkTimeOutMillis() {
+  // Someday this could be inlined...
+  static int getStartUpZkTimeOutSeconds() {
     Integer waitSeconds = Integer.getInteger("solr.cloud.wait.for.zk.seconds");
-    return waitSeconds != null ? waitSeconds * 1000 : SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    // nocommit Eric says: um, we ahve `solr.cloud.wait.for.zk.seconds` but then we have `solr.zookeeper.client.timeout` everywhere!!!.
+    return waitSeconds != null ? waitSeconds  : SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT * 1000;
   }
 
   public String getConfigSetServiceClass() {

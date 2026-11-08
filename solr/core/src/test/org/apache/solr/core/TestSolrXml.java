@@ -602,12 +602,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   public void testStartUpZkTimeOutDefaultsToZkClientTimeout() {
     System.clearProperty("solr.cloud.wait.for.zk.seconds");
     assertEquals(
-        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, NodeConfig.getStartUpZkTimeOutMillis());
+        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, NodeConfig.getStartUpZkTimeOutSeconds());
   }
 
   public void testStartUpZkTimeOutConvertsSecondsToMillis() {
     System.setProperty("solr.cloud.wait.for.zk.seconds", "60");
-    assertEquals(60_000, NodeConfig.getStartUpZkTimeOutMillis());
+    assertEquals(60_000, NodeConfig.getStartUpZkTimeOutSeconds());
   }
 
   public static class CS implements ClusterSingleton {
