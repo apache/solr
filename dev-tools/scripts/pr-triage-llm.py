@@ -366,20 +366,13 @@ def format_result(pr, files, cfg, verdicts, skipped=()):
             detail = f" ({'; '.join(parts)})" if parts else ""
             rows.append(f"- {mark} {name}{note}{detail}: {reason}")
 
-    headline = (f"**{mismatches} possible mismatch(es)** between what this change warrants and what the PR includes."
-                if mismatches else "No clear mismatches in the answered judgements.")
-    if unanswered:
-        headline += f" **{unanswered} unclear judgement(s); please assess.**"
     head_sha = (pr.get("head") or {}).get("sha", "")
     revision = f"<!-- Assessed commit {head_sha} -->" if re.fullmatch(r"[0-9a-f]{40}", head_sha) else ""
     comment = "\n".join(
         [
             "**Automated PR readiness judgements** (LLM-generated; may be wrong; not updated on later pushes).",
             "",
-            *metadata_notices(pr),
-            "",
-            headline,
-            "",
+            *[line for n in metadata_notices(pr) for line in (n, "")],
             *rows,
             "",
             *([revision] if revision else []),
