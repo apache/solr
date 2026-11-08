@@ -1,0 +1,10 @@
+title: >
+  gradlew now starts under Git Bash (MSYS) on Windows: APP_HOME and CLASSPATH
+  are converted to Windows form once, not twice, so the wrapper main class is
+  found.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18540
+    url: https://issues.apache.org/jira/browse/SOLR-18540
