@@ -32,8 +32,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -43,6 +41,8 @@ import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -153,7 +153,9 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
       if (expectStreams) {
         List<ContentStream> sourceStreams = (List<ContentStream>) req.getContentStreams();
         assertNotNull("source streams missing", sourceStreams);
-        List<ContentStream> mirroredStreams = (List<ContentStream>) solrRequest.getContentStreams();
+        List<ContentStream> mirroredStreams =
+            (List<ContentStream>)
+                ((MirroredSolrRequest.MirroredConfigSetRequest) solrRequest).getRawContentStreams();
         assertNotNull("mirrored streams missing", mirroredStreams);
         assertEquals("number of streams", sourceStreams.size(), mirroredStreams.size());
         for (int i = 0; i < sourceStreams.size(); i++) {

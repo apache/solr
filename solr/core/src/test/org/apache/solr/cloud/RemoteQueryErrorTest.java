@@ -43,16 +43,15 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      try (SolrClient client = jetty.newClient()) {
-        SolrException e =
-            expectThrows(
-                SolrException.class,
-                () -> {
-                  client.add("collection", new SolrInputDocument());
-                });
-        assertThat(
-            e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
-      }
+      SolrClient client = jetty.getSolrClient();
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                client.add("collection", new SolrInputDocument());
+              });
+      assertThat(
+          e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
     }
   }
 }

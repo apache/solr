@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Support repeated parents.preFilter values in nested vector knn queries
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Arup Chauhan
+    nick: arup-chauhan
+links:
+  - name: SOLR-18039
+    url: https://issues.apache.org/jira/browse/SOLR-18039

@@ -17,7 +17,12 @@ limitations under the License.
 <div id="logging" class="clearfix">
   <div id="frame">
     <div class="block">
-      <h2><span>{{watcher}}</span></h2>
+      <h2>
+        <span>{{watcher}}</span>
+        <span class="cluster-level-note" ng-show="liveNodes.length > 1">
+          (Temporarily changes the logging output level across the entire cluster. Changes will be lost after a restart.)
+        </span>
+      </h2>
       <div id="loggingtree">
         <ul class="tree jstree jstree-container-ul jstree-children tree ng-isolate-scope jstree-1 jstree-default">
           <li class="jstree-node jstree-leaf jstree-open level-{{logger.level.toLowerCase()}}" ng-class="{'jstree-last':$last}" ng-repeat="logger in logging" ng-include="'logger.html'"></li>

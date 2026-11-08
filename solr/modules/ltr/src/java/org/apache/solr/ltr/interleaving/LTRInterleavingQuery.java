@@ -24,12 +24,12 @@ import org.apache.solr.ltr.search.LTRQuery;
 import org.apache.solr.search.RankQuery;
 
 /**
- * A learning to rank Query with Interleaving, will incapsulate two models, and delegate to it the
+ * A learning to rank Query with Interleaving, will encapsulate two models, and delegate to it the
  * rescoring of the documents.
  */
 public class LTRInterleavingQuery extends LTRQuery {
   private final LTRInterleavingScoringQuery[] rerankingQueries;
-  private final Interleaving interlavingAlgorithm;
+  private final Interleaving interleavingAlgorithm;
 
   public LTRInterleavingQuery(
       Interleaving interleavingAlgorithm,
@@ -37,7 +37,7 @@ public class LTRInterleavingQuery extends LTRQuery {
       int rerankDocs) {
     super(null, rerankDocs, new LTRInterleavingRescorer(interleavingAlgorithm, rerankingQueries));
     this.rerankingQueries = rerankingQueries;
-    this.interlavingAlgorithm = interleavingAlgorithm;
+    this.interleavingAlgorithm = interleavingAlgorithm;
   }
 
   @Override
@@ -79,7 +79,7 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   @Override
   protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-    return new LTRInterleavingQuery(interlavingAlgorithm, rerankingQueries, reRankDocs)
+    return new LTRInterleavingQuery(interleavingAlgorithm, rerankingQueries, reRankDocs)
         .wrap(rewrittenMainQuery);
   }
 }

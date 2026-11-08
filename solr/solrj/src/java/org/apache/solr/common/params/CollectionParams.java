@@ -97,18 +97,6 @@ public interface CollectionParams {
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
     MIGRATE(true, LockLevel.COLLECTION),
-    /**
-     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
-     *     at startup instead.
-     */
-    @Deprecated(since = "10.1")
-    ADDROLE(true, LockLevel.NONE),
-    /**
-     * @deprecated This API will be removed in Solr 11. Use Node Roles ({@code -Dsolr.node.roles})
-     *     at startup instead.
-     */
-    @Deprecated(since = "10.1")
-    REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
     COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock
     REQUESTSTATUS(false, LockLevel.NONE),
@@ -133,9 +121,10 @@ public interface CollectionParams {
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
-    // only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks
+    REPRIORITIZE_OVERSEER(true, LockLevel.NONE),
+    // only for testing. it just waits for specified time
     MOCK_COLL_TASK(false, LockLevel.COLLECTION),
     MOCK_SHARD_TASK(false, LockLevel.SHARD),
     // TODO when we have a node level lock use it here

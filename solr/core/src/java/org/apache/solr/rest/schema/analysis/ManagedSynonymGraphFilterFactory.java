@@ -365,16 +365,24 @@ public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFact
       boolean ignoreCase = synonymManager.getIgnoreCase();
       for (CasePreservedSynonymMappings cpsm : synonymManager.synonymMappings.values()) {
         for (Map.Entry<String, Set<String>> entry : cpsm.mappings.entrySet()) {
+          // Use includeOrig=true so the original token keeps its upstream type and only the
+          // injected synonyms are tagged as SYNONYM
+          boolean mapsToItself = entry.getValue().contains(entry.getKey());
+          CharsRef casedTerm =
+              analyze(
+                  synonymManager.applyCaseSetting(ignoreCase, entry.getKey()),
+                  new CharsRefBuilder());
           for (String mapping : entry.getValue()) {
-            // apply the case setting to match the behavior of the SynonymMap builder
-            CharsRef casedTerm =
-                analyze(
-                    synonymManager.applyCaseSetting(ignoreCase, entry.getKey()),
-                    new CharsRefBuilder());
             CharsRef casedMapping =
                 analyze(
                     synonymManager.applyCaseSetting(ignoreCase, mapping), new CharsRefBuilder());
-            add(casedTerm, casedMapping, false);
+            if (mapsToItself) {
+              if (!casedTerm.equals(casedMapping)) {
+                add(casedTerm, casedMapping, true);
+              }
+            } else {
+              add(casedTerm, casedMapping, false);
+            }
           }
         }
       }

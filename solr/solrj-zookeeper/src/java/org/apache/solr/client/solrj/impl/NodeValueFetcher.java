@@ -181,6 +181,7 @@ public class NodeValueFetcher {
       String baseUrl =
           ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(ctx.getNode());
       NamedList<Object> response = ctx.httpSolrClient().requestWithBaseUrl(baseUrl, req, null);
+      InputStreamResponseParser.checkHttpStatus(response);
 
       // TODO come up with a better solution to stream this response instead of loading in memory
       try (InputStream prometheusStream = (InputStream) response.get(STREAM_KEY)) {

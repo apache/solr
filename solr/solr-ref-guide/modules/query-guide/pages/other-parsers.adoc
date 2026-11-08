@@ -22,6 +22,13 @@ This section details the other parsers, and gives examples for how they might be
 
 Many of these parsers are expressed the same way as xref:local-params.adoc[].
 
+== Auxiliary Index Join Query Parser
+
+It's similar to
+<<Join Query Parser,Join Query Parser>>, but uses a lazily written sidecar index for faster joins.
+
+Details of this query parser are in the section xref:auxindexjoin-query-parser.adoc[].
+
 == Block Join Query Parsers
 
 The Block Join query parsers are used with nested documents to query for parents and/or children.
@@ -725,6 +732,12 @@ Interval queries express positional constraints between terms, such as requiring
 Invoked with the syntax `{!intervals df=<field>}{"phrase":{"terms":["hash","map"]}}`,
 
 Details of this query parser are in the section xref:intervals-query-parser.adoc[].
+
+== Global Ordinals Join Query Parser
+
+The Global Ordinals Join Query Parser joins documents within an index using Lucene's global ordinals (`OrdinalMap`) over a shared single-valued docValues string field.
+
+Details of this query parser are in the section xref:global-ordinals-join-query-parser.adoc[].
 
 == Join Query Parser
 

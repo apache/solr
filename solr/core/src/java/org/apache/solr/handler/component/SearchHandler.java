@@ -513,6 +513,9 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   /** Distributed request processing (AKA coordinator). */
+  @SuppressWarnings(
+      "ReferenceEquality") // ShardRequest.ALL_SHARDS is a unique sentinel; identity check is
+  // intentional
   protected void processComponentsDistrib(
       SolrQueryRequest req,
       SolrQueryResponse rsp,
@@ -664,11 +667,6 @@ public class SearchHandler extends RequestHandlerBase
                 throwSolrException(shardException.get());
               } else {
                 rsp.setPartialResults(rb.req);
-                if (publishCpuTime) {
-                  totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
-                  rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
-                  rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
-                }
               }
             }
           }

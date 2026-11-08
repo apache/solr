@@ -73,7 +73,7 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 ## Support
 
 - [Users Mailing List](https://solr.apache.org/community.html#mailing-lists-chat)
-- Slack: Solr Community Channel.  Sign up at https://s.apache.org/solr-slack
+- Slack: [#solr-dev channel in the ASF Slack workspace](https://the-asf.slack.com/messages/CE70MDPMF)
 - IRC: `#solr` on [libera.chat](https://web.libera.chat/?channels=#solr)
 
 ## Developer Documentation

@@ -1,4 +1,4 @@
-# https://cwiki.apache.org/confluence/display/INFRA/Git+-+.asf.yaml+features
+# https://github.com/apache/infrastructure-asfyaml/blob/main/README.md
 
 github:
   description: "Apache Solr open-source search software"
@@ -18,11 +18,23 @@ github:
     merge:  false
     rebase: false
 
+  # Cap how many pull requests a contributor without write access may have open at once.
+  # See https://github.com/apache/infrastructure-asfyaml#pr_creation_cap
+  pull_requests:
+    del_branch_on_merge: true
+    creation_cap:
+      enabled: true
+      max_open_pull_requests: 7
+      # This feature not yet supported in prod, enable once it is live
+      # See https://the-asf.slack.com/archives/CBX4TSBQ8/p1792688456355089 for status
+      #include_drafts: true
+
   # TODO: Add to this list for each new minor release
   protected_branches:
     main: {}
     branch_10x: {}
     branch_10_0: {}
+    branch_10_1: {}
     branch_9_0: {}
     branch_9_1: {}
     branch_9_2: {}

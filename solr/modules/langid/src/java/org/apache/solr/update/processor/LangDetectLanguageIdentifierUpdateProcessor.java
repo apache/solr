@@ -65,8 +65,7 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
     List<Language> langlist = orchestrator.detectAll(text);
     ArrayList<DetectedLanguage> solrLangList = new ArrayList<>();
     for (Language l : langlist) {
-      solrLangList.add(
-          new DetectedLanguage(l.getIsoCode639_1().toString(), (double) l.getProbability()));
+      solrLangList.add(new DetectedLanguage(l.getIsoCode639_1(), (double) l.getProbability()));
     }
     if (solrLangList.isEmpty()) {
       log.debug("Could not determine language, returning empty list");

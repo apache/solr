@@ -44,6 +44,14 @@ import org.junit.Test;
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
   @Test
+  @SuppressWarnings("deprecation")
+  public void testAdminRequestsChooseExplicitHttpMethods() {
+    assertEquals(METHOD.POST, new CoreAdminRequest().getMethod());
+    assertEquals(METHOD.POST, new CoreAdminRequest.Create().getMethod());
+    assertEquals(METHOD.GET, new CoreAdminRequest.ListSnapshots().getMethod());
+  }
+
+  @Test
   public void testConfigSet() throws Exception {
 
     SolrClient client = getSolrAdmin();

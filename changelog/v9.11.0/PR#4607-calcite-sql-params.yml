@@ -1,0 +1,10 @@
+title: The /sql handler request params forwarded to Calcite is now configurable
+type: changed
+authors:
+  - name: Jan Høydahl
+  - name: William Wallace
+    nick: phyr3wall
+    url: https://fjord.ai/
+links:
+  - name: PR#4607
+    url: https://github.com/apache/solr/pull/4607

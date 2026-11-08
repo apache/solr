@@ -34,8 +34,22 @@ import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 
 /** Supports snapshot-describe command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "describe",
+    description = "Describes a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Describe a snapshot",
+      "  bin/solr snapshot describe -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotDescribeTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -45,6 +59,11 @@ public class SnapshotDescribeTool extends ToolBase {
           .desc("Name of collection to be snapshot.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -53,6 +72,25 @@ public class SnapshotDescribeTool extends ToolBase {
           .required()
           .desc("Name of the snapshot to describe")
           .get();
+
+  /** Parameters for the snapshot-describe command, independent of the command line parser. */
+  record SnapshotDescribeParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
+
+  public SnapshotDescribeTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotDescribeTool(ToolRuntime runtime) {
     super(runtime);
@@ -77,10 +115,18 @@ public class SnapshotDescribeTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      describeSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotDescribeParams params =
+        new SnapshotDescribeParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    describeSnapshot(params);
+  }
+
+  void describeSnapshot(SnapshotDescribeParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      describeSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 
@@ -135,5 +181,17 @@ public class SnapshotDescribeTool extends ToolBase {
     }
 
     return result;
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    SnapshotDescribeParams params =
+        new SnapshotDescribeParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name,
+            snapshot.name);
+    describeSnapshot(params);
+    return 0;
   }
 }

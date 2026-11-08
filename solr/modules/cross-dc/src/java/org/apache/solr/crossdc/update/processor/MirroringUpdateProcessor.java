@@ -273,6 +273,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           } catch (Exception e) {
             log.error("mirror submit failed", e);
             producerMetrics.getSubmittedDeleteByIdError().inc();
+            producerMetrics.getSubmitError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }

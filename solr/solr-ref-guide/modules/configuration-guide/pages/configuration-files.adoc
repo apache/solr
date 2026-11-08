@@ -105,3 +105,22 @@ Configuration files cannot be edited with this screen, so a text editor of some 
 
 This screen is related to the xref:indexing-guide:schema-browser-screen.adoc[], in that they both can display information from the schema.
 However, the Schema Browser provides a way to drill into the analysis chain and displays linkages between field types, fields, and dynamic field rules.
+
+== Restricting File Access
+
+Both the Files Screen above and the `/admin/file` endpoint it's built on are served by `ShowFileRequestHandler`, which by default exposes every file in `${solr.home}/conf/`.
+
+To hide specific files, list them as `hidden` invariants in `solrconfig.xml` - a bare `*` hides everything else, but patterns like `*.xml` are not supported, only exact filenames:
+
+[source,xml]
+----
+<requestHandler name="/admin/file" class="solr.admin.ShowFileRequestHandler">
+  <lst name="invariants">
+    <str name="hidden">synonyms.txt</str>
+    <str name="hidden">anotherfile.txt</str>
+    <str name="hidden">*</str>
+  </lst>
+</requestHandler>
+----
+
+When fetching a file directly from the endpoint, use the `contentType` parameter to override the returned `Content-Type`, e.g. `solr/admin/file?file=schema.xml&contentType=text/plain`.

@@ -1,0 +1,7 @@
+title: Ensure that when query limits are used the correct similarity is used for all types of queries.
+type: changed
+authors:
+  - name: Andrzej Bialecki
+links:
+  - name: SOLR-18305
+    url: https://issues.apache.org/jira/browse/SOLR-18305

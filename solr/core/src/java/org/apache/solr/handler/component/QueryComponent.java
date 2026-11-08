@@ -170,7 +170,7 @@ public class QueryComponent extends SearchComponent {
     ReturnFields returnFields = new SolrReturnFields(req);
     rsp.setReturnFields(returnFields);
     int flags = 0;
-    if (returnFields.wantsScore()) {
+    if (returnFields.returnsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
     }
     rb.setFieldFlags(flags);
@@ -857,7 +857,7 @@ public class QueryComponent extends SearchComponent {
       if (fls != null && fls.length > 0 && (fls.length != 1 || !fls[0].isEmpty())) {
         // If the outer request contains actual FL's use them...
         sreq.params.set(CommonParams.FL, fls);
-        if (!fields.wantsField(keyFieldName)) {
+        if (!fields.returnsField(keyFieldName)) {
           additionalAdded = addFL(additionalFL, keyFieldName, additionalAdded);
         }
       } else {
@@ -1237,10 +1237,9 @@ public class QueryComponent extends SearchComponent {
     populateNextCursorMarkFromMergedShards(rb);
 
     if (thereArePartialResults) {
-      updateResponseHeader(
-          rb.rsp.getResponseHeader(),
-          SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY,
-          Boolean.TRUE);
+      rb.rsp
+          .getResponseHeader()
+          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
       final Object existingSegmentTerminatedEarly =
@@ -1255,10 +1254,11 @@ public class QueryComponent extends SearchComponent {
                 segmentTerminatedEarly);
       } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly)
           && Boolean.TRUE.equals(segmentTerminatedEarly)) {
-        updateResponseHeader(
-            rb.rsp.getResponseHeader(),
-            SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
-            segmentTerminatedEarly);
+        rb.rsp
+            .getResponseHeader()
+            .put(
+                SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
+                segmentTerminatedEarly);
       }
     }
     if (maxHitsTerminatedEarly) {
@@ -1278,11 +1278,6 @@ public class QueryComponent extends SearchComponent {
           .getResponseHeader()
           .add(AbstractReRankQuery.RERANK_CUTOFF_BY_SHARD_RESPONSE_HEADER_KEY, reRankCutoffByShard);
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  protected static void updateResponseHeader(NamedList<Object> header, String key, Object value) {
-    ((SimpleOrderedMap<Object>) header).put(key, value);
   }
 
   protected void setResultIdsAndResponseDocs(
@@ -1440,7 +1435,7 @@ public class QueryComponent extends SearchComponent {
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
-      if (!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
+      if (!rb.rsp.getReturnFields().returnsField(uniqueField.getName())) {
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }
 
@@ -1464,7 +1459,7 @@ public class QueryComponent extends SearchComponent {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
       String keyFieldName = uniqueKey;
-      boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      boolean removeKeyField = !rb.rsp.getReturnFields().returnsField(keyFieldName);
       boolean returnRawScore =
           rb.rsp.getReturnFields().getExplicitlyRequestedFieldNames() != null
               && rb.rsp
@@ -1489,8 +1484,8 @@ public class QueryComponent extends SearchComponent {
             if (nl.get("error") == null) {
               // Add the error to the shards info section if it wasn't added before
               Throwable t = srsp.getException();
-              if (t instanceof SolrServerException) {
-                t = ((SolrServerException) t).getCause();
+              if (t instanceof SolrServerException && t.getCause() != null) {
+                t = t.getCause();
               }
               nl.add("error", t.toString());
               if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {

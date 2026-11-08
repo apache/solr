@@ -57,7 +57,7 @@ public class XSLTResponseWriter implements TextQueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    Transformer t = null;
+    Transformer t;
     try {
       t = getTransformer(request);
     } catch (Exception e) {
@@ -66,16 +66,16 @@ public class XSLTResponseWriter implements TextQueryResponseWriter {
     }
 
     String mediaType = t.getOutputProperty("media-type");
-    if (mediaType == null || mediaType.length() == 0) {
+    if (mediaType == null || mediaType.isEmpty()) {
       // This did not happen in my tests, mediaTypeFromXslt is set to "text/xml"
-      // if the XSLT transform does not contain an xsl:output element. Not sure
+      // if the XSLT transform does not contain a xsl:output element. Not sure
       // if this is standard behavior or if it's just my JVM/libraries
       mediaType = DEFAULT_CONTENT_TYPE;
     }
 
     if (!mediaType.contains("charset")) {
       String encoding = t.getOutputProperty("encoding");
-      if (encoding == null || encoding.length() == 0) {
+      if (encoding == null || encoding.isEmpty()) {
         encoding = "UTF-8";
       }
       mediaType = mediaType + "; charset=" + encoding;

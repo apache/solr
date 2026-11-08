@@ -23,11 +23,18 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
@@ -70,66 +77,105 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
 
-    HttpClient httpClient;
-    SolrClient solrClient = null;
+    var solrClient = jetty.getSolrClient();
+    HttpClient httpClient = solrClient.getHttpClient();
+    String baseUrl = buildUrl(jetty.getLocalPort());
+
+    verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
+
+    // Write security.json locally. Should cause security to be initialized
+    securityConfHandler.persistConf(
+        new SecurityConfHandler.SecurityConfig()
+            .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
+    securityConfHandler.securityConfEdited();
+    verifySecurityStatus(
+        httpClient, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+
+    String command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
+
+    doHttpPost(httpClient, baseUrl + authcPrefix, command, null, null, 401);
+    verifySecurityStatus(httpClient, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
+
+    command = "{\n" + "'set-user': {'harry':'HarryIsUberCool'}\n" + "}";
+
+    doHttpPost(httpClient, baseUrl + authcPrefix, command, "solr", "SolrRocks");
+    verifySecurityStatus(
+        httpClient,
+        baseUrl + authcPrefix,
+        "authentication/credentials/harry",
+        NOT_NULL_PREDICATE,
+        20);
+
+    // Read file from SOLR_HOME and verify that it contains our new user
+    assertTrue(
+        new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), UTF_8)
+            .contains("harry"));
+
+    // Edit authorization
+    verifySecurityStatus(
+        httpClient, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
+    doHttpPost(
+        httpClient,
+        baseUrl + authzPrefix,
+        "{'set-permission': {'name': 'update', 'role':'updaterole'}}",
+        "solr",
+        "SolrRocks");
+    command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
+    doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
     try {
-      httpClient = jetty.getSolrClient().getHttpClient();
-      String baseUrl = buildUrl(jetty.getLocalPort());
-      solrClient = getHttpSolrClient(baseUrl);
-
-      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
-
-      // Write security.json locally. Should cause security to be initialized
-      securityConfHandler.persistConf(
-          new SecurityConfHandler.SecurityConfig()
-              .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
-      securityConfHandler.securityConfEdited();
+      solrClient.query("collection1", new MapSolrParams(Map.of("q", "foo")));
+      fail("Should return a 401 response");
+    } catch (Exception e) {
+      // Test that the second doPost request to /security/authorization went through
       verifySecurityStatus(
-          httpClient, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+          httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
+    }
+  }
 
-      String command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
+  @Test
+  public void testConcurrentEdits() throws Exception {
+    String authzPrefix = "/admin/authorization";
+    HttpClient httpClient = jetty.getSolrClient().getHttpClient();
+    String url = buildUrl(jetty.getLocalPort()) + authzPrefix;
 
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, null, null, 401);
-      verifySecurityStatus(httpClient, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
+    securityConfHandler.persistConf(
+        new SecurityConfHandler.SecurityConfig()
+            .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
+    securityConfHandler.securityConfEdited();
+    verifySecurityStatus(httpClient, url, "authorization.enabled", "true", 20);
 
-      command = "{\n" + "'set-user': {'harry':'HarryIsUberCool'}\n" + "}";
-
-      doHttpPost(httpClient, baseUrl + authcPrefix, command, "solr", "SolrRocks");
-      verifySecurityStatus(
-          httpClient,
-          baseUrl + authcPrefix,
-          "authentication/credentials/harry",
-          NOT_NULL_PREDICATE,
-          20);
-
-      // Read file from SOLR_HOME and verify that it contains our new user
-      assertTrue(
-          new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), UTF_8)
-              .contains("harry"));
-
-      // Edit authorization
-      verifySecurityStatus(
-          httpClient, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
-      doHttpPost(
-          httpClient,
-          baseUrl + authzPrefix,
-          "{'set-permission': {'name': 'update', 'role':'updaterole'}}",
-          "solr",
-          "SolrRocks");
-      command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
-      doHttpPost(httpClient, baseUrl + authzPrefix, command, "solr", "SolrRocks");
-      try {
-        solrClient.query("collection1", new MapSolrParams(Map.of("q", "foo")));
-        fail("Should return a 401 response");
-      } catch (Exception e) {
-        // Test that the second doPost request to /security/authorization went through
-        verifySecurityStatus(
-            httpClient, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
+    int numEdits = 20;
+    // Release all edits at once so they overlap, like the Admin UI's per-permission POSTs. The
+    // await timeout fails the test instead of hanging if the pool ever has fewer threads than
+    // numEdits.
+    CyclicBarrier barrier = new CyclicBarrier(numEdits);
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            numEdits, new SolrNamedThreadFactory("securityEdit"));
+    try {
+      List<Future<?>> futures = new ArrayList<>();
+      for (int i = 0; i < numEdits; i++) {
+        String command = "{'set-user-role': {'user" + i + "': ['dev']}}";
+        futures.add(
+            executor.submit(
+                () -> {
+                  barrier.await(30, TimeUnit.SECONDS);
+                  doHttpPost(httpClient, url, command, "solr", "SolrRocks");
+                  return null;
+                }));
+      }
+      for (Future<?> future : futures) {
+        future.get();
       }
     } finally {
-      if (solrClient != null) {
-        solrClient.close();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+
+    Map<?, ?> authz =
+        (Map<?, ?>) securityConfHandler.getSecurityConfig(false).getData().get("authorization");
+    Map<?, ?> userRoles = (Map<?, ?>) authz.get("user-role");
+    for (int i = 0; i < numEdits; i++) {
+      assertTrue("missing user" + i + " in " + userRoles, userRoles.containsKey("user" + i));
     }
   }
 

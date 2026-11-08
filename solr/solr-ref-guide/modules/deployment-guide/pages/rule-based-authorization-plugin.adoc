@@ -405,7 +405,7 @@ If edit permissions should only be applied to specific collections, a custom per
 Specifically, the following actions of the Collections API would be allowed:
 
 +
-[.lowpadding,cols="1,1,1",frame=none,grid=none,stripes=none]
+[.lowpadding,cols="1,1,1,1",frame=none,grid=none,stripes=none]
 |===
 | CREATE
 | RELOAD
@@ -419,8 +419,6 @@ Specifically, the following actions of the Collections API would be allowed:
 | ADDREPLICA
 | CLUSTERPROP
 | MIGRATE
-| ADDROLE
-| REMOVEROLE
 | ADDREPLICAPROP
 | DELETEREPLICAPROP
 | BALANCESHARDUNIQUE

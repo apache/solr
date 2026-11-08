@@ -33,7 +33,9 @@ class MemWriter extends FastWriter {
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality")
   public void flush(char[] arr, int offset, int len) throws IOException {
+    // Identity check: only steal the internal buffer when it's the exact same array instance.
     if (arr == buf && offset == 0 && len == buf.length) {
       buffers.add(buf); // steal the buffer
       buf = new char[r.nextInt(9000) + 1];
