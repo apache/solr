@@ -31,6 +31,10 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +50,14 @@ import org.slf4j.LoggerFactory;
  */
 public final class CommitTracker implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Key in the {@linkplain SolrQueryRequest#getContext() request context} of the synthetic request
+   * an auto commit is issued with, mapped to {@link Boolean#TRUE}. Update processors that receive
+   * the commit through the default update processing chain can use this marker to tell timer-driven
+   * commits apart from commits requested by a client.
+   */
+  public static final String AUTOCOMMIT_CONTEXT_KEY = "autocommit";
 
   // scheduler delay for maxDoc-triggered autocommits
   public static final int DOC_COMMIT_DELAY_MS = 1;
@@ -260,7 +272,12 @@ public final class CommitTracker implements Runnable {
     }
 
     MDCLoggingContext.setCore(core);
-    try (SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    // An auto commit is an end point: it applies to this core only and is never distributed,
+    // so the distributed update processors must not forward it to a leader or to replicas.
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+    try (SolrQueryRequest req = new SolrQueryRequestBase(core, params)) {
+      req.getContext().put(AUTOCOMMIT_CONTEXT_KEY, Boolean.TRUE);
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;
       command.waitSearcher = WAIT_SEARCHER;
@@ -277,7 +294,19 @@ public final class CommitTracker implements Runnable {
       // to check the commit count before we had incremented it.)
       autoCommitCount.incrementAndGet();
 
-      core.getUpdateHandler().commit(command);
+      // Route the commit through the default update processing chain, as a client requested
+      // commit is, so that update processors see (and may veto) auto commits as well.
+      UpdateRequestProcessorChain chain = core.getUpdateProcessingChain(null);
+      UpdateRequestProcessor processor = chain.createProcessor(req, new SolrQueryResponse());
+      try {
+        processor.processCommit(command);
+      } finally {
+        try {
+          processor.finish();
+        } finally {
+          processor.close();
+        }
+      }
     } catch (Exception e) {
       log.error("auto commit error...", e);
     } finally {
