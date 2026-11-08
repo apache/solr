@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
@@ -69,11 +72,26 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
   protected abstract SolrInputField mutate(final SolrInputField src);
 
   /**
+   * Whether {@link #mutate} should be applied to the operand of each operation of an atomic update,
+   * the same way it is applied to the values of a regular update. Processors whose mutation
+   * considers the values of a field as a whole, instead of one value at a time (for example a
+   * processor that replaces the values of a field with their count), override this method to return
+   * <code>false</code>: an operand is a single value, not the field's value list, so mutating it as
+   * if it were the list does not produce the mutation of the field.
+   *
+   * @return <code>true</code> if the operands of atomic updates should be mutated
+   */
+  protected boolean mutateAtomicOperands() {
+    return true;
+  }
+
+  /**
    * Calls <code>mutate</code> on any fields identified by the selector before forwarding the
    * command down the chain. Any SolrExceptions thrown by <code>mutate</code> will be logged with
    * the Field name, wrapped and re-thrown.
    */
   @Override
+  @SuppressWarnings("ReferenceEquality") // NOT_ATOMIC is a unique sentinel
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     final SolrInputDocument doc = cmd.getSolrInputDocument();
 
@@ -88,7 +106,10 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
 
       SolrInputField dest = null;
       try {
-        dest = mutate(src);
+        dest = mutateAtomicOperations(fname, src);
+        if (dest == NOT_ATOMIC) {
+          dest = mutate(src);
+        }
       } catch (SolrException e) {
         String msg = "Unable to mutate field '" + fname + "': " + e.getMessage();
         log.error(msg, e);
@@ -109,6 +130,55 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
       }
     }
     super.processAdd(cmd);
+  }
+
+  /** Marker returned by {@link #mutateAtomicOperations} when the field is not an atomic update. */
+  private static final SolrInputField NOT_ATOMIC = new SolrInputField("not-atomic");
+
+  /** Atomic update operations whose value is stored as given, and so should be mutated. */
+  private static final Set<String> VALUE_OPERATIONS =
+      Set.of("set", "add", "add-distinct", "remove");
+
+  /**
+   * If the field's only value is an atomic update such as <code>{"set": "2018-08-08"}</code>, runs
+   * {@link #mutate} on the operand of each value operation, so that the stored value is mutated the
+   * same way as in a regular update. Operations like <code>inc</code> and <code>removeregex</code>
+   * are left as they are, and an operation whose operand is removed by {@link #mutate} is dropped.
+   *
+   * @return the field with the mutated operands, null if no operation is left, or {@link
+   *     #NOT_ATOMIC} if the field is not an atomic update
+   */
+  private SolrInputField mutateAtomicOperations(String fname, SolrInputField src) {
+    if (!mutateAtomicOperands() || src.getValueCount() != 1 || !(src.getValue() instanceof Map)) {
+      return NOT_ATOMIC;
+    }
+    final Map<?, ?> operations = (Map<?, ?>) src.getValue();
+    if (operations.isEmpty()
+        || !operations.keySet().stream().allMatch(op -> op instanceof String)
+        || !operations.keySet().stream().anyMatch(VALUE_OPERATIONS::contains)) {
+      return NOT_ATOMIC;
+    }
+    final Map<Object, Object> mutated = new LinkedHashMap<>();
+    for (Map.Entry<?, ?> operation : operations.entrySet()) {
+      if (!VALUE_OPERATIONS.contains(operation.getKey()) || operation.getValue() == null) {
+        mutated.put(operation.getKey(), operation.getValue());
+        continue;
+      }
+      final SolrInputField operand = new SolrInputField(fname);
+      operand.setValue(operation.getValue());
+      final SolrInputField result = mutate(operand);
+      if (result != null) {
+        mutated.put(
+            operation.getKey(),
+            result.getValueCount() > 1 ? new ArrayList<>(result.getValues()) : result.getValue());
+      }
+    }
+    if (mutated.isEmpty()) {
+      return null;
+    }
+    final SolrInputField dest = new SolrInputField(fname);
+    dest.setValue(mutated);
+    return dest;
   }
 
   /** Interface for identifying which fields should be mutated */
@@ -276,10 +346,29 @@ public abstract class FieldMutatingUpdateProcessor extends UpdateRequestProcesso
       FieldNameSelector selector,
       UpdateRequestProcessor next,
       Function<SolrInputField, SolrInputField> fun) {
+    return mutator(selector, next, fun, true);
+  }
+
+  /**
+   * As {@link #mutator(FieldNameSelector, UpdateRequestProcessor, Function)}, except that when
+   * <code>applyToAtomicOperands</code> is <code>false</code> the function is not applied to the
+   * operands of atomic updates, so it sees an atomic update the same way it sees any other field
+   * value.
+   */
+  public static FieldMutatingUpdateProcessor mutator(
+      FieldNameSelector selector,
+      UpdateRequestProcessor next,
+      Function<SolrInputField, SolrInputField> fun,
+      boolean applyToAtomicOperands) {
     return new FieldMutatingUpdateProcessor(selector, next) {
       @Override
       protected SolrInputField mutate(SolrInputField src) {
         return fun.apply(src);
+      }
+
+      @Override
+      protected boolean mutateAtomicOperands() {
+        return applyToAtomicOperands;
       }
     };
   }
