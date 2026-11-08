@@ -155,12 +155,23 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String cname = params.required().get(CoreAdminParams.CORE);
         log().info("It has been requested that we recover: core=" + cname);
 
-        try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-          if (core != null) {
-            // This can take a while, but doRecovery is already async so don't worry about it here
-            core.getUpdateHandler()
-                .getSolrCoreState()
-                .doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
+        final CoreContainer coreContainer = it.handler.coreContainer;
+        SolrCore core = coreContainer.getCore(cname);
+        // A core that is still loading is invisible to getCore. If it is not loading either, it
+        // may have finished loading since the lookup, so look once more before giving up on it.
+        final boolean stillLoading = core == null && coreContainer.isCoreLoading(cname);
+        if (core == null && !stillLoading) {
+          core = coreContainer.getCore(cname);
+        }
+        try (SolrCore found = core) {
+          if (found != null) {
+            CoreAdminOperation.requestRecovery(coreContainer, found);
+          } else if (stillLoading) {
+            // Transient: the core exists but hasn't finished loading yet. Report it as retriable
+            // instead of a bad request so the recovery nudge isn't silently dropped as invalid.
+            throw new SolrException(
+                ErrorCode.SERVICE_UNAVAILABLE,
+                "Core " + cname + CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX);
           } else {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
           }
@@ -272,6 +283,17 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
   static Logger log() {
     return log;
+  }
+
+  /**
+   * End of the message of the 503 returned for a core that is still loading, which a recovery
+   * request is retried on.
+   */
+  public static final String CORE_STILL_LOADING_MESSAGE_SUFFIX = " is still loading";
+
+  /** This can take a while, but doRecovery is already async so there is nothing to wait for. */
+  private static void requestRecovery(CoreContainer coreContainer, SolrCore core) throws Exception {
+    core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, core.getCoreDescriptor());
   }
 
   @Override
