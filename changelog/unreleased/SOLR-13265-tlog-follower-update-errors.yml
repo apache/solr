@@ -1,0 +1,8 @@
+title: >
+  Updates applied only to the transaction log (TLOG replica followers) are no longer counted in the update handler error metric.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-13265
+    url: https://issues.apache.org/jira/browse/SOLR-13265

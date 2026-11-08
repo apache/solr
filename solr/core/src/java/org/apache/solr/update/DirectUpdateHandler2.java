@@ -453,6 +453,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
    */
   private int addDoc0(AddUpdateCommand cmd) throws IOException {
     int rc = -1;
+    boolean bypassedIndexWriter = false;
 
     addCommands.increment();
     addCommandsCumulative.inc();
@@ -465,6 +466,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     try {
       if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
         if (ulog != null) ulog.add(cmd);
+        bypassedIndexWriter = true;
         return 1;
       }
 
@@ -497,10 +499,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
       rc = 1;
     } finally {
-      if (rc != 1) {
-        numErrorsCumulative.inc();
-      } else {
+      if (rc == 1) {
         numDocsPending.increment();
+      } else if (!bypassedIndexWriter) {
+        numErrorsCumulative.inc();
       }
     }
 
