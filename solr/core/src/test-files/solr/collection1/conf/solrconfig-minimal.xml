@@ -61,5 +61,14 @@
     </lst>
   </initParams>
 
+  <updateRequestProcessorChain name="parse-selected-nested-date">
+    <processor class="solr.ParseDateFieldUpdateProcessorFactory">
+      <str name="fieldName">date_dt</str>
+      <str name="format">yyyy-MM-dd'T'HH:mm:ss</str>
+    </processor>
+    <processor class="solr.NestedUpdateProcessorFactory"/>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
 </config>
 
