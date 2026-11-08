@@ -1,0 +1,8 @@
+title: >
+  The error for a value that cannot be indexed into a copyField destination now names the destination field as well as the source field.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-3657
+    url: https://issues.apache.org/jira/browse/SOLR-3657
