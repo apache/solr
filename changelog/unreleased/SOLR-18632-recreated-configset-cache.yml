@@ -1,0 +1,8 @@
+title: A collection created from a configset that was deleted and re-uploaded under the same name no longer uses the old solrconfig.xml and schema from the node's config cache
+type: fixed
+authors:
+  - name: Julian Chandra Sutadi
+    nick: julianchandras
+links:
+  - name: SOLR-18632
+    url: https://issues.apache.org/jira/browse/SOLR-18632

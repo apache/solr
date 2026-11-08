@@ -43,6 +43,7 @@ import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -140,11 +141,10 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     try (InputStream is =
         (schemaInputStream == null ? loader.openResource(name) : schemaInputStream)) {
       ConfigNode node = getParsedSchema(is, loader, name);
-      int version =
-          is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream
-              ? ((ZkSolrResourceLoader.ZkByteArrayInputStream) is).getStat().getVersion()
-              : 0;
-      return new VersionedConfig(version, node);
+      if (is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream zkis) {
+        return new VersionedConfig(zkis.getStat().getVersion(), zkis.getStat().getCtime(), node);
+      }
+      return new VersionedConfig(0, 0, node);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error fetching schema", e);
     }
@@ -175,11 +175,11 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
           (Map<String, VersionedConfig>)
               objectCache.computeIfAbsent(
                   ConfigSetService.ConfigResource.class.getName(), k -> new ConcurrentHashMap<>());
-      Pair<String, Integer> res = zkLoader.getZkResourceInfo(name);
+      Pair<String, Stat> res = zkLoader.getZkResourceInfo(name);
       if (res == null) return cfgLoader.get();
       VersionedConfig result = null;
       result = confCache.computeIfAbsent(res.first(), k -> cfgLoader.get());
-      if (result.version == res.second()) {
+      if (result.version == res.second().getVersion() && result.ctime == res.second().getCtime()) {
         return result;
       } else {
         confCache.remove(res.first());
@@ -202,10 +202,12 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   public static class VersionedConfig {
     public final int version;
+    public final long ctime;
     public final ConfigNode data;
 
-    public VersionedConfig(int version, ConfigNode data) {
+    public VersionedConfig(int version, long ctime, ConfigNode data) {
       this.version = version;
+      this.ctime = ctime;
       this.data = data;
     }
   }

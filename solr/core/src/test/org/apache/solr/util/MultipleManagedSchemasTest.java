@@ -16,11 +16,16 @@
  */
 package org.apache.solr.util;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -72,5 +77,63 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
     assertTrue(
         "Should have created COLL1",
         CollectionAdminRequest.listCollections(client).contains("COLL1"));
+  }
+
+  @Test
+  public void testRecreatedConfigSetIsNotServedFromCache() throws Exception {
+    CloudSolrClient client = cluster.getSolrClient();
+    String name = "COLL2";
+    String zkPath = ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + name;
+
+    // Create a collection with the _default config set, so its solrconfig.xml and schema get cached
+    ZkMaintenanceUtils.uploadToZK(cluster.getZkClient(), configset("_default"), zkPath, null);
+    CollectionAdminRequest.createCollection(name, name, 1, 1).process(client);
+    cluster.waitForActiveCollection(name, 1, 1);
+
+    // Delete the collection and its config set
+    CollectionAdminRequest.deleteCollection(name).process(client);
+    new ConfigSetAdminRequest.Delete().setConfigSetName(name).process(client);
+
+    // Make a copy of _default with a new request handler and a new field
+    Path changed = createTempDir();
+    PathUtils.copyDirectory(configset("_default"), changed);
+    Path solrConfig = changed.resolve("solrconfig.xml");
+    Files.writeString(
+        solrConfig,
+        Files.readString(solrConfig)
+            .replace(
+                "</config>",
+                "<requestHandler name=\"/recreated\" class=\"solr.SearchHandler\"/></config>"));
+    Path schema = changed.resolve("managed-schema.xml");
+    Files.writeString(
+        schema,
+        Files.readString(schema)
+            .replace(
+                "</schema>",
+                "<field name=\"recreated_field\" type=\"string\" indexed=\"true\" stored=\"true\"/>"
+                    + "</schema>"));
+
+    // Upload the changed copy under the same name
+    ZkMaintenanceUtils.uploadToZK(cluster.getZkClient(), changed, zkPath, null);
+
+    // Re-create the collection and check that its core uses the new solrconfig.xml and schema
+    CollectionAdminRequest.createCollection(name, name, 1, 1).process(client);
+    try {
+      cluster.waitForActiveCollection(name, 1, 1);
+      CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
+      String coreName =
+          cc.getLoadedCoreNames().stream()
+              .filter(n -> n.startsWith(name + "_"))
+              .findFirst()
+              .orElseThrow();
+      try (SolrCore core = cc.getCore(coreName)) {
+        assertNotNull("new solrconfig.xml was not loaded", core.getRequestHandler("/recreated"));
+        assertNotNull(
+            "new schema was not loaded", core.getLatestSchema().getFieldOrNull("recreated_field"));
+      }
+    } finally {
+      // Clean up
+      CollectionAdminRequest.deleteCollection(name).process(client);
+    }
   }
 }
