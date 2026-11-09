@@ -98,7 +98,7 @@ public class SortableTextField extends TextField {
   public List<IndexableField> createFields(SchemaField field, Object value) {
     IndexableField f = createField(field, value);
     if (!field.hasDocValues()) {
-      return List.of(f);
+      return f == null ? List.of() : List.of(f);
     }
     if (value instanceof ByteArrayUtf8CharSequence utf8) {
       if (utf8.size() < maxCharsForDocValues) {

@@ -688,7 +688,8 @@ public class TrieField extends NumericFieldType {
 
       return fields;
     } else {
-      return List.of(createField(sf, value));
+      IndexableField fval = createField(sf, value);
+      return fval == null ? List.of() : List.of(fval);
     }
   }
 
