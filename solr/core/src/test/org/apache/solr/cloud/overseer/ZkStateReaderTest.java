@@ -199,12 +199,15 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   public void testProviderDoesNotRefreshKnownAlias() throws Exception {
     assumeWorkingMockito();
     ZkStateReader reader = mock(ZkStateReader.class);
+    SolrZkClient zkClient = mock(SolrZkClient.class);
     ClusterState state = mock(ClusterState.class);
     when(reader.getClusterState()).thenReturn(state);
     when(reader.getAliases())
         .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("existing_alias", "collection"));
+    when(reader.getZkClient()).thenReturn(zkClient);
     try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
       assertNull(provider.getState("existing_alias"));
+      verify(zkClient, never()).sync(ZkStateReader.COLLECTIONS_ZKNODE);
       verify(reader, never()).forceUpdateCollection("existing_alias");
       assertEquals(List.of("collection"), provider.resolveAlias("existing_alias"));
     }
