@@ -87,7 +87,8 @@ import org.slf4j.LoggerFactory;
  * @deprecated Trie fields are deprecated as of Solr 7.0. Use {@link PointField} instead.
  */
 @Deprecated(since = "7.0")
-public class TrieField extends NumericFieldType {
+public class TrieField extends NumericFieldType
+    implements FieldType.ExternalizeStoredValuesAsObjects {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
   protected int precisionStepArg =

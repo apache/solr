@@ -39,7 +39,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @see PointField
  * @see IntPoint
  */
-public class IntPointField extends PointField implements IntValueFieldType {
+public class IntPointField extends PointField
+    implements IntValueFieldType, FieldType.ExternalizeStoredValuesAsObjects {
 
   public IntPointField() {
     type = NumberType.INTEGER;
