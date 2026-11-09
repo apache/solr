@@ -249,7 +249,10 @@ public class ConnectionManager implements Watcher {
                     if (e instanceof InterruptedException) {
                       Thread.currentThread().interrupt();
                     }
-                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not connect to via new ZooKeeper instance", e);
+                    throw new SolrException(
+                        SolrException.ErrorCode.SERVER_ERROR,
+                        "Could not connect to via new ZooKeeper instance",
+                        e);
                   }
                 }
 
@@ -332,7 +335,8 @@ public class ConnectionManager implements Watcher {
    *
    * @param waitForConnection time to wait, in ms
    */
-  private synchronized void waitForConnected(long waitForConnection, ZooKeeper keeper) throws TimeoutException {
+  private synchronized void waitForConnected(long waitForConnection, ZooKeeper keeper)
+      throws TimeoutException {
     log.info("Waiting up to {}ms for client to connect to ZooKeeper", waitForConnection);
     long expire =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
