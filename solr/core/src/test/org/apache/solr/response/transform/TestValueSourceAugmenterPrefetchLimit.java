@@ -117,8 +117,22 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
     }
   }
 
-  public void testNullQParserUsesDefault() {
-    new ValueSourceAugmenter("foo", null, new LiteralValueSource("x"));
+  public void testNullQParserUsesDefault() throws Exception {
+    ValueSourceAugmenter augmenter =
+        new ValueSourceAugmenter("foo", null, new LiteralValueSource("x"));
+    int[] ids = new int[NUM_DOCS];
+    for (int i = 0; i < NUM_DOCS; i++) {
+      ids[i] = i;
+    }
+    DocList docs = new DocSlice(0, NUM_DOCS, ids, null, NUM_DOCS, 0f, TotalHits.Relation.EQUAL_TO);
+    h.getCore()
+        .withSearcher(
+            searcher -> {
+              augmenter.setContext(new BasicResultContext(docs, null, searcher, null, null));
+              assertNotNull(augmenter.cachedValuesById);
+              assertEquals(MAX_PREFETCH_SIZE, augmenter.cachedValuesById.size());
+              return null;
+            });
   }
 
   public void testSetContextWithoutDocListClearsCache() throws Exception {

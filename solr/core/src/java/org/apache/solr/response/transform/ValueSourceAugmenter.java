@@ -82,13 +82,13 @@ public class ValueSourceAugmenter extends DocTransformer {
 
   @Override
   public void setContext(ResultContext context) {
+    cachedValuesById = null; // drop any values cached against a previous context/searcher
     super.setContext(context);
     try {
       searcher = context.getSearcher();
       readerContexts = searcher.getIndexReader().leaves();
       fcontext = ValueSource.newContext(searcher);
       this.valueSource.createWeight(fcontext, searcher);
-      cachedValuesById = null; // drop any values cached against a previous context/searcher
       final var docList = context.getDocList();
       final int prefetchSize = docList == null ? 0 : Math.min(docList.size(), maxPrefetchSize);
       if (prefetchSize == 0) {
