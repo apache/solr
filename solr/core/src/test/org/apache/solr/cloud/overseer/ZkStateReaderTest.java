@@ -182,6 +182,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testProviderDoesNotRefreshKnownAlias() throws Exception {
+    assumeWorkingMockito();
     ZkStateReader reader = mock(ZkStateReader.class);
     ClusterState state = mock(ClusterState.class);
     when(reader.getClusterState()).thenReturn(state);
@@ -197,6 +198,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testProviderUnknownCollectionAndInterruptedRefresh() throws Exception {
+    assumeWorkingMockito();
     ZkStateReader reader = mock(ZkStateReader.class);
     when(reader.getClusterState()).thenReturn(mock(ClusterState.class));
     when(reader.getAliases()).thenReturn(Aliases.EMPTY);
