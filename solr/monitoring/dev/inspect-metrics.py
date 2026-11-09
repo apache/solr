@@ -15,18 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Check that both collection routes deliver the same metric names.
+"""Inspect the metrics the dev stack collects.
 
-The dev stack scrapes Solr directly as job "solr" and the OpenTelemetry Collector
-the nodes push to as job "solr-otlp". The Collector config transforms names so the
-two agree; this asks Prometheus whether they actually do.
+The stack scrapes Solr directly as job "solr" and the OpenTelemetry Collector the
+nodes push to as job "solr-otlp", and the Collector config transforms names so the
+two agree. Run with the stack up (./stack.sh) and the trafficgen running:
 
-Run it with the stack up (./stack.sh) and the trafficgen running:
+    ./inspect-metrics.py parity      # do both routes deliver the same names?
+    ./inspect-metrics.py list        # every name, and which routes have it
+    ./inspect-metrics.py list --otel # the OpenTelemetry names Solr pushes
 
-    ./check-metric-parity.py
-
-Exit code 0 when the names match, 1 when they differ, 2 when the stack is not in a
-state where the question can be answered. Values are not compared, only names.
+Exit code 0 on success, 1 when parity fails, 2 when the stack is not in a state
+where the question can be answered. Names only; values are never compared.
 """
 
 import argparse
@@ -154,55 +154,30 @@ def collect(base_url, timeout, poll, stable_polls, verbose):
         time.sleep(poll)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+def add_common_arguments(parser):
     parser.add_argument("--prometheus", default="http://localhost:9090", help="Prometheus base URL")
     parser.add_argument("--timeout", type=int, default=180, help="seconds to wait for a stable set")
     parser.add_argument("--poll", type=int, default=10, help="seconds between polls")
     parser.add_argument("--stable", type=int, default=3, help="unchanged polls before comparing")
     parser.add_argument("--settle", type=int, default=60, help="seconds to wait for healthy targets")
-    parser.add_argument(
-        "--list",
-        action="store_true",
-        help="also print every metric name alphabetically, and which routes have it",
-    )
-    parser.add_argument(
-        "--list-otel",
-        action="store_true",
-        help="print the OpenTelemetry names Solr pushes, alphabetically, and stop",
-    )
-    parser.add_argument(
-        "--collector-native",
-        default="http://localhost:9465/metrics",
-        help="collector endpoint serving untranslated OpenTelemetry names",
-    )
     parser.add_argument("-v", "--verbose", action="store_true", help="print each poll")
-    args = parser.parse_args()
 
-    if args.list_otel:
-        for name in sorted(otel_metric_names(args.collector_native)):
-            print(name)
-        return 0
 
+def both_routes(args):
+    """The names each route delivers, once both have stopped producing new ones."""
     base_url = args.prometheus.rstrip("/")
     check_targets(base_url, args.settle)
+    print(f"Waiting for both jobs to settle (up to {args.timeout}s)...", file=sys.stderr)
+    return collect(base_url, args.timeout, args.poll, args.stable, args.verbose)
 
-    print(f"Waiting for both jobs to settle (up to {args.timeout}s)...")
-    scraped, pushed = collect(base_url, args.timeout, args.poll, args.stable, args.verbose)
 
+def command_parity(args):
+    scraped, pushed = both_routes(args)
     only_scraped = scraped - pushed
     only_pushed = pushed - scraped
     known = {n: KNOWN_DIFFERENCES[n] for n in only_scraped | only_pushed if n in KNOWN_DIFFERENCES}
     only_scraped -= known.keys()
     only_pushed -= known.keys()
-
-    if args.list:
-        for name in sorted(scraped | pushed):
-            where = "both" if name in scraped and name in pushed else (
-                SCRAPE_JOB if name in scraped else OTLP_JOB
-            )
-            print(f"{where:<10} {name}")
-        print()
 
     print(f"{len(scraped)} names via {SCRAPE_JOB}, {len(pushed)} via {OTLP_JOB}")
     for name, reason in sorted(known.items()):
@@ -221,6 +196,49 @@ def main():
         return 1
     print("\nParity OK: both routes deliver the same metric names.")
     return 0
+
+
+def command_list(args):
+    if args.otel:
+        for name in sorted(otel_metric_names(args.collector_native)):
+            print(name)
+        return 0
+    scraped, pushed = both_routes(args)
+    for name in sorted(scraped | pushed):
+        where = "both" if name in scraped and name in pushed else (
+            SCRAPE_JOB if name in scraped else OTLP_JOB
+        )
+        print(f"{where:<10} {name}")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        epilog="Run a subcommand with --help for its options.",
+    )
+    subcommands = parser.add_subparsers(dest="command", required=True)
+
+    parity = subcommands.add_parser("parity", help="compare the names both routes deliver")
+    add_common_arguments(parity)
+    parity.set_defaults(run=command_parity)
+
+    listing = subcommands.add_parser("list", help="print metric names alphabetically")
+    add_common_arguments(listing)
+    listing.add_argument(
+        "--otel",
+        action="store_true",
+        help="the OpenTelemetry names Solr pushes, before any Prometheus naming",
+    )
+    listing.add_argument(
+        "--collector-native",
+        default="http://localhost:9465/metrics",
+        help="collector endpoint serving untranslated OpenTelemetry names",
+    )
+    listing.set_defaults(run=command_list)
+
+    args = parser.parse_args()
+    return args.run(args)
 
 
 if __name__ == "__main__":

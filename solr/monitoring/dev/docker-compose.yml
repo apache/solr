@@ -43,7 +43,8 @@
 #   Prometheus   http://localhost:9090
 #   Grafana      http://localhost:3000  (admin / admin)
 #   Alertmanager http://localhost:9093
-#   otel-collector  OTLP in on http://localhost:4318, Prometheus-format out on http://localhost:9464
+#   otel-collector  OTLP in on http://localhost:4318, Prometheus-format out on http://localhost:9464,
+#                   the same untranslated on http://localhost:9465 (see ./otel-collector-native.yaml)
 #   Aspire       http://localhost:18888  (raw view of the metrics and traces Solr pushed)
 #   trafficgen   (no port — continuously indexes/searches the 'test' collection)
 #
@@ -67,6 +68,7 @@
 
 name: solr-telemetry-dev
 
+# Push stays on whatever Prometheus scrapes, so the collector and Aspire always have data.
 # OTEL_SERVICE_NAME activates the module's tracer, which pushes traces the same way.
 #
 # TODO SOLR-18595: until a nightly image carries that fix, pushing makes

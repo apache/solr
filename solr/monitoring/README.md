@@ -216,22 +216,23 @@ The bundled Solr nodes always push metrics and traces to the Collector, which fo
 Aspire (`:18888`) for a raw view. Prometheus scrapes both collection routes at once — the nodes
 directly as job `solr`, the Collector as job `solr-otlp` — so the two can be compared without
 reconfiguring anything. The shipped dashboard and alert rules select `job="solr"`, so only the
-direct route drives them. To check the Collector config still reproduces Solr's metric names, with
-the stack up and the trafficgen running:
+direct route drives them. `inspect-metrics.py` reads both, with the stack up and the trafficgen
+running:
 
 ```bash
-./check-metric-parity.py             # exit 0 when the names match, 1 when they differ
-./check-metric-parity.py --list      # also print every name and which routes have it
-./check-metric-parity.py --list-otel # the OpenTelemetry names Solr pushes, before translation
+./inspect-metrics.py parity      # do both routes deliver the same names? exit 1 if not
+./inspect-metrics.py list        # every name, and which routes have it
+./inspect-metrics.py list --otel # the OpenTelemetry names Solr pushes, before translation
 ```
 
-It waits for both jobs to stop producing new names before comparing, so a registry that
-appears late is not read as a difference. `--list-otel` reads a second Collector endpoint that the
-dev-only `dev/otel-collector-native.yaml` overlay adds, which leaves the OpenTelemetry names
-untranslated — useful for seeing what a name looked like before the Prometheus conventions
-reshaped it. Run it after changing the Collector config, or after a
-Solr, OpenTelemetry SDK or Collector upgrade — the `_ratio` suffix the config exists to undo
-arrived in an SDK upgrade exactly that way.
+Run `parity` after changing the Collector config, or after a Solr, OpenTelemetry SDK or Collector
+upgrade — the `_ratio` suffix the config exists to undo arrived in an SDK upgrade exactly that
+way. It waits for both jobs to stop producing new names before comparing, so a registry that
+appears late is not read as a difference.
+
+`list --otel` reads a second Collector endpoint added by the dev-only
+`dev/otel-collector-native.yaml`, which leaves the OpenTelemetry names untranslated, so you can
+see what a name looked like before the Prometheus conventions reshaped it.
 
 > Until a nightly image carries the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
 > fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the `solr` job needs a
@@ -242,11 +243,13 @@ Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes 
 with no Solr to scrape.
 
 Services: Solr (`:8983`, `:8984`), Prometheus (`:9090`), Grafana (`:3000`), Alertmanager
-(`:9093`), OpenTelemetry Collector (OTLP in on `:4318`, Prometheus format out on `:9464`),
+(`:9093`), OpenTelemetry Collector (OTLP in on `:4318`, Prometheus format out on `:9464`, the
+same untranslated on `:9465`),
 Aspire Dashboard (`:18888`). Grafana opens straight on the provisioned dashboard with no login — anonymous viewing
 is enabled because this stack is local and throwaway; sign in as `admin`/`admin` to edit. The
-Prometheus datasource is provisioned too, and Prometheus loads the alert rules. All three artifacts are bind-mounted as single
-files, which the containers resolve once at start, so after regenerating or editing one, recreate them:
+Prometheus datasource is provisioned too, and Prometheus loads the alert rules. The artifacts are
+bind-mounted as single files, which the containers resolve once at start, so after regenerating or
+editing one, recreate them:
 
 ```bash
 docker compose up -d --force-recreate grafana prometheus otel-collector

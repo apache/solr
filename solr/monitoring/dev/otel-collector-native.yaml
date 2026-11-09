@@ -18,7 +18,7 @@
 # Kept out of the shipped file so that stays a lean example.
 #
 # Exposes the same metrics a second time with their OpenTelemetry names left
-# alone, so ./check-metric-parity.py --list-otel can show what Solr actually
+# alone, so ./inspect-metrics.py list --otel can show what Solr actually
 # sends, before any Prometheus naming is applied.
 
 exporters:
