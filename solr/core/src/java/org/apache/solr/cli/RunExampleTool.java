@@ -294,7 +294,7 @@ public class RunExampleTool extends ToolBase {
       String jvmOpts,
       boolean force,
       String credentials,
-      String extraArgs) {}
+      List<String> extraArgs) {}
 
   /**
    * Parameters for running a single-node example (techproducts, schemaless or films), independent
@@ -530,6 +530,9 @@ public class RunExampleTool extends ToolBase {
         Integer.parseInt(
             cli.getOptionValue(
                 PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
+    if (port < 1024 || port > 64535) {
+      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
+    }
 
     if ("cloud".equals(exampleType)) {
       runCloudExample(
@@ -639,13 +642,7 @@ public class RunExampleTool extends ToolBase {
           "Unsupported secure example option. Use --solr-home, -p, --no-prompt, -m, or --force.");
     }
     int port = params.basePort();
-    if (port < 1024 || port > 64535) {
-      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
-    }
     Path home = solrHomeDir.toAbsolutePath().normalize();
-    if (home.toString().chars().anyMatch(Character::isWhitespace)) {
-      throw new IllegalArgumentException("The example directory must not contain whitespace.");
-    }
     echo(
         "Commands below use paths relative to "
             + serverDir.getParent().toAbsolutePath().normalize());
@@ -1502,21 +1499,9 @@ public class RunExampleTool extends ToolBase {
       int maxWaitSecs)
       throws Exception {
 
-    String extraArgs = params.extraArgs();
-
     String host = params.host();
     String memory = params.memory();
-
-    String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
-    String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
-    String memArg = (memory != null) ? " -m " + memory : "";
-    String cloudModeArg = cloudMode ? "" : "--user-managed";
-    String forceArg = params.force() ? " --force" : "";
-    String verboseArg = isVerbose() ? "--verbose" : "";
-
     String jvmOpts = params.jvmOpts();
-    String jvmOptsArg =
-        (jvmOpts != null && !jvmOpts.isEmpty()) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
     Path cwd = Path.of(System.getProperty("user.dir"));
     Path binDir = Path.of(script).getParent();
@@ -1531,31 +1516,51 @@ public class RunExampleTool extends ToolBase {
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
-    final var syspropArg =
-        ("techproducts".equals(params.example()))
-            ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting,sql -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
-            : "";
-
-    String startCmdStr =
-        String.format(
-            Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s",
-            callScript,
-            cloudModeArg,
-            port,
-            solrHome,
-            serverDir.toAbsolutePath(),
-            hostArg,
-            zkHostArg,
-            memArg,
-            forceArg,
-            verboseArg,
-            extraArgs,
-            syspropArg);
-    startCmdStr = startCmdStr.replaceAll("\\s+", " ").trim(); // for pretty printing
+    // Built as discrete arguments (never a single string later re-tokenized by
+    // CommandLine.parse()) so that values containing whitespace, such as a --solr-home path,
+    // survive intact.
+    List<String> command = new ArrayList<>();
+    command.add(callScript);
+    command.add("start");
+    if (!cloudMode) command.add("--user-managed");
+    command.add("-p");
+    command.add(Integer.toString(port));
+    command.add("--solr-home");
+    command.add(solrHome);
+    command.add("--server-dir");
+    command.add(serverDir.toAbsolutePath().toString());
+    if (host != null && !"localhost".equals(host)) {
+      command.add("--host");
+      command.add(host);
+    }
+    if (zkHost != null) {
+      command.add("-z");
+      command.add(zkHost);
+    }
+    if (memory != null) {
+      command.add("-m");
+      command.add(memory);
+    }
+    if (params.force()) command.add("--force");
+    if (isVerbose()) command.add("--verbose");
+    command.addAll(params.extraArgs());
+    if ("techproducts".equals(params.example())) {
+      command.addAll(
+          List.of(
+              "-Dsolr.modules=clustering,extraction,langid,ltr,scripting,sql",
+              "-Dsolr.ltr.enabled=true",
+              "-Dsolr.clustering.enabled=true"));
+    }
+    if (jvmOpts != null && !jvmOpts.isEmpty()) {
+      command.add("--jvm-opts");
+      command.add(jvmOpts);
+    }
 
     echo("\nStarting up Solr on port " + port + " using command:");
-    echo(startCmdStr + jvmOptsArg + "\n");
+    echo(String.join(" ", command) + "\n");
+
+    var startCmd = new org.apache.commons.exec.CommandLine(command.get(0));
+    startCmd.addArguments(command.subList(1, command.size()).toArray(String[]::new), false);
 
     String solrUrl =
         String.format(
@@ -1567,7 +1572,6 @@ public class RunExampleTool extends ToolBase {
     if (nodeStatus != null)
       return nodeStatus; // the server they are trying to start is already running
 
-    int code;
     if (isWindows) {
       // On Windows, the execution doesn't return, so we have to execute async
       // and when calling the script, it seems to be inheriting the environment that launched this
@@ -1584,20 +1588,6 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      org.apache.commons.exec.CommandLine startCmd =
-          org.apache.commons.exec.CommandLine.parse(startCmdStr);
-
-      if (!jvmOptsArg.isEmpty()) {
-        startCmd.addArgument("--jvm-opts");
-
-        /* CommandLine.parse() tends to strip off the quotes by default before sending to cmd.exe.
-        This may cause cmd to break up the argument value on certain characters in unintended ways
-        thereby passing incorrect value to start.cmd
-        (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
-        breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd ).
-        The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument” */
-        startCmd.addArgument("\"" + jvmOpts + "\"", false);
-      }
       executor.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
@@ -1607,24 +1597,24 @@ public class RunExampleTool extends ToolBase {
         // safe to ignore ...
       }
       if (handler.hasResult() && handler.getExitValue() != 0) {
-        startCmdStr += jvmOptsArg;
         throw new Exception(
             "Failed to start Solr using command: "
-                + startCmdStr
+                + String.join(" ", command)
                 + " Exception : "
                 + handler.getException());
       }
     } else {
-      // Unlike Windows, special handling of jvmOpts is not required on linux. We can simply
-      // concatenate to form the complete command
-      startCmdStr += jvmOptsArg;
       try {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdStr));
+        int code = executor.execute(startCmd);
+        if (code != 0)
+          throw new Exception("Failed to start Solr using command: " + String.join(" ", command));
       } catch (ExecuteException e) {
         throw new Exception(
-            "Failed to start Solr using command: " + startCmdStr + " Exception : " + e);
+            "Failed to start Solr using command: "
+                + String.join(" ", command)
+                + " Exception : "
+                + e);
       }
-      if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmdStr);
     }
 
     return getNodeStatus(solrUrl, params.credentials(), maxWaitSecs);
@@ -1664,23 +1654,17 @@ public class RunExampleTool extends ToolBase {
     throw new IllegalStateException("Port " + port + " is already being used by another process.");
   }
 
-  protected String readExtraArgs(String[] extraArgsArr) {
-    String extraArgs = "";
-    if (extraArgsArr != null && extraArgsArr.length > 0) {
-      StringBuilder sb = new StringBuilder();
-      int app = 0;
+  protected List<String> readExtraArgs(String[] extraArgsArr) {
+    List<String> extraArgs = new ArrayList<>();
+    if (extraArgsArr != null) {
       for (int e = 0; e < extraArgsArr.length; e++) {
         String arg = extraArgsArr[e];
         if ("e".equals(arg) || "example".equals(arg)) {
           e++; // skip over the example arg
           continue;
         }
-
-        if (app > 0) sb.append(" ");
-        sb.append(arg);
-        ++app;
+        extraArgs.add(arg);
       }
-      extraArgs = sb.toString().trim();
     }
     return extraArgs;
   }
@@ -1915,6 +1899,10 @@ public class RunExampleTool extends ToolBase {
           "Unsupported example "
               + exampleType
               + "! Please choose one of: cloud, secure, schemaless, techproducts, or films");
+    }
+
+    if (port < 1024 || port > 64535) {
+      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
     }
 
     StartSolrParams startParams =
