@@ -55,6 +55,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrPluginUtils;
+import org.hamcrest.Matcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -1204,67 +1205,51 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   // When no phrase qualifies for the pf boost, no empty phrase clause should be added
   public void testNoEmptyPhraseBoostClause() throws Exception {
-    for (String sow : Arrays.asList("true", "false")) {
-      // Single-token query: minClauseSize discards the one-position phrase
-      String singleTokenParsed =
-          getParsedQuery(
-              req(
-                  "q", "wireless",
-                  "qf", "subject",
-                  "pf", "subject^10",
-                  "sow", sow,
-                  "defType", "edismax",
-                  "debugQuery", "true"));
-      assertThat(singleTokenParsed, allOf(not(containsString("^10.0")), not(containsString("()"))));
-    }
+    // Single-token query: minClauseSize discards the one-position phrase
+    assertPhraseBoostParsedQuery(
+        "wireless", "subject", allOf(not(containsString("^10.0")), not(containsString("()"))));
   }
 
   public void testNoEmptyPhraseBoostClauseForFieldedQuery() throws Exception {
+    assertPhraseBoostParsedQuery(
+        "subject:wireless",
+        "subject",
+        allOf(not(containsString("^10.0")), not(containsString("()"))));
+  }
+
+  // Whitespace-free query that analyzes into multiple tokens keeps its phrase boost
+  public void testAnalyzedSingleTermKeepsPhraseBoost() throws Exception {
+    assertPhraseBoostParsedQuery("wi-fi", "subject", containsString("(subject:\"wi fi\")^10.0"));
+  }
+
+  // The unanalyzed qf field keeps this phrase exclusive to the pf clause.
+  public void testSingleTermSynonymKeepsPhraseBoost() throws Exception {
+    assertPhraseBoostParsedQuery(
+        "grackle",
+        "id",
+        allOf(containsString("subject:\"crow blackbird\""), containsString("^10.0")));
+  }
+
+  /** Parses {@code q} with {@code pf=subject^10} in both {@code sow} modes and checks each. */
+  private void assertPhraseBoostParsedQuery(String q, String qf, Matcher<String> matcher)
+      throws Exception {
     for (String sow : Arrays.asList("true", "false")) {
       String parsed =
           getParsedQuery(
               req(
-                  "q", "subject:wireless",
-                  "qf", "subject",
-                  "pf", "subject^10",
-                  "sow", sow,
-                  "defType", "edismax",
-                  "debugQuery", "true"));
-      assertThat(parsed, allOf(not(containsString("^10.0")), not(containsString("()"))));
-    }
-  }
-
-  public void testAnalyzedSingleTermKeepsPhraseBoost() throws Exception {
-    for (String sow : Arrays.asList("true", "false")) {
-      // Whitespace-free query that analyzes into multiple tokens keeps its phrase boost
-      String multiTokenParsed =
-          getParsedQuery(
-              req(
-                  "q", "wi-fi",
-                  "qf", "subject",
-                  "pf", "subject^10",
-                  "sow", sow,
-                  "defType", "edismax",
-                  "debugQuery", "true"));
-      assertThat(multiTokenParsed, containsString("(subject:\"wi fi\")^10.0"));
-    }
-  }
-
-  public void testSingleTermSynonymKeepsPhraseBoost() throws Exception {
-    for (String sow : Arrays.asList("true", "false")) {
-      // The unanalyzed qf field keeps this phrase exclusive to the pf clause.
-      String synonymParsed =
-          getParsedQuery(
-              req(
-                  "q", "grackle",
-                  "qf", "id",
-                  "pf", "subject^10",
-                  "sow", sow,
-                  "defType", "edismax",
-                  "debugQuery", "true"));
-      assertThat(
-          synonymParsed,
-          allOf(containsString("subject:\"crow blackbird\""), containsString("^10.0")));
+                  "q",
+                  q,
+                  "qf",
+                  qf,
+                  "pf",
+                  "subject^10",
+                  "sow",
+                  sow,
+                  "defType",
+                  "edismax",
+                  "debugQuery",
+                  "true"));
+      assertThat("sow=" + sow, parsed, matcher);
     }
   }
 
