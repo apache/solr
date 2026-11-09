@@ -29,7 +29,8 @@ docker run --name "$container_name" -d -e VERBOSE=yes \
 wait_for_container_and_solr "$container_name"
 
 echo "Loading data"
-docker exec --user=solr "$container_name" bin/solr post -c gettingstarted example/exampledocs/manufacturers.xml
+docker exec --user=solr "$container_name" bin/solr post -c gettingstarted --mode args --type application/json \
+  '[{"id":"dell","address_s":"One Dell Way Round Rock, Texas 78682"}]'
 sleep 1
 echo "Checking data"
 data=$(docker exec --user=solr "$container_name" wget -q -O - 'http://localhost:8983/solr/gettingstarted/select?q=id%3Adell')
