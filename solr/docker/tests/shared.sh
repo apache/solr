@@ -22,28 +22,6 @@ function post_test_document {
     '[{"id":"dell","address_s":"One Dell Way Round Rock, Texas 78682"}]'
 }
 
-function assert_demo_unavailable {
-  local i status=running logs
-  if ! docker run --name "$container_name" -d "$tag" solr-demo >/dev/null; then
-    docker rm -f "$container_name" >/dev/null 2>&1 || true
-    return 1
-  fi
-
-  for ((i = 0; i < 60; i++)); do
-    status=$(docker inspect --format '{{if .State.Running}}running{{else}}{{.State.ExitCode}}{{end}}' "$container_name") || status=inspect-error
-    [[ "$status" != running ]] && break
-    sleep 1
-  done
-  [[ "$status" != running ]] || echo "Timed out waiting for solr-demo to exit"
-  logs=$(docker logs "$container_name" 2>&1) || status=logs-error
-  docker rm -f "$container_name" >/dev/null
-  if [[ "$status" != 1 ]] || ! grep -Fq 'solr-demo requires the full Solr distribution' <<<"$logs"; then
-    echo "Expected solr-demo to fail with the full distribution message; status=$status"
-    echo "$logs"
-    return 1
-  fi
-}
-
 function container_cleanup {
   local container_name
   container_name=$1

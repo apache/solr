@@ -21,7 +21,17 @@ source "${TEST_DIR}/../../shared.sh"
 
 echo "Running $container_name"
 if [[ "${SOLR_DOCKER_DIST:-full}" == "slim" ]]; then
-  assert_demo_unavailable
+  trap 'docker rm -f "$container_name" >/dev/null || exit 1' EXIT
+  docker run --name "$container_name" -d "$tag" solr-demo >/dev/null
+  if ! IFS= read -r -t 60 status < <(docker wait "$container_name"); then
+    status=timeout-or-wait-error
+  fi
+  logs=$(docker logs "$container_name" 2>&1)
+  if [[ "$status" != 1 ]] || ! grep -Fq 'solr-demo requires the full Solr distribution' <<<"$logs"; then
+    echo "Expected solr-demo to fail with the full distribution message; status=$status"
+    echo "$logs"
+    exit 1
+  fi
   exit 0
 fi
 

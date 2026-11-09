@@ -786,8 +786,14 @@ def testSolrSlim(binaryDistPath, javaPath):
     if result['responseHeader']['status'] != 0:
       raise RuntimeError('Slim cores API request failed: %s' % result)
   finally:
-    if solr(['stop', '-p', str(port)]) != 0:
-      raise RuntimeError('Failed to stop slim Solr on port %d' % port)
+    failed = sys.exc_info()[0] is not None
+    try:
+      if solr(['stop', '-p', str(port)]) != 0:
+        raise RuntimeError('Failed to stop slim Solr on port %d' % port)
+    except Exception as error:
+      if not failed:
+        raise
+      print('Cleanup failed: %s' % error, file=sys.stderr)
 
 
 def testSolrExample(binaryDistPath, javaPath):
