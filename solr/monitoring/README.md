@@ -216,18 +216,18 @@ The bundled Solr nodes always push metrics and traces to the Collector, which fo
 Aspire (`:18888`) for a raw view. Prometheus scrapes both collection routes at once — the nodes
 directly as job `solr`, the Collector as job `solr-otlp` — so the two can be compared without
 reconfiguring anything. The shipped dashboard and alert rules select `job="solr"`, so only the
-direct route drives them. To check the Collector config still reproduces Solr's metric names, ask
-Prometheus which names one route has and the other does not — empty means parity:
+direct route drives them. To check the Collector config still reproduces Solr's metric names, with
+the stack up and the trafficgen running:
 
-```promql
-label_replace(count by (__name__) ({job="solr"}),      "name", "$1", "__name__", "(.*)")
-  unless
-label_replace(count by (__name__) ({job="solr-otlp"}), "name", "$1", "__name__", "(.*)")
+```bash
+./check-metric-parity.py           # exit 0 when the names match, 1 when they differ
+./check-metric-parity.py --list    # also print every name and which routes have it
 ```
 
-The `label_replace` is not decoration: binary operators ignore `__name__`, so comparing on it
-directly always matches and always returns empty. Before SOLR-18594 this reports `target_info`,
-which the Collector cannot emit until Solr sends `service.instance.id`.
+It waits for both jobs to stop producing new names before comparing, so a registry that
+appears late is not read as a difference. Run it after changing the Collector config, or after a
+Solr, OpenTelemetry SDK or Collector upgrade — the `_ratio` suffix the config exists to undo
+arrived in an SDK upgrade exactly that way.
 
 > Until a nightly image carries the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
 > fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the `solr` job needs a
