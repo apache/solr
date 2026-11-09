@@ -16,12 +16,6 @@
 
 # Shared functions for testing
 
-function post_test_document {
-  local core=$1
-  docker exec --user=solr "$container_name" bin/solr post -c "$core" --mode args --type application/json \
-    '[{"id":"dell","address_s":"One Dell Way Round Rock, Texas 78682"}]'
-}
-
 function container_cleanup {
   local container_name
   container_name=$1
