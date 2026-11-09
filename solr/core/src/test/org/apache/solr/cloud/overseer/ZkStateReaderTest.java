@@ -18,6 +18,11 @@ package org.apache.solr.cloud.overseer;
 
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -42,10 +47,13 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.OverseerTest;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
@@ -142,6 +150,69 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         new ZkStateWriter(reader, new Stats(), minStateByteLenForCompression, new ZLibCompressor());
 
     return new TestFixture(server, zkClient, reader, writer);
+  }
+
+  public void testProviderRefreshesCollectionMissingFromLocalState() throws Exception {
+    ZkStateReader reader = fixture.reader;
+    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
+      synchronized (reader.getUpdateLock()) {
+        assertNull(reader.getClusterState().getCollectionRef("new_collection"));
+        fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/new_collection", true);
+        DocCollection state =
+            DocCollection.create(
+                "new_collection",
+                new HashMap<>(),
+                Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+                DocRouter.DEFAULT,
+                0,
+                Instant.now(),
+                PerReplicaStatesOps.getZkClientPrsSupplier(
+                    fixture.zkClient, DocCollection.getCollectionPath("new_collection")));
+        fixture.writer.enqueueUpdate(
+            reader.getClusterState(), List.of(new ZkWriteCommand("new_collection", state)), null);
+        fixture.writer.writePendingUpdates();
+
+        // The watcher cannot publish the new collection while this lock is held.
+        assertNull(reader.getClusterState().getCollectionRef("new_collection"));
+        ClusterState.CollectionRef refreshed = provider.getState("new_collection");
+        assertNotNull(refreshed);
+        assertEquals("new_collection", refreshed.get().getName());
+      }
+    }
+  }
+
+  public void testProviderDoesNotRefreshKnownAlias() throws Exception {
+    ZkStateReader reader = mock(ZkStateReader.class);
+    ClusterState state = mock(ClusterState.class);
+    when(reader.getClusterState()).thenReturn(state);
+    when(reader.getAliases())
+        .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("existing_alias", "collection"));
+    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
+      for (int i = 0; i < 10; i++) {
+        assertNull(provider.getState("existing_alias"));
+      }
+      verify(reader, never()).forceUpdateCollection("existing_alias");
+      assertEquals(List.of("collection"), provider.resolveAlias("existing_alias"));
+    }
+  }
+
+  public void testProviderUnknownCollectionAndInterruptedRefresh() throws Exception {
+    ZkStateReader reader = mock(ZkStateReader.class);
+    when(reader.getClusterState()).thenReturn(mock(ClusterState.class));
+    when(reader.getAliases()).thenReturn(Aliases.EMPTY);
+    doThrow(new InterruptedException("interrupted"))
+        .when(reader)
+        .forceUpdateCollection("interrupted");
+    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
+      assertNull(provider.getState("unknown"));
+      verify(reader).forceUpdateCollection("unknown");
+      try {
+        expectThrows(SolrException.class, () -> provider.getState("interrupted"));
+        assertTrue(Thread.currentThread().isInterrupted());
+      } finally {
+        Thread.interrupted();
+      }
+    }
   }
 
   public void testExternalCollectionWatchedNotWatched() throws Exception {

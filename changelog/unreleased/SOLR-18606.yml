@@ -1,6 +1,6 @@
 title: >
-  CloudSolrClient sends requests for locally unknown collections to a live node
-  for server-side resolution instead of rejecting them locally.
+  Refresh missing ZooKeeper collection state in CloudSolrClient without repeatedly
+  refreshing known aliases.
 type: fixed
 authors:
   - name: Nick Shanin

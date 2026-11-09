@@ -80,11 +80,26 @@ public class ZkClientClusterStateProvider
 
   @Override
   public ClusterState.CollectionRef getState(String collection) {
-    ClusterState clusterState = getZkStateReader().getClusterState();
-    if (clusterState != null) {
-      return clusterState.getCollectionRef(collection);
-    } else {
+    ZkStateReader reader = getZkStateReader();
+    ClusterState clusterState = reader.getClusterState();
+    if (clusterState == null) {
       return null;
+    }
+    ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+    if (ref != null || reader.getAliases().hasAlias(collection)) {
+      return ref;
+    }
+
+    // Alias names are probed as collections before they are resolved. Do not force a
+    // ZooKeeper lookup for a known alias on every request.
+    try {
+      reader.forceUpdateCollection(collection);
+      return reader.getClusterState().getCollectionRef(collection);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), e);
+    } catch (KeeperException e) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), e);
     }
   }
 
