@@ -761,10 +761,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     return serverDir;
   }
 
-  /**
-   * Picks a free ephemeral port, retrying if the OS hands back one above 64535: bin/solr derives
-   * the embedded ZooKeeper port as port + 1000, so anything higher would overflow past 65535.
-   */
+  /** Picks a free port, staying under 64536 so port + 1000 (embedded ZooKeeper) stays valid. */
   private static int pickFreePort() throws IOException {
     int port;
     do {
