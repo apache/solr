@@ -164,42 +164,8 @@ If set to `true`, Solr will overwrite an existing configset with the same name (
 |===
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded.
 
-When uploading an entire configset, the body of the request should be a zip file that contains the configset.
-The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
-
-[[configsets-upload-repository]]
-=== Upload from a Backup Repository
-
-Instead of a zip file, the configset can be read from a directory in a xref:deployment-guide:backup-restore.adoc#backuprestore-storage-repositories[backup repository] (such as S3 or GCS), with `solrconfig.xml` at its top level.
-Pass these parameters and no request body:
-
-`repository`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name of the backup repository. Required if `location` is given.
-
-`location`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The directory in the repository that holds the configset's files. Required if `repository` is given.
-
-Providing both a request body and `repository`/`location` is an error.
-The `overwrite` and `cleanup` parameters work the same way as for zip uploads.
-
-[source,bash]
-----
-curl -X PUT "http://localhost:8983/api/configsets/myConfigSet?repository=s3&location=/configsets/myconfig"
-----
-
-For the v1 API, use `/solr/admin/configs?action=UPLOAD&name=myConfigSet&repository=s3&location=/configsets/myconfig`.
+Configsets can be uploadeded in two different ways: by providing compressed "zip" content in the request body, or by finding the configset using a "backup repository" (see below).
+With the "zip" approach, the zip file/content must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
 Here is an example on how to create the zip file named "myconfig.zip" and upload it as a configset named "myConfigSet":
 
@@ -242,6 +208,55 @@ With this  API, the default behavior is to overwrite the configset if it already
 This behavior can be disabled with the parameter `overwrite=false`, in which case the request will fail if the configset already exists.
 ====
 ======
+
+[[configsets-upload-repository]]
+=== Upload from a Backup Repository
+
+Configsets can also be uploaded to Solr using a xref:deployment-guide:backup-restore.adoc#backuprestore-storage-repositories[backup repository] (such as S3 or GCS), with `solrconfig.xml` at its top level.
+Uploads using this "backup repository" approach must specify two additional parameters as coordinates for finding the configset files:
+
+`repository`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the backup repository. Required if `location` is given.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The directory in the repository that holds the configset's files. Required if `repository` is given.
+
+Providing both a request body and `repository`/`location` is an error.
+The `overwrite` and `cleanup` parameters work the same way as for zip uploads.
+
+[tabs#uploadconfigsetrepo]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl -X POST "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet&repository=s3&location=/configsets/myconfig"
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT "http://localhost:8983/api/configsets/myConfigSet?repository=s3&location=/configsets/myconfig"
+----
+====
+======
+
 
 [[configsets-upload-file]]
 == Update a Single File in a Configset
