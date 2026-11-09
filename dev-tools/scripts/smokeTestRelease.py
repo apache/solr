@@ -713,17 +713,18 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
 
 def find_available_port(max_attempts=100):
   """Find an available port by randomly selecting from range 8901-8999.
-  Ensures both the port and port+1000 are available."""
+  Check the HTTP port, the default stop port and the embedded ZooKeeper port."""
   for _ in range(max_attempts):
     port = random.randint(8901, 8999)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
       try:
         s.bind(('localhost', port))
-        # Check if port+1000 is also available
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
           try:
             s2.bind(('localhost', port + 1000))
-            return port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s3:
+              s3.bind(('localhost', port - 1000))
+              return port
           except OSError:
             continue
       except OSError:
@@ -735,9 +736,23 @@ def testSolrSlim(binaryDistPath, javaPath):
   port = find_available_port()
   solrUrl = 'http://localhost:%d/solr' % port
   coreUrl = '%s/smoke' % solrUrl
-  env = os.environ.copy()
-  env['JAVA_HOME'] = javaPath
+  # Do not let a caller's Solr configuration redirect this temporary server to
+  # an existing home, data directory, ZooKeeper or stop port.
+  env = {key: value for key, value in os.environ.items()
+         if not key.upper().startswith(('SOLR_', 'ZK_', 'STOP_', 'JETTY_', 'GC_', 'LOG4J_'))
+         and key.upper() not in ('JAVA_TOOL_OPTIONS', '_JAVA_OPTIONS', 'JDK_JAVA_OPTIONS',
+                                 'JAVA_OPTS', 'CLASSPATH', 'BASH_ENV', 'ENV')}
+  def launcherPath(path):
+    if cygwin:
+      return subprocess.check_output(['cygpath', '-w', path], text=True).strip()
+    return path
+
+  env['JAVA_HOME'] = launcherPath(javaPath)
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
+  env['SOLR_INCLUDE'] = launcherPath(os.path.join(binaryDistPath, 'bin',
+                                                  'solr.in.cmd' if cygwin else 'solr.in.sh'))
+  env['SOLR_HOME'] = launcherPath(os.path.join(binaryDistPath, 'server', 'solr'))
+  env['SOLR_PID_DIR'] = launcherPath(os.path.join(binaryDistPath, 'bin'))
 
   def solr(args):
     if cygwin:

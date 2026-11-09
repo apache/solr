@@ -135,6 +135,71 @@ class ReleaseSmokeTest(unittest.TestCase):
                 smoke.testSolrSlim(self.temp.name, "/fake-java")
         self.assertEqual(1, command.call_count)
 
+    def test_slim_ignores_inherited_solr_configuration(self):
+        inherited = {
+            "SOLR_HOME": "/existing/home",
+            "SOLR_DATA_HOME": "/existing/data",
+            "SOLR_INCLUDE": "/existing/solr.in.sh",
+            "SOLR_JAVA_HOME": "/other-java",
+            "SOLR_CONNECTION": "https://existing.example/solr",
+            "ZK_HOST": "existing.example:2181",
+            "STOP_PORT": "7983",
+            "JAVA_TOOL_OPTIONS": "-Dsolr.solr.home=/existing/home",
+        }
+        with mock.patch.dict(os.environ, inherited), mock.patch.object(
+            smoke, "cygwin", False
+        ), mock.patch.object(smoke, "find_available_port", return_value=8983), mock.patch.object(
+            smoke.subprocess, "call", return_value=1
+        ) as command:
+            with self.assertRaisesRegex(RuntimeError, "Failed to start"):
+                smoke.testSolrSlim(self.temp.name, "/fake-java")
+
+        env = command.call_args.kwargs["env"]
+        self.assertEqual(os.path.join(self.temp.name, "server", "solr"), env["SOLR_HOME"])
+        self.assertEqual(os.path.join(self.temp.name, "bin", "solr.in.sh"), env["SOLR_INCLUDE"])
+        self.assertEqual(os.path.join(self.temp.name, "bin"), env["SOLR_PID_DIR"])
+        self.assertEqual("/fake-java", env["JAVA_HOME"])
+        for name in ("SOLR_DATA_HOME", "SOLR_JAVA_HOME", "SOLR_CONNECTION", "ZK_HOST",
+                     "STOP_PORT", "JAVA_TOOL_OPTIONS"):
+            self.assertNotIn(name, env)
+
+    def test_cygwin_uses_windows_paths_for_native_launcher(self):
+        def native_path(args, **kwargs):
+            self.assertEqual(["cygpath", "-w"], args[:2])
+            return "C:\\converted\\" + os.path.basename(args[2]) + "\n"
+
+        with mock.patch.object(smoke, "cygwin", True), mock.patch.object(
+            smoke, "find_available_port", return_value=8983
+        ), mock.patch.object(smoke.subprocess, "check_output", side_effect=native_path), mock.patch.object(
+            smoke.subprocess, "call", return_value=1
+        ) as command:
+            with self.assertRaisesRegex(RuntimeError, "Failed to start"):
+                smoke.testSolrSlim(self.temp.name, "/fake-java")
+        env = command.call_args.kwargs["env"]
+        self.assertEqual("C:\\converted\\fake-java", env["JAVA_HOME"])
+        self.assertEqual("C:\\converted\\solr.in.cmd", env["SOLR_INCLUDE"])
+        self.assertIn("bin/solr.cmd start --user-managed", command.call_args.args[0])
+
+    def test_port_probe_checks_http_stop_and_zookeeper_ports(self):
+        sockets = [mock.MagicMock() for _ in range(3)]
+        for sock in sockets:
+            sock.__enter__.return_value = sock
+        with mock.patch.object(smoke.random, "randint", return_value=8983), mock.patch.object(
+            smoke.socket, "socket", side_effect=sockets
+        ):
+            self.assertEqual(8983, smoke.find_available_port())
+        self.assertEqual([8983, 9983, 7983], [sock.bind.call_args.args[0][1] for sock in sockets])
+
+    def test_port_probe_retries_when_stop_port_is_busy(self):
+        sockets = [mock.MagicMock() for _ in range(6)]
+        for sock in sockets:
+            sock.__enter__.return_value = sock
+        sockets[2].bind.side_effect = OSError("stop port occupied")
+        with mock.patch.object(smoke.random, "randint", side_effect=[8983, 8984]), mock.patch.object(
+            smoke.socket, "socket", side_effect=sockets
+        ):
+            self.assertEqual(8984, smoke.find_available_port(max_attempts=2))
+
 
 if __name__ == "__main__":
     unittest.main()
