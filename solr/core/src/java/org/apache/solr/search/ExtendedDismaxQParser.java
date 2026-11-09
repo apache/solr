@@ -681,7 +681,7 @@ public class ExtendedDismaxQParser extends QParser {
     // TODO: perhaps we shouldn't use synonyms either...
 
     Query phrase = pp.parse(userPhraseQuery.toString());
-    // parse returns an empty BooleanQuery, not null, when minClauseSize discards every phrase
+    // parse returns an empty BooleanQuery when minClauseSize discards every phrase
     if (!isEmpty(phrase)) {
       mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
     }
