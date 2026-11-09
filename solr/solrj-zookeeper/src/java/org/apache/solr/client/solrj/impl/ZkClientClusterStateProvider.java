@@ -86,13 +86,15 @@ public class ZkClientClusterStateProvider
       return null;
     }
     ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+    // Alias names are probed as collections before they are resolved. Avoid a ZooKeeper
+    // lookup for a known alias on every request.
     if (ref != null || reader.getAliases().hasAlias(collection)) {
       return ref;
     }
 
-    // Alias names are probed as collections before they are resolved. Do not force a
-    // ZooKeeper lookup for a known alias on every request.
     try {
+      // Curator sync is asynchronous; wait for it before reading a missing collection.
+      reader.getZkClient().sync(ZkStateReader.COLLECTIONS_ZKNODE);
       reader.forceUpdateCollection(collection);
       return reader.getClusterState().getCollectionRef(collection);
     } catch (InterruptedException e) {
