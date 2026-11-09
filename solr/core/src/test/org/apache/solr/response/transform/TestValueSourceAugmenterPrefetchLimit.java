@@ -33,11 +33,13 @@ import org.apache.solr.search.FunctionQParserPlugin;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 
 public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
 
   private static final int MAX_PREFETCH_SIZE = 1000;
+  private static final int NUM_DOCS = MAX_PREFETCH_SIZE + 10;
 
   /** No returned doc has a foo value that differs from its id. */
   private static final String FOO_MATCHES_ID =
@@ -48,8 +50,7 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
 
     // Index enough documents to exceed the prefetch limit
-    final int numDocs = MAX_PREFETCH_SIZE + 10;
-    for (int i = 0; i < numDocs; i++) {
+    for (int i = 0; i < NUM_DOCS; i++) {
       assertU(adoc("id", Integer.toString(i)));
     }
     assertU(commit());
@@ -121,30 +122,41 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
   }
 
   public void testSetContextWithoutDocListClearsCache() throws Exception {
+    String extraId = Integer.toString(NUM_DOCS);
     SolrQueryRequest req = req("q", "*:*");
+    RefCounted<SolrIndexSearcher> oldRef = h.getCore().getSearcher();
+    RefCounted<SolrIndexSearcher> newRef = null;
     try {
-      QParser parser = QParser.getParser("field(id)", FunctionQParserPlugin.NAME, req);
+      // numdocs() differs between the two searchers for the same docid
+      QParser parser = QParser.getParser("numdocs()", FunctionQParserPlugin.NAME, req);
       ValueSource vs = ((FunctionQuery) parser.getQuery()).getValueSource();
       ValueSourceAugmenter augmenter = new ValueSourceAugmenter("foo", parser, vs);
-      h.getCore()
-          .withSearcher(
-              searcher -> {
-                DocList docs =
-                    new DocSlice(0, 2, new int[] {0, 1}, null, 2, 0f, TotalHits.Relation.EQUAL_TO);
-                augmenter.setContext(new BasicResultContext(docs, null, searcher, null, req));
-                assertNotNull(augmenter.cachedValuesById);
 
-                augmenter.setContext(new NoDocListResultContext(searcher, req));
-                assertNull(augmenter.cachedValuesById);
+      SolrIndexSearcher oldSearcher = oldRef.get();
+      DocList docs = new DocSlice(0, 2, new int[] {0, 1}, null, 2, 0f, TotalHits.Relation.EQUAL_TO);
+      augmenter.setContext(new BasicResultContext(docs, null, oldSearcher, null, req));
+      assertNotNull(augmenter.cachedValuesById);
 
-                // values still come from the current searcher via the on-demand path
-                SolrDocument doc = new SolrDocument();
-                augmenter.transform(doc, 0, null);
-                assertEquals(searcher.getDocFetcher().doc(0).get("id"), doc.getFieldValue("foo"));
-                return null;
-              });
+      assertU(adoc("id", extraId));
+      assertU(commit());
+      newRef = h.getCore().getSearcher();
+      SolrIndexSearcher newSearcher = newRef.get();
+      assertNotSame(oldSearcher, newSearcher);
+      int expected = newSearcher.getIndexReader().numDocs();
+      assertNotEquals(oldSearcher.getIndexReader().numDocs(), expected);
+
+      augmenter.setContext(new NoDocListResultContext(newSearcher, req));
+      SolrDocument doc = new SolrDocument();
+      augmenter.transform(doc, 0, null);
+      assertEquals(expected, doc.getFieldValue("foo"));
     } finally {
+      if (newRef != null) {
+        newRef.decref();
+      }
+      oldRef.decref();
       req.close();
+      assertU(delI(extraId));
+      assertU(commit());
     }
   }
 
