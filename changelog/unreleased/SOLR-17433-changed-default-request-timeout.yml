@@ -1,9 +1,10 @@
 title: >
-  SolrClients no longer have a default request timeout.  It was problematic with streaming expressions.
-  The idle timeout remains, albeit the JDK HttpClient doesn't support that (has none).
+  SolrClients no longer have a default request timeout (total time); it cut off long streaming responses,
+  such as streaming expressions. The idle timeout still applies. For the JDK HttpClient, it bounds the wait for response headers.
 type: changed
 authors:
   - name: Vishnu Priya Chandra Sekar
+  - name: David Smiley
 links:
   - name: SOLR-17433
     url: https://issues.apache.org/jira/browse/SOLR-17433

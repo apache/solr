@@ -89,6 +89,9 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
   private final boolean shutdownExecutor;
 
+  /** The JDK's {@link HttpRequest#timeout} only bounds the wait for the response headers. */
+  private final Duration responseHeadersTimeout;
+
   /**
    * {@link ExecutorService} on {@link HttpJdkSolrClient.Builder} is used for {@link HttpClient}
    * only.
@@ -105,8 +108,10 @@ public class HttpJdkSolrClient extends HttpSolrClient {
 
     httpClientBuilder.connectTimeout(
         Duration.of(builder.getConnectionTimeoutMillis(), ChronoUnit.MILLIS));
-    // note: idle timeout isn't used for the JDK client
-    // note: request timeout is set per request
+    // note: the JDK client can't enforce an idle timeout while reading the body.
+    this.responseHeadersTimeout =
+        Duration.ofMillis(
+            requestTimeoutMillis > 0 ? requestTimeoutMillis : builder.getIdleTimeoutMillis());
 
     if (builder.sslContext != null) {
       httpClientBuilder.sslContext(builder.sslContext);
@@ -474,10 +479,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
   }
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
-    // JDK does not allow non-positive value for request timeout.
-    if (requestTimeoutMillis > 0) {
-      reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
-    }
+    reqb.timeout(responseHeadersTimeout);
 
     reqb.header("User-Agent", USER_AGENT);
     setBasicAuthHeader(solrRequest, reqb);

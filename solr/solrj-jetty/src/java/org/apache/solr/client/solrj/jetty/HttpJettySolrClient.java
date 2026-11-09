@@ -87,6 +87,7 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -301,13 +302,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
-    // This global idle timeout serves as both the connection idle timeout and the default read
-    // timeout.The read timeout can be overridden for an individual request using Jetty's
-    // Request.idleTimeout().
-    // Note: Do not override the global idle timeout with the HttpJettySolrClient builder's idle
-    // timeout since the builder's value is intended to control the read timeout for an individual
-    // request. See https://issues.apache.org/jira/browse/SOLR-17871 for more details.
-    httpClient.setIdleTimeout(SolrHttpConstants.DEFAULT_IDLE_TIMEOUT);
+    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
     // note: idle & request timeouts are set per request
 
     var cookieStore = builder.getCookieStore();
@@ -405,6 +400,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
       future.completeExceptionally(e);
       return future;
     }
+    AtomicBoolean responded = new AtomicBoolean();
     mrrv.request.send(
         new InputStreamResponseListener() {
           // MDC snapshot from requestAsync's thread
@@ -412,6 +408,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
           @Override
           public void onHeaders(Response response) {
+            responded.set(true);
             super.onHeaders(response);
             InputStreamResponseListener listener = this;
             executor.execute(
@@ -442,6 +439,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
           @Override
           public void onFailure(Response response, Throwable failure) {
+            responded.set(true);
             super.onFailure(response, failure);
             // Dispatch off the IO thread to avoid blocking semaphore.acquire() on retry.
             // Fall back to IO thread if executor rejects (shutdown/overloaded).
@@ -470,6 +468,25 @@ public class HttpJettySolrClient extends HttpSolrClient {
       } catch (IOException ioe) {
         future.completeExceptionally(ioe);
       }
+    }
+
+    // Like the sync path, bound the wait for response headers by the idle timeout. Jetty's
+    // per-request idle timeout doesn't cover this on HTTP/2 until the stream is established.
+    if (!responded.get()) {
+      Scheduler.Task headersTimeout =
+          httpClient
+              .getScheduler()
+              .schedule(
+                  () -> {
+                    if (!responded.get()) {
+                      mrrv.request.abort(
+                          new TimeoutException(
+                              "Timeout occurred while waiting response from server at: " + url));
+                    }
+                  },
+                  idleTimeoutMillis,
+                  TimeUnit.MILLISECONDS);
+      future.whenComplete((r, e) -> headersTimeout.cancel());
     }
     return future;
   }
@@ -674,9 +691,7 @@ public class HttpJettySolrClient extends HttpSolrClient {
           h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
         });
 
-    // idle timeout between data transfers in a request
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
-    // hard limit on total execution time of a request
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
     if (solrRequest.getUserPrincipal() != null) {
