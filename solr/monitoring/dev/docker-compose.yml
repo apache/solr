@@ -176,8 +176,15 @@ services:
     ports:
       - "127.0.0.1:4318:4318"   # OTLP/HTTP in — a Solr on the host pushes here with its defaults
       - "127.0.0.1:9464:9464"   # Prometheus-format out
+      - "127.0.0.1:9465:9465"   # the same, with OpenTelemetry names left untranslated
+    # Two --config files are merged, so the shipped example stays lean and the
+    # untranslated endpoint exists only here
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+      - --config=/etc/otelcol-contrib/native.yaml
     volumes:
       - ../otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - ./otel-collector-native.yaml:/etc/otelcol-contrib/native.yaml:ro
     depends_on:
       - aspire-dashboard
     restart: unless-stopped

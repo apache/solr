@@ -220,12 +220,16 @@ direct route drives them. To check the Collector config still reproduces Solr's 
 the stack up and the trafficgen running:
 
 ```bash
-./check-metric-parity.py           # exit 0 when the names match, 1 when they differ
-./check-metric-parity.py --list    # also print every name and which routes have it
+./check-metric-parity.py             # exit 0 when the names match, 1 when they differ
+./check-metric-parity.py --list      # also print every name and which routes have it
+./check-metric-parity.py --list-otel # the OpenTelemetry names Solr pushes, before translation
 ```
 
 It waits for both jobs to stop producing new names before comparing, so a registry that
-appears late is not read as a difference. Run it after changing the Collector config, or after a
+appears late is not read as a difference. `--list-otel` reads a second Collector endpoint that the
+dev-only `dev/otel-collector-native.yaml` overlay adds, which leaves the OpenTelemetry names
+untranslated — useful for seeing what a name looked like before the Prometheus conventions
+reshaped it. Run it after changing the Collector config, or after a
 Solr, OpenTelemetry SDK or Collector upgrade — the `_ratio` suffix the config exists to undo
 arrived in an SDK upgrade exactly that way.
 

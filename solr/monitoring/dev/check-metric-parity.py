@@ -31,6 +31,7 @@ state where the question can be answered. Values are not compared, only names.
 
 import argparse
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -39,6 +40,12 @@ import urllib.request
 
 SCRAPE_JOB = "solr"
 OTLP_JOB = "solr-otlp"
+
+# The collector's second endpoint, added by the dev-only otel-collector-native.yaml overlay,
+# which leaves OpenTelemetry names untranslated. Dotted names only survive the wire when the
+# reader says it accepts UTF-8, otherwise they come back escaped to underscores.
+NATIVE_ACCEPT = "text/plain;version=0.0.4;escaping=allow-utf-8"
+TYPE_LINE = re.compile(r'^# TYPE "?([^"\s]+)"? ')
 
 # Added by Prometheus for every target rather than coming from Solr
 SYNTHETIC = {"up", "ALERTS", "ALERTS_FOR_STATE"}
@@ -74,6 +81,23 @@ def metric_names(base_url, job):
     return {
         n for n in names if n not in SYNTHETIC and not n.startswith(SYNTHETIC_PREFIX)
     }
+
+
+def otel_metric_names(url):
+    """The names Solr pushes, before any Prometheus naming is applied."""
+    request = urllib.request.Request(url, headers={"Accept": NATIVE_ACCEPT})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = response.read().decode("utf-8")
+    except urllib.error.URLError as e:
+        die(
+            f"Cannot reach the collector's untranslated endpoint at {url}: {e.reason}\n"
+            "It is added by otel-collector-native.yaml; is the stack up? ./stack.sh"
+        )
+    names = {m.group(1) for m in (TYPE_LINE.match(line) for line in body.splitlines()) if m}
+    if not names:
+        die(f"No metrics at {url} yet; is Solr pushing?")
+    return names
 
 
 def check_targets(base_url, settle):
@@ -142,8 +166,23 @@ def main():
         action="store_true",
         help="also print every metric name alphabetically, and which routes have it",
     )
+    parser.add_argument(
+        "--list-otel",
+        action="store_true",
+        help="print the OpenTelemetry names Solr pushes, alphabetically, and stop",
+    )
+    parser.add_argument(
+        "--collector-native",
+        default="http://localhost:9465/metrics",
+        help="collector endpoint serving untranslated OpenTelemetry names",
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="print each poll")
     args = parser.parse_args()
+
+    if args.list_otel:
+        for name in sorted(otel_metric_names(args.collector_native)):
+            print(name)
+        return 0
 
     base_url = args.prometheus.rstrip("/")
     check_targets(base_url, args.settle)
