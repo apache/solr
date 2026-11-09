@@ -166,7 +166,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
     compileJDK = BASE_JAVA_VERSION
     if 'solrj' in desc or 'api' in desc:
       compileJDK = SOLRJ_JAVA_VERSION
-    for verify in (
+    checks = [
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       'Specification-Title: Apache Solr Search Server:',
@@ -174,8 +174,11 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'X-Compile-Source-JDK: %s' % compileJDK,
       'X-Compile-Target-JDK: %s' % compileJDK,
       'Specification-Version: %s' % version.replace('-SNAPSHOT', ''),
-      'X-Build-JDK: %s' % BASE_JAVA_VERSION,
-      'Extension-Name: org.apache.solr'):
+      'Extension-Name: org.apache.solr']
+    # CI may build the RC with a JDK other than BASE_JAVA_VERSION
+    if not os.environ.get('SMOKETEST_SKIP_BUILD_JDK_CHECK'):
+      checks.append('X-Build-JDK: %s' % BASE_JAVA_VERSION)
+    for verify in checks:
       if type(verify) is not tuple:
         verify = (verify,)
       for x in verify:
