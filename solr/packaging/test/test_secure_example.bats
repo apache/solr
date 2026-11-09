@@ -17,6 +17,8 @@
 
 load bats_helper
 
+# bats file_tags=nightly
+
 setup() {
   common_clean_setup
   command -v openssl >/dev/null 2>&1 || skip "OpenSSL is not available"
