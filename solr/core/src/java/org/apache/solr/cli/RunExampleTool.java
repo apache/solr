@@ -530,9 +530,7 @@ public class RunExampleTool extends ToolBase {
         Integer.parseInt(
             cli.getOptionValue(
                 PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
-    if (port < 1024 || port > 64535) {
-      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
-    }
+    validatePort(port);
 
     if ("cloud".equals(exampleType)) {
       runCloudExample(
@@ -554,6 +552,16 @@ public class RunExampleTool extends ToolBase {
     } else {
       runExample(
           new RunExampleParams(!cli.hasOption(USER_MANAGED_OPTION), zkHost, port, startParams));
+    }
+  }
+
+  /**
+   * Rejects ports outside the range bin/solr's embedded ZooKeeper (port + 1000) can support, for
+   * every example type.
+   */
+  private static void validatePort(int port) {
+    if (port < 1024 || port > 64535) {
+      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
     }
   }
 
@@ -1565,11 +1573,9 @@ public class RunExampleTool extends ToolBase {
       command.add(jvmOpts);
     }
 
+    String cmdStr = String.join(" ", command);
     echo("\nStarting up Solr on port " + port + " using command:");
-    echo(String.join(" ", command) + "\n");
-
-    var startCmd = new org.apache.commons.exec.CommandLine(command.get(0));
-    startCmd.addArguments(command.subList(1, command.size()).toArray(String[]::new), false);
+    echo(cmdStr + "\n");
 
     String solrUrl =
         String.format(
@@ -1580,6 +1586,9 @@ public class RunExampleTool extends ToolBase {
     Map<String, Object> nodeStatus = checkPortConflict(solrUrl, credentials, solrHomeDir, port);
     if (nodeStatus != null)
       return nodeStatus; // the server they are trying to start is already running
+
+    var startCmd = new org.apache.commons.exec.CommandLine(command.get(0));
+    startCmd.addArguments(command.subList(1, command.size()).toArray(String[]::new), false);
 
     if (isWindows) {
       // On Windows, the execution doesn't return, so we have to execute async
@@ -1608,21 +1617,16 @@ public class RunExampleTool extends ToolBase {
       if (handler.hasResult() && handler.getExitValue() != 0) {
         throw new Exception(
             "Failed to start Solr using command: "
-                + String.join(" ", command)
+                + cmdStr
                 + " Exception : "
                 + handler.getException());
       }
     } else {
       try {
         int code = executor.execute(startCmd);
-        if (code != 0)
-          throw new Exception("Failed to start Solr using command: " + String.join(" ", command));
+        if (code != 0) throw new Exception("Failed to start Solr using command: " + cmdStr);
       } catch (ExecuteException e) {
-        throw new Exception(
-            "Failed to start Solr using command: "
-                + String.join(" ", command)
-                + " Exception : "
-                + e);
+        throw new Exception("Failed to start Solr using command: " + cmdStr + " Exception : " + e);
       }
     }
 
@@ -1910,9 +1914,7 @@ public class RunExampleTool extends ToolBase {
               + "! Please choose one of: cloud, secure, schemaless, techproducts, or films");
     }
 
-    if (port < 1024 || port > 64535) {
-      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
-    }
+    validatePort(port);
 
     StartSolrParams startParams =
         new StartSolrParams(
