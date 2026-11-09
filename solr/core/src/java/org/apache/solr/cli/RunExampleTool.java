@@ -626,7 +626,7 @@ public class RunExampleTool extends ToolBase {
               + " is not a directory!");
   }
 
-  /** Runs the manual security tutorial using the distribution's existing commands. */
+  /** Runs the equivalent steps of the Ref Guide security tutorial */
   void runSecureExample(CloudExampleParams params, boolean userManaged) throws Exception {
     StartSolrParams start = params.start();
     if (userManaged || params.zkHost() != null) {
