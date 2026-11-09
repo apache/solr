@@ -24,6 +24,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_P
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,14 +67,57 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
           "codecFactory",
           "query",
           "searchComponent",
-          "queryResponseWriter");
+          "queryResponseWriter",
+          "luceneMatchVersion",
+          "initParams",
+          "listener",
+          "requestDispatcher",
+          "jmx",
+          "queryParser",
+          "valueSourceParser",
+          "transformer",
+          "updateProcessor",
+          "updateRequestProcessorChain",
+          "queryConverter",
+          "cache",
+          "circuitBreaker",
+          "expressible",
+          "schemaFactory",
+          "restManager",
+          "statsCache",
+          "recoveryStrategy",
+          "indexReaderFactory",
+          "indexConfigdeletionPolicy",
+          "updateHandlerupdateLog");
 
-  // v2-only renames: external (URL/response-key) component name -> internal SolrConfig section
-  // name. v1's GET /config/{component} keeps using the internal names unchanged.
+  public static final String REQUEST_HANDLERS = "requestHandlers";
+
+  // v2-only renames for /config/{component}(/{componentName}): external name -> internal
+  // SolrConfig section name. Excludes requestHandler, which has its own dedicated endpoint instead
+  // of routing through these paths.
   private static final Map<String, String> EXTERNAL_TO_INTERNAL_COMPONENT_NAME =
       Map.of(
           "searchComponents", "searchComponent",
-          "queryResponseWriters", "queryResponseWriter");
+          "queryResponseWriters", "queryResponseWriter",
+          "listeners", "listener",
+          "queryParsers", "queryParser",
+          "valueSourceParsers", "valueSourceParser",
+          "transformers", "transformer",
+          "updateProcessors", "updateProcessor",
+          "queryConverters", "queryConverter",
+          "expressibles", "expressible",
+          "caches", "cache");
+
+  // Same, but for the full /config dump's top-level keys, which also renames requestHandler.
+  // Derived from the map above so the two can't drift apart.
+  private static final Map<String, String> EXTERNAL_TO_INTERNAL_FULL_CONFIG_NAME =
+      buildFullConfigNameMap();
+
+  private static Map<String, String> buildFullConfigNameMap() {
+    Map<String, String> map = new HashMap<>(EXTERNAL_TO_INTERNAL_COMPONENT_NAME);
+    map.put(REQUEST_HANDLERS, SolrRequestHandler.TYPE);
+    return Map.copyOf(map);
+  }
 
   private static String toInternalComponentName(String externalName) {
     return EXTERNAL_TO_INTERNAL_COMPONENT_NAME.getOrDefault(externalName, externalName);
@@ -81,6 +125,15 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   public static String toExternalComponentName(String internalName) {
     for (Map.Entry<String, String> e : EXTERNAL_TO_INTERNAL_COMPONENT_NAME.entrySet()) {
+      if (e.getValue().equals(internalName)) {
+        return e.getKey();
+      }
+    }
+    return internalName;
+  }
+
+  private static String toExternalFullConfigName(String internalName) {
+    for (Map.Entry<String, String> e : EXTERNAL_TO_INTERNAL_FULL_CONFIG_NAME.entrySet()) {
       if (e.getValue().equals(internalName)) {
         return e.getKey();
       }
@@ -99,8 +152,28 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfig(boolean expandParams) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    response.config = buildConfigMap(solrQueryRequest, expandParams);
+    response.config = renameToExternalFullConfigNames(buildConfigMap(expandParams));
     return response;
+  }
+
+  /**
+   * Same as {@link #getConfig(boolean)}, but keeps internal section names (e.g. {@code
+   * searchComponent}, {@code requestHandler}) instead of the v2-only pluralized forms. Used by
+   * {@link SolrConfigHandler}'s legacy v1 {@code GET /config}, which must preserve the original
+   * names for backward compatibility.
+   */
+  public ConfigInfoResponse getConfigWithInternalNames(boolean expandParams) {
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
+    response.config = buildConfigMap(expandParams);
+    return response;
+  }
+
+  private Map<String, Object> renameToExternalFullConfigNames(Map<String, Object> configMap) {
+    Map<String, Object> reMappedConfigMap = new NullKeyTolerantMap("children");
+    for (Map.Entry<String, Object> e : configMap.entrySet()) {
+      reMappedConfigMap.put(toExternalFullConfigName(e.getKey()), e.getValue());
+    }
+    return reMappedConfigMap;
   }
 
   @Override
@@ -131,11 +204,39 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
+  public ConfigInfoResponse getRequestHandler(
+      String componentName, boolean expandParams, boolean meta) {
+    return getRequestHandler(REQUEST_HANDLERS, componentName, expandParams, meta);
+  }
+
+  @SuppressWarnings("unchecked")
+  public ConfigInfoResponse getRequestHandler(
+      String sectionName, String componentName, boolean expandParams, boolean meta) {
+    final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
+
+    Map<String, Object> reqHandlersMap =
+        (Map<String, Object>)
+            solrConfigAsMap().computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
+    Map<String, Object> configMap = new LinkedHashMap<>();
+    configMap.put(
+        sectionName, requestHandlersWithImplicits(reqHandlersMap, expandParams, componentName));
+    if (componentName != null) {
+      filterByComponentName(configMap, sectionName, componentName, meta, solrQueryRequest);
+    }
+
+    response.config = jsonSafeCopy(configMap);
+    return response;
+  }
+
+  @Override
+  @PermissionName(CONFIG_READ_PERM)
   public ConfigInfoResponse getConfigComponent(String component) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    Map<String, Object> section = new LinkedHashMap<>();
-    section.put(component, solrConfigAsMap().get(toInternalComponentName(component)));
-    response.config = jsonSafeCopy(section);
+
+    Map<String, Object> configMap = new LinkedHashMap<>();
+    configMap.put(component, solrConfigAsMap().get(toInternalComponentName(component)));
+
+    response.config = jsonSafeCopy(configMap);
     return response;
   }
 
@@ -144,10 +245,11 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
   public ConfigInfoResponse getConfigComponentByName(
       String component, String componentName, boolean meta) {
     final var response = instantiateJerseyResponse(ConfigInfoResponse.class);
-    Map<String, Object> section = new LinkedHashMap<>();
-    section.put(component, solrConfigAsMap().get(toInternalComponentName(component)));
-    filterByComponentName(section, component, componentName, meta, solrQueryRequest);
-    response.config = jsonSafeCopy(section);
+
+    Map<String, Object> configMap = new LinkedHashMap<>();
+    configMap.put(component, solrConfigAsMap().get(toInternalComponentName(component)));
+    filterByComponentName(configMap, component, componentName, meta, solrQueryRequest);
+    response.config = jsonSafeCopy(configMap);
     return response;
   }
 
@@ -161,15 +263,21 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
   public static void filterByComponentName(
-      Map<String, Object> section,
+      Map<String, Object> configMap,
       String component,
       String componentName,
       boolean meta,
       SolrQueryRequest req) {
-    Map pluginNameVsPluginInfo = (Map) section.get(component);
-    if (pluginNameVsPluginInfo == null) {
+    Object sectionValue = configMap.get(component);
+    if (sectionValue == null) {
       return;
     }
+    if (!(sectionValue instanceof Map) && !(sectionValue instanceof MapWriter)) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          component + " does not support filtering by componentName");
+    }
+    Map pluginNameVsPluginInfo = (Map) sectionValue;
 
     Object o =
         pluginNameVsPluginInfo instanceof MapWriter
@@ -183,7 +291,7 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
 
     Map<String, Object> pluginInfo =
         o instanceof MapWriter ? new SimpleOrderedMap<>((MapWriter) o) : (Map<String, Object>) o;
-    section.put(
+    configMap.put(
         component,
         pluginNameVsPluginInfo instanceof MapWriter
             ? pluginInfo
@@ -227,32 +335,42 @@ public class GetConfig extends JerseyResource implements ConfigApi.Get {
     return jsonSafeCopy;
   }
 
-  @SuppressWarnings({"unchecked"})
-  private Map<String, Object> buildConfigMap(
-      SolrQueryRequest solrQueryRequest, boolean expandParams) {
-
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> buildConfigMap(boolean expandParams) {
     Map<String, Object> configMap = solrConfigAsMap();
-
-    Map<String, Object> reqHandlers =
+    Map<String, Object> reqHandlersMap =
         (Map<String, Object>)
             configMap.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
+    requestHandlersWithImplicits(reqHandlersMap, expandParams, null);
+    return jsonSafeCopy(configMap);
+  }
+
+  /**
+   * Merges implicit handlers into {@code reqHandlersMap} (mutated in place and returned), expanding
+   * useParams for {@code expandOnlyComponentName} (or all entries if null) when {@code
+   * expandParams}.
+   */
+  private Map<String, Object> requestHandlersWithImplicits(
+      Map<String, Object> reqHandlersMap, boolean expandParams, String expandOnlyComponentName) {
     List<PluginInfo> plugins = solrQueryRequest.getCore().getImplicitHandlers();
     for (PluginInfo plugin : plugins) {
-      if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlers.containsKey(plugin.name)) {
-        reqHandlers.put(plugin.name, plugin);
+      if (SolrRequestHandler.TYPE.equals(plugin.type) && !reqHandlersMap.containsKey(plugin.name)) {
+        reqHandlersMap.put(plugin.name, plugin);
       }
     }
 
     if (expandParams) {
-      for (Map.Entry<String, Object> entry : reqHandlers.entrySet()) {
-        entry.setValue(expandUseParams(solrQueryRequest, entry.getValue()));
+      for (Map.Entry<String, Object> entry : reqHandlersMap.entrySet()) {
+        if (expandOnlyComponentName == null || expandOnlyComponentName.equals(entry.getKey())) {
+          entry.setValue(expandUseParams(solrQueryRequest, entry.getValue()));
+        }
       }
     }
 
-    return jsonSafeCopy(configMap);
+    return reqHandlersMap;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   private Map<String, Object> expandUseParams(SolrQueryRequest req, Object plugin) {
     Map<String, Object> pluginInfo;
     if (plugin instanceof Map) {

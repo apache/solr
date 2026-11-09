@@ -60,7 +60,7 @@ public class TestPackageManager extends SolrCloudTestCase {
         plugin.verifyCommand = new SolrPackage.Command();
         plugin.verifyCommand.method = "GET";
         plugin.verifyCommand.path = /*"/api*/
-            "/collections/" + COLLECTION_NAME + "/config/requestHandler";
+            "/collections/" + COLLECTION_NAME + "/config/requestHandlers";
         plugin.verifyCommand.condition = "&[no_quotes_error_jpath]";
         manager.verify(
             new SolrPackageInstance(

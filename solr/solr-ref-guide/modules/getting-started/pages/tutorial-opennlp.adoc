@@ -92,7 +92,7 @@ We need to add fields to our schema to store both the input text and the sentime
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/sentiment/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field":{
     "name":"name",
     "type":"string",
@@ -102,7 +102,7 @@ curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/schema" -H 'Content-type:application/json' --data-binary '{
+curl 'http://localhost:8983/solr/sentiment/schema' -H 'Content-type:application/json' --data-binary '{
   "add-field":{
     "name":"name_sentiment",
     "type":"string",
@@ -116,12 +116,12 @@ Solr's FileStore provides a distributed file storage mechanism for SolrCloud. Up
 
 [,bash]
 ----
-curl --data-binary @./downloads/sentiment/vocab.txt -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/vocab.txt"
+curl --data-binary @./downloads/sentiment/vocab.txt -X PUT 'http://localhost:8983/api/cluster/filestore/files/models/sentiment/vocab.txt'
 ----
 
 [,bash]
 ----
-curl --data-binary @./downloads/sentiment/model.onnx -X PUT "http://localhost:8983/api/cluster/filestore/files/models/sentiment/model.onnx"
+curl --data-binary @./downloads/sentiment/model.onnx -X PUT 'http://localhost:8983/api/cluster/filestore/files/models/sentiment/model.onnx'
 ----
 
 .Understanding Solr's FileStore
@@ -138,7 +138,7 @@ Now we'll configure the update processor that will analyze sentiment during docu
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/config" -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/solr/sentiment/config' -H 'Content-type:application/json' -d '{
   "add-updateprocessor": {
     "name": "sentimentClassifier",
     "class": "solr.processor.DocumentCategorizerUpdateProcessorFactory",
@@ -180,7 +180,7 @@ Let's index some sample documents to see the sentiment analysis in action:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/update/json?processor=sentimentClassifier&commit=true" -H 'Content-type:application/json' -d '[
+curl 'http://localhost:8983/solr/sentiment/update/json?processor=sentimentClassifier&commit=true' -H 'Content-type:application/json' -d '[
   {
     "id":"good",
     "name": "that was an awesome movie!"
@@ -200,7 +200,7 @@ Query the documents to see the sentiment classifications:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=id:good"
+curl 'http://localhost:8983/solr/sentiment/select?q=id:good'
 ----
 
 You should see the positive review classified as "very good":
@@ -222,7 +222,7 @@ Check the negative review:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=id:bad"
+curl 'http://localhost:8983/solr/sentiment/select?q=id:bad'
 ----
 
 The result should show "very bad" sentiment:
@@ -357,7 +357,7 @@ You can then use this chain by default or explicitly reference it when indexing:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/update/json?update.chain=sentiment-analysis-chain" -d '...'
+curl 'http://localhost:8983/solr/sentiment/update/json?update.chain=sentiment-analysis-chain' -d '...'
 ----
 
 === Practical Applications of Sentiment Analysis in Solr
@@ -368,7 +368,7 @@ Create facets based on sentiment to understand opinion distribution:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.field=name_sentiment"
+curl 'http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.field=name_sentiment'
 ----
 
 ==== Filtering by Sentiment
@@ -377,7 +377,7 @@ Filter search results to show only documents with specific sentiment:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=product_type:electronics&fq=name_sentiment:very%20good"
+curl 'http://localhost:8983/solr/sentiment/select?q=product_type:electronics&fq=name_sentiment:very%20good'
 ----
 
 ==== Boosting by Sentiment
@@ -386,7 +386,7 @@ Boost documents with positive sentiment in search results:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=*:*&defType=edismax&bq=name_sentiment:very%20good^5.0"
+curl 'http://localhost:8983/solr/sentiment/select?q=*:*&defType=edismax&bq=name_sentiment:very%20good^5.0'
 ----
 
 ==== Time-Based Sentiment Analysis
@@ -395,7 +395,7 @@ Analyze sentiment trends over time using time-based queries and facets:
 
 [,bash]
 ----
-curl "http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.range=timestamp&facet.range.start=NOW/DAY-30DAY&facet.range.end=NOW&facet.range.gap=%2B1DAY&facet.pivot=timestamp,name_sentiment"
+curl 'http://localhost:8983/solr/sentiment/select?q=*:*&facet=true&facet.range=timestamp&facet.range.start=NOW/DAY-30DAY&facet.range.end=NOW&facet.range.gap=%2B1DAY&facet.pivot=timestamp,name_sentiment'
 ----
 
 === Performance Considerations

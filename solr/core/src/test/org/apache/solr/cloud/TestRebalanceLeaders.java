@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -155,6 +157,54 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     concentratePropByRestartingJettys();
     sendRebalanceCommand();
     checkPreferredsAreLeaders();
+  }
+
+  @Test
+  public void testRebalanceLeadersClearsAsyncIds() throws Exception {
+    DocCollection docCollection =
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
+    for (Slice slice : docCollection.getSlices()) {
+      Replica nonLeader =
+          slice.getReplicas().stream()
+              .filter(rep -> rep.getName().equals(slice.getLeader().getName()) == false)
+              .findFirst()
+              .orElseThrow();
+      setProp(slice, nonLeader, "preferredLeader");
+    }
+
+    ZkController zkController =
+        cluster.getRandomJetty(random()).getCoreContainer().getZkController();
+    Set<String> idsBefore = asyncIds(zkController);
+
+    int maxWaitSeconds = 60;
+    long start = System.nanoTime();
+    CollectionAdminResponse resp =
+        CollectionAdminRequest.rebalanceLeaders(COLLECTION_NAME)
+            .setMaxWaitSeconds(maxWaitSeconds)
+            .process(cluster.getSolrClient());
+    long elapsedSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start);
+    assertTrue(
+        resp.getResponse().toString(),
+        resp.getResponse().get("Summary").toString().contains("Success"));
+    assertNotNull("No leader change was requested", resp.getResponse().get("successes"));
+    assertTrue(
+        "Waited " + elapsedSeconds + "s, hit maxWaitSeconds", elapsedSeconds < maxWaitSeconds);
+
+    Set<String> leftover = asyncIds(zkController);
+    leftover.removeAll(idsBefore);
+    assertTrue("Async ids not cleared: " + leftover, leftover.isEmpty());
+  }
+
+  private Set<String> asyncIds(ZkController zkController) throws Exception {
+    Optional<DistributedCollectionConfigSetCommandRunner> runner =
+        zkController.getDistributedCommandRunner();
+    if (runner.isPresent()) {
+      return new HashSet<>(runner.get().getTrackedAsyncIds());
+    }
+    Set<String> ids = new HashSet<>(zkController.getOverseerCompletedMap().keys());
+    ids.addAll(zkController.getOverseerFailureMap().keys());
+    ids.addAll(Overseer.getAsyncIdsMap(zkController.getZkClient()).keys());
+    return ids;
   }
 
   // Ensure that the property is set on only one replica per slice when changing a unique property

@@ -70,12 +70,31 @@ public interface ConfigApi {
             @Parameter(description = "Expected request-params znode version")
             int expectedParamsVersion);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
-    // and "queryResponseWriters" here are the external, pluralized names for the internal
-    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
+    // TODO: RH names contain '/' (e.g. /select, /update/json), so they cannot be a @PathParam in
+    // the current design; Keeping filtering via @QueryParam for now.
+    @GET
+    @Path("/requestHandlers")
+    @StoreApiParameters
+    @Operation(
+        summary = "Fetch request handlers (including implicit handler)",
+        tags = {"config"})
+    ConfigInfoResponse getRequestHandler(
+        @QueryParam("componentName")
+            @Parameter(description = "Name of the specific request handler")
+            String component,
+        @QueryParam("expandParams")
+            @DefaultValue("false")
+            @Parameter(description = "Expand request handler useParams and effective parameters")
+            boolean expandParams,
+        @QueryParam("meta")
+            @DefaultValue("false")
+            @Parameter(description = "Include package metadata (_packageinfo_)")
+            boolean meta);
+
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|luceneMatchVersion|initParams|listeners|requestDispatcher|jmx|queryParsers|valueSourceParsers|transformers|updateProcessors|updateRequestProcessorChain|queryConverters|caches|circuitBreaker|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory|indexConfigdeletionPolicy|updateHandlerupdateLog}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a config section",
@@ -84,12 +103,15 @@ public interface ConfigApi {
         @PathParam("component") @Parameter(description = "Name of the config component")
             String component);
 
-    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS ("searchComponents"
-    // and "queryResponseWriters" here are the external, pluralized names for the internal
-    // "searchComponent"/"queryResponseWriter" sections; see GetConfig#toExternalComponentName)
+    // TODO: Keep this regex in sync with GetConfig.MIGRATED_CONFIG_COMPONENTS. Sections without
+    // REQUIRE_NAME in SolrConfig's plugin registration (initParams, listeners,
+    // updateRequestProcessorChain, circuitBreaker) are deliberately excluded here: they're
+    // serialized as a List rather than a name-keyed Map, so by-name lookup isn't meaningful for
+    // them (see GetConfig.filterByComponentName).
+    // Scalars / non-plugin sections (luceneMatchVersion, jmx etc) are also omitted.
     @GET
     @Path(
-        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters}/{componentName}")
+        "/{component:updateHandler|directoryFactory|indexConfig|codecFactory|query|searchComponents|queryResponseWriters|queryParsers|valueSourceParsers|transformers|updateProcessors|queryConverters|caches|expressibles|schemaFactory|restManager|statsCache|recoveryStrategy|indexReaderFactory}/{componentName}")
     @StoreApiParameters
     @Operation(
         summary = "Fetch a single named entry within a config section",

@@ -48,7 +48,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -108,7 +108,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 q=memory&
 fq=inStock:true&
 json.facet={
@@ -161,7 +161,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -237,7 +237,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -269,7 +269,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -316,7 +316,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -448,7 +448,7 @@ Range facet with `ranges`
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -514,7 +514,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/spatialdata/query -d '
+curl 'http://localhost:8983/solr/spatialdata/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -594,7 +594,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "filter": [
@@ -628,7 +628,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "filter": [
@@ -677,7 +677,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -712,7 +712,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -780,7 +780,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
   "query": "*:*",
   "facet": {
@@ -986,7 +986,7 @@ curl -sS 'http://localhost:8983/solr/gettingstarted/update?commit=true' -d '[
 .Example Query
 [source,bash,subs="verbatim,callouts"]
 ----
-curl -sS http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:*
+curl -sS 'http://localhost:8983/solr/gettingstarted/query' -d 'rows=0&q=*:*
 &back=*:*                                  # <1>
 &fore=age:[35 TO *]                        # <2>
 &json.facet={

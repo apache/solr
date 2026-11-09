@@ -178,7 +178,6 @@ apply from: file('gradle/validation/dependency-analyze.gradle.kts')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
-apply from: file('gradle/validation/check-broken-links.gradle')
 
 apply from: file('gradle/validation/solr.config-file-sanity.gradle')
 apply from: file('gradle/validation/dependencies.gradle')
@@ -210,7 +209,6 @@ apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
-apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 

@@ -1,0 +1,10 @@
+title: >
+  Distributed tracing and audit logging now see request parameters sent in a url-encoded POST body,
+  not only those in the URL query string.
+type: changed
+authors:
+  - name: David Smiley
+  - name: Xinyao Zhang
+links:
+  - name: PR#4870
+    url: https://github.com/apache/solr/pull/4870

@@ -1,0 +1,10 @@
+title: >
+  ContentStream and ContentStreamBase moved from SolrJ to solr-core, from org.apache.solr.common.util
+  to org.apache.solr.util. SolrJ no longer contains them; code that used them directly must depend
+  on solr-core and update the import.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18351
+    url: https://issues.apache.org/jira/browse/SOLR-18351

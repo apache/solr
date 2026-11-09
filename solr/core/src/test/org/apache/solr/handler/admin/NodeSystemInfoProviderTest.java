@@ -67,7 +67,7 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
     Assert.assertEquals(h.getCoreContainer().getCoreRootDirectory().toString(), info.coreRoot);
     Assert.assertNotNull(info.lucene);
     Assert.assertNotNull(info.lucene.solrImplVersion);
-    Assert.assertEquals(info.lucene.solrImplVersion, SolrVersion.LATEST.getPrereleaseVersion());
+    Assert.assertEquals(info.lucene.solrImplVersion, SolrVersion.LATEST_STRING);
     Assert.assertNotNull(info.lucene.solrSpecVersion);
     Assert.assertEquals(info.lucene.solrSpecVersion, SolrVersion.LATEST_STRING);
     Assert.assertNotNull(info.lucene.luceneImplVersion);

@@ -767,7 +767,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         TopDocs topDocs = topDocsCollector.topDocs();
         ScoreDoc[] scoreDocs = topDocs.scoreDocs;
         if (scoreDocs.length > 0) {
-          if (returnFields.wantsScore() && sort != null) {
+          if (returnFields.returnsScore() && sort != null) {
             TopFieldCollector.populateScores(scoreDocs, searcher, query);
           }
           int[] docs = new int[scoreDocs.length];

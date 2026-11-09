@@ -46,7 +46,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fields
+curl 'http://localhost:8983/solr/gettingstarted/schema/fields'
 ----
 ====
 
@@ -55,7 +55,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/gettingstarted/schema/fields
+curl 'http://localhost:8983/api/collections/gettingstarted/schema/fields'
 ----
 ====
 ======
@@ -255,7 +255,7 @@ For example, adding a CSV document will cause unknown fields to be added, with f
 
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update?commit=true&wt=xml" -H "Content-type:application/csv" -d '
+curl 'http://localhost:8983/solr/gettingstarted/update?commit=true&wt=xml' -H "Content-type:application/csv" -d '
 id,Artist,Album,Released,Rating,FromDistributor,Sold
 44C,Old Shews,Mead for Walking,1988-08-13,0.01,14,0'
 ----
@@ -278,7 +278,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fields
+curl 'http://localhost:8983/solr/gettingstarted/schema/fields'
 ----
 ====
 
@@ -287,7 +287,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/gettingstarted/schema/fields
+curl 'http://localhost:8983/api/collections/gettingstarted/schema/fields'
 ----
 ====
 ======
@@ -338,7 +338,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/copyfields
+curl 'http://localhost:8983/solr/gettingstarted/schema/copyfields'
 ----
 ====
 
@@ -347,7 +347,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/gettingstarted/schema/copyfields
+curl 'http://localhost:8983/api/collections/gettingstarted/schema/copyfields'
 ----
 ====
 ======
@@ -386,7 +386,7 @@ For example, after adding the above document, the "```Sold```" field has the fie
 
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update?commit=true&wt=xml" -H "Content-type:application/csv" -d '
+curl 'http://localhost:8983/solr/gettingstarted/update?commit=true&wt=xml' -H "Content-type:application/csv" -d '
 id,Description,Sold
 19F,Cassettes by the pound,4.93'
 ----

@@ -156,6 +156,16 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     return namedList;
   }
 
+  /** The analyzer used to analyze index-time values of the given field type. */
+  protected Analyzer getIndexAnalyzer(FieldType fieldType) {
+    return fieldType.getIndexAnalyzer();
+  }
+
+  /** The analyzer used to analyze query-time values of the given field type. */
+  protected Analyzer getQueryAnalyzer(FieldType fieldType) {
+    return fieldType.getQueryAnalyzer();
+  }
+
   /**
    * Analyzes the given text using the given analyzer and returns the produced tokens.
    *
