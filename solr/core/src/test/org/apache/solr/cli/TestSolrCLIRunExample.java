@@ -762,7 +762,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     assertEquals(
         "Unsupported example "
             + unsupportedExample
-            + "! Please choose one of: cloud, schemaless, techproducts, or films",
+            + "! Please choose one of: cloud, secure, schemaless, techproducts, or films",
         exception.getMessage());
   }
 
