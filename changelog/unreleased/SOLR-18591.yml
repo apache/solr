@@ -1,0 +1,7 @@
+title: "Distributed search with shards.tolerant no longer double-counts shard cpuTime when a shard fails."
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-18591
+    url: https://issues.apache.org/jira/browse/SOLR-18591

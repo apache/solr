@@ -1,0 +1,9 @@
+title: >
+  SolrJ now offers a `SystemApi.GetThreadDump` SolrRequest class for fetching
+  thread dumps from a single Solr node through the JAX-RS `/api/node/threads` API.
+type: added
+authors:
+  - name: Yash Goswami
+links:
+  - name: SOLR-16458
+    url: https://issues.apache.org/jira/browse/SOLR-16458

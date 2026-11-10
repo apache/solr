@@ -77,6 +77,11 @@ public class DelegatingBackupRepository extends AbstractBackupRepository {
   }
 
   @Override
+  public boolean supportsEmptyDirectories() {
+    return delegate.supportsEmptyDirectories();
+  }
+
+  @Override
   public PathType getPathType(URI path) throws IOException {
     return delegate.getPathType(path);
   }

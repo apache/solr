@@ -22,12 +22,16 @@ limitations under the License.
 
     <div id="actions" class="actions clearfix">
 
-      <button id="add" class="action" ng-click="showAddCore()"><span>Add Core</span></button>
+      <p id="remote-core-admin-note" class="clearfix note" ng-show="viewingRemoteNode">
+        <span>Showing cores from the selected remote node. Add, unload, rename, swap, and reload stay on this node — switch the Node picker back to the local node to mutate cores.</span>
+      </p>
+
+      <button id="add" class="action" ng-click="showAddCore()" ng-disabled="viewingRemoteNode"><span>Add Core</span></button>
       <span ng-show="hasCores">
-      <button id="unload" class="warn requires-core" ng-click="unloadCore()"><span>Unload</span></button>
-      <button id="rename" class="action requires-core" ng-click="showRenameCore()"><span>Rename</span></button>
-      <button id="swap" class="action requires-core" ng-click="showSwapCores()"><span>Swap</span></button>
-      <button id="reload" class="requires-core" ng-click="reloadCore()"
+      <button id="unload" class="warn requires-core" ng-click="unloadCore()" ng-disabled="viewingRemoteNode"><span>Unload</span></button>
+      <button id="rename" class="action requires-core" ng-click="showRenameCore()" ng-disabled="viewingRemoteNode"><span>Rename</span></button>
+      <button id="swap" class="action requires-core" ng-click="showSwapCores()" ng-disabled="viewingRemoteNode"><span>Swap</span></button>
+      <button id="reload" class="requires-core" ng-click="reloadCore()" ng-disabled="viewingRemoteNode"
          ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
       </span>
       <div class="action add" data-rel="add" ng-show="showAdd" style="display:block;left:0px;">
@@ -49,7 +53,7 @@ limitations under the License.
           <p class="clearfix"><label for="add_schema">schema:</label>
           <input type="text" name="schema" id="add_schema" ng-model="newCore.schema"></p>
 
-          <div class="cloud" ng-show="isCloud">
+          <div class="cloud" ng-show="isCloudEnabled">
 
             <p class="clearfix"><label for="add_collection">collection:</label>
             <input type="text" name="collection" id="add_collection" ng-model="newCore.collection"></p>

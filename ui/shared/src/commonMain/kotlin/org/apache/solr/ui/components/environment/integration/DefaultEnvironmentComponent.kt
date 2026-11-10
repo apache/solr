@@ -17,40 +17,45 @@
 
 package org.apache.solr.ui.components.environment.integration
 
-import com.arkivanov.mvikotlin.core.instancekeeper.getStore
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import org.apache.solr.ui.components.environment.EnvironmentComponent
-import org.apache.solr.ui.components.environment.store.EnvironmentStoreProvider
-import org.apache.solr.ui.utils.AppComponentContext
-import org.apache.solr.ui.utils.coroutineScope
-import org.apache.solr.ui.utils.map
+import org.apache.solr.ui.components.environment.data.HttpEnvironmentRepository
+import org.apache.solr.ui.components.environment.domain.DefaultLoadJavaPropertiesUseCase
+import org.apache.solr.ui.components.environment.domain.DefaultLoadSystemDataUseCase
+import org.apache.solr.ui.components.environment.domain.LoadJavaPropertiesUseCase
+import org.apache.solr.ui.components.environment.domain.LoadSystemDataUseCase
+import org.apache.solr.ui.components.environment.repository.EnvironmentRepository
+import org.apache.solr.ui.components.environment.viewmodel.EnvironmentViewModel
+import org.apache.solr.ui.utils.AppDispatchers
+import org.apache.solr.ui.utils.platformDispatchers
 
 /**
  * Default implementation of the [EnvironmentComponent].
+ *
+ * This implementation is using HTTP for environment operations.
+ *
+ * @param httpClient The pre-configured HTTP client to use for environment operations.
  */
 class DefaultEnvironmentComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
     httpClient: HttpClient,
-) : EnvironmentComponent,
-    AppComponentContext by componentContext {
+    private val dispatchers: AppDispatchers = platformDispatchers(),
+) : EnvironmentComponent {
 
-    private val mainScope = coroutineScope(SupervisorJob() + mainContext)
-    private val ioScope = coroutineScope(SupervisorJob() + ioContext)
-
-    private val store = instanceKeeper.getStore {
-        EnvironmentStoreProvider(
-            storeFactory = storeFactory,
-            client = HttpEnvironmentStoreClient(httpClient),
-            mainContext = mainScope.coroutineContext,
-            ioContext = ioScope.coroutineContext,
-        ).provide()
+    override val environmentRepository: EnvironmentRepository by lazy {
+        HttpEnvironmentRepository(httpClient)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override val model = store.stateFlow.map(mainScope, environmentStateToModel)
+    override val loadSystemDataUseCase: LoadSystemDataUseCase by lazy {
+        DefaultLoadSystemDataUseCase(environmentRepository)
+    }
+
+    override val loadJavaPropertiesUseCase: LoadJavaPropertiesUseCase by lazy {
+        DefaultLoadJavaPropertiesUseCase(environmentRepository)
+    }
+
+    override fun createEnvironmentViewModel(): EnvironmentViewModel = EnvironmentViewModel(
+        loadSystemDataUseCase = loadSystemDataUseCase,
+        loadJavaPropertiesUseCase = loadJavaPropertiesUseCase,
+        dispatchers = dispatchers,
+    )
 }

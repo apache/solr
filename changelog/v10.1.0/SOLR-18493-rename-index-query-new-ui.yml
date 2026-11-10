@@ -1,0 +1,7 @@
+title: Rename Index & Query section in new admin UI
+type: changed
+authors:
+  - name: Jane Sandberg
+links:
+  - name: SOLR-18493
+    url: https://issues.apache.org/jira/browse/SOLR-18493

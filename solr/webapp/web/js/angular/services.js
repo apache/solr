@@ -17,6 +17,10 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
+// The generated v2 client caches GET responses by default. Set this here, once, since
+// ApiClient.instance is shared across every *V2 factory below.
+solrApi.ApiClient.instance.cache = false;
+
 solrAdminServices.factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
@@ -87,6 +91,158 @@ solrAdminServices.factory('Metrics',
         });
       }
       return {handle: handle};
+    }])
+.factory('NodeTarget',
+    ['$rootScope', function($rootScope) {
+      var STORAGE_KEY = 'adminui.selectedNode';
+      var state = {
+        localNode: null,
+        selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
+        liveNodes: [],
+        ready: false
+      };
+
+      function isRemote() {
+        return !!(state.selectedNode && state.localNode && state.selectedNode !== state.localNode);
+      }
+
+      function persistSelected() {
+        if (state.selectedNode) {
+          sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      function isNodeScopedUrl(url) {
+        url = url || '';
+        return /\/api\/node\/(system|threads|properties|logging\/messages)(?:\?|$)/.test(url)
+            || /\/api\/cores(?:\?|$)/.test(url);
+      }
+
+      var pendingTarget = null;
+
+      function withNodes(opts) {
+        opts = opts || {};
+        if (isRemote()) {
+          pendingTarget = state.selectedNode;
+        }
+        return opts;
+      }
+
+      function unwrap(data, response) {
+        if (!isRemote()) {
+          return data;
+        }
+        var body = (response && response.body) || data || {};
+        if (state.selectedNode && body[state.selectedNode]) {
+          return body[state.selectedNode];
+        }
+        return data;
+      }
+
+      function needsSelection() {
+        return state.liveNodes.length > 1 && !state.selectedNode;
+      }
+
+      function publish() {
+        $rootScope.localNode = state.localNode;
+        $rootScope.selectedNode = state.selectedNode;
+        $rootScope.liveNodes = state.liveNodes;
+        $rootScope.viewingRemoteNode = isRemote();
+        $rootScope.needsNodeSelection = needsSelection();
+      }
+
+      function markReady() {
+        if (!state.ready) {
+          state.ready = true;
+          publish();
+        }
+      }
+
+      function whenReady(fn, scope) {
+        if (state.ready) {
+          fn();
+          return angular.noop;
+        }
+        var unwatch = $rootScope.$watch(function() { return state.ready; }, function(ready) {
+          if (!ready) {
+            return;
+          }
+          unwatch();
+          fn();
+        });
+        if (scope) {
+          scope.$on('$destroy', unwatch);
+        }
+        return unwatch;
+      }
+
+      function setLocalNode(nodeName) {
+        state.localNode = nodeName;
+        publish();
+      }
+
+      function setLiveNodes(nodes) {
+        state.liveNodes = (nodes || []).slice().sort();
+        if (state.liveNodes.length <= 1) {
+          state.selectedNode = state.localNode || state.liveNodes[0] || null;
+          persistSelected();
+        } else if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+          state.selectedNode = null;
+          persistSelected();
+        }
+        publish();
+        markReady();
+      }
+
+      function selectNode(nodeName) {
+        if (!nodeName || nodeName === state.selectedNode) {
+          return false;
+        }
+        state.selectedNode = nodeName;
+        persistSelected();
+        publish();
+        return true;
+      }
+
+      function clear() {
+        state.localNode = null;
+        state.selectedNode = null;
+        state.liveNodes = [];
+        persistSelected();
+        publish();
+        markReady();
+      }
+
+      var plugins = solrApi.ApiClient.instance.plugins || [];
+      plugins.push(function(request) {
+        var target = pendingTarget;
+        pendingTarget = null;
+        if (!target) {
+          return request;
+        }
+        var method = (request.method || 'GET').toUpperCase();
+        if (method === 'GET' && isNodeScopedUrl(request.url)) {
+          request.set('X-Solr-targetNode', target);
+        }
+        return request;
+      });
+      solrApi.ApiClient.instance.plugins = plugins;
+
+      return {
+        state: state,
+        isRemote: isRemote,
+        needsSelection: needsSelection,
+        withNodes: withNodes,
+        unwrap: unwrap,
+        setLocalNode: setLocalNode,
+        setLiveNodes: setLiveNodes,
+        selectNode: selectNode,
+        clear: clear,
+        markReady: markReady,
+        whenReady: whenReady
+      };
     }])
 .factory('CollectionsV2',
     function() {
@@ -160,16 +316,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.SchemaApi();
     })
-.factory('Collections',
-  ['$resource', function ($resource) {
-    // v2 ClusterAPI (/api/cluster) delegates straight through to the same v1 CollectionsHandler
-    // that v1's CLUSTERSTATUS action used, so the response shape is byte-identical -- no
-    // generated solrApi client class exists for it (old-style @EndPoint API, predates the
-    // OpenAPI-based v2 framework), so this stays a plain $resource, like Threads/ParamSet.
-    return $resource('/api/cluster', {'wt':'json', '_':Date.now()}, {
-      "status": {}
-    });
-  }])
+.factory('ConfigV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigApi();
+    })
 .factory('ConfigSetFiles',
  ['$http', function ($http) {
     // Fetches a single file from a configset via V2 /api/configsets/{name}/files/{path}.
@@ -187,15 +339,6 @@ solrAdminServices.factory('Metrics',
       }
     };
  }])
-.factory('Logging',
-  ['$resource', function($resource) {
-    // This v1 factory only covers "setLevel", which needs the "nodes=all" broadcast-to-every-node
-    // behavior that the v2 NodeLoggingApis endpoint doesn't support yet (see SOLR-16738). Retire
-    // this factory once setLevel moves to LoggingV2.
-    return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "setLevel": {params: {nodes:'all'}}
-      });
-  }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
     // Tree browsing (formerly "simple"/"detail") moved to ZookeeperReadV2; this factory now only
@@ -242,14 +385,12 @@ solrAdminServices.factory('Metrics',
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.NodeApi();
     })
-.factory('Threads',
-  ['$resource', function($resource) {
-    // v2 NodeThreadsAPI (/api/node/threads) still just delegates straight through to the same v1
-    // ThreadDumpHandler, so the response shape is byte-identical -- no generated solrApi client
-    // class exists for it (it predates the OpenAPI-based v2 API framework), so this stays a plain
-    // $resource, like Security and (partially) SchemaDesigner.
-    return $resource('/api/node/threads', {'wt':'json', '_':Date.now()});
-  }])
+.factory('ReplicationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicationApi();
+    })
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
@@ -271,20 +412,23 @@ solrAdminServices.factory('Metrics',
       "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
     });
   }])
+.factory('ParamSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ParamSetsApi();
+    })
 .factory('ParamSet',
   ['$resource', function($resource) {
-    // v2 GetConfigAPI/ModifyParamSetAPI (/api/(cores|collections)/:core/config/params) still
-    // delegate straight through to the same v1 SolrConfigHandler, so the response shape is
-    // byte-identical -- no generated solrApi client class exists for it (old-style @EndPoint API,
-    // predates the OpenAPI-based v2 framework), so this stays a plain $resource, like Threads.
+    // Creating, updating and deleting paramsets is still on ModifyParamSetAPI (/config/params) --
+    // reading them goes through ParamSetsV2 instead (see paramsets.js, query.js).
     // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
     // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
     // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
     // and there's no such thing as a "collection" there anyway. Callers must pass "indexType" as
     // "collections" or "cores" (see paramsets.js, driven by $scope.isCloudEnabled).
-    return $resource('/api/:indexType/:core/config/params/:name', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
-      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
-      "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
+    return $resource('/api/:indexType/:core/config/params', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
+      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"}
     });
   }])
 .service('FileUpload', function ($http) {
@@ -365,33 +509,42 @@ solrAdminServices.factory('Metrics',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
-           "query": {
-             method: "GET",
-             transformResponse: function (data) {
-               return {data: data}
-             },
-             headers: {doNotIntercept: "true"}
-           }
-       });
-       resource.url = function(params) {
+       var toQueryString = function(params) {
            var qs = [];
-           for (key in params) {
+           for (var key in params) {
                if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
                        qs.push(key + "=" + encodeURIComponent(params[key][i]));
                    }
                }
            }
-           return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
+           return qs.sort().join("&");
+       }
+       var wrapRawResponse = function(data) {
+           return {data: data}
+       }
+       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
+           "query": {
+             method: "GET",
+             transformResponse: wrapRawResponse,
+             headers: {doNotIntercept: "true"}
+           },
+           // Same request as "query" above, but as a form-encoded POST body instead of a query
+           // string - for request params (e.g. a streaming expression) too large for a URL/header.
+           "queryPost": {
+             method: "POST",
+             transformRequest: toQueryString,
+             transformResponse: wrapRawResponse,
+             headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               doNotIntercept: "true"
+             }
+           }
+       });
+       resource.url = function(params) {
+           return "" + params.core + "/" + params.handler + "?" + toQueryString(params);
        }
        return resource;
-}])
-.factory('Config',
-   ['$resource', function($resource) {
-     return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"}
-     })
 }])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {
@@ -401,7 +554,7 @@ solrAdminServices.factory('Metrics',
      // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
      // rather than a formal parameter) and query() takes no query params at all (the server
      // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
-     // Threads/Collections/ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
+     // ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
      return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},

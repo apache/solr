@@ -17,13 +17,13 @@
 package org.apache.solr.handler.loader;
 
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.ContentStream;
 
 /**
- * Load a {@link org.apache.solr.common.util.ContentStream} into Solr
+ * Load a {@link org.apache.solr.util.ContentStream} into Solr
  *
  * <p>This should be thread safe and can be called from multiple threads
  */
@@ -43,7 +43,7 @@ public abstract class ContentStreamLoader {
    *
    * @param req The input {@link org.apache.solr.request.SolrQueryRequest}
    * @param rsp The response, in case the Loader wishes to add anything
-   * @param stream The {@link org.apache.solr.common.util.ContentStream} to add
+   * @param stream The {@link org.apache.solr.util.ContentStream} to add
    * @param processor The {@link UpdateRequestProcessor} to use
    */
   public abstract void load(

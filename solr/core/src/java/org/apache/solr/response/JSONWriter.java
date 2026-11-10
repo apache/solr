@@ -94,7 +94,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
 
     boolean first = true;
     for (String fname : doc.getFieldNames()) {
-      if (returnFields != null && !returnFields.wantsField(fname)) {
+      if (returnFields != null && !returnFields.returnsField(fname)) {
         continue;
       }
 

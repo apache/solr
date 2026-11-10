@@ -51,14 +51,16 @@ Set<String> loadGitTrackedFiles() {
   rootProject.ext.ratGitIndexLoaded = true
   rootProject.ext.ratGitTrackedFiles = null
 
+  // .git is a file (not a directory) in a git worktree
   def dotGit = new File(rootProject.projectDir, ".git")
-  if (!dotGit.isDirectory()) {
+  if (!dotGit.exists()) {
     return null // not a git repository
   }
 
   def repository = null
   try {
     repository = new FileRepositoryBuilder()
+        .findGitDir(rootProject.projectDir)
         .setWorkTree(rootProject.projectDir)
         .setMustExist(true)
         .build()
@@ -117,13 +119,16 @@ allprojects {
 
         // The following are excluded from the source release, thus no header needed
         exclude "dev-docs"
+        exclude "dev-tools"
         exclude "**/AGENTS.md"
         exclude "**/.*" // e.g. .gradle, .github, .gitignore, etc.
+        exclude "**/.*/**" // contents nested inside dot-directories, e.g. .gradle/**
       } else {
         // Source release (no git): scan everything, exclude generated/ignored paths manually.
         include "**"
 
-        exclude ".gradle" // gradle will create this dir
+        exclude "**/.gradle" // gradle will create this dir (possibly nested, e.g. in included builds)
+        exclude "**/.gradle/**"
       }
 
       exclude project.layout.buildDirectory.get().asFile.name
@@ -162,7 +167,6 @@ allprojects {
           exclude "build-tools/*/build"
           // Non-subproject build output.
           exclude "buildSrc/build"
-          exclude "dev-tools/solr-missing-doclet/build"
           // IDE project files.
           exclude "gradle/ide/eclipse"
           exclude "gradle/validation/ecj-lint/ecj.javadocs.prefs"
@@ -174,9 +178,7 @@ allprojects {
           // Kotlin JS dependency store.
           exclude "kotlin-js-store"
 
-          exclude "dev-tools/scripts/cloud.sh"
-          exclude "dev-tools/scripts/README.md"
-          exclude "dev-tools/scripts/create_line_file_docs.py"
+          exclude "dev-tools"
 
           // Exclude new CHANGELOG and version-summary for each release
           exclude "CHANGELOG.md"

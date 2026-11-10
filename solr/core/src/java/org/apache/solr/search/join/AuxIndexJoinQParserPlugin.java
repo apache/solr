@@ -408,9 +408,7 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
         }
         final String fromField = getParam("from");
         final String toField = getParam("to");
-        if (fromField == null || toField == null) {
-          throw new SyntaxError("auxIndexJoin query parser requires 'from' and 'to' local params");
-        }
+        ScoreJoinQParserPlugin.requireFromAndTo(fromField, toField);
         final String fromIndex = localParams.get("fromIndex");
         final String v = localParams.get(CommonParams.VALUE);
         final String myCore = req.getCore().getCoreDescriptor().getName();

@@ -17,11 +17,10 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -30,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 
 /**
@@ -68,7 +68,9 @@ public class RemoteSolrBackend implements SolrBackend {
   public void uploadConfigSet(Path configDir, String name) throws SolrServerException, IOException {
     Path tempZip = Files.createTempFile("configset-", ".zip");
     try {
-      zipDirectory(configDir, tempZip);
+      try (OutputStream out = Files.newOutputStream(tempZip)) {
+        Utils.zipDirectory(configDir, out);
+      }
       new ConfigSetAdminRequest.Upload()
           .setConfigSetName(name)
           .setUploadFile(tempZip, "application/zip")
@@ -81,24 +83,6 @@ public class RemoteSolrBackend implements SolrBackend {
   @Override
   public boolean hasConfigSet(String name) throws SolrServerException, IOException {
     return new ConfigSetAdminRequest.List().process(adminClient).getConfigSets().contains(name);
-  }
-
-  /** Packages {@code sourceDir} contents into a zip file. */
-  private static void zipDirectory(Path sourceDir, Path targetZip) throws IOException {
-    try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(targetZip))) {
-      Files.walk(sourceDir)
-          .filter(Files::isRegularFile)
-          .forEach(
-              file -> {
-                try {
-                  zos.putNextEntry(new ZipEntry(sourceDir.relativize(file).toString()));
-                  Files.copy(file, zos);
-                  zos.closeEntry();
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
-    }
   }
 
   @Override
