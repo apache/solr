@@ -60,7 +60,7 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
-  implementation libs.commonscli.commonscli
+
   implementation libs.opentelemetry.api
   implementation(libs.opentelemetry.exporter.prometheus) {
     transitive = false // most things don't want or already have

@@ -57,7 +57,7 @@ cbor_data = cbor2.dumps(json_data)
 
 # Set the endpoint URL
 # ensure that the collection 'coll1' is already created
-url = "http://localhost:8983/solr/coll1/update/cbor?commit=true"
+url = "http://localhost:8983/solr/{collectionName}/update/cbor?commit=true"
 
 # Send a POST request with CBOR data
 response = requests.post(url, data=cbor_data, headers={"Content-Type": "application/cbor"})
@@ -122,7 +122,7 @@ const jsonData = [
   const cborData = cbor.encode(jsonData);
 
   // Set the endpoint URL
-  const url = "http://localhost:8983/solr/coll1/update/cbor?commit=true"
+  const url = "http://localhost:8983/solr/{collectionName}/update/cbor?commit=true"
 
   try {
     // Send a POST request with CBOR data

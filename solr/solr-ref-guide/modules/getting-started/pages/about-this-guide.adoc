@@ -73,6 +73,9 @@ As of the 7.2 version of this Guide, these examples are not yet complete - more 
 
 The section xref:configuration-guide:v2-api.adoc[] provides more information about how to work with the new API structure, including how to disable it if you choose to do so.
 
+In URLs and paths, a name in curly braces, such as `\{collectionName}` or `\{coreName}`, stands for a value you replace with your own.
+The names are the ones the V2 API uses for its path parameters.
+
 All APIs return a response header that includes the status of the request and the time to process it.
 Some APIs will also include the parameters used for the request.
 Many of the examples in this Guide omit this header information, which you can do locally by adding the parameter `omitHeader=true` to any request.

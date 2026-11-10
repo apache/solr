@@ -247,6 +247,32 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     assertJDelete(endpoint + "/cheerful/joyful", "/error/code==404");
   }
 
+  @Test
+  public void testUpstreamTokenTypeIsPreserved() throws Exception {
+    String endpoint = "/schema/analysis/synonyms/englishgraph";
+
+    List<String> equivGroup = Arrays.asList("funny", "entertaining", "whimsical");
+    assertJPut(endpoint, toJSONString(equivGroup), "/responseHeader/status==0");
+
+    assertJQ(endpoint + "/funny", "/funny==['entertaining','funny','whimsical']");
+
+    restTestHarness.reload();
+
+    String analysisUrl = "/analysis/field?analysis.fieldtype=managed_graph_en&analysis.query=funny";
+    String synFilter = "//arr[contains(@name,'SynonymGraphFilter')]";
+    assertQ(
+        analysisUrl,
+        "count("
+            + synFilter
+            + "/lst[str[@name='text'][.='funny']]/str[@name='type'][.='<ALPHANUM>']) = 1",
+        "count("
+            + synFilter
+            + "/lst[str[@name='text'][.='entertaining']]/str[@name='type'][.='SYNONYM']) = 1",
+        "count("
+            + synFilter
+            + "/lst[str[@name='text'][.='whimsical']]/str[@name='type'][.='SYNONYM']) = 1");
+  }
+
   /** Can we add and remove stopwords with umlauts */
   @Test
   public void testCanHandleDecodingAndEncodingForSynonyms() throws Exception {

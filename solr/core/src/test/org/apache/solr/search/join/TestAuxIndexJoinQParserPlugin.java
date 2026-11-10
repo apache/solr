@@ -119,12 +119,15 @@ public class TestAuxIndexJoinQParserPlugin extends SolrTestCase {
 
   @Test
   public void testMissingLocalParams() {
+    assertMissingJoinParam("{!auxIndexJoin to=dept_id_s}*:*", "from");
+    assertMissingJoinParam("{!auxIndexJoin from=dept_s}*:*", "to");
+  }
+
+  private void assertMissingJoinParam(String query, String missing) {
     SolrException e =
-        expectThrows(
-            SolrException.class,
-            () -> solrRule.getSolrClient().query(params("q", "{!auxIndexJoin to=dept_id_s}*:*")));
+        expectThrows(SolrException.class, () -> solrRule.getSolrClient().query(params("q", query)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertTrue(e.getMessage(), e.getMessage().contains("requires"));
+    assertTrue(e.getMessage(), e.getMessage().contains("missing required '" + missing + "'"));
   }
 
   @Test

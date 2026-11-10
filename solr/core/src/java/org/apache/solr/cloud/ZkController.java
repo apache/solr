@@ -32,6 +32,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
@@ -124,6 +126,7 @@ import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AllowListZkHostChecker;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.AddressUtils;
@@ -210,6 +213,8 @@ public class ZkController implements Closeable {
   private SolrCloudManager cloudManager;
 
   private CloudSolrClient cloudSolrClient;
+
+  private volatile InternalSolrClientCache internalSolrClientCache;
 
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
@@ -637,7 +642,7 @@ public class ZkController implements Closeable {
       SolrVersion ourVersion = SolrVersion.LATEST;
       SolrVersion clusterVersion = lowestVersion.get();
 
-      if (ourVersion.lessThan(clusterVersion)) {
+      if (ourVersion.withoutPrerelease().lessThan(clusterVersion.withoutPrerelease())) {
         log.warn(
             "Our Solr version {} is older than cluster version {}", ourVersion, clusterVersion);
 
@@ -675,6 +680,22 @@ public class ZkController implements Closeable {
 
   public CloudSolrClient getSolrClient() {
     return getSolrCloudManager().getSolrClient();
+  }
+
+  public SolrClientCache getSolrClientCache() {
+    if (internalSolrClientCache == null) {
+      synchronized (this) {
+        if (internalSolrClientCache == null) {
+          var connection = CloudSolrClient.CloudSolrClientConnection.parse(zkServerAddress);
+          internalSolrClientCache =
+              new InternalSolrClientCache(
+                  (HttpJettySolrClient) cc.getDefaultHttpSolrClient(),
+                  connection,
+                  this::validateSolrConnection);
+        }
+      }
+    }
+    return internalSolrClientCache;
   }
 
   public int getLeaderVoteWait() {
@@ -876,6 +897,7 @@ public class ZkController implements Closeable {
 
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(internalSolrClientCache));
 
       try {
         try {
@@ -1022,6 +1044,26 @@ public class ZkController implements Closeable {
     return allowListZkHostChecker;
   }
 
+  /**
+   * Validates a connection to a SolrCloud cluster: ZooKeeper via {@link
+   * #getAllowListZkHostChecker()}, HTTP via {@link AllowListUrlChecker} (live nodes of this cluster
+   * are allowed).
+   *
+   * @throws SolrException FORBIDDEN if not allowed
+   */
+  public void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
+    if (solrConnection.isZookeeper()) {
+      allowListZkHostChecker.checkAllowList(solrConnection.toString());
+    } else {
+      try {
+        cc.getAllowListUrlChecker().checkAllowList(solrConnection.quorumItems(), getClusterState());
+      } catch (MalformedURLException e) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid URL in solrConnection: " + solrConnection, e);
+      }
+    }
+  }
+
   boolean isClosed() {
     return isClosed;
   }
@@ -1129,39 +1171,69 @@ public class ZkController implements Closeable {
     }
   }
 
-  private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
+  /**
+   * Waits for any ephemeral znodes left by a previous process with this node name to disappear.
+   *
+   * <p>Covers both the {@code /live_nodes} entry and this node's entries under any {@code
+   * /node_roles/<role>/<mode>}. Throws if any are still present after twice the ZK session timeout.
+   *
+   * @throws SolrException if ephemeral nodes were not all removed by the end of the waiting period
+   */
+  // package-private for testing
+  void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
     String nodeName = getNodeName();
-    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
 
-    if (!zkClient.exists(nodePath)) {
+    List<String> candidatePaths = new ArrayList<>();
+    candidatePaths.add(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
+    for (NodeRoles.Role role : NodeRoles.Role.values()) {
+      for (String mode : role.supportedModes()) {
+        candidatePaths.add(NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName);
+      }
+    }
+
+    // Set a deletion watch on each znode that exists; the latch counts down as each is deleted
+    final List<String> watchedPaths = new ArrayList<>();
+    final List<CountDownLatch> latches = new ArrayList<>();
+    for (String path : candidatePaths) {
+      if (!zkClient.exists(path)) {
+        continue;
+      }
+      final CountDownLatch deletedLatch = new CountDownLatch(1);
+      Stat stat =
+          zkClient.exists(
+              path,
+              event -> {
+                if (Watcher.Event.EventType.None.equals(event.getType())) {
+                  return;
+                }
+                if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
+                  deletedLatch.countDown();
+                }
+              });
+      if (stat == null) {
+        // znode suddenly disappeared but that's okay
+        continue;
+      }
+      watchedPaths.add(path);
+      latches.add(deletedLatch);
+    }
+
+    if (watchedPaths.isEmpty()) {
       return;
     }
 
-    final CountDownLatch deletedLatch = new CountDownLatch(1);
-    Stat stat =
-        zkClient.exists(
-            nodePath,
-            event -> {
-              if (Watcher.Event.EventType.None.equals(event.getType())) {
-                return;
-              }
-              if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
-                deletedLatch.countDown();
-              }
-            });
-
-    if (stat == null) {
-      // znode suddenly disappeared but that's okay
-      return;
-    }
-
-    boolean deleted =
-        deletedLatch.await(zkClient.getZkSessionTimeout() * 2L, TimeUnit.MILLISECONDS);
-    if (!deleted) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR,
-          "A previous ephemeral live node still exists. "
-              + "Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
+    // A single overall deadline, shared by all of the znodes
+    final long deadlineNanos =
+        System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(zkClient.getZkSessionTimeout() * 2L);
+    for (int i = 0; i < latches.size(); i++) {
+      long remainingNanos = deadlineNanos - System.nanoTime();
+      if (!latches.get(i).await(Math.max(remainingNanos, 0), TimeUnit.NANOSECONDS)) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "An ephemeral node from a previous process representing this Solr instance still exists: "
+                + watchedPaths.get(i)
+                + ". Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
+      }
     }
   }
 
@@ -2466,6 +2538,24 @@ public class ZkController implements Closeable {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Removes the stored response of a completed or failed async operation and releases its asyncId,
+   * in both Overseer and distributed modes. An asyncId with no stored response is left claimed,
+   * since its task may still be running or pending.
+   *
+   * @return True if a stored response was found and removed.
+   */
+  public boolean removeStoredAsyncResponse(String asyncId) throws Exception {
+    if (distributedCommandRunner.isPresent()) {
+      return distributedCommandRunner.get().deleteSingleAsyncId(asyncId);
+    }
+    if (overseerCompletedMap.remove(asyncId) || overseerFailureMap.remove(asyncId)) {
+      clearAsyncId(asyncId);
+      return true;
+    }
+    return false;
   }
 
   public Overseer getOverseer() {

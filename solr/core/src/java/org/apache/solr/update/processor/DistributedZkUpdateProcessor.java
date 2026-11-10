@@ -1369,7 +1369,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   /** If necessary, include in the response the achieved replication factor */
-  @SuppressWarnings("deprecation")
   private void handleReplicationFactor() {
     if (leaderReplicationTracker != null || rollupReplicationTracker != null) {
       int achievedRf = Integer.MAX_VALUE;

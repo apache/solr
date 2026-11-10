@@ -28,7 +28,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.CSVLoader;
 import org.apache.solr.handler.loader.CborLoader;
@@ -41,6 +40,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.ContentStream;
 
 /** UpdateHandler that uses content-type to pick the right Loader */
 public class UpdateRequestHandler extends ContentStreamHandlerBase

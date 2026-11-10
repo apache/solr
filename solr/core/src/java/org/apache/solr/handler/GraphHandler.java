@@ -75,9 +75,9 @@ public class GraphHandler extends RequestHandlerBase
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
     this.coreName = core.getName();
-    this.solrClientCache = coreContainer.getSolrClientCache();
 
     if (coreContainer.isZooKeeperAware()) {
+      this.solrClientCache = coreContainer.getZkController().getSolrClientCache();
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);

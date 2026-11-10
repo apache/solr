@@ -40,7 +40,6 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -69,7 +68,6 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -95,6 +93,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ExecutorUtil.ExecutorTerminationTimeoutException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -134,6 +133,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.pkg.ClusterPackage;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -281,8 +281,6 @@ public class CoreContainer {
 
   protected MetricsHandler metricsHandler;
 
-  private volatile SolrClientCache solrClientCache;
-
   private volatile Map<String, SolrCache<?, ?>> caches;
 
   private final ObjectCache objectCache = new ObjectCache();
@@ -405,12 +403,13 @@ public class CoreContainer {
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader); // early as possible!
+    this.tracer = TraceUtils.getGlobalTracer();
+    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig().isEnabled());
+
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
-    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig().isEnabled());
-    this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
@@ -711,8 +710,8 @@ public class CoreContainer {
    */
   @Deprecated(since = "10.0")
   public SolrClientCache getSolrClientCache() {
-    // TODO put in the objectCache instead
-    return solrClientCache;
+    // TODO put in the objectCache instead?
+    return isZooKeeperAware() ? getZkController().getSolrClientCache() : null;
   }
 
   public ObjectCache getObjectCache() {
@@ -799,10 +798,6 @@ public class CoreContainer {
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
-    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
-    // Validate caller-supplied zkHost/solrConnection (cross-collection join, streaming
-    // expressions).
-    solrClientCache.setConnectionValidator(this::validateSolrConnection);
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -829,7 +824,6 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
       zkSys
           .getZkMetricsProducer()
@@ -849,8 +843,7 @@ public class CoreContainer {
       registerV2Api(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
-      registerV2Api(packageLoader.getPackageAPI().editAPI);
-      registerV2Api(packageLoader.getPackageAPI().readAPI);
+      registerV2Api(ClusterPackage.class);
       registerV2Api(ZookeeperRead.class);
     }
 
@@ -1298,9 +1291,6 @@ public class CoreContainer {
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
       }
-      if (solrClientCache != null) {
-        solrClientCache.close();
-      }
       if (containerPluginsRegistry != null) {
         IOUtils.closeQuietly(containerPluginsRegistry);
       }
@@ -1323,7 +1313,17 @@ public class CoreContainer {
             // we want to close zk stuff last
             zkSys.close();
           } finally {
-            ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+            try {
+              ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
+            } catch (ExecutorTerminationTimeoutException e) {
+              // A close task that outlives the pool's termination budget must not abort the
+              // rest of shutdown. The closes after this block (the plugin closes, the
+              // container handlers and the root metrics context) are the only release path
+              // for the container's metrics contexts, so skipping them leaks the whole
+              // metrics tree of this container.
+              log.warn(
+                  "The closeThreadPool did not terminate; continuing CoreContainer shutdown.", e);
+            }
           }
         }
       }
@@ -1639,38 +1639,6 @@ public class CoreContainer {
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */
   public AllowListUrlChecker getAllowListUrlChecker() {
     return allowListUrlChecker;
-  }
-
-  /**
-   * Validates a connection to a SolrCloud cluster: ZooKeeper via {@link
-   * ZkController#getAllowListZkHostChecker()} (never allowed in standalone mode), HTTP via {@link
-   * AllowListUrlChecker} (live nodes of this cluster are allowed).
-   *
-   * @throws SolrException FORBIDDEN if not allowed
-   */
-  private void validateSolrConnection(CloudSolrClient.CloudSolrClientConnection solrConnection) {
-    ZkController zkController = getZkController();
-    if (solrConnection.isZookeeper()) {
-      String zkHost = solrConnection.toString();
-      if (zkController == null) {
-        throw new SolrException(
-            ErrorCode.FORBIDDEN,
-            "ZooKeeper host '" + zkHost + "' is not allowed when Solr is not in SolrCloud mode.");
-      }
-      if (!zkController.getAllowListZkHostChecker().isAllowed(zkHost)) {
-        throw new SolrException(
-            ErrorCode.FORBIDDEN, SolrClientCache.zkHostRejectionMessage(zkHost));
-      }
-    } else {
-      try {
-        allowListUrlChecker.checkAllowList(
-            solrConnection.quorumItems(),
-            zkController == null ? null : zkController.getClusterState());
-      } catch (MalformedURLException e) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST, "Invalid URL in solrConnection: " + solrConnection, e);
-      }
-    }
   }
 
   /**

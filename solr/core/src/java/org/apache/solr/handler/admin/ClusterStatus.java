@@ -20,10 +20,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.MapWriter;
@@ -112,9 +114,10 @@ public class ClusterStatus {
     boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll);
 
     List<String> liveNodes = null;
-    if (withLiveNodes || collection != null) {
+    // Replica state is cross-checked against live nodes whenever the collection tree is built,
+    // including when the caller asked for that tree without the live-node list itself.
+    if (withLiveNodes || withCollection) {
       liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
-      // add live_nodes
       if (withLiveNodes) clusterStatus.add("live_nodes", liveNodes);
     }
 
@@ -125,7 +128,7 @@ public class ClusterStatus {
 
     if (withCollection) {
       assert liveNodes != null;
-      fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes, aliases, solrVersion);
+      addCollectionStatuses(clusterStatus, liveNodes, aliases, solrVersion);
     }
 
     if (withAliases) {
@@ -143,13 +146,49 @@ public class ClusterStatus {
     results.add("cluster", clusterStatus);
   }
 
-  private void fetchClusterStatusForCollOrAlias(
+  /**
+   * Collections, shards, and replicas selected by this request's {@code collection}, {@code shard},
+   * and {@code _route_} parameters.
+   *
+   * <p>Live nodes are read so replica state can be cross-checked, and aliases are read so a
+   * collection alias in {@code collection} can be resolved. Each collection still lists the aliases
+   * that point at it. The live-node list, the alias map, and cluster properties are not returned.
+   */
+  public Map<String, Object> getCollectionStatuses() throws KeeperException, InterruptedException {
+    List<String> liveNodes =
+        zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
+    Aliases aliases = zkStateReader.getAliases();
+    Map<String, Object> collections = new LinkedHashMap<>();
+    forEachCollectionStatus(
+        liveNodes, aliases, (name, status) -> collections.put(name, copyForJackson(status)));
+    return collections;
+  }
+
+  private void addCollectionStatuses(
       NamedList<Object> clusterStatus,
       List<String> liveNodes,
       Aliases aliases,
       SolrVersion solrVersion) {
+    // Resolve the collection list now so a missing name fails the request, rather than during
+    // response writing. The per-collection JSON is still built while the response is written.
+    PreparedCollections prepared = prepareCollections(aliases);
+    if (solrVersion == null || solrVersion.greaterThanOrEqualTo(SolrVersion.valueOf("9.9.0"))) {
+      MapWriter collectionPropsWriter =
+          ew -> prepared.forEach(liveNodes, (name, status) -> ew.putNoEx(name, status));
+      clusterStatus.add("collections", collectionPropsWriter);
+    } else {
+      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
+      prepared.forEach(liveNodes, collectionProps::add);
+      clusterStatus.add("collections", collectionProps);
+    }
+  }
 
-    // read aliases
+  private void forEachCollectionStatus(
+      List<String> liveNodes, Aliases aliases, BiConsumer<String, Map<String, Object>> consumer) {
+    prepareCollections(aliases).forEach(liveNodes, consumer);
+  }
+
+  private PreparedCollections prepareCollections(Aliases aliases) {
     Map<String, List<String>> collectionVsAliases = new HashMap<>();
     Map<String, List<String>> aliasVsCollections = aliases.getCollectionAliasListMap();
     for (Map.Entry<String, List<String>> entry : aliasVsCollections.entrySet()) {
@@ -164,12 +203,6 @@ public class ClusterStatus {
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();
-
-    String routeKey = solrParams.get(ShardParams._ROUTE_);
-    String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
-
-    Set<String> requestedShards = (shard != null) ? Set.of(shard.split(",")) : null;
-
     Stream<DocCollection> collectionStream;
     if (collection == null) {
       collectionStream = clusterState.collectionStream();
@@ -195,33 +228,53 @@ public class ClusterStatus {
       }
     }
 
-    if (solrVersion == null || solrVersion.greaterThanOrEqualTo(SolrVersion.valueOf("9.9.0"))) {
-      MapWriter collectionPropsWriter =
-          ew -> {
-            collectionStream.forEach(
-                (collectionState) -> {
-                  ew.putNoEx(
-                      collectionState.getName(),
-                      buildResponseForCollection(
-                          collectionState,
-                          collectionVsAliases,
-                          routeKey,
-                          liveNodes,
-                          requestedShards));
-                });
-          };
-      clusterStatus.add("collections", collectionPropsWriter);
-    } else {
-      NamedList<Object> collectionProps = new SimpleOrderedMap<>();
-      collectionStream.forEach(
-          collectionState -> {
-            collectionProps.add(
-                collectionState.getName(),
-                buildResponseForCollection(
-                    collectionState, collectionVsAliases, routeKey, liveNodes, requestedShards));
-          });
-      clusterStatus.add("collections", collectionProps);
+    String routeKey = solrParams.get(ShardParams._ROUTE_);
+    String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
+    Set<String> requestedShards = (shard != null) ? Set.of(shard.split(",")) : null;
+    return new PreparedCollections(
+        collectionStream.toList(), collectionVsAliases, routeKey, requestedShards);
+  }
+
+  private final class PreparedCollections {
+    private final List<DocCollection> collections;
+    private final Map<String, List<String>> collectionVsAliases;
+    private final String routeKey;
+    private final Set<String> requestedShards;
+
+    private PreparedCollections(
+        List<DocCollection> collections,
+        Map<String, List<String>> collectionVsAliases,
+        String routeKey,
+        Set<String> requestedShards) {
+      this.collections = collections;
+      this.collectionVsAliases = collectionVsAliases;
+      this.routeKey = routeKey;
+      this.requestedShards = requestedShards;
     }
+
+    private void forEach(List<String> liveNodes, BiConsumer<String, Map<String, Object>> consumer) {
+      for (DocCollection collectionState : collections) {
+        consumer.accept(
+            collectionState.getName(),
+            buildResponseForCollection(
+                collectionState, collectionVsAliases, routeKey, liveNodes, requestedShards));
+      }
+    }
+  }
+
+  /**
+   * Jersey serializes the v2 response with Jackson, which does not write Solr {@link MapWriter}s.
+   * Per-replica state is the one value still attached as a writer; turn it into plain JSON objects.
+   * Other fields are already maps and scalars.
+   */
+  private static Map<String, Object> copyForJackson(Map<String, Object> status) {
+    Object prs = status.get("PRS");
+    if (!(prs instanceof MapWriter)) {
+      return status;
+    }
+    Map<String, Object> copy = new LinkedHashMap<>(status);
+    copy.put("PRS", Utils.fromJSON(Utils.toJSON(prs)));
+    return copy;
   }
 
   private void addAliasMap(Aliases aliases, NamedList<Object> clusterStatus) {
@@ -355,6 +408,11 @@ public class ClusterStatus {
     byte[] bytes = Utils.toJSON(clusterStateCollection);
     @SuppressWarnings("unchecked")
     Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+
+    // Replicas on dead nodes can still be marked active in state.json.
+    // Correct their states before computing health.
+    crossCheckReplicaStateWithLiveNodes(liveNodes, docCollection);
+
     collectionStatus = getCollectionStatus(docCollection, name, shards);
 
     collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
@@ -370,9 +428,6 @@ public class ClusterStatus {
       PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
       collectionStatus.put("PRS", prs);
     }
-
-    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionStatus);
 
     return collectionStatus;
   }

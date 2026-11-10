@@ -1,0 +1,9 @@
+title: The package management API now has OpenAPI and SolrJ support. As part of this migration, the (experimental v2) API path moved from `/api/cluster/package` to `/api/cluster/packages`, and requests for a non-existent package or package version now return HTTP 404 instead of 400.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4178
+  url: https://github.com/apache/solr/pull/4178
+- name: SOLR-18212
+  url: https://issues.apache.org/jira/browse/SOLR-18212

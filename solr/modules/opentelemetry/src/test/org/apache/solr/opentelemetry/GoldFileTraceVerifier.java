@@ -17,7 +17,7 @@
 package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,7 +49,7 @@ import org.junit.Assert;
  * <h2>Usage</h2>
  *
  * <pre>
- * var verifier = new GoldFileTraceVerifier("testV2Api");
+ * var verifier = new GoldFileTraceVerifier(otelRule, getClass(), "testV2Api");
  * // ... perform operations ...
  * verifier.verifyPhase(); // waits for spans, normalizes, compares
  * // ... more operations ...
@@ -89,13 +89,16 @@ public class GoldFileTraceVerifier {
       Comparator.comparing((Map<String, Object> s) -> (String) s.get("name"))
           .thenComparing(s -> s.getOrDefault(TraceUtils.TAG_DB.getKey(), "").toString());
 
+  private final OpenTelemetryRule otelRule;
   private final String testName;
   private final Path goldFilePath;
   private final Map<String, Object> goldFile; // parsed gold file (phases list)
   private final List<List<Map<String, Object>>> recordedPhases = new ArrayList<>();
   private int currentPhaseIndex = 0;
 
-  public GoldFileTraceVerifier(Class<?> testClass, String testMethodName) {
+  public GoldFileTraceVerifier(
+      OpenTelemetryRule otelRule, Class<?> testClass, String testMethodName) {
+    this.otelRule = otelRule;
     this.testName = testMethodName;
     this.goldFilePath = resolveGoldFilePath(testClass, testMethodName);
     if (REGENERATE) {
@@ -111,20 +114,18 @@ public class GoldFileTraceVerifier {
    */
   @SuppressWarnings("unchecked")
   public void verifyPhase() {
-    InMemorySpanExporter exporter = CustomTestOtelTracerConfigurator.getInMemorySpanExporter();
-
     List<SpanData> spans;
     if (REGENERATE) {
-      spans = waitForStableSpans(exporter);
+      spans = waitForStableSpans();
     } else {
       List<Map<String, Object>> phases = (List<Map<String, Object>>) goldFile.get("phases");
       Map<String, Object> phase = phases.get(currentPhaseIndex);
       List<Map<String, Object>> expectedSpans = (List<Map<String, Object>>) phase.get("spans");
       int expectedCount = countSpansRecursive(expectedSpans);
-      spans = waitForSpans(exporter, expectedCount);
+      spans = waitForSpans(expectedCount);
     }
 
-    exporter.reset();
+    otelRule.clearSpans();
 
     if (DUMP_TRACES) {
       dumpRawSpans(spans);
@@ -155,32 +156,32 @@ public class GoldFileTraceVerifier {
 
   // --- Span collection ---
 
-  private List<SpanData> waitForSpans(InMemorySpanExporter exporter, int expectedCount) {
+  private List<SpanData> waitForSpans(int expectedCount) {
     try {
       RetryUtil.retryUntil(
           "Timed out waiting for " + expectedCount + " span(s) in phase " + currentPhaseIndex,
           500,
           20,
           TimeUnit.MILLISECONDS,
-          () -> exporter.getFinishedSpanItems().size() >= expectedCount);
+          () -> otelRule.getSpans().size() >= expectedCount);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
-    return new ArrayList<>(exporter.getFinishedSpanItems());
+    return new ArrayList<>(otelRule.getSpans());
   }
 
-  private List<SpanData> waitForStableSpans(InMemorySpanExporter exporter) {
+  private List<SpanData> waitForStableSpans() {
     try {
       RetryUtil.retryUntil(
           "Timed out waiting for any spans in phase " + currentPhaseIndex,
           500,
           20,
           TimeUnit.MILLISECONDS,
-          () -> !exporter.getFinishedSpanItems().isEmpty());
+          () -> !otelRule.getSpans().isEmpty());
       int lastCount = -1;
       for (int i = 0; i < 10; i++) {
         TimeUnit.MILLISECONDS.sleep(500);
-        int current = exporter.getFinishedSpanItems().size();
+        int current = otelRule.getSpans().size();
         if (current == lastCount) {
           break;
         }
@@ -189,7 +190,7 @@ public class GoldFileTraceVerifier {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
-    return new ArrayList<>(exporter.getFinishedSpanItems());
+    return new ArrayList<>(otelRule.getSpans());
   }
 
   // --- Raw dump (for debugging, no normalization) ---

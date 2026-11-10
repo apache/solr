@@ -100,7 +100,7 @@ Use the following steps to upload a jar signed with your public key:
 +
 [source, bash,subs="attributes"]
 ----
-curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
+curl -o runtimelibs.jar   -LO 'https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true'
 ----
 
 . Sign the jar with your private key:
@@ -114,14 +114,14 @@ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 
 +
 [source, bash]
 ----
-curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/filestore/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
+curl --data-binary @runtimelibs.jar -X PUT  'http://localhost:8983/api/cluster/filestore/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>'
 ----
 
 . Verify your jar upload:
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/1.0?omitHeader=true
+curl 'http://localhost:8983/api/cluster/filestore/metadata/mypkg/1.0?omitHeader=true'
 ----
 +
 [source, json]
@@ -178,18 +178,19 @@ For example:
 
 == API Endpoints
 
-* `GET /api/cluster/package` Get the list of packages
-* `POST /api/cluster/package` edit packages
-** `add` command: add a version of a package
-** `delete` command:  delete a version of a package
+* `GET /api/cluster/packages` Get the list of all packages
+* `GET /api/cluster/packages/{name}` Get the details of a specific package
+* `POST /api/cluster/packages/{name}/versions` Add a version of a package
+* `DELETE /api/cluster/packages/{name}/versions/{version}` Delete a specific version of a package
+* `POST /api/cluster/packages/{name}/refresh` Refresh a package on all nodes in the cluster
 
 === How to Upgrade?
 
-Use the `add` command to add a version that is higher than the current version.
+Use the add version endpoint to add a version that is higher than the current version.
 
 === How to Downgrade?
 
-Use the `delete` command to delete the highest version and choose the next highest version.
+Use the delete version endpoint to delete the highest version and choose the next highest version.
 
 === Using Multiple Versions in Parallel
 
@@ -244,27 +245,25 @@ The plugins loaded from packages cannot depend on core level classes.
 +
 [source,bash]
 ----
-curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
-{"add": {
-         "package" : "mypkg",
-         "version":"1.0",
-         "files" :["/mypkg/1.0/myplugins.jar"]}}'
+curl -X POST http://localhost:8983/api/cluster/packages/mypkg/versions \
+  -H 'Content-type:application/json' \
+  -d '{"version":"1.0","files":["/mypkg/1.0/myplugins.jar"]}'
 ----
 
 . Verify the created package:
 +
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/package?omitHeader=true
+curl http://localhost:8983/api/cluster/packages?omitHeader=true
 ----
 +
 [source,json]
 ----
-  {"result":{
+  {
     "znodeVersion":0,
     "packages":{"mypkg":[{
           "version":"1.0",
-          "files":["/mypkg/1.0/myplugins.jar"]}]}}}
+          "files":["/mypkg/1.0/myplugins.jar"]}]}}
 ----
 
 . The package should be ready to use at this point.
@@ -274,7 +273,7 @@ The same result can be achieved by editing your `solrconfig.xml` as well:
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
+curl 'http://localhost:8983/solr/gettingstarted/config' -H 'Content-type:application/json' -d  '{
           "create-requesthandler": { "name": "/test",
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
@@ -283,7 +282,7 @@ curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:applicati
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true'
 ----
 +
 [source,json]
@@ -302,7 +301,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/test?omitHeader=true'
 ----
 +
 [source,json]
@@ -322,18 +321,18 @@ Get a new version of the jar, sign and upload it:
 +
 [source, bash,subs="attributes"]
 ----
-curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
+curl -o runtimelibs3.jar   -LO 'https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true'
 
 openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 
-curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/filestore/files/mypkg/2.0/myplugins.jar?sig=<signature>
+curl --data-binary @runtimelibs3.jar -X PUT  'http://localhost:8983/api/cluster/filestore/files/mypkg/2.0/myplugins.jar?sig=<signature>'
 ----
 
 . Verify it:
 +
 [source, bash]
 ----
-curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=true
+curl 'http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=true'
 ----
 +
 [source, json]
@@ -350,18 +349,16 @@ curl http://localhost:8983/api/cluster/filestore/metadata/mypkg/2.0?omitHeader=t
 +
 [source,bash]
 ----
-curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
-{"add": {
-         "package" : "mypkg",
-         "version":"2.0",
-         "files" :["/mypkg/2.0/myplugins.jar"]}}'
+curl -X POST http://localhost:8983/api/cluster/packages/mypkg/versions \
+  -H 'Content-type:application/json' \
+  -d '{"version":"2.0","files":["/mypkg/2.0/myplugins.jar"]}'
 ----
 
 . Verify the plugin to see if the correct version of the package is being used:
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true'
 ----
 +
 [source,json]
@@ -385,7 +382,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 +
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl 'http://localhost:8983/solr/gettingstarted/test?omitHeader=true'
 ----
 +
 [source,json]
@@ -414,7 +411,7 @@ at a later point.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/config/params -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/gettingstarted/config/params' -H 'Content-type:application/json'  -d '{
   "set":{
     "PKG_VERSIONS":{
       "mypkg":"2.0"

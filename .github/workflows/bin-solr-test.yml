@@ -30,9 +30,15 @@ jobs:
     - name: Test the bin/solr script
       run: ./gradlew integrationTests
 
+    # Reuses the distribution built above, so this only costs the curated suite run.
+    - name: Test the bin/solr script with the experimental picocli CLI
+      run: ./gradlew integrationTestsPicocli
+
     - name: Archive logs
       if: ${{ failure() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: logs
-        path: solr/packaging/build/test-output
+        path: |
+          solr/packaging/build/test-output
+          solr/packaging/build/test-output-picocli

@@ -798,7 +798,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
+curl 'http://localhost:8983/solr/{collectionName}/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
 ----
 ====
 
