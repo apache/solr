@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
@@ -145,6 +144,28 @@ public class SolrProcessManagerTest extends SolrTestCase {
         solrProcessManager.processForPort(processAdvertisedHttps.getKey()).orElseThrow();
     assertEquals(
         "https://myhost.example.com:" + advertised.port() + "/solr", advertised.getLocalUrl());
+  }
+
+  public void testParseSysprop() {
+    // On Windows the raw command line is split on whitespace, so quotes the OS would have removed
+    // may still surround the argument or its value
+    assertEquals(
+        Optional.of("myhost.example.com"),
+        parseSysprop("-Dsolr.host.advertise=myhost.example.com"));
+    assertEquals(
+        Optional.of("myhost.example.com"),
+        parseSysprop("-Dsolr.host.advertise=\"myhost.example.com\""));
+    assertEquals(
+        Optional.of("myhost.example.com"),
+        parseSysprop("\"-Dsolr.host.advertise=myhost.example.com\""));
+    assertEquals(Optional.of(""), parseSysprop("-Dsolr.host.advertise="));
+    assertEquals(Optional.empty(), parseSysprop("-Dsolr.host.bind=10.0.0.5"));
+    // Must not match a property whose value happens to embed the one we look for
+    assertEquals(Optional.empty(), parseSysprop("-Dother=-Dsolr.host.advertise=myhost"));
+  }
+
+  private static Optional<String> parseSysprop(String... arguments) {
+    return SolrProcessManager.parseSysprop(List.of(arguments), "solr.host.advertise");
   }
 
   public void testLocalConnectHost() {

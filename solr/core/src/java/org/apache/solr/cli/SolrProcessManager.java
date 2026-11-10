@@ -157,10 +157,28 @@ public class SolrProcessManager {
 
   /** Parses the value of the given system property from the process' command line arguments */
   private static Optional<String> parseSyspropFromProcess(ProcessHandle ph, String sysprop) {
-    return arguments(ph).stream()
-        .filter(a -> a.contains("-D" + sysprop + "="))
-        .map(s -> s.split("=", 2)[1])
+    return parseSysprop(arguments(ph), sysprop);
+  }
+
+  /**
+   * Parses the value of the given system property from a list of command line arguments. On Windows
+   * the arguments are recovered by splitting the raw command line (see {@link #arguments}), so
+   * quotes that the OS would have removed may still surround the argument or its value.
+   */
+  static Optional<String> parseSysprop(List<String> arguments, String sysprop) {
+    String prefix = "-D" + sysprop + "=";
+    return arguments.stream()
+        .map(SolrProcessManager::unquote)
+        .filter(a -> a.startsWith(prefix))
+        .map(a -> unquote(a.substring(prefix.length())))
         .findFirst();
+  }
+
+  /** Strips one pair of surrounding double quotes, if present */
+  private static String unquote(String value) {
+    return value.length() > 1 && value.startsWith("\"") && value.endsWith("\"")
+        ? value.substring(1, value.length() - 1)
+        : value;
   }
 
   /**
