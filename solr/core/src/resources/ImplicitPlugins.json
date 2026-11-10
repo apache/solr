@@ -25,6 +25,13 @@
         "update.contentType": "application/csv"
       }
     },
+    "/update/ndjson": {
+      "useParams":"_UPDATE_NDJSON",
+      "class": "solr.UpdateRequestHandler",
+      "invariants": {
+        "update.contentType": "application/x-ndjson"
+      }
+    },
     "/update/json/docs": {
       "useParams":"_UPDATE_JSON_DOCS",
       "class": "solr.UpdateRequestHandler",

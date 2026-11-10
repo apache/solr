@@ -1,0 +1,12 @@
+title: >
+  The /update handler now accepts newline delimited JSON (ND-JSON / JSON Lines),
+  selected by `Content-Type: application/x-ndjson` or by posting to the new `/update/ndjson`
+  path. `bin/solr post` sends `.jsonl` and `.ndjson` files there; `.jsonl` files previously
+  went to `/update/extract`.
+type: added
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18445
+    url: https://issues.apache.org/jira/browse/SOLR-18445

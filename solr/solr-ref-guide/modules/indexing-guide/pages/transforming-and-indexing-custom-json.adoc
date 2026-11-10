@@ -21,6 +21,7 @@ If you have JSON documents that you would like to index without transforming the
 
 These parameters provide information on how to split a single JSON file into multiple Solr documents and how to map fields to Solr's schema.
 One or more valid JSON documents can be sent to the `/update/json/docs` path with the configuration params.
+The same parameters apply to xref:indexing-with-update-handlers.adoc#newline-delimited-json[newline delimited JSON], sent to `/update/ndjson` or to `/update` with `Content-Type: application/x-ndjson`.
 
 == Mapping Parameters
 
@@ -38,6 +39,8 @@ If the entire JSON makes a single Solr document, the path must be “`/`”.
 +
 It is possible to pass multiple `split` paths by separating them with a pipe `(|)`, for example: `split=/|/foo|/foo/bar`.
 If one path is a child of another, they automatically become a child document.
++
+With ND-JSON every line is already one document, so `split` serves only to declare nesting there, and its first path must be the root “`/`”.
 
 `f`::
 +
@@ -84,7 +87,7 @@ This is the same field that other handlers use as a default search field.
 |===
 +
 This is the name of the field to which the JSON source will be stored into.
-This can only be used if `split=/` (i.e., you want your JSON input file to be indexed as a single Solr document).
+This can only be used if `split=/` (i.e., you want your JSON input file to be indexed as a single Solr document), and it is not supported with ND-JSON.
 Note that atomic updates will cause the field to be out-of-sync with the document.
 
 `echo`::
@@ -763,47 +766,7 @@ The indexed documents would be added to the index with fields that look like thi
 
 == Multiple Documents in a Single Payload
 
-This functionality supports documents in the http://jsonlines.org/[JSON Lines] format (`.jsonl`), which specifies one document per line.
-
-For example:
-
-[tabs#multidocs]
-======
-V1 API::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-
-V2 API User-Managed / Standalone Solr::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-
-V2 API SolrCloud::
-+
-====
-[source,bash]
-----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-type:application/json' -d '
-{ "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
-{ "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
-----
-====
-======
-
-Or even an array of documents, as in this example:
+Multiple documents can be sent in a single request as a JSON array, as in this example:
 
 [tabs#array]
 ======
@@ -840,6 +803,12 @@ curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Conten
 ----
 ====
 ======
+
+=== Newline Delimited JSON
+
+To send one document per line instead, use the xref:indexing-with-update-handlers.adoc#newline-delimited-json[ND-JSON] endpoints: `/update` with `Content-Type: application/x-ndjson`, or the `/update/ndjson` path.
+Solr then requires exactly one JSON Object per line in UTF-8, and reports the offending line number when a line does not comply.
+All of the mapping parameters above apply there, `f`, `df`, `mapUniqueKeyOnly` and `echo` unchanged, with the two differences noted under `split` and `srcField`.
 
 == Tips for Custom JSON Indexing
 

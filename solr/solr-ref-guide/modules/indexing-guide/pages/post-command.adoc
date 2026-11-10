@@ -55,7 +55,7 @@ List of options:
     --format                                      sends application/json content as Solr commands to /update instead of
                                                   /update/json/docs.
  -ft,--filetypes <<type>[,<type>,...]>            default:
-                                                  xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,
+                                                  xml,json,jsonl,ndjson,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,
                                                   ots,rtf,htm,html,txt,log
  -h,--help                                        Print this message.
     --mode <mode>                                 Specifies how to run: 'files' crawls local directories, 'web' crawls

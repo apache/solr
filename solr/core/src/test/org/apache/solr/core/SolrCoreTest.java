@@ -131,6 +131,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/update/cbor"), "solr.UpdateRequestHandler");
       ++ihCount;
+      assertEquals(pathToClassMap.get("/update/ndjson"), "solr.UpdateRequestHandler");
+      ++ihCount;
       assertEquals(pathToClassMap.get("/analysis/document"), "solr.DocumentAnalysisRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/analysis/field"), "solr.FieldAnalysisRequestHandler");

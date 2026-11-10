@@ -102,8 +102,10 @@ import org.xml.sax.SAXException;
     })
 public class PostTool extends ToolBase {
 
+  static final String NDJSON_MIME = "application/x-ndjson";
+
   public static final String DEFAULT_FILE_TYPES =
-      "xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
+      "xml,json,jsonl,ndjson,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
   static final String DATA_MODE_FILES = "files";
   static final String DATA_MODE_ARGS = "args";
   static final String DATA_MODE_STDIN = "stdin";
@@ -387,7 +389,8 @@ public class PostTool extends ToolBase {
     mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
-    mimeMap.put("jsonl", "application/jsonl");
+    mimeMap.put("jsonl", NDJSON_MIME);
+    mimeMap.put("ndjson", NDJSON_MIME);
     mimeMap.put("pdf", "application/pdf");
     mimeMap.put("rtf", "text/rtf");
     mimeMap.put("html", "text/html");
@@ -1064,7 +1067,8 @@ public class PostTool extends ToolBase {
         uri = new URI(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
-          || type.equals("application/json")) {
+          || type.equals("application/json")
+          || type.equals(NDJSON_MIME)) {
         // Default handler
       } else {
         // SolrCell

@@ -65,7 +65,7 @@ The Post command sends one or more files, directories, URLs or literal data to a
   sends application/json content as Solr commands to /update instead of /update/json/docs.
 
 *-ft, --filetypes*=_<type>[,<type>,...]_::
-  default: xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
+  default: xml,json,jsonl,ndjson,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 
 *-h*, *--help*::
   Print this help message and exit.

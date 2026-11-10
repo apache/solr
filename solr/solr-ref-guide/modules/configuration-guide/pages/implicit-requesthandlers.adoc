@@ -645,6 +645,33 @@ api/collections/<collection>/update/json
 +
 Paramset: `_UPDATE_JSON`
 
+NDJSON Updates:: Add newline delimited JSON (ND-JSON / JSON Lines) documents.
++
+*Documentation*: xref:indexing-guide:indexing-with-update-handlers.adoc#newline-delimited-json[Newline Delimited JSON]
++
+[tabs#ndjson-update-endpoint]
+======
+V1 API::
++
+====
+[source,bash]
+----
+solr/<collection>/update/ndjson
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+api/collections/<collection>/update/ndjson
+----
+====
+======
++
+Paramset: `_UPDATE_NDJSON`
+
 Custom JSON Updates:: Add and update custom JSON-formatted documents.
 +
 *Documentation*: xref:indexing-guide:transforming-and-indexing-custom-json.adoc[]

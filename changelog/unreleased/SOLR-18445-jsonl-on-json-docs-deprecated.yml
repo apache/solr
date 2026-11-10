@@ -1,0 +1,11 @@
+title: >
+  Sending several whitespace separated JSON objects to `/update/json/docs` (and the v2 `/update`
+  and `/update/json` paths that map to it) is deprecated; a future version will accept only a
+  single object or an array there. Use `/update/ndjson` for JSON Lines.
+type: deprecated
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18445
+    url: https://issues.apache.org/jira/browse/SOLR-18445
