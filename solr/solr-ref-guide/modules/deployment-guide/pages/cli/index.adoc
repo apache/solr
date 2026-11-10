@@ -80,7 +80,7 @@ Each command has its own reference page.
 ====
 Some options and behaviors changed from the Commons CLI.
 
-See xref:upgrade-notes:major-changes-in-solr-10.adoc#solr-cli-now-uses-picocli[Major Changes in Solr 10, Solr 10.2] for the full list.
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#solr-cli-now-uses-picocli[Solr CLI now uses PicoCLI] in Major Changes in Solr 10 for the full list.
 ====
 
 == Reporting Problems
