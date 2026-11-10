@@ -50,6 +50,12 @@ The old spellings still work and are hidden from the help and from this guide.
 They are deprecated in Solr 10.2 and are removed in Solr 11.0.
 The default command line interface is not changed.
 
+=== Permissions have a stable `id`
+
+Editing permissions of the Rule-Based Authorization Plugin now stores an `id` on each permission in `security.json`.
+Finish a rolling upgrade before editing permissions.
+Nodes running an older version reject commands that name an `id`, and drop the `id` of any permission they replace.
+
 == Solr 10.1
 
 === Misc
