@@ -23,6 +23,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -123,6 +124,21 @@ public class RebalanceLeaders {
     this.callingLockId = callingLockId;
     this.collectionsHandler = collectionsHandler;
     coreContainer = collectionsHandler.getCoreContainer();
+  }
+
+  @VisibleForTesting
+  public int getMaxAtOnce() {
+    return maxAtOnce;
+  }
+
+  @VisibleForTesting
+  public int getMaxWaitSeconds() {
+    return maxWaitSeconds;
+  }
+
+  @VisibleForTesting
+  public String getCallingLockId() {
+    return callingLockId;
   }
 
   public NamedList<Object> execute() throws Exception {

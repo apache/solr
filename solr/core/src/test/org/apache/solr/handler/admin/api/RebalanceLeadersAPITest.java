@@ -24,7 +24,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.RebalanceLeadersRequestBody;
@@ -98,15 +97,9 @@ public class RebalanceLeadersAPITest extends MockV2APITest {
         ArgumentCaptor.forClass(org.apache.solr.handler.admin.RebalanceLeaders.class);
     verify(observedApi).executeRebalance(captor.capture());
     final var operation = captor.getValue();
-    final Field maxAtOnce = operation.getClass().getDeclaredField("maxAtOnce");
-    final Field maxWaitSeconds = operation.getClass().getDeclaredField("maxWaitSeconds");
-    final Field callingLockId = operation.getClass().getDeclaredField("callingLockId");
-    maxAtOnce.setAccessible(true);
-    maxWaitSeconds.setAccessible(true);
-    callingLockId.setAccessible(true);
-    assertEquals(2, maxAtOnce.getInt(operation));
-    assertEquals(30, maxWaitSeconds.getInt(operation));
-    assertEquals("lock-id", callingLockId.get(operation));
+    assertEquals(2, operation.getMaxAtOnce());
+    assertEquals(30, operation.getMaxWaitSeconds());
+    assertEquals("lock-id", operation.getCallingLockId());
   }
 
   @Test
