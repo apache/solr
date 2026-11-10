@@ -82,6 +82,9 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    */
   private static volatile Resource telemetryResource = Resource.getDefault();
 
+  /** Solr's identity for this node, below anything the configuration supplies. */
+  private static volatile Resource nodeDefaults = Resource.empty();
+
   /** Is the OpenTelemetry Java agent present? */
   protected static final boolean OTEL_AGENT_PRESENT;
 
@@ -108,9 +111,11 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     if (loaded) return;
     loaded = true;
 
+    Map<String, String> nodeAttrs = nodeDefaultAttributes(cfg);
+    nodeDefaults = toResource(nodeAttrs);
     // Publish before any configurator reads it, so the SDK and Solr's meter providers agree. Not
     // otel.service.name: that one doubles as the module's auto-activation switch.
-    setDefaultResourceAttributes(cfg, System.getenv());
+    setDefaultResourceAttributes(nodeAttrs, cfg, System.getenv());
     telemetryResource = resourceFromConfig(System.getenv());
 
     // Check for the agent explicitly; older agents don't instrument isSet(), so it returns false
@@ -232,23 +237,18 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     return withSolrDefaults(Resource.getDefault().merge(Resource.create(attrs.build())));
   }
 
-  /**
-   * Names the service {@code solr} unless configured. {@code host.name} and {@code
-   * service.instance.id} come from {@code otel.resource.attributes} instead.
-   */
+  /** Fills in Solr's node identity and service name for whatever the configuration left unset. */
   private static Resource withSolrDefaults(Resource base) {
     String serviceName = base.getAttribute(SERVICE_NAME);
-    if (serviceName != null && !UNKNOWN_SERVICE.equals(serviceName)) {
-      return base;
+    Resource resource = nodeDefaults.merge(base);
+    if (serviceName == null || UNKNOWN_SERVICE.equals(serviceName)) {
+      resource = resource.merge(Resource.create(Attributes.of(SERVICE_NAME, "solr")));
     }
-    return base.merge(Resource.create(Attributes.of(SERVICE_NAME, "solr")));
+    return resource;
   }
 
-  /**
-   * Merges Solr's defaults into {@code otel.resource.attributes}, below the environment, a system
-   * property and {@code <tracerConfig>} init args, in that order of precedence.
-   */
-  private static void setDefaultResourceAttributes(NodeConfig cfg, Map<String, String> env) {
+  /** {@code host.name} and {@code service.instance.id} as Solr knows them. */
+  private static Map<String, String> nodeDefaultAttributes(NodeConfig cfg) {
     Map<String, String> attrs = new LinkedHashMap<>();
     String host = nodeHost(cfg);
     String port = nodePort(cfg);
@@ -258,6 +258,22 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         attrs.put(SERVICE_INSTANCE_ID.getKey(), host + ":" + port);
       }
     }
+    return attrs;
+  }
+
+  private static Resource toResource(Map<String, String> attrs) {
+    AttributesBuilder builder = Attributes.builder();
+    attrs.forEach(builder::put);
+    return Resource.create(builder.build());
+  }
+
+  /**
+   * Merges Solr's defaults into {@code otel.resource.attributes}, below the environment, a system
+   * property and {@code <tracerConfig>} init args, in that order of precedence.
+   */
+  private static void setDefaultResourceAttributes(
+      Map<String, String> nodeAttrs, NodeConfig cfg, Map<String, String> env) {
+    Map<String, String> attrs = new LinkedHashMap<>(nodeAttrs);
     // The property set below would shadow the configurator's own init args, so fold them in here.
     attrs.putAll(parseResourceAttributes(tracerConfigResourceAttributes(cfg)));
     attrs.putAll(parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env)));
@@ -400,6 +416,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   public static void resetForTest() {
     loaded = false;
     telemetryResource = Resource.getDefault();
+    nodeDefaults = Resource.empty();
     GlobalOpenTelemetry.resetForTest();
   }
 }

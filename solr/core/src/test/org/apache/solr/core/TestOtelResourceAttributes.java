@@ -152,12 +152,15 @@ public class TestOtelResourceAttributes extends SolrTestCase {
   public void configuratorResourceIsAdopted() {
     NodeConfig cfg =
         new NodeConfig.NodeConfigBuilder("testNode", createTempDir())
+            .setCloudConfig(new CloudConfig.CloudConfigBuilder("solr-host-1", 8983).build())
             .setTracerConfig(
                 new PluginInfo("tracerConfig", Map.of("class", WithResource.class.getName())))
             .build();
     Resource resource = initialize(cfg);
     assertEquals("from-sdk", resource.getAttribute(SERVICE_NAME));
     assertEquals("sdk-detected", resource.getAttribute(HOST_NAME));
+    // Solr still supplies what the configurator's resource left out
+    assertEquals("solr-host-1:8983", resource.getAttribute(SERVICE_INSTANCE_ID));
   }
 
   /** Even then Solr names the service, since the SDK's own fallback is not a useful job label. */
