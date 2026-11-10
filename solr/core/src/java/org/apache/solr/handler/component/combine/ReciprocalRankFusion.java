@@ -212,12 +212,7 @@ public class ReciprocalRankFusion extends QueryAndResponseCombiner {
     for (int i = 0; i < queryKeys.length; i++) {
       Integer rank = rankPerQuery[i];
       if (rank != null) {
-        float weight = weights[i];
-        if (weight == CombinerParams.DEFAULT_COMBINER_RRF_WEIGHT) {
-          scoreComponents.add("1/(" + kVal + "+" + rank + ")");
-        } else {
-          scoreComponents.add(weight + "/(" + kVal + "+" + rank + ")");
-        }
+        scoreComponents.add(weights[i] + "/(" + kVal + "+" + rank + ")");
       }
     }
     reciprocalRankFusionExplain.append(scoreComponents);

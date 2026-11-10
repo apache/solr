@@ -193,6 +193,7 @@ public class ReciprocalRankFusionTest extends SolrTestCaseJ4 {
     Explanation docA = explanations.get("A");
     // A is rank 1 in lexical (weight 2) and rank 2 in vector (weight 1)
     assertTrue(docA.getDescription().contains("2.0/(20+1)"));
+    assertTrue(docA.getDescription().contains("1.0/(20+2)"));
     assertTrue(docA.getDescription().contains("1 for query(lexical)"));
     assertTrue(docA.getDescription().contains("2 for query(vector)"));
   }
