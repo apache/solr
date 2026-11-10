@@ -77,8 +77,7 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
 
   void prepareConfiguration(NamedList<?> args) {
     injectPluginSettingsIfNotConfigured(args);
-    // The SDK gives OTEL_SERVICE_NAME precedence over a service.name resource attribute, so
-    // defaulting it would override a name the operator gave that way instead.
+    // The SDK ranks OTEL_SERVICE_NAME above a service.name attribute; don't default over one.
     if (!parseResourceAttributes(getEnvOrSysprop("OTEL_RESOURCE_ATTRIBUTES"))
         .containsKey("service.name")) {
       setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
@@ -91,8 +90,7 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
 
-    // The autoconfigured SDK must export neither metrics nor logs: Solr owns the meter providers,
-    // and OTEL_METRICS_EXPORTER is honoured by Solr's own OTLP metric exporter instead.
+    // Solr owns the meter providers, and honours OTEL_METRICS_EXPORTER in its own OTLP exporter.
     String logsExporter = getEnvOrSysprop("OTEL_LOGS_EXPORTER");
     if (logsExporter != null && !Objects.equals(logsExporter, "none")) {
       log.warn(

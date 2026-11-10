@@ -381,7 +381,7 @@ Endpoint to send OTLP metrics to using the HTTP protocol.
 === Standard OpenTelemetry properties
 
 Every setting above also accepts its standard OpenTelemetry equivalent, so one set of `OTEL_*` variables can configure metrics and xref:distributed-tracing.adoc[traces] together.
-The Solr-specific property takes precedence where both are set.
+Where both are set, the Solr property wins.
 
 [cols="2,3",options="header"]
 |===
@@ -400,7 +400,7 @@ The Solr-specific property takes precedence where both are set.
 | `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, then `OTEL_EXPORTER_OTLP_ENDPOINT`
 |===
 
-The attributes describing which node the metrics came from are configured the same way; see xref:opentelemetry.adoc#resource-attributes[Resource Attributes].
+Which node the metrics came from is configured the same way; see xref:opentelemetry.adoc#resource-attributes[Resource Attributes].
 
 === OpenTelemetry Collector setup
 

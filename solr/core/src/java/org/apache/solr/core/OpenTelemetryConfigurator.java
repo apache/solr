@@ -68,9 +68,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   private static final String UNKNOWN_SERVICE = "unknown_service:java";
 
   /**
-   * {@code OTEL_METRICS_EXPORTER} as the operator configured it. Captured at class initialization,
-   * which happens before the {@code opentelemetry} module overwrites the system property with
-   * {@code none} to stop the autoconfigured SDK exporting metrics Solr already owns.
+   * {@code OTEL_METRICS_EXPORTER} as configured, captured before the {@code opentelemetry} module
+   * overwrites the system property with {@code none}.
    */
   private static final String CONFIGURED_METRICS_EXPORTER =
       getConfig("OTEL_METRICS_EXPORTER", System.getenv());
@@ -109,9 +108,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     if (loaded) return;
     loaded = true;
 
-    // Publish Solr's identity through OTEL_RESOURCE_ATTRIBUTES before any configurator reads it, so
-    // an autoconfigured SDK and Solr's own meter providers resolve the same resource. Deliberately
-    // not otel.service.name: that one doubles as the module's auto-activation switch.
+    // Publish before any configurator reads it, so the SDK and Solr's meter providers agree. Not
+    // otel.service.name: that one doubles as the module's auto-activation switch.
     setDefaultResourceAttributes(cfg, System.getenv());
     telemetryResource = resourceFromConfig(System.getenv());
 
@@ -220,9 +218,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   }
 
   /**
-   * Builds the resource from the standard OTEL configuration. Used when no configurator supplies
-   * one -- no {@code opentelemetry} module, or a Java agent owning tracing -- so that the metrics
-   * endpoints still report who they belong to.
+   * Builds the resource from the standard OTEL configuration, for when no configurator supplies
+   * one: no {@code opentelemetry} module, or a Java agent owning tracing.
    */
   private static Resource resourceFromConfig(Map<String, String> env) {
     AttributesBuilder attrs = Attributes.builder();
@@ -236,9 +233,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   }
 
   /**
-   * Names the service {@code solr} unless that is already configured. {@code host.name} and {@code
-   * service.instance.id} need no equivalent here: {@link #setDefaultResourceAttributes} publishes
-   * them through {@code otel.resource.attributes}, which every path reads.
+   * Names the service {@code solr} unless configured. {@code host.name} and {@code
+   * service.instance.id} come from {@code otel.resource.attributes} instead.
    */
   private static Resource withSolrDefaults(Resource base) {
     String serviceName = base.getAttribute(SERVICE_NAME);
@@ -249,9 +245,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   }
 
   /**
-   * Merges Solr's resource attribute defaults into {@code otel.resource.attributes}. Values already
-   * configured by the operator take precedence, in the configurator's own order: the environment or
-   * a system property first, then {@code <tracerConfig>} init args.
+   * Merges Solr's defaults into {@code otel.resource.attributes}, below the environment, a system
+   * property and {@code <tracerConfig>} init args, in that order of precedence.
    */
   private static void setDefaultResourceAttributes(NodeConfig cfg, Map<String, String> env) {
     Map<String, String> attrs = new LinkedHashMap<>();
@@ -263,8 +258,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         attrs.put(SERVICE_INSTANCE_ID.getKey(), host + ":" + port);
       }
     }
-    // Setting the property below stops the configurator from applying its own init args, so fold
-    // them in here instead, under anything the operator configured directly.
+    // The property set below would shadow the configurator's own init args, so fold them in here.
     attrs.putAll(parseResourceAttributes(tracerConfigResourceAttributes(cfg)));
     attrs.putAll(parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env)));
     if (attrs.isEmpty()) return;

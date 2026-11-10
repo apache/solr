@@ -43,15 +43,13 @@ public interface MetricExporterFactory {
   MetricExporter getExporter();
 
   /**
-   * Also enabled by {@code OTEL_METRICS_EXPORTER} naming {@code otlp}, the only one Solr exports.
-   * Consulted only when the Solr property is absent, so an explicit {@code false} there turns
-   * Solr's export off without having to change a shared OTEL configuration.
+   * Also enabled by {@code OTEL_METRICS_EXPORTER} naming {@code otlp}, the only one Solr exports,
+   * but only while the Solr property is unset, so an explicit {@code false} still disables export.
    */
   private static boolean resolveEnabled() {
     String solrEnabled = EnvUtils.getProperty("solr.metrics.otlpExporterEnabled");
     if (solrEnabled != null) return Boolean.parseBoolean(solrEnabled);
-    // As the operator set it: the opentelemetry module overwrites the system property with "none"
-    // to keep the autoconfigured SDK from running a metrics pipeline of its own.
+    // As configured, not as the opentelemetry module later overwrote the system property.
     String configured = OpenTelemetryConfigurator.getConfiguredMetricsExporter();
     return configured != null && configured.contains("otlp");
   }
