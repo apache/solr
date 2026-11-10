@@ -53,7 +53,7 @@ public interface ListCollectionsApi {
               description =
                   "Only used when 'detailed' is true. Route key of a document. Limits the tree to"
                       + " the shard that would hold that document.")
-          @QueryParam("_route_")
+          @QueryParam("route")
           String routeKey,
       @Parameter(
               description =
