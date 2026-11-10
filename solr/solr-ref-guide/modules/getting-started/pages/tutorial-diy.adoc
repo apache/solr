@@ -44,7 +44,7 @@ docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
 
 === Start Solr with the extraction module enabled
 
-[,console]
+[,bash]
 ----
 # Stop Solr if it is running
 bin/solr stop --all
@@ -58,9 +58,9 @@ bin/solr start -Dsolr.modules=extraction
 Before you get started, create a new collection, named whatever you'd like.
 In this example, the collection will be named "localDocs"; replace that name with whatever name you choose if you want to.
 
-[,console]
+[,bash]
 ----
-$ bin/solr create -c localDocs --shards 2 -rf 2
+bin/solr create -c localDocs --shards 2 -rf 2
 ----
 
 Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides.
@@ -71,7 +71,7 @@ You may need to iterate on indexing a few times before you get the schema right.
 
 Add the /update/extract handler to your collection, pointing to the Tika Server you just started
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/localDocs/config' -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
@@ -97,9 +97,9 @@ We used only JSON, XML and CSV in our exercises, but the Post command can also h
 In this example, assume there is a directory named "Documents" locally.
 To index it, we would issue a command like this (correcting the collection name after the `-c` parameter as needed):
 +
-[,console]
+[,bash]
 ----
-$ bin/solr post -c localDocs ~/Documents
+bin/solr post -c localDocs ~/Documents
 ----
 +
 You may get errors as it works through your documents.
@@ -140,16 +140,16 @@ We can use `bin/solr post` to delete documents also if we structure the request 
 
 Execute the following command to delete a specific document:
 
-[,console]
+[,bash]
 ----
-$ bin/solr post -c localDocs --mode args "{delete: {id:'SP2514N'}}"
+bin/solr post -c localDocs --mode args "{delete: {id:'SP2514N'}}"
 ----
 
 To delete all documents, you can use "delete-by-query" command like:
 
-[,console]
+[,bash]
 ----
-$ bin/solr post -c localDocs --mode args "{delete: {query:'*:*'}}"
+bin/solr post -c localDocs --mode args "{delete: {query:'*:*'}}"
 ----
 
 You can also modify the above to only delete documents that match a specific query.

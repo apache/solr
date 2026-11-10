@@ -3286,8 +3286,6 @@ lion => panthera leo|0.9, simba|0.8, kimba|0.75
 
 *Example:*
 
-====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="query">
@@ -3296,7 +3294,6 @@ lion => panthera leo|0.9, simba|0.8, kimba|0.75
   <filter name="delimitedBoost"/>
 </analyzer>
 ----
-====
 
 *In:* "lion"
 

@@ -8,7 +8,7 @@ If property is being used, it can be a system property (-D...) or a project prop
 
 *Example:*
 
-`gradlew test -p solr/test-framework --tests TestLogLevelAnnotations -Dtests.verbose=true -Druntime.java.home=/jvms/jdk14`
+`gradlew test -p solr/test-framework --tests TestLogLevelAnnotations -Dtests.verbose=true -Druntime.java.home=/jvms/jdk25`
 
 Note that an alternative JVM can also be made the "default" setting
 by adding it to (project-local) gradle.properties.

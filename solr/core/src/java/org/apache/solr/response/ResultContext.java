@@ -57,7 +57,7 @@ public abstract class ResultContext {
 
   public boolean wantsScores() {
     return getReturnFields() != null
-        && getReturnFields().wantsScore()
+        && getReturnFields().returnsScore()
         && getDocList() != null
         && getDocList().hasScores();
   }

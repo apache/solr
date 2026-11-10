@@ -1,0 +1,12 @@
+title: >
+  Add script filter operator to intervals QParser, evaluated by Lucene Expressions
+  with interval.start, interval.end and interval.gap variables in scope.
+type: added
+authors:
+  - name: Mikhail Khludnev
+    nick: mkhl
+  - name: Nick Shanin
+    nick: nick-boss-tech
+links:
+  - name: SOLR-18585
+    url: https://issues.apache.org/jira/browse/SOLR-18585

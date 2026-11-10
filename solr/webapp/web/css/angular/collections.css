@@ -395,3 +395,46 @@ button.disabled
     /* styles when the element is disabled */
     color: #c0c0c0;
 }
+
+.health-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 6px;
+  vertical-align: middle;
+}
+
+#content #collections #data #collection-data h2
+{
+  display: flex;
+  align-items: center;
+}
+
+#content #collections #data #shard-data h2 .shard-name
+{
+  display: inline-flex;
+  align-items: center;
+}
+
+#content #collections #data #collection-data h2 .health-dot,
+#content #collections #data #shard-data h2 .shard-name .health-dot
+{
+  flex: 0 0 auto;
+}
+
+.health-dot.health-GREEN {
+  background-color: #57A957;
+}
+
+.health-dot.health-YELLOW {
+  background-color: #d5dd00;
+}
+
+.health-dot.health-ORANGE {
+  background-color: #c48f00;
+}
+
+.health-dot.health-RED {
+  background-color: #C43C35;
+}

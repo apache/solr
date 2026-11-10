@@ -48,6 +48,9 @@ public class S3PathsTest extends AbstractS3ClientTest {
   public void testDirectory() throws S3Exception {
 
     client.createDirectory("/simple-directory");
+    assertFalse("An empty dir does not exist on S3", client.pathExists("/simple-directory/"));
+
+    pushContent("/simple-directory/a-file", "content");
     assertFalse("Dir path needs a trailing slash", client.pathExists("/simple-directory"));
     assertTrue("Dir should exist without a leading slash", client.pathExists("simple-directory/"));
     assertTrue("Dir should exist with a leading slash", client.pathExists("/simple-directory/"));
@@ -161,6 +164,25 @@ public class S3PathsTest extends AbstractS3ClientTest {
     // Other files with same prefix should be there
     assertTrue(client.pathExists("/my-file1"));
     assertTrue(client.pathExists("/my-file2"));
+  }
+
+  /** A directory is any key prefix that has objects under it; no marker object is needed. */
+  @Test
+  public void testVirtualDirectoryWithoutMarker() throws S3Exception {
+    pushContent("/virtual-dir-sibling", "not under the prefix");
+    pushContent("/virtual-dir/file1", "file1");
+    pushContent("/virtual-dir/sub-dir/file2", "file2");
+
+    assertTrue(
+        "A path with objects under it should be considered a virtual directory",
+        client.isDirectory("/virtual-dir"));
+    assertTrue(
+        "A nested path with objects under it should be considered a virtual directory",
+        client.isDirectory("/virtual-dir/sub-dir"));
+    assertFalse(
+        "A path with no objects and no marker should not be a directory",
+        client.isDirectory("/virtual-dir/empty-sub-dir"));
+    assertFalse("A file is not a directory", client.isDirectory("/virtual-dir/file1"));
   }
 
   /** Check listing objects of a directory. */

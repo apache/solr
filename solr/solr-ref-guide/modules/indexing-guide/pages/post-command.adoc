@@ -23,9 +23,9 @@ NOTE: This tool is meant for use by new users exploring Solr's capabilities, and
 
 To run it, open a window and enter:
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted example/films/films.json
+bin/solr post --solr-url http://localhost:8983 --name gettingstarted example/films/films.json
 ----
 
 This will contact the server at `localhost:8983`.
@@ -84,41 +84,41 @@ This section presents several examples.
 
 Index all JSON files into `gettingstarted`.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted *.json
+bin/solr post --solr-url http://localhost:8983 --name gettingstarted *.json
 ----
 
 === Indexing XML
 
 Add all documents with file extension `.xml` to the collection named `gettingstarted`.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted *.xml
+bin/solr post --solr-url http://localhost:8983 --name gettingstarted *.xml
 ----
 
 Add all documents starting with `article` with file extension `.xml` to the `gettingstarted` collection on Solr running on port `8984`.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8984 --name gettingstarted article*.xml
+bin/solr post --solr-url http://localhost:8984 --name gettingstarted article*.xml
 ----
 
 Send XML arguments to delete a document from `gettingstarted`.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted --mode args --type application/xml '<delete><id>42</id></delete>'
+bin/solr post --solr-url http://localhost:8983 --name gettingstarted --mode args --type application/xml '<delete><id>42</id></delete>'
 ----
 
 === Indexing CSV and JSON
 
 Index all CSV and JSON files into `gettingstarted` from current directory:
 
-[,console]
+[,bash]
 ----
-$ bin/solr post -c gettingstarted --filetypes json,csv .
+bin/solr post -c gettingstarted --filetypes json,csv .
 ----
 
 `--filetypes` also applies to files named on the command line, including a shell-expanded `*`.
@@ -126,9 +126,9 @@ A file with any other extension is skipped with a warning, unless `--type` is se
 
 Index a tab-separated file into `gettingstarted`:
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8984 --name signals --params "separator=%09" --type text/csv data.tsv
+bin/solr post --solr-url http://localhost:8984 --name signals --params "separator=%09" --type text/csv data.tsv
 ----
 
 The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is.
@@ -140,32 +140,32 @@ Index a PDF file into `gettingstarted`.
 
 NOTE: This requires a Tika Server to be configured. See xref:indexing-with-tika.adoc#tika-server[Indexing With Tika] for details.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983/solr --name gettingstarted a.pdf
+bin/solr post --solr-url http://localhost:8983/solr --name gettingstarted a.pdf
 ----
 
 Automatically detect content types in a folder, and recursively scan it for documents for indexing into `gettingstarted`.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted  afolder/
+bin/solr post --solr-url http://localhost:8983 --name gettingstarted  afolder/
 ----
 
 Automatically detect content types in a folder, but limit it to PPT and HTML files and index into `gettingstarted`.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name gettingstarted --filetypes ppt,html afolder/
+bin/solr post --solr-url http://localhost:8983 --name gettingstarted --filetypes ppt,html afolder/
 ----
 
 === Indexing to a Password Protected Solr (Basic Auth)
 
 Index a PDF as the user "solr" with password "SolrRocks":
 
-[,console]
+[,bash]
 ----
-$ bin/solr post -u solr:SolrRocks --solr-url http://localhost:8983 --name gettingstarted a.pdf
+bin/solr post -u solr:SolrRocks --solr-url http://localhost:8983 --name gettingstarted a.pdf
 ----
 
 === Crawling a Website to Index Documents
@@ -174,9 +174,9 @@ Crawl the Apache Solr website going one layer deep and indexing the pages into S
 
 See xref:indexing-with-tika.adoc#trying-out-solr-cell[Trying Out Solr Cell] to learn more about setting up Solr for extracting content from web pages.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://solr.apache.org/
+bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://solr.apache.org/
 ----
 
 === Standard Input as Source for Indexing
@@ -184,16 +184,16 @@ $ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://sol
 You can use the standard input as your source for data to index.
 Notice the `--verbose` providing raw responses from Solr.
 
-[,console]
+[,bash]
 ----
-$ echo '{commit: {}}' | bin/solr post --mode stdin --solr-url http://localhost:8983 --name my_collection --verbose
+echo '{commit: {}}' | bin/solr post --mode stdin --solr-url http://localhost:8983 --name my_collection --verbose
 ----
 
 === Raw Data as Source for Indexing
 
 Provide the raw document as a string for indexing.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv --verbose $'id,value\n1,0.47'
+bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv --verbose $'id,value\n1,0.47'
 ----

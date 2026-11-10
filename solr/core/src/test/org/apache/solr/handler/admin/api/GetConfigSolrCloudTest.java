@@ -17,11 +17,17 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+import static org.apache.solr.handler.admin.api.GetConfig.REQUEST_HANDLERS;
 
+import java.util.Map;
 import org.apache.solr.client.api.model.IndexType;
+import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,13 +40,15 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty(ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
-    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    // 2 nodes so that a request can land on a node that does *not* host the collection's only
+    // replica, forcing Solr to internally proxy the request to the node that does.
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
         .process(cluster.getSolrClient());
   }
 
   @Test
-  public void testGetConfigFromCore() throws Exception {
+  public void testGetConfigFromCollection() throws Exception {
     var request = new ConfigApi.GetConfig(IndexType.COLLECTION, COLLECTION_NAME);
     var response = request.process(cluster.getSolrClient());
 
@@ -50,6 +58,160 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertTrue(response.config.containsKey("luceneMatchVersion"));
     assertTrue(response.config.containsKey("updateHandler"));
     assertTrue(response.config.containsKey("query"));
-    assertTrue(response.config.containsKey("requestHandler"));
+    assertFalse(response.config.containsKey("requestHandler"));
+    assertTrue(response.config.containsKey("requestHandlers"));
+  }
+
+  @Test
+  public void testGetOverlayFromCollection() throws Exception {
+    var request = new ConfigApi.GetOverlay(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.overlay);
+    assertTrue(response.overlay.containsKey("znodeVersion"));
+    assertEquals(-1, response.overlay.get("znodeVersion"));
+  }
+
+  @Test
+  public void testGetZnodeVersionFromCollection() throws Exception {
+    var request = new ConfigApi.GetZnodeVersion(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.znodeVersion);
+    assertTrue(response.znodeVersion.overlay >= -1);
+    assertTrue(response.znodeVersion.params >= -1);
+  }
+
+  /**
+   * Reproduces a bug where a v2 "/config" request proxied internally to the node actually hosting
+   * the collection fails with "Cannot find API for the path", because Solr forwards such requests
+   * using the short "/c/{collection}/..." alias, but {@code Constants.INDEX_PATH_PREFIX}'s JAX-RS
+   * {@code @Path} regex only recognizes "cores" or "collections", not "c".
+   */
+  @Test
+  public void testGetOverlayFromCollectionViaNonHostingNode() throws Exception {
+    Replica replica = getCollectionState(COLLECTION_NAME).replicaStream().findFirst().orElseThrow();
+    JettySolrRunner hostingJetty = cluster.getReplicaJetty(replica);
+    JettySolrRunner otherJetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(jetty -> !jetty.equals(hostingJetty))
+            .findFirst()
+            .orElseThrow();
+
+    try (var client = new HttpJettySolrClient.Builder(otherJetty.getBaseUrl().toString()).build()) {
+      var request = new ConfigApi.GetOverlay(IndexType.COLLECTION, COLLECTION_NAME);
+      var response = request.process(client);
+
+      assertNotNull(response);
+      assertNull(response.error);
+      assertNotNull(response.overlay);
+      assertTrue(response.overlay.containsKey("znodeVersion"));
+    }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersFromCollection() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertNotNull(response.config);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+    assertNotNull(configSection);
+    assertTrue(configSection.containsKey("/select"));
+    assertTrue(configSection.containsKey("/admin/ping"));
+    assertTrue(configSection.containsKey("/graph"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersFilteredByNameFromCollection() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/select");
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+    assertNotNull(configSection);
+    assertEquals(1, configSection.size());
+    assertTrue(configSection.containsKey("/select"));
+
+    Map<String, Object> selectRHSection = (Map<String, Object>) configSection.get("/select");
+    assertEquals("/select", selectRHSection.get("name"));
+    assertEquals("solr.SearchHandler", selectRHSection.get("class"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersExpandParamsTrue() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/admin/ping");
+    request.setExpandParams(true);
+    var response = request.process(cluster.getSolrClient());
+
+    assertNotNull(response);
+    assertNull(response.error);
+    assertEquals(1, response.config.size());
+    assertTrue(response.config.containsKey(REQUEST_HANDLERS));
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
+    assertNotNull(pingRHSection.get("_useParamsExpanded_"));
+    Map<String, Object> expandedPingRHSection =
+        (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
+    assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetRequestHandlersOmitsExpandedParamsByDefault() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/admin/ping");
+    var response = request.process(cluster.getSolrClient());
+
+    Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
+
+    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
+    assertFalse(pingRHSection.containsKey("_useParamsExpanded_"));
+  }
+
+  @Test
+  public void testGetRequestHandlersByUnknownNameReturnsNotFound() throws Exception {
+    var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
+    request.setComponentName("/randomHandler");
+    final RemoteSolrException exception =
+        assertThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+    assertEquals(404, exception.code());
+  }
+
+  @Test
+  public void testGetConfigComponentFromCollection() throws Exception {
+    for (String component : GetConfig.MIGRATED_CONFIG_COMPONENTS) {
+      String pathComponent = GetConfig.toExternalComponentName(component);
+      var request =
+          new ConfigApi.GetConfigComponent(IndexType.COLLECTION, COLLECTION_NAME, pathComponent);
+      var response = request.process(cluster.getSolrClient());
+
+      assertNotNull(component, response);
+      assertNull(component, response.error);
+      assertNotNull(component, response.config);
+      assertTrue(component, response.config.containsKey(pathComponent));
+      assertEquals(component, 1, response.config.size());
+    }
   }
 }
