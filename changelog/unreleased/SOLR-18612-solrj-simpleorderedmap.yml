@@ -5,7 +5,7 @@ title: >
   the client-side objects JsonMapResponseParser and QueryResponse.getFacetPivot() return, routed-update
   bookkeeping) it now creates a SimpleOrderedMap. Request bodies are byte-for-byte unchanged and Solr's
   responses are not touched; only the runtime type of these client-side objects changes.
-type: other
+type: changed
 authors:
   - name: Ivan Šarić
     nick: isaric
