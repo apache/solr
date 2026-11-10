@@ -17,19 +17,25 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.RebalanceLeadersRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Unit tests for rebalance-leaders request parameters and top-level response fields. */
 public class RebalanceLeadersAPITest extends MockV2APITest {
@@ -73,6 +79,34 @@ public class RebalanceLeadersAPITest extends MockV2APITest {
     assertEquals(
         Map.of("Success", "All active replicas with the preferredLeader property set are leaders"),
         response.summary);
+  }
+
+  @Test
+  public void testBodyParametersReachOperation() throws Exception {
+    originalParams.set("maxAtOnce", 99);
+    originalParams.set("maxWaitSeconds", 999);
+    final var body = new RebalanceLeadersRequestBody();
+    body.maxAtOnce = 2;
+    body.maxWaitSeconds = 30;
+    final var observedApi = spy(api);
+    observedApi.callingLockId = "lock-id";
+    doReturn(new NamedList<>()).when(observedApi).executeRebalance(any());
+
+    observedApi.rebalanceLeaders("collection", body);
+
+    final var captor =
+        ArgumentCaptor.forClass(org.apache.solr.handler.admin.RebalanceLeaders.class);
+    verify(observedApi).executeRebalance(captor.capture());
+    final var operation = captor.getValue();
+    final Field maxAtOnce = operation.getClass().getDeclaredField("maxAtOnce");
+    final Field maxWaitSeconds = operation.getClass().getDeclaredField("maxWaitSeconds");
+    final Field callingLockId = operation.getClass().getDeclaredField("callingLockId");
+    maxAtOnce.setAccessible(true);
+    maxWaitSeconds.setAccessible(true);
+    callingLockId.setAccessible(true);
+    assertEquals(2, maxAtOnce.getInt(operation));
+    assertEquals(30, maxWaitSeconds.getInt(operation));
+    assertEquals("lock-id", callingLockId.get(operation));
   }
 
   @Test

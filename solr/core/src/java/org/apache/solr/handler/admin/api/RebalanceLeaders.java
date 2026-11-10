@@ -28,6 +28,7 @@ import org.apache.solr.client.api.endpoint.RebalanceLeadersApi;
 import org.apache.solr.client.api.model.RebalanceLeadersRequestBody;
 import org.apache.solr.client.api.model.RebalanceLeadersResponse;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -65,13 +66,13 @@ public class RebalanceLeaders extends AdminAPIBase implements RebalanceLeadersAp
     int maxAtOnce = maxAtOnce(requestBody, solrQueryRequest.getParams());
     int maxWaitSeconds = maxWaitSeconds(requestBody, solrQueryRequest.getParams());
     final Map<String, Object> results =
-        new org.apache.solr.handler.admin.RebalanceLeaders(
-                collectionName,
-                maxAtOnce,
-                maxWaitSeconds,
-                callingLockId,
-                coreContainer.getCollectionsHandler())
-            .execute()
+        executeRebalance(
+                new org.apache.solr.handler.admin.RebalanceLeaders(
+                    collectionName,
+                    maxAtOnce,
+                    maxWaitSeconds,
+                    callingLockId,
+                    coreContainer.getCollectionsHandler()))
             .asMap(Integer.MAX_VALUE);
     response.summary = (Map<String, String>) results.get("Summary");
     response.successes = (Map<String, Map<String, String>>) results.get("successes");
@@ -80,6 +81,11 @@ public class RebalanceLeaders extends AdminAPIBase implements RebalanceLeadersAp
     response.inactivePreferreds =
         (Map<String, Map<String, String>>) results.get("inactivePreferreds");
     return response;
+  }
+
+  NamedList<Object> executeRebalance(org.apache.solr.handler.admin.RebalanceLeaders operation)
+      throws Exception {
+    return operation.execute();
   }
 
   static int maxAtOnce(RebalanceLeadersRequestBody body, SolrParams params) {
