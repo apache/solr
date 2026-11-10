@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import static org.hamcrest.Matchers.containsString;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -53,11 +54,16 @@ public class NDJsonLoaderTest extends SolrTestCase {
   private static BufferingRequestProcessor load(
       String content, SolrParams params, SolrQueryResponse rsp, String contentType)
       throws Exception {
-    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
     ContentStreamBase.StringStream stream = new ContentStreamBase.StringStream(content);
     if (contentType != null) {
       stream.setContentType(contentType);
     }
+    return load(stream, params, rsp);
+  }
+
+  private static BufferingRequestProcessor load(
+      ContentStreamBase stream, SolrParams params, SolrQueryResponse rsp) throws Exception {
+    BufferingRequestProcessor processor = new BufferingRequestProcessor(null);
     try (SolrQueryRequest req = new SolrQueryRequestBase(null, params)) {
       new NDJsonLoader().load(req, rsp, stream, processor);
     }
@@ -123,6 +129,16 @@ public class NDJsonLoaderTest extends SolrTestCase {
     params.set("split", "/children");
     SolrException e =
         expectThrows(SolrException.class, () -> load("{\"id\":\"1\",\"children\":[]}\n", params));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("must start at the document root"));
+  }
+
+  /** A split of only separators must be reported as a bad request, not blow up on paths[0]. */
+  @Test
+  public void testSplitOfOnlySeparatorsIsRejected() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("split", "|");
+    SolrException e = expectThrows(SolrException.class, () -> load("{\"id\":\"1\"}\n", params));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertThat(e.getMessage(), containsString("must start at the document root"));
   }
@@ -274,6 +290,29 @@ public class NDJsonLoaderTest extends SolrTestCase {
 
     SolrException e = expectThrows(SolrException.class, () -> load(sb.toString()));
     assertThat(e.getMessage(), containsString("line 3000"));
+  }
+
+  /** Newline offsets are retired at every refill, so blank lines do not pile up in memory. */
+  @Test
+  public void testManyBlankLinesKeepLineNumbers() {
+    String input = "\n".repeat(200_000) + "not json\n";
+    SolrException e = expectThrows(SolrException.class, () -> load(input));
+    assertThat(e.getMessage(), containsString("line 200001"));
+  }
+
+  /** Invalid UTF-8 fails the request instead of being indexed as replacement characters. */
+  @Test
+  public void testMalformedUtf8IsRejected() {
+    byte[] latin1 =
+        "{\"id\":\"1\",\"title_s\":\"caf\u00e9\"}\n".getBytes(StandardCharsets.ISO_8859_1);
+    ContentStreamBase.ByteArrayStream stream =
+        new ContentStreamBase.ByteArrayStream(latin1, "test", "application/x-ndjson");
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> load(stream, new ModifiableSolrParams(), new SolrQueryResponse()));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("malformed UTF-8 near line 1"));
   }
 
   /** A single document may span buffer refills without looking like it spans lines. */

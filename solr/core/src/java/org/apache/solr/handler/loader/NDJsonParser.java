@@ -140,6 +140,9 @@ class NDJsonParser extends JSONParser {
   @Override
   protected void fill() throws IOException {
     super.fill();
+    // Everything before the new buffer has been parsed, so retire its newlines now; waiting for
+    // the next token would let a long run of blank lines queue one offset per newline
+    consumeThrough(gpos - 1);
     for (int i = 0; i < end; i++) {
       char c = buf[i];
       if (c == '\n' || c == '\r') {

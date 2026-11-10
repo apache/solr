@@ -182,7 +182,7 @@ curl 'http://localhost:8983/solr/{collectionName}/update?commit=true' -H 'Conten
 ----
 
 `application/jsonl`, `application/jsonlines` and `application/x-jsonlines` are accepted as aliases, and the xref:post-command.adoc[] sends `.jsonl` and `.ndjson` files automatically.
-The format is UTF-8 only: a request declaring any other `charset` is rejected with a `415 Unsupported Media Type`.
+The format is UTF-8 only: a request declaring any other `charset` is rejected with a `415 Unsupported Media Type`, and a body containing malformed UTF-8 fails with a `400 Bad Request`.
 
 Solr parses and indexes the request as it streams in, so peak memory is bounded by the largest single document rather than by the size of the request, which makes the format a good fit for large bulk loads.
 Blank lines are ignored. Comments are not supported.

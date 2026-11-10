@@ -19,7 +19,9 @@ package org.apache.solr.handler.loader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
@@ -103,9 +105,20 @@ public class NDJsonLoader extends JsonLoader {
         ContentStream stream,
         UpdateRequestProcessor processor)
         throws Exception {
-      // The charset is already known to be UTF-8, so the stream is decoded as such
-      try (Reader reader = new InputStreamReader(stream.getStream(), StandardCharsets.UTF_8)) {
+      // The charset is already known to be UTF-8; decode strictly, so a malformed byte sequence
+      // fails the request rather than being indexed as U+FFFD
+      var decoder =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onMalformedInput(CodingErrorAction.REPORT)
+              .onUnmappableCharacter(CodingErrorAction.REPORT);
+      try (Reader reader = new InputStreamReader(stream.getStream(), decoder)) {
         processUpdate(reader);
+      } catch (CharacterCodingException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "NDJSON must be UTF-8 encoded, but found malformed UTF-8 near line "
+                + ndJsonParser.getLineNumber());
       } catch (ParseException e) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -139,7 +152,7 @@ public class NDJsonLoader extends JsonLoader {
       if (split == null) {
         return "/";
       }
-      String[] paths = split.split("\\|");
+      String[] paths = split.split("\\|", -1);
       if (!"/".equals(paths[0].trim())) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
