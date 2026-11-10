@@ -1,0 +1,11 @@
+title: >
+  The v2 "detailed collections tree" endpoint (GET /api/collections?detailed=true) now accepts
+  "route" instead of "_route_" to narrow results to the shard holding a specific document.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18553
+    url: https://issues.apache.org/jira/browse/SOLR-18553
+  - name: PR#5319
+    url: https://github.com/apache/solr/pull/5319

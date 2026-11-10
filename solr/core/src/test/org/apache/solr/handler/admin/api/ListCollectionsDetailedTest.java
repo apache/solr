@@ -134,6 +134,32 @@ public class ListCollectionsDetailedTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testRouteFilterNarrowsToOneShard() throws Exception {
+    final String routedCollection = "routedclusterstatus";
+    CollectionAdminRequest.createCollection(routedCollection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
+    Map<String, Object> unrouted =
+        collection(
+            getCollections("?detailed=true&collection=" + routedCollection), routedCollection);
+    assertEquals(Set.of("shard1", "shard2"), shards(unrouted).keySet());
+
+    Map<String, Object> routed =
+        collection(
+            getCollections("?detailed=true&collection=" + routedCollection + "&route=someKey"),
+            routedCollection);
+    assertEquals(1, shards(routed).size());
+
+    // The old "_route_" name is no longer bound to anything; it's silently ignored by JAX-RS,
+    // so the response is identical to passing no route filter at all.
+    Map<String, Object> oldParamName =
+        collection(
+            getCollections("?detailed=true&collection=" + routedCollection + "&_route_=someKey"),
+            routedCollection);
+    assertEquals(Set.of("shard1", "shard2"), shards(oldParamName).keySet());
+  }
+
+  @Test
   public void testCollectionShardAndAliasFilters() throws Exception {
     Map<String, Object> byCollection =
         collections(getCollections("?detailed=true&collection=" + COLLECTION));
