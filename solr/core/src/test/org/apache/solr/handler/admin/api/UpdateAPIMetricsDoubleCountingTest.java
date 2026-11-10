@@ -21,12 +21,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ContentStreamBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
