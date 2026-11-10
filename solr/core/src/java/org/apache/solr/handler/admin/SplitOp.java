@@ -47,7 +47,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.CORE, "");
+    String cname = params.get(CoreAdminParams.CORE);
 
     final var requestBody = new SplitCoreRequestBody();
     Optional.ofNullable(params.getParams(CommonParams.PATH))
