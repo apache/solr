@@ -20,6 +20,7 @@ package org.apache.solr.jersey;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.apache.solr.common.params.CommonParams.WT;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.ZookeeperRead;
+import org.apache.solr.logging.DeprecationLog;
 
 /**
  * Defaults the response content-type to JSON, unless the client requested something else via the
@@ -49,6 +51,13 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
   public void filter(
       ContainerRequestContext requestContext, ContainerResponseContext responseContext)
       throws IOException {
+
+    if (requestContext.getUriInfo().getQueryParameters().containsKey(WT)) {
+      DeprecationLog.log(
+          "v2-wt-param",
+          "The 'wt' request parameter has no effect on v2 API response format and is ignored; "
+              + "use the 'Accept' header instead.");
+    }
 
     // Solr has historically ignored client/server error responses here, so maintain that
     // behavior for compatibility.
