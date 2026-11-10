@@ -36,7 +36,8 @@ Only tracing goes through `GlobalOpenTelemetry`.
 A Java agent therefore takes over tracing but not Solr's metrics, which keep their own configuration and exporter either way.
 
 NOTE: The `opentelemetry` module turns the autoconfigured SDK's metrics and logs exporters off (`otel.metrics.exporter=none`, `otel.logs.exporter=none`) so they cannot duplicate or conflict with the above.
-`OTEL_METRICS_EXPORTER` is still read, but by Solr's own metric exporter rather than by the SDK; `OTEL_LOGS_EXPORTER` has no effect and logs a warning.
+`OTEL_METRICS_EXPORTER` is still read, but by Solr's own metric exporter, which only supports `otlp`.
+Any other value, and any `OTEL_LOGS_EXPORTER`, has no effect and logs a warning.
 
 Both signals share the same <<resource-attributes,resource attributes>>.
 

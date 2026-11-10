@@ -97,6 +97,14 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
           "The opentelemetry module does not support LOGS. Ignoring OTEL_LOGS_EXPORTER={}",
           logsExporter);
     }
+    String metricsExporter = getEnvOrSysprop("OTEL_METRICS_EXPORTER");
+    if (metricsExporter != null
+        && !Objects.equals(metricsExporter, "none")
+        && !metricsExporter.contains("otlp")) {
+      log.warn(
+          "Solr only exports metrics over OTLP. Ignoring OTEL_METRICS_EXPORTER={}",
+          metricsExporter);
+    }
     System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
   }
