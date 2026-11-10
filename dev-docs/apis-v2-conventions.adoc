@@ -156,6 +156,16 @@ Beyond that base, pick the narrowest existing response type that fits before wri
 If an API returns specific, known additional data beyond these bases (e.g. timing information, computed ranges, a resource's status fields), extend the appropriate base with typed `@JsonProperty` fields rather than reaching for `FlexibleSolrJerseyResponse` - see `SplitShardResponse.timing`, `SplitCoreResponse.ranges`, or `CollectionStatusResponse` for examples.
 Don't settle for a bare `SolrJerseyResponse` if the underlying operation actually produces more than a bare success/error - a v2 JSON caller has no other way to get that data, since (unlike v1) nothing else in the response pipeline will surface it (see the async caveat below for why this matters in practice).
 
+=== Listing vs. Single-Resource Responses
+
+When an API exposes both a "list all" endpoint and a "get one by name" endpoint for the same kind of resource, give each its own response type rather than reusing the list's shape for a single item:
+
+* `List<Resource>Response` - the collection endpoint's response. Its data is a map or list keyed/indexed across every matching resource (e.g. `ListAliasesResponse.aliases: Map<String, String>`).
+* `Get<Resource>Response` (or `Get<Resource>ByNameResponse`) - the single-resource endpoint's response. Its data is a flat object describing just that one resource, with no collection wrapper (e.g. `GetAliasByNameResponse.collections`, `GetAliasByNameResponse.properties`).
+
+Don't have the single-resource endpoint return the list type filtered down to one entry (e.g. a `Map<String, ...>` with one key) - that forces callers to re-extract by name something they already specified in the request, and conveys no information once only one key is possible.
+See `ListAliasesResponse`/`GetAliasByNameResponse`, `ListClusterPropertiesResponse`/`GetClusterPropertyResponse`, and `ListPackagesResponse`/`GetPackageResponse` for examples of the pattern.
+
 == Async Task Handling
 
 Solr has two distinct, non-interchangeable mechanisms for handling the `async` request parameter, depending on which base class the API extends:
