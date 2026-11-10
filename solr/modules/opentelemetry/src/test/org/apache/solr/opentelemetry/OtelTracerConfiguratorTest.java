@@ -34,6 +34,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
             "OTELNOTHERE", "foo",
             "OTEL_K1", "env-k1",
             "OTEL_K2", "env-k2");
+    System.clearProperty("otel.service.name");
+    System.clearProperty("otel.resource.attributes");
     System.setProperty("otelnothere", "bar");
     System.setProperty("otel.k1", "prop-k1");
     System.setProperty("otel.k3", "prop-k3");
@@ -70,6 +72,28 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     instance.setDefaultIfNotConfigured("OTEL_YEY", "default");
     assertEquals("default", instance.getCurrentOtelConfig().get("OTEL_YEY"));
     assertEquals("prop-k1", instance.getCurrentOtelConfig().get("OTEL_K1"));
+  }
+
+  @Test
+  public void testServiceNameDefault() {
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("solr", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  /** The SDK ranks OTEL_SERVICE_NAME above this attribute, so the default must stand down. */
+  @Test
+  public void testServiceNameFromResourceAttributes() {
+    System.setProperty("otel.resource.attributes", "service.name=search,foo=bar");
+    instance.prepareConfiguration(new NamedList<>());
+    assertNull(instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  @Test
+  public void testServiceNamePropertyOutranksResourceAttribute() {
+    System.setProperty("otel.service.name", "configured");
+    System.setProperty("otel.resource.attributes", "service.name=search");
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("configured", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
   }
 
   @Test

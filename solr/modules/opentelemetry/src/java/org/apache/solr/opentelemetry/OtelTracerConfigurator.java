@@ -77,7 +77,12 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
 
   void prepareConfiguration(NamedList<?> args) {
     injectPluginSettingsIfNotConfigured(args);
-    setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
+    // The SDK gives OTEL_SERVICE_NAME precedence over a service.name resource attribute, so
+    // defaulting it would override a name the operator gave that way instead.
+    if (!parseResourceAttributes(getEnvOrSysprop("OTEL_RESOURCE_ATTRIBUTES"))
+        .containsKey("service.name")) {
+      setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
+    }
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");

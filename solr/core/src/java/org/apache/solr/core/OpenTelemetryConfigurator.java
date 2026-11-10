@@ -288,8 +288,11 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     return null;
   }
 
-  /** Parses the comma separated {@code key=value} form, skipping entries that lack a value. */
-  private static Map<String, String> parseResourceAttributes(String commaSeparated) {
+  /**
+   * Parses the comma separated {@code key=value} form of {@code OTEL_RESOURCE_ATTRIBUTES}, skipping
+   * entries that lack a value.
+   */
+  protected static Map<String, String> parseResourceAttributes(String commaSeparated) {
     Map<String, String> parsed = new LinkedHashMap<>();
     if (commaSeparated == null) return parsed;
     for (String entry : commaSeparated.split(",")) {
