@@ -102,6 +102,16 @@ public class ZkClientClusterStateProvider
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), e);
     } catch (KeeperException e) {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), e);
+    } catch (SolrException e) {
+      Throwable cause = e.getCause();
+      if (e.code() == SolrException.ErrorCode.BAD_REQUEST.code
+          && (cause instanceof KeeperException || cause instanceof InterruptedException)) {
+        if (cause instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), cause);
+      }
+      throw e;
     }
   }
 

@@ -504,11 +504,11 @@ public class ZkStateReader implements SolrCloseable {
       if (ref == null) {
         // We either don't know anything about this collection (maybe it's new?).
         // see if it just got created.
-        DocCollection state = fetchCollectionState(collection, null);
-        if (state != null) {
+        LazyCollectionRef tryLazyCollection = new LazyCollectionRef(collection);
+        if (tryLazyCollection.get() != null) {
           // What do you know, it exists!
           log.debug("Adding lazily-loaded reference for collection {}", collection);
-          lazyCollectionStates.putIfAbsent(collection, new LazyCollectionRef(collection, state));
+          lazyCollectionStates.putIfAbsent(collection, tryLazyCollection);
           constructState(Set.of(collection));
         }
       } else if (ref.isLazilyLoaded()) {
@@ -754,13 +754,6 @@ public class ZkStateReader implements SolrCloseable {
       super(null);
       this.collName = collName;
       this.lastUpdateTime = -1;
-    }
-
-    public LazyCollectionRef(String collName, DocCollection initialState) {
-      super(null);
-      this.collName = collName;
-      this.cachedDocCollection = initialState;
-      this.lastUpdateTime = System.nanoTime();
     }
 
     @Override

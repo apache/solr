@@ -238,6 +238,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       doThrow(failure)
           .when(zkClient)
           .getData(eq(DocCollection.getCollectionPath("missing")), isNull(), any(Stat.class));
+      SolrException readerError =
+          expectThrows(SolrException.class, () -> reader.forceUpdateCollection("missing"));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, readerError.code());
+      assertSame(failure, readerError.getCause());
+
       SolrException error = expectThrows(SolrException.class, () -> provider.getState("missing"));
       assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, error.code());
       assertSame(failure, error.getCause());
