@@ -142,7 +142,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
         (schemaInputStream == null ? loader.openResource(name) : schemaInputStream)) {
       ConfigNode node = getParsedSchema(is, loader, name);
       if (is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream zkis) {
-        return new VersionedConfig(zkis.getStat().getVersion(), zkis.getStat().getCtime(), node);
+        return new VersionedConfig(zkis.getStat().getVersion(), zkis.getStat().getCzxid(), node);
       }
       return new VersionedConfig(0, 0, node);
     } catch (Exception e) {
@@ -179,7 +179,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       if (res == null) return cfgLoader.get();
       VersionedConfig result = null;
       result = confCache.computeIfAbsent(res.first(), k -> cfgLoader.get());
-      if (result.version == res.second().getVersion() && result.ctime == res.second().getCtime()) {
+      if (result.version == res.second().getVersion() && result.czxid == res.second().getCzxid()) {
         return result;
       } else {
         confCache.remove(res.first());
@@ -202,12 +202,12 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   public static class VersionedConfig {
     public final int version;
-    public final long ctime;
+    public final long czxid;
     public final ConfigNode data;
 
-    public VersionedConfig(int version, long ctime, ConfigNode data) {
+    public VersionedConfig(int version, long czxid, ConfigNode data) {
       this.version = version;
-      this.ctime = ctime;
+      this.czxid = czxid;
       this.data = data;
     }
   }

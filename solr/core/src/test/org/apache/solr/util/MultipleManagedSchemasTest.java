@@ -16,6 +16,9 @@
  */
 package org.apache.solr.util;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.file.PathUtils;
@@ -23,9 +26,15 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.schema.IndexSchemaFactory.VersionedConfig;
+import org.apache.zookeeper.data.Stat;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,6 +44,49 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
   public static void setUpCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "false");
     configureCluster(1).configure();
+  }
+
+  @Test
+  public void testCacheDistinguishesRecreatedZnodesWithSameCreationTime() throws Exception {
+    Stat originalStat = new Stat();
+    originalStat.setCtime(7);
+    originalStat.setCzxid(7);
+    Stat recreatedStat = new Stat();
+    recreatedStat.setCtime(7);
+    recreatedStat.setCzxid(8);
+    Stat updatedStat = new Stat();
+    updatedStat.setCtime(7);
+    updatedStat.setCzxid(8);
+    updatedStat.setVersion(1);
+
+    ZkSolrResourceLoader loader = mock(ZkSolrResourceLoader.class);
+    when(loader.getZkResourceInfo("solrconfig.xml"))
+        .thenReturn(
+            new Pair<>("/configs/test/solrconfig.xml", originalStat),
+            new Pair<>("/configs/test/solrconfig.xml", originalStat),
+            new Pair<>("/configs/test/solrconfig.xml", recreatedStat),
+            new Pair<>("/configs/test/solrconfig.xml", recreatedStat),
+            new Pair<>("/configs/test/solrconfig.xml", updatedStat));
+    VersionedConfig original = new VersionedConfig(0, 7, null);
+    VersionedConfig recreated = new VersionedConfig(0, 8, null);
+    VersionedConfig updated = new VersionedConfig(1, 8, null);
+    try (ObjectCache cache = new ObjectCache()) {
+      assertSame(
+          original,
+          IndexSchemaFactory.getFromCache("solrconfig.xml", loader, () -> cache, () -> original));
+      assertSame(
+          original,
+          IndexSchemaFactory.getFromCache("solrconfig.xml", loader, () -> cache, () -> recreated));
+      assertSame(
+          recreated,
+          IndexSchemaFactory.getFromCache("solrconfig.xml", loader, () -> cache, () -> recreated));
+      assertSame(
+          recreated,
+          IndexSchemaFactory.getFromCache("solrconfig.xml", loader, () -> cache, () -> original));
+      assertSame(
+          updated,
+          IndexSchemaFactory.getFromCache("solrconfig.xml", loader, () -> cache, () -> updated));
+    }
   }
 
   @Test

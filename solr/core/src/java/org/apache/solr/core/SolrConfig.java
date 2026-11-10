@@ -158,7 +158,7 @@ public class SolrConfig implements MapWriter {
 
   private class ResourceProvider implements Function<String, InputStream> {
     int zkVersion;
-    long zkCtime;
+    long zkCzxid;
     int hash = -1;
     InputStream in;
     String fileName;
@@ -167,7 +167,7 @@ public class SolrConfig implements MapWriter {
       this.in = in;
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream zkin) {
         zkVersion = zkin.getStat().getVersion();
-        zkCtime = zkin.getStat().getCtime();
+        zkCzxid = zkin.getStat().getCzxid();
         hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getVersion());
         this.fileName = zkin.fileName;
       } else if (in instanceof SolrResourceLoader.SolrFileInputStream sfin) {
@@ -386,7 +386,7 @@ public class SolrConfig implements MapWriter {
       XmlConfigFile xml = new XmlConfigFile(loader, rp, name, null, "/config/", null);
       return new IndexSchemaFactory.VersionedConfig(
           rp.zkVersion,
-          rp.zkCtime,
+          rp.zkCzxid,
           new DataConfigNode(new DOMConfigNode(xml.getDocument().getDocumentElement())));
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
