@@ -1,7 +1,7 @@
 title: >
   Metrics now carry OpenTelemetry resource attributes, configured with `OTEL_SERVICE_NAME` and
   `OTEL_RESOURCE_ATTRIBUTES` like traces, so pushed metrics identify the node they came from.
-type: added
+type: changed
 authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
