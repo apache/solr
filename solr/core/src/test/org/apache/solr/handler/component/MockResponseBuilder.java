@@ -17,7 +17,9 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
@@ -59,6 +61,9 @@ public class MockResponseBuilder extends ResponseBuilder {
     Mockito.when(request.getSchema()).thenReturn(indexSchema);
     Mockito.when(indexSchema.getUniqueKeyField()).thenReturn(uniqueIdField);
     Mockito.when(params.getBool(ShardParams.SHARDS_INFO)).thenReturn(false);
+    // RRF weight validation iterates params. A mock iterator() is null, so give it an empty one.
+    Mockito.when(params.iterator())
+        .thenReturn(Collections.<Map.Entry<String, String[]>>emptyIterator());
     Mockito.when(request.getParams()).thenReturn(params);
     Mockito.when(response.getResponseHeader()).thenReturn(responseHeader);
     Mockito.when(response.getReturnFields()).thenCallRealMethod();
