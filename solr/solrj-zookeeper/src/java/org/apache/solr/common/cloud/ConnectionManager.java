@@ -143,15 +143,15 @@ public class ConnectionManager implements Watcher {
     return true;
   }
 
-  /**
-   * Always applied, even if a newer event was seen: ignoring an expiration would skip re-creating
-   * the session. Events from the expired session that are numbered before it are ignored.
-   */
-  private synchronized void expired(long sequence) {
-    lastStateEventSequence = Math.max(lastStateEventSequence, sequence);
+  /** Returns false, without changing state, if a newer state event has already been applied. */
+  private synchronized boolean expired(long sequence) {
+    if (!acceptStateEvent(sequence)) {
+      return false;
+    }
     // we don't call disconnected here, because we know we are expired
     connected = false;
     likelyExpiredState = LikelyExpiredState.EXPIRED;
+    return true;
   }
 
   private synchronized boolean acceptStateEvent(long sequence) {
@@ -208,7 +208,10 @@ public class ConnectionManager implements Watcher {
       if (isClosed()) {
         return;
       }
-      expired(sequence);
+      if (!expired(sequence)) {
+        log.warn("Ignoring stale expired event {}", event);
+        return;
+      }
 
       log.warn(
           "Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
