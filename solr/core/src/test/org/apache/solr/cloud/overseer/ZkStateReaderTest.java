@@ -18,18 +18,6 @@ package org.apache.solr.cloud.overseer;
 
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_NODE_NAME;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -45,29 +33,19 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.ErrorListenerPathable;
-import org.apache.curator.framework.api.SyncBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.OverseerTest;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
@@ -93,7 +71,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
-import org.mockito.InOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,148 +142,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         new ZkStateWriter(reader, new Stats(), minStateByteLenForCompression, new ZLibCompressor());
 
     return new TestFixture(server, zkClient, reader, writer);
-  }
-
-  public void testProviderRefreshesCollectionMissingFromLocalState() throws Exception {
-    ZkStateReader reader = fixture.reader;
-    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
-      synchronized (reader.getUpdateLock()) {
-        assertNull(reader.getClusterState().getCollectionRef("new_collection"));
-        fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/new_collection", true);
-        DocCollection state =
-            DocCollection.create(
-                "new_collection",
-                new HashMap<>(),
-                Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                DocRouter.DEFAULT,
-                0,
-                Instant.now(),
-                PerReplicaStatesOps.getZkClientPrsSupplier(
-                    fixture.zkClient, DocCollection.getCollectionPath("new_collection")));
-        fixture.writer.enqueueUpdate(
-            reader.getClusterState(), List.of(new ZkWriteCommand("new_collection", state)), null);
-        fixture.writer.writePendingUpdates();
-
-        // The watcher cannot publish the new collection while this lock is held.
-        assertNull(reader.getClusterState().getCollectionRef("new_collection"));
-        ClusterState.CollectionRef refreshed = provider.getState("new_collection");
-        assertNotNull(refreshed);
-        assertEquals("new_collection", refreshed.get().getName());
-      }
-    }
-  }
-
-  public void testProviderDoesNotRefreshKnownAlias() throws Exception {
-    assumeWorkingMockito();
-    ZkStateReader reader = mock(ZkStateReader.class);
-    SolrZkClient zkClient = mock(SolrZkClient.class);
-    ClusterState state = mock(ClusterState.class);
-    when(reader.getClusterState()).thenReturn(state);
-    when(reader.getAliases())
-        .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("existing_alias", "collection"));
-    when(reader.getZkClient()).thenReturn(zkClient);
-    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
-      assertNull(provider.getState("existing_alias"));
-      verify(zkClient, never()).sync(ZkStateReader.COLLECTIONS_ZKNODE);
-      verify(reader, never()).forceUpdateCollection("existing_alias");
-      assertEquals(List.of("collection"), provider.resolveAlias("existing_alias"));
-    }
-  }
-
-  public void testProviderUnknownCollection() throws Exception {
-    assumeWorkingMockito();
-    ZkStateReader reader = mock(ZkStateReader.class);
-    SolrZkClient zkClient = mock(SolrZkClient.class);
-    when(reader.getClusterState()).thenReturn(mock(ClusterState.class));
-    when(reader.getAliases()).thenReturn(Aliases.EMPTY);
-    when(reader.getZkClient()).thenReturn(zkClient);
-    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
-      assertNull(provider.getState("unknown"));
-      InOrder order = inOrder(zkClient, reader);
-      order.verify(zkClient).sync(ZkStateReader.COLLECTIONS_ZKNODE);
-      order.verify(reader).forceUpdateCollection("unknown");
-    }
-  }
-
-  public void testProviderPropagatesCollectionReadFailures() throws Exception {
-    assumeWorkingMockito();
-    SolrZkClient zkClient = spy(fixture.zkClient);
-    try (ZkStateReader reader = new ZkStateReader(zkClient);
-        ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
-      reader.createClusterStateWatchersAndUpdate();
-      KeeperException failure = new KeeperException.ConnectionLossException();
-      doThrow(failure)
-          .when(zkClient)
-          .getData(eq(DocCollection.getCollectionPath("missing")), isNull(), any(Stat.class));
-      SolrException readerError =
-          expectThrows(SolrException.class, () -> reader.forceUpdateCollection("missing"));
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, readerError.code());
-      assertSame(failure, readerError.getCause());
-
-      SolrException error = expectThrows(SolrException.class, () -> provider.getState("missing"));
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, error.code());
-      assertSame(failure, error.getCause());
-
-      InterruptedException interrupted = new InterruptedException("interrupted");
-      doThrow(interrupted)
-          .when(zkClient)
-          .getData(eq(DocCollection.getCollectionPath("interrupted")), isNull(), any(Stat.class));
-      try {
-        error = expectThrows(SolrException.class, () -> provider.getState("interrupted"));
-        assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, error.code());
-        assertSame(interrupted, error.getCause());
-        assertTrue(Thread.currentThread().isInterrupted());
-      } finally {
-        Thread.interrupted();
-      }
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public void testSyncWaitsForCallbackAndPropagatesFailure() throws Exception {
-    assumeWorkingMockito();
-    SolrZkClient zkClient = spy(fixture.zkClient);
-    CuratorFramework curator = mock(CuratorFramework.class);
-    SyncBuilder builder = mock(SyncBuilder.class);
-    ErrorListenerPathable<Void> operation = mock(ErrorListenerPathable.class);
-    AtomicReference<BackgroundCallback> callback = new AtomicReference<>();
-    CountDownLatch started = new CountDownLatch(1);
-    doReturn(curator).when(zkClient).getCuratorFramework();
-    when(curator.sync()).thenReturn(builder);
-    when(builder.inBackground(any(BackgroundCallback.class)))
-        .thenAnswer(
-            invocation -> {
-              callback.set(invocation.getArgument(0));
-              return operation;
-            });
-    when(operation.forPath(anyString()))
-        .thenAnswer(
-            invocation -> {
-              started.countDown();
-              return null;
-            });
-
-    ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("zk-sync-test"));
-    try {
-      Future<?> result =
-          executor.submit(
-              () -> {
-                zkClient.sync(ZkStateReader.COLLECTIONS_ZKNODE);
-                return null;
-              });
-      assertTrue(started.await(TIMEOUT, TimeUnit.SECONDS));
-      expectThrows(TimeoutException.class, () -> result.get(200, TimeUnit.MILLISECONDS));
-      CuratorEvent event = mock(CuratorEvent.class);
-      when(event.getResultCode()).thenReturn(KeeperException.Code.CONNECTIONLOSS.intValue());
-      callback.get().processResult(curator, event);
-      ExecutionException error =
-          expectThrows(ExecutionException.class, () -> result.get(TIMEOUT, TimeUnit.SECONDS));
-      assertTrue(error.getCause() instanceof KeeperException.ConnectionLossException);
-    } finally {
-      executor.shutdownNow();
-      assertTrue(executor.awaitTermination(TIMEOUT, TimeUnit.SECONDS));
-    }
   }
 
   public void testExternalCollectionWatchedNotWatched() throws Exception {

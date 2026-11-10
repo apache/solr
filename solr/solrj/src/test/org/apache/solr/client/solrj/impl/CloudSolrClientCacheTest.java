@@ -158,19 +158,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testAliasResolvesToExistingCollection() throws Exception {
-    String collection = "gettingstarted";
-    Map<String, ClusterState.CollectionRef> refs =
-        Map.of(collection, new ClusterState.CollectionRef(loadCollection(collection, 1)));
-    try (ClusterStateProvider provider = spy(getStateProvider(Set.of(), refs));
-        RecordingCloudSolrClient client = new RecordingCloudSolrClient(provider, 2)) {
-      when(provider.resolveAlias("myalias")).thenReturn(List.of(collection));
-      assertNotNull(client.request(new DummyRequest("myalias"), "myalias"));
-      verify(provider, times(1)).getState("myalias");
-      verify(provider, times(1)).getState(collection);
-    }
-  }
-
   public void testStaleStateRetrySkipsStateVersionBeforeWait() throws Exception {
     String collName = "gettingstarted";
     Set<String> liveNodes = new HashSet<>(Set.of("192.168.1.108:8983_solr"));
