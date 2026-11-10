@@ -142,14 +142,21 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testObeysWtParameterWhenProvided() throws Exception {
+  public void testIgnoresWtParameter() throws Exception {
     final HttpClient httpClient = getRawClient();
     final String url = getListCollectionsUrl();
 
-    final var response = httpClient.GET(url + "?wt=xml");
+    // 'wt' is a v1-only convention; v2 APIs only honor the 'Accept' header. Sending 'wt=xml'
+    // alongside an 'Accept: application/json' proves 'wt' has no influence at all -- if it did,
+    // this would come back as XML instead.
+    final var response =
+        httpClient
+            .newRequest(url + "?wt=xml")
+            .headers(h -> h.add("Accept", "application/json"))
+            .send();
 
     assertEquals(200, response.getStatus());
-    assertEquals("application/xml", response.getHeaders().get("Content-type"));
+    assertEquals("application/json", response.getHeaders().get("Content-type"));
   }
 
   @Test

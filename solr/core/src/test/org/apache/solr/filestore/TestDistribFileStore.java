@@ -17,6 +17,7 @@
 
 package org.apache.solr.filestore;
 
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -50,8 +51,10 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -213,11 +216,15 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
+        // v2 APIs no longer honor 'wt'; request the raw file-store writer via 'Accept' instead
+        // (SOLR-18483), or content negotiation defaults to JSON and corrupts the bytes.
         var resp =
             jettySolrRunner
                 .getSolrClient()
                 .getHttpClient()
-                .GET(baseUrl + "/cluster/filestore/files" + path);
+                .newRequest(baseUrl + "/cluster/filestore/files" + path)
+                .headers(h -> h.add(HttpHeader.ACCEPT, RawResponseWriter.CONTENT_TYPE))
+                .send();
         assertEquals(200, resp.getStatus());
         ByteBuffer buf = ByteBuffer.wrap(resp.getContent());
         assertEquals(
@@ -238,7 +245,16 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
     @Override
     public NavigableObject call() throws Exception {
-      var resp = jetty.getSolrClient().getHttpClient().GET(this.url);
+      // Used against both Jersey-based v2 APIs (which no longer honor 'wt'; SOLR-18483) and
+      // older @EndPoint-based ones (which still do), so send both: the query param for the
+      // latter, and the 'Accept' header for the former.
+      var resp =
+          jetty
+              .getSolrClient()
+              .getHttpClient()
+              .newRequest(url)
+              .headers(h -> h.add(HttpHeader.ACCEPT, JAVABIN_CONTENT_TYPE_V2))
+              .send();
       assertEquals(200, resp.getStatus());
       return NavigableObject.wrap(new JavaBinCodec().unmarshal(resp.getContent()));
     }

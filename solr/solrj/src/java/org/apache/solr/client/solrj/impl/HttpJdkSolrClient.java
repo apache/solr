@@ -484,6 +484,12 @@ public class HttpJdkSolrClient extends HttpSolrClient {
         reqb.header(entry.getKey(), entry.getValue());
       }
     }
+    if (!hasHeader(customHeaders, "Accept")) {
+      final String acceptHeader = acceptHeaderFor(responseParser(solrRequest));
+      if (acceptHeader != null) {
+        reqb.header("Accept", acceptHeader);
+      }
+    }
     reqb.header(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
     // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
     reqb.header(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());

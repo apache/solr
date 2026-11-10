@@ -1,0 +1,14 @@
+title: >
+  V2 APIs no longer honor the undocumented 'wt' request parameter for selecting the response format
+  (json/xml/javabin/etc). Use the standard HTTP 'Accept' header instead; a response defaults to
+  JSON when 'Accept' is missing or '*/*'. SolrJ's HTTP clients have been updated to send an
+  appropriate 'Accept' header automatically based on the response parser in use, so most SolrJ
+  users are unaffected. Direct v2 API callers (curl, custom HTTP clients) that relied on 'wt' must
+  switch to 'Accept'.
+type: removed
+authors:
+  - name: Eric Pugh
+    nick: epugh
+links:
+  - name: SOLR-18483
+    url: https://issues.apache.org/jira/browse/SOLR-18483
