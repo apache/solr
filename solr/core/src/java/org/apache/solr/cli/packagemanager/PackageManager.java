@@ -1057,7 +1057,6 @@ public class PackageManager implements Closeable {
 
       // Set the package version in the collection's parameters
       try {
-        // Is it better to "unset"? If so, build support in params API for "unset"
         SolrCLI.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
