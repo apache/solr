@@ -10,6 +10,7 @@ authors:
   - name: Jalaz Kumar
     nick: jaykay12
   - name: Eric Pugh
+    nick: epugh
 links:
   - name: SOLR-17697
     url: https://issues.apache.org/jira/browse/SOLR-17697
