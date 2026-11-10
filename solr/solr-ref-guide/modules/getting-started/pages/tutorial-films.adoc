@@ -265,7 +265,7 @@ Each command will produce output similar to the below seen while indexing JSON:
 ----
 $ bin/solr post -c films example/films/films.json
 Posting files to [base] url http://localhost:8983/solr/films/update...
-Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
+Entering auto mode. File endings considered are xml,json,jsonl,ndjson,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 POSTing file films.json (application/json) to [base]/json/docs
 1 files indexed.
 COMMITting Solr index changes to http://localhost:8983/solr/films/update...

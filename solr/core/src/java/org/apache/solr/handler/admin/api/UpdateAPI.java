@@ -23,11 +23,11 @@ import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.loader.NDJsonLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ContentStream;
 
 /**
  * All v2 APIs that share a prefix of /update
