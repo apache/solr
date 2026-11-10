@@ -49,13 +49,14 @@ public class ClusterPackageTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testListPackagesReturnsResult() throws Exception {
+  public void testListPackagesReturnsPackages() throws Exception {
     try (HttpJettySolrClient client =
         new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
       ListPackagesResponse response = new PackageApi.ListPackages().process(client);
       assertNotNull("Expected non-null response from GET /cluster/packages", response);
-      assertNotNull("Expected 'result' field in GET /cluster/packages response", response.result);
+      assertNotNull(
+          "Expected 'packages' field in GET /cluster/packages response", response.packages);
     }
   }
 
@@ -84,22 +85,20 @@ public class ClusterPackageTest extends SolrCloudTestCase {
       // Verify the package was added via GET /cluster/packages
       ListPackagesResponse listResponse = new PackageApi.ListPackages().process(client);
       assertNotNull("Expected non-null list response", listResponse);
-      assertNotNull("Expected non-null result", listResponse.result);
+      assertNotNull("Expected non-null packages", listResponse.packages);
       assertNotNull(
-          "Expected pkgapitestpkg in packages", listResponse.result.packages.get("pkgapitestpkg"));
+          "Expected pkgapitestpkg in packages", listResponse.packages.get("pkgapitestpkg"));
       assertFalse(
-          "Expected at least one version",
-          listResponse.result.packages.get("pkgapitestpkg").isEmpty());
+          "Expected at least one version", listResponse.packages.get("pkgapitestpkg").isEmpty());
 
       // Verify GET /cluster/packages/{name} returns only this package
       GetPackageResponse getByNameResponse =
           new PackageApi.GetPackage("pkgapitestpkg").process(client);
       assertNotNull("Expected non-null get-by-name response", getByNameResponse);
-      assertNotNull("Expected non-null result from get-by-name", getByNameResponse.result);
-      assertEquals("pkgapitestpkg", getByNameResponse.result.name);
+      assertEquals("pkgapitestpkg", getByNameResponse.name);
       assertFalse(
           "Expected at least one version in get-by-name response",
-          getByNameResponse.result.versions.isEmpty());
+          getByNameResponse.versions.isEmpty());
 
       // Delete the package version via DELETE /cluster/packages/{name}/versions/{version}
       new PackageApi.DeletePackageVersion("pkgapitestpkg", "1.0").process(client);
@@ -107,9 +106,9 @@ public class ClusterPackageTest extends SolrCloudTestCase {
       // Verify it's deleted
       ListPackagesResponse listAfterDelete = new PackageApi.ListPackages().process(client);
       assertNotNull("Expected non-null list response after delete", listAfterDelete);
-      assertNotNull("Expected non-null result after delete", listAfterDelete.result);
+      assertNotNull("Expected non-null packages after delete", listAfterDelete.packages);
       // After deleting the only version, the package entry should be empty or absent
-      List<?> versionsAfterDelete = listAfterDelete.result.packages.get("pkgapitestpkg");
+      List<?> versionsAfterDelete = listAfterDelete.packages.get("pkgapitestpkg");
       assertTrue(
           "Expected no versions after delete",
           versionsAfterDelete == null || versionsAfterDelete.isEmpty());
@@ -202,7 +201,7 @@ public class ClusterPackageTest extends SolrCloudTestCase {
       listReq.setExpectedVersion(0);
       ListPackagesResponse listResponse = listReq.process(client);
       assertNotNull(listResponse);
-      assertNotNull(listResponse.result);
+      assertNotNull(listResponse.packages);
 
       // expectedVersion is honored even on the path that ends in a 404 for an unknown package.
       PackageApi.GetPackage getReq = new PackageApi.GetPackage("nonexistent_expected_version_pkg");

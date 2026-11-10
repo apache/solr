@@ -23,22 +23,15 @@ import java.util.List;
 /** Response for the get-a-specific-package API. */
 public class GetPackageResponse extends SolrJerseyResponse {
 
-  @JsonProperty("result")
-  @Schema(description = "The requested package's data.")
-  public PackageInfo result;
+  @JsonProperty("name")
+  @Schema(description = "The package name.")
+  public String name;
 
-  /** Data for a single package, returned by the get-package API. */
-  public static class PackageInfo {
-    @JsonProperty("znodeVersion")
-    @Schema(description = "The ZooKeeper version of the packages.json node.")
-    public int znodeVersion;
+  @JsonProperty("znodeVersion")
+  @Schema(description = "The ZooKeeper version of the packages.json node.")
+  public int znodeVersion;
 
-    @JsonProperty("name")
-    @Schema(description = "The package name.")
-    public String name;
-
-    @JsonProperty("versions")
-    @Schema(description = "The versions registered for this package.")
-    public List<ListPackagesResponse.PackageVersion> versions;
-  }
+  @JsonProperty("versions")
+  @Schema(description = "The versions registered for this package.")
+  public List<ListPackagesResponse.PackageVersion> versions;
 }

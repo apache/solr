@@ -24,20 +24,13 @@ import java.util.Map;
 /** Response for the package listing API. */
 public class ListPackagesResponse extends SolrJerseyResponse {
 
-  @JsonProperty("result")
-  @Schema(description = "The package data including znode version and package definitions.")
-  public PackageData result;
+  @JsonProperty("packages")
+  @Schema(description = "Map from package name to list of package versions.")
+  public Map<String, List<PackageVersion>> packages;
 
-  /** Package data returned by the package API. */
-  public static class PackageData {
-    @JsonProperty("znodeVersion")
-    @Schema(description = "The ZooKeeper version of the packages.json node.")
-    public int znodeVersion;
-
-    @JsonProperty("packages")
-    @Schema(description = "Map from package name to list of package versions.")
-    public Map<String, List<PackageVersion>> packages;
-  }
+  @JsonProperty("znodeVersion")
+  @Schema(description = "The ZooKeeper version of the packages.json node.")
+  public int znodeVersion;
 
   /** Describes a single version of a package. */
   public static class PackageVersion {

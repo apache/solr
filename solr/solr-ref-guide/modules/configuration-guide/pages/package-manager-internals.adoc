@@ -259,11 +259,11 @@ curl http://localhost:8983/api/cluster/packages?omitHeader=true
 +
 [source,json]
 ----
-  {"result":{
+  {
     "znodeVersion":0,
     "packages":{"mypkg":[{
           "version":"1.0",
-          "files":["/mypkg/1.0/myplugins.jar"]}]}}}
+          "files":["/mypkg/1.0/myplugins.jar"]}]}}
 ----
 
 . The package should be ready to use at this point.

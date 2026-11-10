@@ -62,7 +62,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     }
 
     final var response = new ListPackagesResponse();
-    response.result = toPackageData(packageStore.pkgs);
+    populatePackageData(response, packageStore.pkgs);
     return response;
   }
 
@@ -81,10 +81,9 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     }
 
     final var response = new GetPackageResponse();
-    response.result = new GetPackageResponse.PackageInfo();
-    response.result.znodeVersion = packageStore.pkgs.znodeVersion;
-    response.result.name = packageName;
-    response.result.versions =
+    response.znodeVersion = packageStore.pkgs.znodeVersion;
+    response.name = packageName;
+    response.versions =
         pkgVersions.stream().map(ClusterPackage::toPkgVersionResponse).collect(Collectors.toList());
     return response;
   }
@@ -178,13 +177,13 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     }
   }
 
-  private static ListPackagesResponse.PackageData toPackageData(PackageStore.Packages packages) {
+  private static void populatePackageData(
+      ListPackagesResponse response, PackageStore.Packages packages) {
     if (packages == null) {
-      return null;
+      return;
     }
-    final var data = new ListPackagesResponse.PackageData();
-    data.znodeVersion = packages.znodeVersion;
-    data.packages =
+    response.znodeVersion = packages.znodeVersion;
+    response.packages =
         packages.packages.entrySet().stream()
             .collect(
                 Collectors.toMap(
@@ -193,7 +192,6 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
                         e.getValue().stream()
                             .map(ClusterPackage::toPkgVersionResponse)
                             .collect(Collectors.toList())));
-    return data;
   }
 
   private static ListPackagesResponse.PackageVersion toPkgVersionResponse(
