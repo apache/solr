@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
@@ -124,7 +125,7 @@ public class RebalanceLeaders {
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
-  public SimpleOrderedMap<Object> execute() throws Exception {
+  public NamedList<Object> execute() throws Exception {
     DocCollection dc = checkParams();
 
     int max = maxAtOnce;
@@ -461,8 +462,7 @@ public class RebalanceLeaders {
 
     // ignore response; we construct our own
     collectionsHandler.submitCollectionApiCommand(
-        new AdminCmdContext(REBALANCELEADERS, asyncId, callingLockId),
-        new ZkNodeProps(propMap));
+        new AdminCmdContext(REBALANCELEADERS, asyncId, callingLockId), new ZkNodeProps(propMap));
   }
 
   // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.
