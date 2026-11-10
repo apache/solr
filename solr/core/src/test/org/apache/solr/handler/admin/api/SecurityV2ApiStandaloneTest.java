@@ -22,7 +22,12 @@ import static org.hamcrest.Matchers.hasItem;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.api.model.CreatePermissionResponse;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
@@ -34,6 +39,8 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.AuthenticationApi;
 import org.apache.solr.client.solrj.request.AuthorizationApi;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.SecurityJson;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -185,5 +192,40 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
                 authed(new AuthorizationApi.DeletePermission(newIndex))
                     .process(solrTestRule.getAdminClient()));
     assertEquals(404, notFound.code());
+  }
+
+  @Test
+  public void testConcurrentUserEdits() throws Exception {
+    int numEdits = 20;
+    CyclicBarrier barrier = new CyclicBarrier(numEdits);
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            numEdits, new SolrNamedThreadFactory("securityEdit"));
+    try {
+      List<Future<?>> futures = new ArrayList<>();
+      for (int i = 0; i < numEdits; i++) {
+        var create = authed(new AuthenticationApi.CreateOrUpdateUser(SCHEME, "user" + i));
+        create.setPassword("pass" + i);
+        futures.add(
+            executor.submit(
+                () -> {
+                  barrier.await(30, TimeUnit.SECONDS);
+                  return create.process(solrTestRule.getAdminClient());
+                }));
+      }
+      for (Future<?> future : futures) {
+        future.get();
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+
+    ListUsersResponse users =
+        authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
+    for (int i = 0; i < numEdits; i++) {
+      assertThat(users.users, hasItem("user" + i));
+      authed(new AuthenticationApi.DeleteUser(SCHEME, "user" + i))
+          .process(solrTestRule.getAdminClient());
+    }
   }
 }

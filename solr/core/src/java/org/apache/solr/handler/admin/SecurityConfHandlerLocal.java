@@ -45,13 +45,14 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
   }
 
   /**
-   * Serializes requests, since a local file has no versioned write to detect concurrent edits the
-   * way ZooKeeper does. Reads are included so they never see a partially written file.
+   * Serializes edits, since a local file has no versioned write to detect concurrent edits the way
+   * ZooKeeper does. Reads take the same lock so they never see a partially written file.
    */
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void editSecurityConfig(SolrQueryRequest req, String key, List<CommandOperation> ops)
+      throws IOException {
     synchronized (securityJsonLock) {
-      super.handleRequestBody(req, rsp);
+      super.editSecurityConfig(req, key, ops);
     }
   }
 
@@ -64,17 +65,19 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
    */
   @Override
   public SecurityConfig getSecurityConfig(boolean getFresh) {
-    if (Files.exists(securityJsonPath)) {
-      try (InputStream securityJsonIs = Files.newInputStream(securityJsonPath)) {
-        return new SecurityConfig().setData(securityJsonIs);
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Failed opening existing security.json file: " + securityJsonPath,
-            e);
+    synchronized (securityJsonLock) {
+      if (Files.exists(securityJsonPath)) {
+        try (InputStream securityJsonIs = Files.newInputStream(securityJsonPath)) {
+          return new SecurityConfig().setData(securityJsonIs);
+        } catch (Exception e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Failed opening existing security.json file: " + securityJsonPath,
+              e);
+        }
       }
+      return new SecurityConfig();
     }
-    return new SecurityConfig();
   }
 
   @Override
@@ -96,15 +99,17 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to SOLR_HOME. Object was empty.");
     }
-    try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
-      securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
-      log.debug("Persisted security.json to {}", securityJsonPath);
-      return true;
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Failed persisting security.json to " + securityJsonPath,
-          e);
+    synchronized (securityJsonLock) {
+      try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
+        securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
+        log.debug("Persisted security.json to {}", securityJsonPath);
+        return true;
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed persisting security.json to " + securityJsonPath,
+            e);
+      }
     }
   }
 
