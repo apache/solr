@@ -99,17 +99,15 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to SOLR_HOME. Object was empty.");
     }
-    synchronized (securityJsonLock) {
-      try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
-        securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
-        log.debug("Persisted security.json to {}", securityJsonPath);
-        return true;
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Failed persisting security.json to " + securityJsonPath,
-            e);
-      }
+    try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
+      securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
+      log.debug("Persisted security.json to {}", securityJsonPath);
+      return true;
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed persisting security.json to " + securityJsonPath,
+          e);
     }
   }
 

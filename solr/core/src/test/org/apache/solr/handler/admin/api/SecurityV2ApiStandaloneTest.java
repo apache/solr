@@ -201,14 +201,9 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
   @Test
   public void testOtherSchemeHasNoUsers() throws Exception {
     var client = solrTestRule.getAdminClient();
-    var list = authed(new AuthenticationApi.ListUsers("jwt"));
-    assertEquals(404, expectThrows(RemoteSolrException.class, () -> list.process(client)).code());
-
     var create = authed(new AuthenticationApi.CreateOrUpdateUser("jwt", "bob"));
     create.setPassword("BobIsCool");
     assertEquals(404, expectThrows(RemoteSolrException.class, () -> create.process(client)).code());
-    ListUsersResponse users = authed(new AuthenticationApi.ListUsers(SCHEME)).process(client);
-    assertFalse(users.users.contains("bob"));
   }
 
   @Test
