@@ -16,17 +16,13 @@
  */
 package org.apache.solr.pkg;
 
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_PERM;
 
 import jakarta.inject.Inject;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
@@ -39,13 +35,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.FileStoreUtils;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * JAX-RS implementation of the package management API ({@code /api/cluster/packages}).
@@ -53,11 +45,6 @@ import org.slf4j.LoggerFactory;
  * @see PackageApis
  */
 public class ClusterPackage extends JerseyResource implements PackageApis {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final int SYNC_MAX_RETRIES = 10;
-  private static final long SYNC_SLEEP_MS = 10L;
-
   private final CoreContainer coreContainer;
 
   @Inject
@@ -71,7 +58,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
     if (expectedVersion != null) {
-      syncToVersion(packageStore, expectedVersion);
+      packageStore.syncToVersion(expectedVersion);
     }
 
     final var response = new ListPackagesResponse();
@@ -85,7 +72,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
     if (expectedVersion != null) {
-      syncToVersion(packageStore, expectedVersion);
+      packageStore.syncToVersion(expectedVersion);
     }
 
     final List<PackageStore.PkgVersion> pkgVersions = packageStore.pkgs.packages.get(packageName);
@@ -109,50 +96,9 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
-    packageStore.requireEnabled();
-    if (requestBody == null || requestBody.files == null || requestBody.files.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No files specified");
-    }
-
-    final List<String> errors = new ArrayList<>();
-    FileStoreUtils.validateFiles(
-        coreContainer.getFileStore(), requestBody.files, true, errors::add);
-    if (!errors.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.join("; ", errors));
-    }
-
-    final PackageStore.Packages[] finalState = new PackageStore.Packages[1];
-    try {
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .atomicUpdate(
-              SOLR_PKGS_PATH,
-              (stat, bytes) -> {
-                PackageStore.Packages packages = packageStore.parseForUpdate(bytes);
-                List<PackageStore.PkgVersion> list =
-                    packages.packages.computeIfAbsent(packageName, o -> new ArrayList<>());
-                for (PackageStore.PkgVersion pkgVersion : list) {
-                  if (Objects.equals(pkgVersion.version, requestBody.version)) {
-                    throw new SolrException(
-                        SolrException.ErrorCode.BAD_REQUEST,
-                        "Version '" + requestBody.version + "' exists already");
-                  }
-                }
-                list.add(new PackageStore.PkgVersion(packageName, requestBody));
-                packages.znodeVersion = stat.getVersion() + 1;
-                finalState[0] = packages;
-                return Utils.toJSON(packages);
-              });
-    } catch (KeeperException | InterruptedException e) {
-      finalState[0] = null;
-      packageStore.handleZkErr(e);
-    }
-
-    if (finalState[0] != null) {
-      packageStore.pkgs = finalState[0];
-      notifyAllNodesToSync(packageStore.pkgs.znodeVersion);
-      coreContainer.getPackageLoader().refreshPackageConf();
+    Integer newVersion = packageStore.addVersion(packageName, requestBody);
+    if (newVersion != null) {
+      notifyAllNodesToSync(newVersion);
     }
 
     return response;
@@ -164,39 +110,7 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
-    packageStore.requireEnabled();
-
-    try {
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .atomicUpdate(
-              SOLR_PKGS_PATH,
-              (stat, bytes) -> {
-                PackageStore.Packages packages = packageStore.parseForUpdate(bytes);
-                List<PackageStore.PkgVersion> versions = packages.packages.get(packageName);
-                if (versions == null || versions.isEmpty()) {
-                  throw new SolrException(
-                      SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
-                }
-                int idxToRemove = -1;
-                for (int i = 0; i < versions.size(); i++) {
-                  if (Objects.equals(versions.get(i).version, version)) {
-                    idxToRemove = i;
-                    break;
-                  }
-                }
-                if (idxToRemove == -1) {
-                  throw new SolrException(
-                      SolrException.ErrorCode.NOT_FOUND, "No such version: " + version);
-                }
-                versions.remove(idxToRemove);
-                packages.znodeVersion = stat.getVersion() + 1;
-                return Utils.toJSON(packages);
-              });
-    } catch (KeeperException | InterruptedException e) {
-      packageStore.handleZkErr(e);
-    }
+    packageStore.deleteVersion(packageName, version);
 
     return response;
   }
@@ -234,36 +148,8 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     }
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
-    syncToVersion(packageStore, expectedVersion);
+    packageStore.syncToVersion(expectedVersion);
     return response;
-  }
-
-  private void syncToVersion(PackageStore packageStore, int expectedVersion) {
-    int origVersion = packageStore.pkgs.znodeVersion;
-    for (int i = 0; i < SYNC_MAX_RETRIES; i++) {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "my version is {} , and expected version {}",
-            packageStore.pkgs.znodeVersion,
-            expectedVersion);
-      }
-      if (packageStore.pkgs.znodeVersion >= expectedVersion) {
-        if (origVersion < packageStore.pkgs.znodeVersion) {
-          coreContainer.getPackageLoader().refreshPackageConf();
-        }
-        return;
-      }
-      try {
-        Thread.sleep(SYNC_SLEEP_MS);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-      try {
-        packageStore.pkgs = packageStore.readPkgsFromZk(null, null);
-      } catch (KeeperException | InterruptedException e) {
-        packageStore.handleZkErr(e);
-      }
-    }
   }
 
   private void notifyAllNodesToSync(int expectedVersion) {

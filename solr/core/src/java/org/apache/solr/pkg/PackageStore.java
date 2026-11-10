@@ -38,6 +38,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.filestore.FileStoreUtils;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -55,6 +56,9 @@ public class PackageStore {
 
   public static final String ERR_MSG =
       "Package loading is not enabled, start your nodes with -Dsolr.packages.enabled=true";
+
+  private static final int SYNC_MAX_RETRIES = 10;
+  private static final long SYNC_SLEEP_MS = 10L;
 
   final CoreContainer coreContainer;
   final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
@@ -237,6 +241,134 @@ public class PackageStore {
     } catch (IOException e) {
       log.error("Error deserializing packages.json", e);
       return new Packages();
+    }
+  }
+
+  /**
+   * Validates and records a new package version in ZooKeeper, then refreshes this node's package
+   * configuration to pick it up immediately.
+   *
+   * @return the new {@code packages.json} znode version, or {@code null} if the ZooKeeper update
+   *     failed (and so {@code pkgs} was left unchanged)
+   * @throws SolrException BAD_REQUEST if packages are disabled, no files were given, a referenced
+   *     file doesn't exist in the filestore, or the version already exists
+   */
+  Integer addVersion(String packageName, AddPackageVersionRequestBody requestBody) {
+    requireEnabled();
+    if (requestBody == null || requestBody.files == null || requestBody.files.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No files specified");
+    }
+
+    final List<String> errors = new ArrayList<>();
+    FileStoreUtils.validateFiles(
+        coreContainer.getFileStore(), requestBody.files, true, errors::add);
+    if (!errors.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.join("; ", errors));
+    }
+
+    final Packages[] finalState = new Packages[1];
+    try {
+      coreContainer
+          .getZkController()
+          .getZkClient()
+          .atomicUpdate(
+              SOLR_PKGS_PATH,
+              (stat, bytes) -> {
+                Packages packages = parseForUpdate(bytes);
+                List<PkgVersion> list =
+                    packages.packages.computeIfAbsent(packageName, o -> new ArrayList<>());
+                for (PkgVersion pkgVersion : list) {
+                  if (Objects.equals(pkgVersion.version, requestBody.version)) {
+                    throw new SolrException(
+                        SolrException.ErrorCode.BAD_REQUEST,
+                        "Version '" + requestBody.version + "' exists already");
+                  }
+                }
+                list.add(new PkgVersion(packageName, requestBody));
+                packages.znodeVersion = stat.getVersion() + 1;
+                finalState[0] = packages;
+                return Utils.toJSON(packages);
+              });
+    } catch (KeeperException | InterruptedException e) {
+      finalState[0] = null;
+      handleZkErr(e);
+    }
+
+    if (finalState[0] == null) {
+      return null;
+    }
+    pkgs = finalState[0];
+    packageLoader.refreshPackageConf();
+    return pkgs.znodeVersion;
+  }
+
+  /**
+   * Removes a specific version of a package from ZooKeeper.
+   *
+   * @throws SolrException NOT_FOUND if the package or version doesn't exist
+   */
+  void deleteVersion(String packageName, String version) {
+    requireEnabled();
+
+    try {
+      coreContainer
+          .getZkController()
+          .getZkClient()
+          .atomicUpdate(
+              SOLR_PKGS_PATH,
+              (stat, bytes) -> {
+                Packages packages = parseForUpdate(bytes);
+                List<PkgVersion> versions = packages.packages.get(packageName);
+                if (versions == null || versions.isEmpty()) {
+                  throw new SolrException(
+                      SolrException.ErrorCode.NOT_FOUND, "No such package: " + packageName);
+                }
+                int idxToRemove = -1;
+                for (int i = 0; i < versions.size(); i++) {
+                  if (Objects.equals(versions.get(i).version, version)) {
+                    idxToRemove = i;
+                    break;
+                  }
+                }
+                if (idxToRemove == -1) {
+                  throw new SolrException(
+                      SolrException.ErrorCode.NOT_FOUND, "No such version: " + version);
+                }
+                versions.remove(idxToRemove);
+                packages.znodeVersion = stat.getVersion() + 1;
+                return Utils.toJSON(packages);
+              });
+    } catch (KeeperException | InterruptedException e) {
+      handleZkErr(e);
+    }
+  }
+
+  /**
+   * Blocks (briefly) until {@code pkgs.znodeVersion} is at least {@code expectedVersion}, polling
+   * ZooKeeper if needed. Refreshes this node's package configuration if the poll found newer data.
+   */
+  void syncToVersion(int expectedVersion) {
+    int origVersion = pkgs.znodeVersion;
+    for (int i = 0; i < SYNC_MAX_RETRIES; i++) {
+      if (log.isDebugEnabled()) {
+        log.debug("my version is {} , and expected version {}", pkgs.znodeVersion, expectedVersion);
+      }
+      if (pkgs.znodeVersion >= expectedVersion) {
+        if (origVersion < pkgs.znodeVersion) {
+          packageLoader.refreshPackageConf();
+        }
+        return;
+      }
+      try {
+        Thread.sleep(SYNC_SLEEP_MS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      try {
+        pkgs = readPkgsFromZk(null, null);
+      } catch (KeeperException | InterruptedException e) {
+        handleZkErr(e);
+      }
     }
   }
 
