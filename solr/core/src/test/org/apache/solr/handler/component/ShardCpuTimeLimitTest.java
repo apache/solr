@@ -102,7 +102,7 @@ public class ShardCpuTimeLimitTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
-    configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
+    configureCluster(1).addConfig("conf", configset("cloud-dynamic")).configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     waitForState("collection", COLLECTION, clusterShape(2, 2));
