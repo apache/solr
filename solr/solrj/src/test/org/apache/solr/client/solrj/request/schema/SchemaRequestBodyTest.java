@@ -83,8 +83,10 @@ public class SchemaRequestBodyTest extends SolrTestCase {
                 new SchemaRequest.AddField(map("name", "f2", "type", "string")),
                 new SchemaRequest.DeleteField("f0")));
 
-    // The Schema API takes several commands of the same kind in one object, so the body must keep
-    // the repeated key. Compared as text: a JSON parser would collapse the duplicate.
+    // The Schema API takes several commands of the same kind in one object (ref guide, Schema API,
+    // "Multiple Commands in a Single POST"); the server reads the body key by key with
+    // CommandOperation.parse, so the repeated key is preserved and each command runs. Compared as
+    // text: a JSON parser would collapse the duplicate.
     assertEquals(
         """
         {"add-field":{"name":"f1","type":"string"},\
