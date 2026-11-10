@@ -21,8 +21,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.model.RebalanceLeadersRequestBody;
+import org.apache.solr.client.api.model.RebalanceLeadersResponse;
 
 @Path("/collections/{collectionName}/rebalance-leaders")
 public interface RebalanceLeadersApi {
@@ -30,7 +30,7 @@ public interface RebalanceLeadersApi {
   @Operation(
       summary = "Rebalance shard leaders in a collection according to preferred leader settings.",
       tags = {"collections"})
-  FlexibleSolrJerseyResponse rebalanceLeaders(
+  RebalanceLeadersResponse rebalanceLeaders(
       @PathParam("collectionName") String collectionName,
       @RequestBody(description = "Contains user provided parameters")
           RebalanceLeadersRequestBody requestBody)

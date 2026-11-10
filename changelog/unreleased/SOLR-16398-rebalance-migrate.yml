@@ -1,4 +1,4 @@
-title: Migrate the v2 rebalance-leaders and migrate-docs APIs to JAX-RS
+title: Add generated SolrJ requests for the v2 rebalance-leaders and migrate-docs APIs
 type: added
 authors:
   - name: Nick Shanin

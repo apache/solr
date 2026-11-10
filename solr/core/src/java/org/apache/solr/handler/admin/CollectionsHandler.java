@@ -23,6 +23,8 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -826,7 +828,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     REBALANCELEADERS_OP(
         REBALANCELEADERS,
         (req, rsp, h) -> {
-          new RebalanceLeaders(req, rsp, h).execute();
+          req.getParams().required().check(COLLECTION_PROP);
+          rsp.getValues()
+              .addAll(
+                  new RebalanceLeaders(
+                          req.getParams().get(COLLECTION_PROP),
+                          req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE),
+                          req.getParams().getInt(MAX_WAIT_SECONDS_PROP, 60),
+                          (String) req.getContext().get(CALLING_LOCK_ID_HEADER),
+                          h)
+                      .execute());
           return null;
         }),
     // XXX should this command support followAliases?

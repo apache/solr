@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,13 +52,6 @@ public class RebalanceLeadersAPITest extends MockV2APITest {
     originalParams.set("collection", "queryCollection");
     originalParams.add("otherParam", "first", "second");
     when(mockQueryRequest.getParams()).thenReturn(originalParams);
-    doAnswer(
-            invocation -> {
-              when(mockQueryRequest.getParams()).thenReturn(invocation.getArgument(0));
-              return null;
-            })
-        .when(mockQueryRequest)
-        .setParams(any());
     api = new RebalanceLeaders(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
@@ -74,33 +65,34 @@ public class RebalanceLeadersAPITest extends MockV2APITest {
 
     final var response = api.rebalanceLeaders("collection", body);
 
-    final var params = mockQueryRequest.getParams();
-    assertEquals("collection", params.get("collection"));
-    assertEquals(Integer.valueOf(2), params.getInt("maxAtOnce"));
-    assertEquals(Integer.valueOf(30), params.getInt("maxWaitSeconds"));
-    assertArrayEquals(new String[] {"first", "second"}, params.getParams("otherParam"));
+    assertEquals(2, RebalanceLeaders.maxAtOnce(body, originalParams));
+    assertEquals(30, RebalanceLeaders.maxWaitSeconds(body, originalParams));
+    assertArrayEquals(new String[] {"first", "second"}, originalParams.getParams("otherParam"));
     assertEquals("queryCollection", originalParams.get("collection"));
     verify(mockZkStateReader).forceUpdateCollection("collection");
     assertEquals(
         Map.of("Success", "All active replicas with the preferredLeader property set are leaders"),
-        response.unknownProperties().get("Summary"));
+        response.summary);
   }
 
   @Test
   public void testEmptyBodyDefaults() throws Exception {
-    api.rebalanceLeaders("collection", new RebalanceLeadersRequestBody());
-
-    assertNull(mockQueryRequest.getParams().get("maxAtOnce"));
-    assertEquals(Integer.valueOf(60), mockQueryRequest.getParams().getInt("maxWaitSeconds"));
+    final var body = new RebalanceLeadersRequestBody();
+    api.rebalanceLeaders("collection", body);
+    assertEquals(Integer.MAX_VALUE, RebalanceLeaders.maxAtOnce(body, originalParams));
+    assertEquals(60, RebalanceLeaders.maxWaitSeconds(body, originalParams));
+    originalParams.set("maxAtOnce", 7);
+    originalParams.set("maxWaitSeconds", 15);
+    body.maxWaitSeconds = null;
+    assertEquals(7, RebalanceLeaders.maxAtOnce(body, originalParams));
+    assertEquals(15, RebalanceLeaders.maxWaitSeconds(body, originalParams));
   }
 
   @Test
   public void testNullBodyDefaults() throws Exception {
     final var response = api.rebalanceLeaders("collection", null);
 
-    assertNull(mockQueryRequest.getParams().get("maxAtOnce"));
-    assertEquals(Integer.valueOf(60), mockQueryRequest.getParams().getInt("maxWaitSeconds"));
-    assertNotNull(response.unknownProperties().get("Summary"));
+    assertNotNull(response.summary);
   }
 
   @Test
