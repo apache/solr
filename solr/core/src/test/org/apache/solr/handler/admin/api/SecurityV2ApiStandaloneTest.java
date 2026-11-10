@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -37,8 +38,11 @@ import org.apache.solr.client.api.model.ListUsersResponse;
 import org.apache.solr.client.api.model.PermissionDetails;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.AuthenticationApi;
 import org.apache.solr.client.solrj.request.AuthorizationApi;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.SecurityJson;
@@ -192,6 +196,53 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
                 authed(new AuthorizationApi.DeletePermission(newIndex))
                     .process(solrTestRule.getAdminClient()));
     assertEquals(404, notFound.code());
+  }
+
+  @Test
+  public void testCollectionNullStaysNarrow() throws Exception {
+    String path = "/null-collection/*";
+    var create =
+        authed(new GenericV2SolrRequest(METHOD.POST, "/cluster/security/authorization/permissions"))
+            .withContent(
+                ("{\"path\": [\"" + path + "\"], \"role\": [\"admin\"], \"collection\": null}")
+                    .getBytes(StandardCharsets.UTF_8),
+                "application/json");
+    create.process(solrTestRule.getAdminClient());
+    assertStoredCollectionIsNull(path);
+
+    PermissionDetails listed =
+        authed(new AuthorizationApi.ListPermissions())
+            .process(solrTestRule.getAdminClient())
+            .permissions
+            .stream()
+            .filter(p -> List.of(path).equals(p.path))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(List.of(), listed.collection);
+
+    var putBack = authed(new AuthorizationApi.UpdatePermission(listed.index));
+    putBack.setCollection(listed.collection);
+    putBack.setRole(listed.role);
+    putBack.process(solrTestRule.getAdminClient());
+    assertStoredCollectionIsNull(path);
+
+    authed(new AuthorizationApi.DeletePermission(listed.index))
+        .process(solrTestRule.getAdminClient());
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void assertStoredCollectionIsNull(String path) throws Exception {
+    var authz =
+        (Map<String, Object>)
+            authed(new GenericSolrRequest(METHOD.GET, "/admin/authorization"))
+                .process(solrTestRule.getAdminClient())
+                .getResponse()
+                .get("authorization");
+    Map<String, Object> stored =
+        ((List<Map<String, Object>>) authz.get("permissions"))
+            .stream().filter(p -> List.of(path).equals(p.get("path"))).findFirst().orElseThrow();
+    assertTrue("collection key missing in " + stored, stored.containsKey("collection"));
+    assertNull(stored.get("collection"));
   }
 
   @Test

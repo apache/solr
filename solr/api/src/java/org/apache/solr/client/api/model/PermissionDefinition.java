@@ -18,6 +18,8 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +36,11 @@ public class PermissionDefinition {
 
   @Schema(
       description =
-          "The collection(s) this permission applies to. Omit for collection-agnostic requests"
-              + " (e.g. the Collections API); use an explicit null element to mean 'no"
-              + " collection'.")
+          "The collection(s) this permission applies to. Omit to match any collection; use an"
+              + " empty list (or null) for requests not tied to a collection, such as the"
+              + " Collections API.")
   @JsonProperty("collection")
+  @JsonSetter(nulls = Nulls.AS_EMPTY)
   public List<String> collection;
 
   @Schema(description = "The request path(s) this permission applies to.")

@@ -165,7 +165,10 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
       PermissionDefinition definition, Map<String, Object> raw) {
     definition.name = (String) raw.get("name");
     definition.role = asList(raw.get("role"));
-    definition.collection = asList(raw.get("collection"));
+    definition.collection =
+        raw.containsKey("collection") && raw.get("collection") == null
+            ? List.of()
+            : asList(raw.get("collection"));
     definition.path = asList(raw.get("path"));
     definition.method = asList(raw.get("method"));
     Object params = raw.get("params");
@@ -196,7 +199,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
       dataMap.put("role", def.role);
     }
     if (def.collection != null) {
-      dataMap.put("collection", def.collection);
+      dataMap.put("collection", def.collection.isEmpty() ? null : def.collection);
     }
     if (def.path != null) {
       dataMap.put("path", def.path);
