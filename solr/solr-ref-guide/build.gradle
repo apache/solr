@@ -87,6 +87,14 @@ ext {
   playbookTemplate = "playbook.template.yml"
   localPlaybook = "local-playbook.yml"
   officialPlaybook = "official-playbook.yml"
+
+  // Modules the guide links Javadocs for, one 'solr-<module>-javadocs'
+  // attribute each. Modifying this list also requires modifying
+  // `antora.template.yml`.
+  javadocModules = [
+      'core', 'solrj', 'solrj-jetty', 'solrj-streaming', 'solrj-zookeeper',
+      'analysis-extras', 'langid', 'language-models', 'ltr', 'scripting'
+  ]
 }
 
 /*
@@ -121,7 +129,7 @@ task buildLocalAntoraYaml {
       prerelease: prerelease,
   ]
   props.putAll([
-      solr_javadocs_link: "https://solr.apache.org/docs/${props.solr_version.replace(".", "_")}",
+      solr_docs_link: "https://solr.apache.org/docs/${props.solr_version.replace(".", "_")}",
       lucene_javadocs_link: project(':solr:documentation').luceneDocUrl,
   ])
 
@@ -421,12 +429,22 @@ task buildLocalAntoraSite(type: NpxTask) {
 
   // Use a local build of the Lucene and Solr javadocs for a local refGuide
   def extraArgs = [
-      // This attribute should not include ":link", the other 2 should
+      // This attribute should not include ":link", the others should
       // This attribute should also not be relative, because it is used in multiple path directories in the site
-      "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
-      "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
+      "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}javadocs/api",
+      "--attribute", "solr-docs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
+      "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}/javadocs/api",
       "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
   ]
+
+  // The per-module attributes listed in antora.template.yml, pointed at the
+  // same local tree as solr-javadocs.
+  javadocModules.each {module ->
+    extraArgs.addAll([
+        "--attribute",
+        "solr-${module}-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}/javadocs/api"
+    ])
+  }
 
   if (buildLocalUI) {
     dependsOn tasks.buildUIBundle

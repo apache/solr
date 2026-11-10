@@ -63,6 +63,22 @@ picocli is now the default. Set `SOLR_PICOCLI=false` to fall back to Commons CLI
 * Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
 * Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the Commons CLI prints. That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
+=== Javadoc URLs Have Changed
+
+The Javadocs for every Solr module are now published as one combined set, rather than one tree per module.
+A class that used to live under its module's directory now sits under `javadocs/api`:
+
+[source,text]
+----
+before:  https://solr.apache.org/docs/10_1_0/core/org/apache/solr/core/SolrCore.html
+now:     https://solr.apache.org/docs/10_2_0/javadocs/api/org/apache/solr/core/SolrCore.html
+----
+
+The test framework keeps a tree of its own, which moves from `test-framework` to `javadocs/test-framework`.
+Javadocs published for earlier releases are unaffected, so existing links to those versions continue to work.
+
+Searching from any Javadoc page now covers the whole API rather than the one module.
+
 == Solr 10.1
 
 === Misc

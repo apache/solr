@@ -14,34 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.solrj.request.beans;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
-import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 
-/** Just a container class for POJOs used in Package APIs */
-public class PackagePayload {
-  public static class AddVersion implements ReflectMapWriter {
-    @JsonProperty(value = "package", required = true)
-    public String pkg;
+/** Response for the get-a-specific-package API. */
+public class GetPackageResponse extends SolrJerseyResponse {
 
-    @JsonProperty(required = true)
-    public String version;
+  @JsonProperty("name")
+  @Schema(description = "The package name.")
+  public String name;
 
-    @JsonProperty(required = true)
-    public List<String> files;
+  @JsonProperty("znodeVersion")
+  @Schema(description = "The ZooKeeper version of the packages.json node.")
+  public int znodeVersion;
 
-    @JsonProperty public String manifest;
-    @JsonProperty public String manifestSHA512;
-  }
-
-  public static class DelVersion implements ReflectMapWriter {
-    @JsonProperty(value = "package", required = true)
-    public String pkg;
-
-    @JsonProperty(required = true)
-    public String version;
-  }
+  @JsonProperty("versions")
+  @Schema(description = "The versions registered for this package.")
+  public List<ListPackagesResponse.PackageVersion> versions;
 }
