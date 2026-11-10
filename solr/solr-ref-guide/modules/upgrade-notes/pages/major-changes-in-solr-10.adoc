@@ -50,6 +50,28 @@ The old spellings still work and are hidden from the help and from this guide.
 They are deprecated in Solr 10.2 and are removed in Solr 11.0.
 The default command line interface is not changed.
 
+=== OpenTelemetry
+
+==== OTLP metrics now identify the node they came from
+
+*Breaking change for OTLP consumers.*
+
+Pushed metrics previously arrived with the SDK placeholder `service.name=unknown_service:java` and no `service.instance.id`, so every node looked alike.
+They now carry `service.name=solr` and `service.instance.id=<host>:<port>` by default, which Prometheus maps to the `job` and `instance` labels.
+
+Dashboards and alerts that match `job="unknown_service:java"`, or that assume one merged series per metric, need updating.
+`OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` configure these for metrics as they already did for tracing; see xref:deployment-guide:opentelemetry.adoc#resource-attributes[Resource Attributes].
+
+Traces are affected too: spans now carry `host.name` and `service.instance.id` unless configured otherwise.
+
+==== Standard OTLP exporter variables now apply to metrics
+
+Solr's OTLP metric exporter reads the standard `OTEL_*` exporter settings whenever the matching `solr.metrics.otlp*` property is not set.
+`OTEL_METRICS_EXPORTER=otlp` now enables the metrics push, where before it had no effect, and `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_PROTOCOL` now steer metrics as well as traces.
+
+If you set these for tracing only, set `solr.metrics.otlpExporterEnabled=false` to keep the metrics push off, or give it its own destination with `solr.metrics.otlpHttpExporterEndpoint`.
+See xref:deployment-guide:metrics-reporting.adoc#otlp[Metrics over OTLP].
+
 == Solr 10.1
 
 === Misc
