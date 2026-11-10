@@ -49,6 +49,8 @@ public class CreateShardRequestBody {
   @Deprecated(since = "9.10")
   public Boolean waitForFinalState;
 
+  @JsonProperty public Integer timeout;
+
   @JsonProperty public Boolean followAliases;
 
   @JsonProperty public String async;
