@@ -48,6 +48,7 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
 
   @Test
   public void testCacheDistinguishesRecreatedZnodesWithSameCreationTime() throws Exception {
+    assumeWorkingMockito();
     Stat originalStat = new Stat();
     originalStat.setCtime(7);
     originalStat.setCzxid(7);
@@ -61,12 +62,11 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
 
     ZkSolrResourceLoader loader = mock(ZkSolrResourceLoader.class);
     when(loader.getZkResourceInfo("solrconfig.xml"))
-        .thenReturn(
-            new Pair<>("/configs/test/solrconfig.xml", originalStat),
-            new Pair<>("/configs/test/solrconfig.xml", originalStat),
-            new Pair<>("/configs/test/solrconfig.xml", recreatedStat),
-            new Pair<>("/configs/test/solrconfig.xml", recreatedStat),
-            new Pair<>("/configs/test/solrconfig.xml", updatedStat));
+        .thenReturn(new Pair<>("/configs/test/solrconfig.xml", originalStat))
+        .thenReturn(new Pair<>("/configs/test/solrconfig.xml", originalStat))
+        .thenReturn(new Pair<>("/configs/test/solrconfig.xml", recreatedStat))
+        .thenReturn(new Pair<>("/configs/test/solrconfig.xml", recreatedStat))
+        .thenReturn(new Pair<>("/configs/test/solrconfig.xml", updatedStat));
     VersionedConfig original = new VersionedConfig(0, 7, null);
     VersionedConfig recreated = new VersionedConfig(0, 8, null);
     VersionedConfig updated = new VersionedConfig(1, 8, null);
