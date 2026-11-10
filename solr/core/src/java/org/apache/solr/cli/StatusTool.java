@@ -37,7 +37,9 @@ import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.util.TimeOut;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -226,12 +228,21 @@ public class StatusTool extends ToolBase {
     }
 
     if (port != null) {
-      // When asked to wait, this also waits for a newly started process to become visible
+      // When asked to wait, this also waits for a newly started process to become visible. One
+      // budget covers both that and the HTTP wait below, so that the time spent finding the
+      // process does not extend --max-wait-secs.
+      TimeOut timeout = new TimeOut(maxWaitSecs, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       Optional<SolrProcess> proc = processMgr.waitForProcessOnPort(port, maxWaitSecs);
+      long secsLeft = maxWaitSecs > 0 ? timeout.timeLeft(TimeUnit.SECONDS) : 0;
       if (proc.isEmpty()) {
         CLIO.err("Could not find a running Solr on port " + port);
         runtime.exit(1);
+      } else if (maxWaitSecs > 0 && secsLeft <= 0) {
+        CLIO.err(
+            "Solr on port " + port + " did not come online within " + maxWaitSecs + " seconds!");
+        runtime.exit(1);
       } else {
+        maxWaitSecs = (int) secsLeft;
         solrUrl = proc.get().getLocalUrl();
         if (shortFormat) {
           CLIO.out(solrUrl);
