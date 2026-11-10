@@ -122,13 +122,10 @@ def check_targets(base_url, settle):
         if not problems:
             return
         if time.monotonic() >= deadline:
-            hint = "\nIs this the dev stack's Prometheus, and is the stack up? ./stack.sh"
-            if any(SCRAPE_JOB in p for p in problems):
-                hint += (
-                    "\nA node pushing OTLP answers HTTP 500 on /solr/admin/metrics without "
-                    "the SOLR-18595 fix, which takes the 'solr' job down."
-                )
-            die("; ".join(problems) + hint)
+            die(
+                "; ".join(problems)
+                + "\nIs this the dev stack's Prometheus, and is the stack up? ./stack.sh"
+            )
         time.sleep(2)
 
 

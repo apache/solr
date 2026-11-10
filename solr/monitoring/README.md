@@ -234,10 +234,6 @@ appears late is not read as a difference.
 `dev/otel-collector-native.yaml`, which leaves the OpenTelemetry names untranslated, so you can
 see what a name looked like before the Prometheus conventions reshaped it.
 
-> Until a nightly image carries the [SOLR-18595](https://issues.apache.org/jira/browse/SOLR-18595)
-> fix, the nodes answer HTTP 500 on `/solr/admin/metrics` while pushing, so the `solr` job needs a
-> locally built `SOLR_IMAGE`.
-
 Use `stack.sh` rather than `docker compose up` directly: the bundled Solr nodes sit behind the
 `bundled-solr` compose profile, so a plain `docker compose up` would start the monitoring services
 with no Solr to scrape.

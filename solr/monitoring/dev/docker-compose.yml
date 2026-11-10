@@ -70,9 +70,6 @@ name: solr-telemetry-dev
 
 # Push stays on whatever Prometheus scrapes, so the collector and Aspire always have data.
 # OTEL_SERVICE_NAME activates the module's tracer, which pushes traces the same way.
-#
-# TODO SOLR-18595: until a nightly image carries that fix, pushing makes
-# /solr/admin/metrics answer HTTP 500, so the "solr" job needs a local image.
 x-solr-otlp-env: &solr-otlp-env
   SOLR_MODULES: opentelemetry
   SOLR_METRICS_OTLP_EXPORTER_ENABLED: "true"
