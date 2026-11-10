@@ -105,6 +105,55 @@ public class LBSolrClientAttemptLimitTest extends SolrTestCase {
   }
 
   @Test
+  public void testStandaloneLimitRequiresAnotherEligibleEndpoint() {
+    for (int limit : new int[] {1, 3}) {
+      try (RecordingClient client = new RecordingClient()) {
+        for (Endpoint endpoint : ENDPOINTS) {
+          client.fail(endpoint);
+        }
+        SolrServerException failure =
+            expectThrows(
+                SolrServerException.class, () -> client.request(new QueryRequest(), null, limit));
+        assertEquals(ENDPOINTS.subList(0, limit), client.attempted);
+        assertEquals(limit < ENDPOINTS.size(), failure instanceof AttemptLimitExceededException);
+        assertSame(client.failures.get(ENDPOINTS.get(limit - 1)), failure.getCause());
+      }
+    }
+  }
+
+  @Test
+  public void testEndpointLimitRequiresAnotherEligibleEndpoint() {
+    try (RecordingClient client = new RecordingClient()) {
+      for (Endpoint endpoint : ENDPOINTS) {
+        client.fail(endpoint);
+      }
+      SolrServerException failure =
+          expectThrows(
+              SolrServerException.class,
+              () -> client.request(new Req(new QueryRequest(), ENDPOINTS, ENDPOINTS.size())));
+      assertFalse(failure instanceof AttemptLimitExceededException);
+      assertEquals(ENDPOINTS, client.attempted);
+      assertSame(client.failures.get(ENDPOINTS.get(2)), failure.getCause());
+    }
+  }
+
+  @Test
+  public void testEmptyEndpointsDoNotExhaustZeroLimit() {
+    try (RecordingClient client = new RecordingClient(List.of())) {
+      SolrServerException standalone =
+          expectThrows(
+              SolrServerException.class, () -> client.request(new QueryRequest(), null, 0));
+      SolrServerException endpoints =
+          expectThrows(
+              SolrServerException.class,
+              () -> client.request(new Req(new QueryRequest(), List.of(), 0)));
+      assertFalse(standalone instanceof AttemptLimitExceededException);
+      assertFalse(endpoints instanceof AttemptLimitExceededException);
+      assertTrue(client.attempted.isEmpty());
+    }
+  }
+
+  @Test
   public void testStandaloneInterleavedRequestDoesNotHideHealthyEndpoint() throws Exception {
     for (Integer limit : new Integer[] {3, 2, null}) {
       QueryRequest primaryRequest = new QueryRequest();

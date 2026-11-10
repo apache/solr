@@ -464,7 +464,6 @@ public abstract class LBSolrClient extends SolrClient {
             "The processing limits for to this request were exceeded, see cause for details",
             previousEx);
       }
-      attempts.checkLimit(previousEx);
       if (endpoint == null) {
         throw new SolrServerException(
             "No live SolrServers available to handle this request" + suffix, previousEx);
@@ -890,8 +889,7 @@ public abstract class LBSolrClient extends SolrClient {
     Exception ex = null;
     EndpointWrapper[] serverList = aliveServerList;
 
-    final int maxTries =
-        numServersToTry == null ? serverList.length : Math.min(serverList.length, numServersToTry);
+    final int maxTries = serverList.length;
     final AttemptCounter attempts = new AttemptCounter(numServersToTry);
     Map<String, EndpointWrapper> justFailed = null;
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
@@ -989,7 +987,6 @@ public abstract class LBSolrClient extends SolrClient {
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
-      attempts.checkLimit(ex);
       solrServerExceptionMessage = "No live SolrServers available to handle this request";
     }
     if (ex == null) {

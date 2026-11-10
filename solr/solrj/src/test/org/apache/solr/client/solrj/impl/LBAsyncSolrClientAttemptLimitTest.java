@@ -49,7 +49,7 @@ public class LBAsyncSolrClientAttemptLimitTest extends SolrTestCase {
 
   @Test
   public void testAsyncPreservesAttemptLimitFailure() throws Exception {
-    for (int limit : new int[] {1, 2, 3}) {
+    for (int limit : new int[] {1, 2}) {
       try (var transport = new HttpJdkSolrClient.Builder().build();
           var client = new RecordingClient(transport)) {
         for (Endpoint endpoint : ENDPOINTS) {
@@ -61,6 +61,42 @@ public class LBAsyncSolrClientAttemptLimitTest extends SolrTestCase {
         assertEquals(ENDPOINTS.subList(0, limit), client.attempted);
         assertSame(client.failures.get(ENDPOINTS.get(limit - 1)), failure.getCause());
       }
+    }
+  }
+
+  @Test
+  public void testAsyncLimitRequiresAnotherEligibleEndpoint() throws Exception {
+    try (var transport = new HttpJdkSolrClient.Builder().build();
+        var client = new RecordingClient(transport)) {
+      for (Endpoint endpoint : ENDPOINTS) {
+        client.fail(endpoint);
+      }
+      ExecutionException failure =
+          expectThrows(
+              ExecutionException.class,
+              () ->
+                  client
+                      .requestAsync(new Req(new QueryRequest(), ENDPOINTS, ENDPOINTS.size()))
+                      .get(1, TimeUnit.MINUTES));
+      assertSame(client.failures.get(ENDPOINTS.get(2)), failure.getCause());
+      assertEquals(ENDPOINTS, client.attempted);
+    }
+  }
+
+  @Test
+  public void testAsyncEmptyEndpointsDoNotExhaustZeroLimit() throws Exception {
+    try (var transport = new HttpJdkSolrClient.Builder().build();
+        var client = new RecordingClient(transport)) {
+      ExecutionException failure =
+          expectThrows(
+              ExecutionException.class,
+              () ->
+                  client
+                      .requestAsync(new Req(new QueryRequest(), List.of(), 0))
+                      .get(1, TimeUnit.MINUTES));
+      assertTrue(failure.getCause() instanceof SolrServerException);
+      assertFalse(failure.getCause() instanceof AttemptLimitExceededException);
+      assertTrue(client.attempted.isEmpty());
     }
   }
 
