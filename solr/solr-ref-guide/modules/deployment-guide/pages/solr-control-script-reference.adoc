@@ -165,5 +165,3 @@ You can turn off schemaless functionality for a collection with the following co
 [source,bash]
 $ bin/solr config -c mycollection --action set-user-property --property update.autoCreateFields --value false
 
-See also the section <<Set or Unset Configuration Properties>>.
-
