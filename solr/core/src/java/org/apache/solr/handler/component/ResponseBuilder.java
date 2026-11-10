@@ -83,6 +83,7 @@ public class ResponseBuilder {
   private SortSpec sortSpec = null;
   private GroupingSpecification groupingSpec;
   private CursorMark cursorMark;
+  private CursorMark previousCursorMark;
   private CursorMark nextCursorMark;
 
   private List<MergeStrategy> mergeStrategies;
@@ -521,8 +522,9 @@ public class ResponseBuilder {
               maxHitsTerminatedEarly);
     }
     if (null != cursorMark) {
+      assert null != result.getPreviousCursorMark() : "using cursor but no previous cursor set";
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
-      this.setNextCursorMark(result.getNextCursorMark());
+      setCursorMarkResult(result.getPreviousCursorMark(), result.getNextCursorMark());
     }
   }
 
@@ -541,12 +543,23 @@ public class ResponseBuilder {
     this.cursorMark = cursorMark;
   }
 
+  public CursorMark getPreviousCursorMark() {
+    return previousCursorMark;
+  }
+
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
   }
 
-  public void setNextCursorMark(CursorMark nextCursorMark) {
+  public void setCursorMarkResult(CursorMark previousCursorMark, CursorMark nextCursorMark) {
+    this.previousCursorMark = previousCursorMark;
     this.nextCursorMark = nextCursorMark;
+  }
+
+  public void setCursorMarkNoResults(CursorMark providedCursorMark, int numRequested) {
+    QueryResult result = new QueryResult();
+    result.setCursorMarkNoResults(providedCursorMark, numRequested);
+    setCursorMarkResult(result.getPreviousCursorMark(), result.getNextCursorMark());
   }
 
   public void setCancellation(boolean isCancellation) {

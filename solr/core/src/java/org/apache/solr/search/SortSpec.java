@@ -16,11 +16,16 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.SchemaField;
 
 /** SortSpec encapsulates a Lucene Sort and a count of the number of documents to return. */
@@ -48,6 +53,66 @@ public class SortSpec {
 
   public SortSpec(Sort sort, SchemaField[] fields) {
     setSortAndFields(sort, Arrays.asList(fields));
+  }
+
+  /** Returns the inverse order, retaining each field's value selection and missing-value policy. */
+  @SuppressForbidden(reason = "singletonList(null) is intentional")
+  public SortSpec reverse() {
+    SortField[] original = (sort == null ? Sort.RELEVANCE : sort).getSort();
+    SortField[] reversed = new SortField[original.length];
+    for (int i = 0; i < original.length; i++) {
+      reversed[i] =
+          original[i] instanceof ReverseSortField field
+              ? field.original
+              : new ReverseSortField(original[i]);
+    }
+    return new SortSpec(
+        new Sort(reversed), sort == null ? Collections.singletonList(null) : fields, num, offset);
+  }
+
+  private static final class ReverseSortField extends SortField {
+    private final SortField original;
+
+    ReverseSortField(SortField original) {
+      super(
+          original.getField(),
+          original.getType(),
+          !original.getReverse(),
+          original.getMissingValue());
+      this.original = original;
+    }
+
+    @Override
+    public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
+      // Rebuilding the field with the opposite direction can change a multi-valued selector or
+      // its missing-value policy. Invert the collector's comparison, not the value being compared.
+      // Competitive skipping in the original comparator assumes its original direction.
+      FieldComparator<?> comparator = original.getComparator(numHits, Pruning.NONE);
+      comparator.disableSkipping();
+      return comparator;
+    }
+
+    @Override
+    @SuppressWarnings("ReferenceEquality") // Lucene rewrite signals no change by returning itself.
+    public SortField rewrite(IndexSearcher searcher) throws IOException {
+      SortField rewritten = original.rewrite(searcher);
+      return rewritten == original ? this : new ReverseSortField(rewritten);
+    }
+
+    @Override
+    public boolean needsScores() {
+      return original.needsScores();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return other instanceof ReverseSortField field && original.equals(field.original);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * original.hashCode() + ReverseSortField.class.hashCode();
+    }
   }
 
   /**

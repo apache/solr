@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_END;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
@@ -68,6 +69,9 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
         "solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     configString = CursorPagingTest.TEST_SOLRCONFIG_NAME;
     schemaString = CursorPagingTest.TEST_SCHEMAXML_NAME;
+    // Use two shards in standard test runs to exercise distributed merging.
+    sliceCount = 2;
+    fixShardCount(2);
   }
 
   @Override
@@ -83,6 +87,210 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     ZkTestServer.putConfig("conf1", zkServer.getZkClient(), ZkTestServer.SOLRHOME, "elevate.xml");
+  }
+
+  @Test
+  public void testReverseCursorPaging() throws Exception {
+    del("*:*");
+    commit();
+    for (int i : new int[] {5, 2, 7, 0, 6, 1, 4, 3}) {
+      if (i % 3 == 0) {
+        indexDoc(sdoc("id", Integer.toString(i)));
+      } else {
+        indexDoc(
+            sdoc("id", Integer.toString(i), "str", "s" + (i % 2), "int", Integer.toString(i % 2)));
+      }
+    }
+    commit();
+    for (String sort :
+        List.of(
+            "id asc",
+            "id desc",
+            "str_last asc,id desc",
+            "str_first desc,id asc",
+            "int_dv_last asc,id asc",
+            "sum(int_dv,1) desc,id asc",
+            "score desc,id asc",
+            "score asc,id desc")) {
+      String query = sort.startsWith("score") ? "{!func}sum(int_dv,1)" : "*:*";
+      List<String> expected =
+          cloudClient
+              .query(params("q", query, "sort", sort, "rows", "20", "fl", "id"))
+              .getResults()
+              .stream()
+              .map(doc -> doc.getFieldValue("id").toString())
+              .toList();
+      for (boolean singlePass : new boolean[] {false, true}) {
+        for (boolean multiThreaded : new boolean[] {false, true}) {
+          SolrParams base =
+              params(
+                  "q",
+                  query,
+                  "sort",
+                  sort,
+                  "rows",
+                  "3",
+                  "fl",
+                  "id",
+                  "distrib.singlePass",
+                  Boolean.toString(singlePass),
+                  "multiThreaded",
+                  Boolean.toString(multiThreaded));
+          QueryResponse first = reversePage(base, CURSOR_MARK_START, expected.subList(0, 3));
+          QueryResponse second =
+              reversePage(base, first.getNextCursorMark(), expected.subList(3, 6));
+          QueryResponse last =
+              reversePage(base, second.getNextCursorMark(), expected.subList(6, 8));
+          QueryResponse back = reversePage(base, previousCursor(last), expected.subList(3, 6));
+          assertEquals(second.getNextCursorMark(), back.getNextCursorMark());
+          assertEquals(previousCursor(second), previousCursor(back));
+          reversePage(base, back.getNextCursorMark(), expected.subList(6, 8));
+          reversePage(base, previousCursor(back), expected.subList(0, 3));
+          reversePage(base, CURSOR_MARK_END, expected.subList(5, 8));
+          QueryResponse pastEnd = reversePage(base, last.getNextCursorMark(), List.of());
+          assertEquals(last.getNextCursorMark(), pastEnd.getNextCursorMark());
+          assertEquals(CURSOR_MARK_END, previousCursor(pastEnd));
+          QueryResponse beforeStart = reversePage(base, previousCursor(first), List.of());
+          assertEquals(previousCursor(first), previousCursor(beforeStart));
+          assertEquals(CURSOR_MARK_START, beforeStart.getNextCursorMark());
+          SolrParams zeroRows =
+              params(
+                  "q",
+                  query,
+                  "sort",
+                  sort,
+                  "rows",
+                  "0",
+                  "distrib.singlePass",
+                  Boolean.toString(singlePass),
+                  "multiThreaded",
+                  Boolean.toString(multiThreaded));
+          QueryResponse zeroForward = reversePage(zeroRows, second.getNextCursorMark(), List.of());
+          assertEquals(second.getNextCursorMark(), zeroForward.getNextCursorMark());
+          QueryResponse zeroReverse = reversePage(zeroRows, previousCursor(second), List.of());
+          assertEquals(previousCursor(second), previousCursor(zeroReverse));
+        }
+      }
+    }
+  }
+
+  private QueryResponse reversePage(SolrParams base, String cursor, List<String> expected)
+      throws Exception {
+    QueryResponse page = cloudClient.query(p(base, CURSOR_MARK_PARAM, cursor));
+    assertNotNull(page.getNextCursorMark());
+    assertNotNull(previousCursor(page));
+    assertEquals(
+        expected,
+        page.getResults().stream().map(doc -> doc.getFieldValue("id").toString()).toList());
+    return page;
+  }
+
+  private String previousCursor(QueryResponse page) {
+    return page.getPreviousCursorMark();
+  }
+
+  @Test
+  public void testReverseCursorMergeAcrossShards() throws Exception {
+    assertReverseCursorMergeAcrossShards(false);
+  }
+
+  @Test
+  public void testReverseCursorMergeWithTiesAcrossShards() throws Exception {
+    assertReverseCursorMergeAcrossShards(true);
+  }
+
+  private void assertReverseCursorMergeAcrossShards(boolean ties) throws Exception {
+    del("*:*");
+    commit();
+    var collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
+    List<String> shards =
+        collection.getActiveSlices().stream().map(slice -> slice.getName()).sorted().toList();
+    assertEquals(2, shards.size());
+    List<String> ids = new ArrayList<>();
+    for (int i = 0; i <= 10; i++) {
+      String shard = shards.get(i % 3 == 0 || i == 10 ? 0 : 1);
+      String id = null;
+      for (int attempt = 0; attempt < 1000; attempt++) {
+        String candidate = "doc" + (100 + i) + "_" + attempt;
+        var target = collection.getRouter().getTargetSlice(candidate, null, null, null, collection);
+        if (shard.equals(target.getName())) {
+          id = candidate;
+          break;
+        }
+      }
+      assertNotNull("Could not find an ID routed to " + shard, id);
+      ids.add(id);
+      indexDoc(sdoc("id", id, "int", ties ? i / 3 : i));
+    }
+    commit();
+
+    assertReverseMergeShard(
+        shards.get(0), List.of(ids.get(0), ids.get(3), ids.get(6), ids.get(9), ids.get(10)));
+    assertReverseMergeShard(
+        shards.get(1),
+        List.of(ids.get(1), ids.get(2), ids.get(4), ids.get(5), ids.get(7), ids.get(8)));
+
+    for (boolean singlePass : new boolean[] {false, true}) {
+      for (boolean multiThreaded : new boolean[] {false, true}) {
+        SolrParams base =
+            params(
+                "q",
+                "*:*",
+                "sort",
+                "int asc,id asc",
+                "rows",
+                "3",
+                "fl",
+                "id",
+                "distrib.singlePass",
+                Boolean.toString(singlePass),
+                "multiThreaded",
+                Boolean.toString(multiThreaded));
+        QueryResponse boundary =
+            reversePage(
+                wrapDefaults(params("fq", "id:" + ids.get(10), "rows", "1"), base),
+                CURSOR_MARK_START,
+                List.of(ids.get(10)));
+
+        // Before document 10, the shards supply [9,6,3] and [8,7,5]. The merge must retain
+        // [9,8,7], then present [7,8,9]. With ties, documents 6, 7 and 8 share the primary value.
+        QueryResponse back = reversePage(base, previousCursor(boundary), ids.subList(7, 10));
+        QueryResponse prefix =
+            reversePage(
+                wrapDefaults(params("rows", "7"), base), CURSOR_MARK_START, ids.subList(0, 7));
+        QueryResponse forward = reversePage(base, prefix.getNextCursorMark(), ids.subList(7, 10));
+        assertEquals(previousCursor(forward), previousCursor(back));
+        assertEquals(forward.getNextCursorMark(), back.getNextCursorMark());
+
+        QueryResponse after = reversePage(base, back.getNextCursorMark(), List.of(ids.get(10)));
+        assertEquals(previousCursor(boundary), previousCursor(after));
+        assertEquals(boundary.getNextCursorMark(), after.getNextCursorMark());
+        QueryResponse earlier = reversePage(base, previousCursor(back), ids.subList(4, 7));
+        QueryResponse roundTrip =
+            reversePage(base, earlier.getNextCursorMark(), ids.subList(7, 10));
+        assertEquals(previousCursor(back), previousCursor(roundTrip));
+        assertEquals(back.getNextCursorMark(), roundTrip.getNextCursorMark());
+        QueryResponse firstFull = reversePage(base, previousCursor(earlier), ids.subList(1, 4));
+        QueryResponse first = reversePage(base, previousCursor(firstFull), List.of(ids.get(0)));
+        reversePage(base, previousCursor(first), List.of());
+        reversePage(
+            wrapDefaults(params("rows", "1"), base), previousCursor(boundary), List.of(ids.get(9)));
+      }
+    }
+  }
+
+  private void assertReverseMergeShard(String shard, List<String> expected) throws Exception {
+    var leader = getLeaderFromZk(DEFAULT_COLLECTION, shard);
+    try (var client = createNewSolrClient(leader.getBaseUrl(), leader.getCoreName())) {
+      QueryResponse local =
+          client.query(
+              params("q", "*:*", "distrib", "false", "sort", "id asc", "rows", "20", "fl", "id"));
+      assertEquals(shard, expected.size(), local.getResults().getNumFound());
+      assertEquals(
+          shard,
+          expected,
+          local.getResults().stream().map(doc -> doc.getFieldValue("id").toString()).toList());
+    }
   }
 
   @Test
