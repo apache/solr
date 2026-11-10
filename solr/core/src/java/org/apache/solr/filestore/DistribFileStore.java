@@ -17,6 +17,7 @@
 
 package org.apache.solr.filestore;
 
+import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
@@ -55,6 +56,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.filestore.FileStoreAPI.MetaData;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -180,6 +182,10 @@ public class DistribFileStore implements FileStore {
 
       try {
         final var metadataRequest = new FileStoreApi.GetFile(getMetaPath());
+        // GetFile's InputStreamResponseParser declares no content type (it just hands back
+        // whatever bytes come back), so nothing else asks the server for the raw file-store
+        // writer; without this, content negotiation falls back to JSON and corrupts the bytes.
+        metadataRequest.addHeader(ACCEPT, RawResponseWriter.CONTENT_TYPE);
         final var response = metadataRequest.processWithBaseUrl(solrClient, baseUrl, null);
         try (final var responseStream = response.getResponseStreamIfSuccessful()) {
           metadata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(responseStream);
@@ -194,6 +200,7 @@ public class DistribFileStore implements FileStore {
       ByteBuffer filedata;
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
+        fileRequest.addHeader(ACCEPT, RawResponseWriter.CONTENT_TYPE);
         final var fileResponse = fileRequest.processWithBaseUrl(solrClient, baseUrl, null);
         try (final var stream = fileResponse.getResponseStreamIfSuccessful()) {
           filedata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(stream);

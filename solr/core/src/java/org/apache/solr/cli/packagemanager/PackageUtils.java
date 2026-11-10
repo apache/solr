@@ -25,6 +25,7 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +52,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -200,6 +202,10 @@ public class PackageUtils {
       throws IOException, SolrServerException {
 
     final var manifestRequest = new FileStoreApi.GetFile(manifestFilePath);
+    // GetFile's InputStreamResponseParser declares no content type (it just hands back whatever
+    // bytes come back), so nothing else asks the server for the raw file-store writer; without
+    // this, content negotiation falls back to JSON and corrupts the bytes (SOLR-18483).
+    manifestRequest.addHeader(HttpHeaders.ACCEPT, RawResponseWriter.CONTENT_TYPE);
     final var manifestResponse = manifestRequest.process(solrClient);
     try (final var manifestStream = manifestResponse.getResponseStreamIfSuccessful()) {
       final var manifestJson = IOUtils.toString(manifestStream, StandardCharsets.UTF_8);
