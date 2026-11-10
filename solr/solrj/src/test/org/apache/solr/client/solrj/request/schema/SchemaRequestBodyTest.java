@@ -23,14 +23,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 /** Pins the JSON bodies that {@link SchemaRequest.Update} requests send to the Schema API. */
 public class SchemaRequestBodyTest extends SolrTestCase {
 
   @Test
-  public void testAddFieldTypeBodyMatchesPlainMaps() throws IOException {
+  public void testAddFieldTypeBody() throws IOException {
     FieldTypeDefinition fieldType = new FieldTypeDefinition();
     fieldType.setAttributes(map("name", "text_test", "class", "solr.TextField"));
     AnalyzerDefinition analyzer = new AnalyzerDefinition();
@@ -44,36 +43,35 @@ public class SchemaRequestBodyTest extends SolrTestCase {
     fieldType.setIndexAnalyzer(analyzer);
     fieldType.setSimilarity(map("class", "solr.BM25SimilarityFactory", "k1", 1.2));
 
-    Map<String, Object> expected =
-        map(
-            "add-field-type",
-            map(
-                "name",
-                "text_test",
-                "class",
-                "solr.TextField",
-                "indexAnalyzer",
-                map(
-                    "type",
-                    "index",
-                    "charFilters",
-                    List.of(map("class", "solr.HTMLStripCharFilterFactory")),
-                    "tokenizer",
-                    map("class", "solr.StandardTokenizerFactory"),
-                    "filters",
-                    List.of(
-                        map("class", "solr.LowerCaseFilterFactory"),
-                        map("class", "solr.ASCIIFoldingFilterFactory"))),
-                "similarity",
-                map("class", "solr.BM25SimilarityFactory", "k1", 1.2)));
-
-    assertEquals(json(expected), body(new SchemaRequest.AddFieldType(fieldType)));
+    assertJSONEquals(
+        """
+        {
+          "add-field-type": {
+            "name": "text_test",
+            "class": "solr.TextField",
+            "indexAnalyzer": {
+              "type": "index",
+              "charFilters": [{"class": "solr.HTMLStripCharFilterFactory"}],
+              "tokenizer": {"class": "solr.StandardTokenizerFactory"},
+              "filters": [
+                {"class": "solr.LowerCaseFilterFactory"},
+                {"class": "solr.ASCIIFoldingFilterFactory"}
+              ]
+            },
+            "similarity": {"class": "solr.BM25SimilarityFactory", "k1": 1.2}
+          }
+        }
+        """,
+        body(new SchemaRequest.AddFieldType(fieldType)));
   }
 
   @Test
-  public void testAddFieldBodyMatchesPlainMaps() throws IOException {
-    Map<String, Object> attributes = map("name", "f1", "type", "string", "stored", true);
-    assertEquals(json(map("add-field", attributes)), body(new SchemaRequest.AddField(attributes)));
+  public void testAddFieldBody() throws IOException {
+    assertJSONEquals(
+        """
+        {"add-field": {"name": "f1", "type": "string", "stored": true}}
+        """,
+        body(new SchemaRequest.AddField(map("name", "f1", "type", "string", "stored", true))));
   }
 
   @Test
@@ -84,45 +82,21 @@ public class SchemaRequestBodyTest extends SolrTestCase {
                 new SchemaRequest.AddField(map("name", "f1", "type", "string")),
                 new SchemaRequest.AddField(map("name", "f2", "type", "string")),
                 new SchemaRequest.DeleteField("f0")));
-    String body = body(multiUpdate);
 
     // The Schema API takes several commands of the same kind in one object, so the body must keep
-    // the repeated keys instead of collapsing them as a Map would.
-    assertEquals(2, count(body, "\"add-field\":"));
+    // the repeated key. Compared as text: a JSON parser would collapse the duplicate.
     assertEquals(
-        "{"
-            + entry("add-field", map("name", "f1", "type", "string"))
-            + ","
-            + entry("add-field", map("name", "f2", "type", "string"))
-            + ","
-            + entry("delete-field", map("name", "f0"))
-            + "}",
-        body);
-  }
-
-  /** The {@code "key":value} text of a one-entry object, without its braces. */
-  private static String entry(String key, Object value) {
-    String object = json(map(key, value));
-    return object.substring(1, object.length() - 1);
-  }
-
-  /** Compact JSON, as the request writers produce it. */
-  private static String json(Object o) {
-    return Utils.toJSONString(o, -1);
+        """
+        {"add-field":{"name":"f1","type":"string"},\
+        "add-field":{"name":"f2","type":"string"},\
+        "delete-field":{"name":"f0"}}""",
+        body(multiUpdate));
   }
 
   private static String body(SchemaRequest.Update request) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     request.getContentWriter("application/json").write(out);
     return out.toString(StandardCharsets.UTF_8);
-  }
-
-  private static int count(String haystack, String needle) {
-    int count = 0;
-    for (int i = haystack.indexOf(needle); i >= 0; i = haystack.indexOf(needle, i + 1)) {
-      count++;
-    }
-    return count;
   }
 
   private static Map<String, Object> map(Object... keysAndValues) {

@@ -94,7 +94,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     Map<String, Object> similarityAttributes = fieldTypeDefinition.getSimilarity();
     if (similarityAttributes != null && !similarityAttributes.isEmpty()) {
-      addFieldTypeNamedList.add("similarity", toSimpleOrderedMap(similarityAttributes));
+      addFieldTypeNamedList.add("similarity", similarityAttributes);
     }
 
     return addFieldTypeNamedList;
@@ -106,29 +106,23 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     if (analyzerAttributes != null) analyzerNamedList.addAll(analyzerAttributes);
     List<Map<String, Object>> charFiltersAttributes = analyzerDefinition.getCharFilters();
     if (charFiltersAttributes != null) {
-      List<NamedList<Object>> charFiltersList = new ArrayList<>();
+      List<Map<String, Object>> charFiltersList = new ArrayList<>();
       for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
-        charFiltersList.add(toSimpleOrderedMap(charFilterAttributes));
+        charFiltersList.add(charFilterAttributes);
       analyzerNamedList.add("charFilters", charFiltersList);
     }
     Map<String, Object> tokenizerAttributes = analyzerDefinition.getTokenizer();
     if (tokenizerAttributes != null) {
-      analyzerNamedList.add("tokenizer", toSimpleOrderedMap(tokenizerAttributes));
+      analyzerNamedList.add("tokenizer", tokenizerAttributes);
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
-      List<NamedList<Object>> filtersList = new ArrayList<>();
+      List<Map<String, Object>> filtersList = new ArrayList<>();
       for (Map<String, Object> filterAttributes : filtersAttributes)
-        filtersList.add(toSimpleOrderedMap(filterAttributes));
+        filtersList.add(filterAttributes);
       analyzerNamedList.add("filters", filtersList);
     }
     return analyzerNamedList;
-  }
-
-  private static SimpleOrderedMap<Object> toSimpleOrderedMap(Map<String, Object> attributes) {
-    SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-    result.addAll(attributes);
-    return result;
   }
 
   private static NamedList<Object> createAddFieldNamedList(Map<String, Object> fieldAttributes) {
