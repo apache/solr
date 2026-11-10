@@ -26,5 +26,25 @@ Scalar.createApiReference("#app", {
   telemetry: false,
   // The Admin UI has no dark mode of its own; keep the explorer visually consistent with it.
   forceDarkModeState: "light",
-  hideDarkModeToggle: true
+  hideDarkModeToggle: true,
+  hooks: {
+    // "Test Request" issues its own fetch() calls, bypassing the Admin UI's Angular/superagent
+    // interceptors (see app.js's httpInterceptor and solrApi.ApiClient.instance.plugins), so
+    // neither the logged-in credentials nor the popup-suppression header reach Solr here unless
+    // we attach them ourselves. Re-read the credentials on every request, exactly like those
+    // interceptors do, so login/logout is respected; only ever send them to this origin, never to
+    // a different server a user might select or type into the explorer.
+    onBeforeRequest({ request }) {
+      if (new URL(request.url).origin !== window.location.origin) {
+        return;
+      }
+      var authHeader = sessionStorage.getItem("auth.header");
+      if (authHeader) {
+        request.headers.set("Authorization", authHeader);
+      }
+      // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so the browser
+      // won't pop up its own login dialogue, matching app.js's $httpProvider configuration.
+      request.headers.set("X-Requested-With", "XMLHttpRequest");
+    }
+  }
 });
