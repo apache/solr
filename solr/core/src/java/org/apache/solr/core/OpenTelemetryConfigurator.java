@@ -250,7 +250,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
 
   /**
    * Merges Solr's resource attribute defaults into {@code otel.resource.attributes}. Values already
-   * configured by the operator, in either the environment or a system property, take precedence.
+   * configured by the operator take precedence, in the configurator's own order: the environment or
+   * a system property first, then {@code <tracerConfig>} init args.
    */
   private static void setDefaultResourceAttributes(NodeConfig cfg, Map<String, String> env) {
     Map<String, String> attrs = new LinkedHashMap<>();
@@ -262,6 +263,9 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         attrs.put(SERVICE_INSTANCE_ID.getKey(), host + ":" + port);
       }
     }
+    // Setting the property below stops the configurator from applying its own init args, so fold
+    // them in here instead, under anything the operator configured directly.
+    attrs.putAll(parseResourceAttributes(tracerConfigResourceAttributes(cfg)));
     attrs.putAll(parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env)));
     if (attrs.isEmpty()) return;
     EnvUtils.setProperty(
@@ -269,6 +273,19 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
         attrs.entrySet().stream()
             .map(e -> e.getKey() + "=" + e.getValue())
             .collect(Collectors.joining(",")));
+  }
+
+  /** {@code otel.resource.attributes} as supplied through {@code <tracerConfig>}, or null. */
+  private static String tracerConfigResourceAttributes(NodeConfig cfg) {
+    PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
+    if (info == null || !info.isEnabled() || info.initArgs == null) return null;
+    for (Map.Entry<String, Object> arg : info.initArgs) {
+      if (arg.getValue() != null
+          && "otel.resource.attributes".equals(envNameToSyspropName(arg.getKey()))) {
+        return arg.getValue().toString();
+      }
+    }
+    return null;
   }
 
   /** Parses the comma separated {@code key=value} form, skipping entries that lack a value. */

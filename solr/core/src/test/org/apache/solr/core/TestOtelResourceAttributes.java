@@ -104,6 +104,49 @@ public class TestOtelResourceAttributes extends SolrTestCase {
     assertEquals("solr", resource.getAttribute(SERVICE_NAME));
   }
 
+  /** Attributes supplied through {@code <tracerConfig>} survive Solr's defaults. */
+  @Test
+  public void tracerConfigAttributesAreHonoured() {
+    NodeConfig cfg =
+        new NodeConfig.NodeConfigBuilder("testNode", createTempDir())
+            .setCloudConfig(new CloudConfig.CloudConfigBuilder("solr-host-1", 8983).build())
+            .setTracerConfig(
+                new PluginInfo(
+                    "tracerConfig",
+                    Map.of(
+                        "class",
+                        NoResource.class.getName(),
+                        "otel.resource.attributes",
+                        "service.namespace=search,host.name=xml.host")))
+            .build();
+
+    Resource resource = initialize(cfg);
+    assertEquals("search", resource.getAttribute(AttributeKey.stringKey("service.namespace")));
+    assertEquals("xml.host", resource.getAttribute(HOST_NAME));
+    assertEquals("solr-host-1:8983", resource.getAttribute(SERVICE_INSTANCE_ID));
+  }
+
+  /** ... but a system property or environment variable still outranks them. */
+  @Test
+  public void configuredAttributesOutrankTracerConfig() {
+    System.setProperty("otel.resource.attributes", "host.name=prop.host");
+    NodeConfig cfg =
+        new NodeConfig.NodeConfigBuilder("testNode", createTempDir())
+            .setTracerConfig(
+                new PluginInfo(
+                    "tracerConfig",
+                    Map.of(
+                        "class",
+                        NoResource.class.getName(),
+                        "otel.resource.attributes",
+                        "host.name=xml.host,service.namespace=search")))
+            .build();
+
+    Resource resource = initialize(cfg);
+    assertEquals("prop.host", resource.getAttribute(HOST_NAME));
+    assertEquals("search", resource.getAttribute(AttributeKey.stringKey("service.namespace")));
+  }
+
   /** A configurator that resolves its own resource owns it, so both signals share one. */
   @Test
   public void configuratorResourceIsAdopted() {
@@ -146,6 +189,14 @@ public class TestOtelResourceAttributes extends SolrTestCase {
     @Override
     protected Resource getResource() {
       return Resource.getDefault();
+    }
+  }
+
+  /** Leaves the resource to Solr, as a configurator that does not use the OTEL SDK would. */
+  public static class NoResource extends WithResource {
+    @Override
+    protected Resource getResource() {
+      return null;
     }
   }
 }
