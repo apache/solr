@@ -18,6 +18,8 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,11 +41,12 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
 
-/** Exercises a queued expiry after a newer ZooKeeper session has been installed. */
+/** Exercises expiries that are queued behind other connection events. */
 @SuppressForbidden(reason = "needs a log4j appender to delay a connection callback")
 public class ConnectionManagerStaleExpiryTest extends SolrTestCase {
   private static final int WAIT_SECONDS = 20;
@@ -192,8 +195,81 @@ public class ConnectionManagerStaleExpiryTest extends SolrTestCase {
     }
   }
 
+  /**
+   * The reconnect for session A is still running when session B expires, so B's expiry waits in the
+   * queue. A late event from the replaced session A is applied in the meantime. B's expiry must
+   * still be acted on.
+   */
+  @Test
+  public void testLateEventFromReplacedSessionDoesNotDropCurrentExpiry() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zk-late-event"));
+    RecordingStrategy strategy = new RecordingStrategy();
+    strategy.allowThirdCreation.countDown();
+    CountDownLatch reconnected = new CountDownLatch(1);
+    CountDownLatch allowReconnectReturn = new CountDownLatch(1);
+    AtomicInteger reconnectCalls = new AtomicInteger();
+    try {
+      server.run();
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(20, TimeUnit.SECONDS)
+              .withConnTimeOut(10, TimeUnit.SECONDS)
+              .withConnStrategy(strategy)
+              .withReconnectListener(
+                  () -> {
+                    if (reconnectCalls.incrementAndGet() == 1) {
+                      reconnected.countDown();
+                      try {
+                        allowReconnectReturn.await(60, TimeUnit.SECONDS);
+                      } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                      }
+                    }
+                  })
+              .build()) {
+        try {
+          ConnectionManager manager = client.getConnectionManager();
+          server.expire(client.getZooKeeper().getSessionId());
+          assertTrue(
+              "replacement session was not installed",
+              reconnected.await(WAIT_SECONDS, TimeUnit.SECONDS));
+          long sessionB = client.getZooKeeper().getSessionId();
+
+          // B's expiry is delivered, but cannot be handled while the reconnect above is running.
+          server.expire(sessionB);
+          assertTrue(
+              "replacement expiry was not delivered",
+              strategy.replacementExpired.await(WAIT_SECONDS, TimeUnit.SECONDS));
+
+          strategy
+              .watchers
+              .get(1)
+              .process(
+                  new WatchedEvent(
+                      Watcher.Event.EventType.None, Watcher.Event.KeeperState.Disconnected, null));
+          new TimeOut(WAIT_SECONDS, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+              .waitFor("late event was not applied", () -> !manager.isConnected());
+
+          allowReconnectReturn.countDown();
+          new TimeOut(WAIT_SECONDS, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+              .waitFor(
+                  "the expired session was never replaced",
+                  () ->
+                      manager.isConnectedAndNotClosed()
+                          && client.getZooKeeper().getSessionId() != sessionB);
+        } finally {
+          allowReconnectReturn.countDown();
+        }
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
   private static class RecordingStrategy extends DefaultConnectionStrategy {
     private final AtomicInteger attempts = new AtomicInteger();
+    private final Map<Integer, Watcher> watchers = new ConcurrentHashMap<>();
     private final AtomicReference<ZooKeeper> replacement = new AtomicReference<>();
     private final CountDownLatch replacementCreated = new CountDownLatch(1);
     private final CountDownLatch replacementDisconnected = new CountDownLatch(1);
@@ -205,6 +281,7 @@ public class ConnectionManagerStaleExpiryTest extends SolrTestCase {
     protected ZooKeeper newZooKeeperInstance(String address, int timeout, Watcher watcher)
         throws IOException {
       int attempt = attempts.incrementAndGet();
+      watchers.put(attempt, watcher);
       if (attempt == 3) {
         thirdCreationRequested.countDown();
         try {

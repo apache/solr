@@ -184,7 +184,7 @@ public class SolrZkClient implements Closeable {
       strat.connect(
           zkServerAddress,
           zkClientTimeout,
-          wrapWatcher(connManager),
+          wrapWatcher(connManager.newSessionWatcher()),
           zooKeeper -> {
             ZooKeeper oldKeeper = keeper;
             keeper = zooKeeper;
@@ -1090,18 +1090,19 @@ public class SolrZkClient implements Closeable {
         // This includes event on ConnectionManager others than session expiration. Consequently,
         // there is no deadlock when the thread currently reestablishing the session waits for
         // the 'SyncConnected' event.
-        if (watcher instanceof ConnectionManager) {
+        if (watcher instanceof ConnectionManager.SessionWatcher) {
           // Number the event here, on ZooKeeper's ordered event thread, so that the connection
           // state is not corrupted if the pool below processes events out of order.
-          ConnectionManager connectionManager = (ConnectionManager) watcher;
-          long sequence = connectionManager.nextEventSequence();
+          ConnectionManager.SessionWatcher sessionWatcher =
+              (ConnectionManager.SessionWatcher) watcher;
+          long sequence = sessionWatcher.nextEventSequence();
           if (event.getState() == Event.KeeperState.Expired) {
-            zkConnManagerCallbackExecutor.execute(() -> connectionManager.process(event, sequence));
+            zkConnManagerCallbackExecutor.execute(() -> sessionWatcher.process(event, sequence));
           } else {
             zkCallbackExecutor.execute(
                 () -> {
                   metrics.watchesFired.increment();
-                  connectionManager.process(event, sequence);
+                  sessionWatcher.process(event, sequence);
                 });
           }
         } else {

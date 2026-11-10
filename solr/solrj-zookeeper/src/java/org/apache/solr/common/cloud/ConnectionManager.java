@@ -56,6 +56,9 @@ public class ConnectionManager implements Watcher {
   private final AtomicLong eventSequence = new AtomicLong();
   private long lastStateEventSequence = 0; // guarded by this
 
+  // Counts the ZooKeeper instances created, so an expiration can be matched to its own session.
+  private final AtomicLong sessionGeneration = new AtomicLong();
+
   // Track the likely expired state
   private static class LikelyExpiredState {
     private static LikelyExpiredState NOT_EXPIRED =
@@ -110,6 +113,31 @@ public class ConnectionManager implements Watcher {
   }
 
   /**
+   * Receives the events of a single ZooKeeper instance. An expiration is ignored once a newer
+   * instance has been created, since it must not undo the recovery from the session it was for.
+   */
+  final class SessionWatcher implements Watcher {
+    private final long generation = sessionGeneration.incrementAndGet();
+
+    long nextEventSequence() {
+      return ConnectionManager.this.nextEventSequence();
+    }
+
+    void process(WatchedEvent event, long sequence) {
+      ConnectionManager.this.process(event, sequence, generation);
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      process(event, nextEventSequence());
+    }
+  }
+
+  SessionWatcher newSessionWatcher() {
+    return new SessionWatcher();
+  }
+
+  /**
    * Numbers an event in delivery order. Must be called from the thread that ZooKeeper delivers
    * events on, before the event is handed off to another thread.
    */
@@ -143,11 +171,16 @@ public class ConnectionManager implements Watcher {
     return true;
   }
 
-  /** Returns false, without changing state, if a newer state event has already been applied. */
-  private synchronized boolean expired(long sequence) {
-    if (!acceptStateEvent(sequence)) {
+  /**
+   * Returns false, without changing state, if a newer ZooKeeper instance has replaced the one that
+   * expired. Events from the expired session that are numbered before this one are ignored from now
+   * on.
+   */
+  private synchronized boolean expired(long sequence, long generation) {
+    if (generation < sessionGeneration.get()) {
       return false;
     }
+    lastStateEventSequence = Math.max(lastStateEventSequence, sequence);
     // we don't call disconnected here, because we know we are expired
     connected = false;
     likelyExpiredState = LikelyExpiredState.EXPIRED;
@@ -168,6 +201,10 @@ public class ConnectionManager implements Watcher {
   }
 
   void process(WatchedEvent event, long sequence) {
+    process(event, sequence, sessionGeneration.get());
+  }
+
+  private void process(WatchedEvent event, long sequence, long generation) {
     if (event.getState() == AuthFailed
         || event.getState() == Disconnected
         || event.getState() == Expired) {
@@ -208,8 +245,8 @@ public class ConnectionManager implements Watcher {
       if (isClosed()) {
         return;
       }
-      if (!expired(sequence)) {
-        log.warn("Ignoring stale expired event {}", event);
+      if (!expired(sequence, generation)) {
+        log.warn("Ignoring stale expired event {} of a replaced session", event);
         return;
       }
 
@@ -231,7 +268,7 @@ public class ConnectionManager implements Watcher {
           connectionStrategy.reconnect(
               zkServerAddress,
               client.getZkClientTimeout(),
-              client.wrapWatcher(this),
+              client.wrapWatcher(newSessionWatcher()),
               new ZkClientConnectionStrategy.ZkUpdate() {
                 @Override
                 public void update(ZooKeeper keeper) {
