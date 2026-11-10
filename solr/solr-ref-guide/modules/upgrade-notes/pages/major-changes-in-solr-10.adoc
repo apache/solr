@@ -135,7 +135,7 @@ Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properti
 
 There is no `includeAll` parameter.
 A request with no other parameters returns every collection.
-`collection`, `shard`, and `_route_` narrow which part of the tree is returned.
+`collection`, `shard`, and `route` narrow which part of the tree is returned.
 
 The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 

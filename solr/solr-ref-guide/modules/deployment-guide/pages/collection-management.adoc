@@ -575,7 +575,7 @@ Only used when `detailed=true`.
 The shard(s) for which information is requested.
 Multiple shard names can be specified as a comma-separated list.
 
-`\_route_`::
+`route`::
 +
 [%autowidth,frame=none]
 |===
