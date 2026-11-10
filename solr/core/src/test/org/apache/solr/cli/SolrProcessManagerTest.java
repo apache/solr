@@ -162,6 +162,11 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals(Optional.empty(), parseSysprop("-Dsolr.host.bind=10.0.0.5"));
     // Must not match a property whose value happens to embed the one we look for
     assertEquals(Optional.empty(), parseSysprop("-Dother=-Dsolr.host.advertise=myhost"));
+    // The JVM uses the last occurrence, and bin/solr appends user SOLR_OPTS last
+    assertEquals(
+        Optional.of("override.example.com"),
+        parseSysprop(
+            "-Dsolr.host.advertise=localhost", "-Dsolr.host.advertise=override.example.com"));
   }
 
   private static Optional<String> parseSysprop(String... arguments) {

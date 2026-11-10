@@ -161,9 +161,11 @@ public class SolrProcessManager {
   }
 
   /**
-   * Parses the value of the given system property from a list of command line arguments. On Windows
-   * the arguments are recovered by splitting the raw command line (see {@link #arguments}), so
-   * quotes that the OS would have removed may still surround the argument or its value.
+   * Parses the value of the given system property from a list of command line arguments. The last
+   * occurrence wins, as that is the value the JVM uses, and bin/solr appends user {@code SOLR_OPTS}
+   * after the properties it generates itself. On Windows the arguments are recovered by splitting
+   * the raw command line (see {@link #arguments}), so quotes that the OS would have removed may
+   * still surround the argument or its value.
    */
   static Optional<String> parseSysprop(List<String> arguments, String sysprop) {
     String prefix = "-D" + sysprop + "=";
@@ -171,7 +173,7 @@ public class SolrProcessManager {
         .map(SolrProcessManager::unquote)
         .filter(a -> a.startsWith(prefix))
         .map(a -> unquote(a.substring(prefix.length())))
-        .findFirst();
+        .reduce((first, last) -> last);
   }
 
   /** Strips one pair of surrounding double quotes, if present */
