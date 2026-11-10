@@ -307,8 +307,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   public void testProviderRefreshesCollectionMissingFromLocalState() throws Exception {
     ZkTestServer server = new ZkTestServer(createTempDir("stale-state"));
     server.run();
-    try (SolrZkClient zkClient =
-            new SolrZkClient.Builder().withUrl(server.getZkAddress()).build();
+    try (SolrZkClient zkClient = new SolrZkClient.Builder().withUrl(server.getZkAddress()).build();
         ZkStateReader reader = new ZkStateReader(zkClient);
         ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
       ZkController.createClusterZkNodes(zkClient);
