@@ -41,7 +41,6 @@ jobs:
 
     permissions:
       contents: read
-      issues: read         # earlier triage comment
       pull-requests: read  # the PR and its changed files
 
     outputs:
@@ -53,25 +52,8 @@ jobs:
       PR_NUMBER: ${{ github.event.pull_request.number }}
 
     steps:
-      # A PR toggled draft -> ready -> draft -> ready would otherwise be triaged twice.
-      # Every triaged PR gets a comment, so the comment is the record that it ran.
-      - name: Check for an earlier triage comment
-        id: guard
-        run: |
-          set -euo pipefail
-          marker='<!-- llm-pr-triage -->'
-          # The triage comment is posted seconds after open/ready, so it is on the first page.
-          n=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments?per_page=100" \
-            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"${marker}\")))] | length" \
-            | awk '{s+=$1} END {print s+0}')
-          if [ "$n" -gt 0 ]; then
-            echo "::notice::PR#${PR_NUMBER} was already triaged; skipping"
-            echo "done=true" >> "$GITHUB_OUTPUT"
-          fi
-
       # Use the trusted workflow revision even when the PR targets an older branch.
       - name: Checkout the triage script
-        if: steps.guard.outputs.done != 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.workflow_sha }}
@@ -83,7 +65,6 @@ jobs:
           persist-credentials: false
 
       - name: Fetch the PR from the API
-        if: steps.guard.outputs.done != 'true'
         run: |
           set -euo pipefail
           gh api "repos/${REPO}/pulls/${PR_NUMBER}" \
@@ -100,7 +81,6 @@ jobs:
 
       - name: Judge
         id: judge
-        if: steps.guard.outputs.done != 'true'
         env:
           LLM_BASE_URL: https://llm.apache.org/v1
           LLM_API_KEY: ${{ secrets.ASF_LLM_API_KEY }}
