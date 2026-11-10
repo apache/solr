@@ -685,7 +685,7 @@ In addition to the `set-user-role`/`set-permission`/`update-permission`/`delete-
 
 ==== Roles API Entry Point
 
-* v2: `\http://localhost:8983/api/cluster/security/authorization/\{scheme}/roles`
+* v2: `\http://localhost:8983/api/cluster/security/authorization/\{scheme}/users`
 
 The `scheme` path segment names the authentication scheme these role mappings belong to, as configured under `MultiAuthRuleBasedAuthorizationPlugin`'s `schemes` list (e.g. `basic`). It is ignored when that plugin isn't in use - a plain `RuleBasedAuthorizationPlugin` setup has only one set of role mappings; the examples below use `basic` by convention.
 A scheme using `ExternalRoleRuleBasedAuthorizationPlugin`, which takes roles from the request, returns 404. Unlike roles, permissions are shared across every scheme, so the Permissions API below has no such segment.
@@ -707,7 +707,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/roles
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/users
 ----
 ====
 ======
@@ -737,7 +737,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/roles/solr
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authorization/basic/users/solr/roles
 ----
 ====
 ======
@@ -771,7 +771,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks -X PUT http://localhost:8983/api/cluster/security/authorization/basic/roles/solr \
+curl --user solr:SolrRocks -X PUT http://localhost:8983/api/cluster/security/authorization/basic/users/solr/roles \
     -H 'Content-type:application/json' \
     -d '{"roles": ["admin", "dev"]}'
 ----
@@ -795,7 +795,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks -X DELETE http://localhost:8983/api/cluster/security/authorization/basic/roles/harry
+curl --user solr:SolrRocks -X DELETE http://localhost:8983/api/cluster/security/authorization/basic/users/harry/roles
 ----
 ====
 ======

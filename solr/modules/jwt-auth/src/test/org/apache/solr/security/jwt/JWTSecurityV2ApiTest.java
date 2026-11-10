@@ -134,7 +134,8 @@ public class JWTSecurityV2ApiTest extends SolrCloudTestCase {
             "/cluster/security/authentication/bearer/users/bob", "{\"password\": \"BobIsCool\"}"));
     assertEquals(
         404,
-        putStatus("/cluster/security/authorization/bearer/roles/bob", "{\"roles\": [\"admin\"]}"));
+        putStatus(
+            "/cluster/security/authorization/bearer/users/bob/roles", "{\"roles\": [\"admin\"]}"));
 
     assertEquals(authcBefore, v1Config("authentication"));
     assertEquals(authzBefore, v1Config("authorization"));

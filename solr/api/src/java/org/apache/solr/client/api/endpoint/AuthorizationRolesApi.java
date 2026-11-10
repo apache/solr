@@ -35,7 +35,7 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
  * <p>The scheme selects a MultiAuthRuleBasedAuthorizationPlugin configuration. Otherwise, it is
  * ignored. Permissions are shared across schemes.
  */
-@Path("/cluster/security/authorization/{scheme}/roles")
+@Path("/cluster/security/authorization/{scheme}/users")
 public interface AuthorizationRolesApi {
   @GET
   @Operation(
@@ -49,7 +49,7 @@ public interface AuthorizationRolesApi {
           String scheme);
 
   @GET
-  @Path("/{username}")
+  @Path("/{username}/roles")
   @Operation(
       summary = "Get the roles assigned to a user.",
       tags = {"authorization"})
@@ -61,7 +61,7 @@ public interface AuthorizationRolesApi {
           String username);
 
   @PUT
-  @Path("/{username}")
+  @Path("/{username}/roles")
   @Operation(
       summary = "Assign roles to a user, replacing any roles it already has.",
       tags = {"authorization"})
@@ -77,7 +77,7 @@ public interface AuthorizationRolesApi {
       throws Exception;
 
   @DELETE
-  @Path("/{username}")
+  @Path("/{username}/roles")
   @Operation(
       summary = "Revoke all roles from a user.",
       tags = {"authorization"})
