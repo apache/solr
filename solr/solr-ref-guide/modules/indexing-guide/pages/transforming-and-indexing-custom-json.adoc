@@ -290,9 +290,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params \
-  -H 'Content-Type: application/json' \
-  -d '{
+curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-Type: application/json' -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -306,9 +304,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/params \
-  -H 'Content-Type: application/json' \
-  -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config/params' -H 'Content-Type: application/json' -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -615,9 +611,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-Type: application/json' --data-binary '
 { "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
 { "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
 ----
@@ -628,9 +622,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-Type: application/json' --data-binary '
 { "first":"Steve", "last":"Jobs", "grade":1, "subject":"Social Science", "test":"term1", "marks":90}
 { "first":"Steve", "last":"Woz", "grade":1, "subject":"Political Science", "test":"term1", "marks":86}'
 ----
@@ -646,9 +638,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update/json/docs' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-Type: application/json' --data-binary '[
 {"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
 {"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
 ----
@@ -659,9 +649,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update/json' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update/json' -H 'Content-Type: application/json' --data-binary '[
 {"first":"Steve", "last":"Jobs", "grade":1, "subject":"Computer Science", "test":"term1", "marks":90},
 {"first":"Steve", "last":"Woz", "grade":1, "subject":"Calculus", "test":"term1", "marks":86}]'
 ----
@@ -712,9 +700,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params \
-  -H 'Content-Type: application/json' \
-  -d '{
+curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-Type: application/json' -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",
@@ -729,9 +715,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/params \
-  -H 'Content-Type: application/json' \
-  -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config/params' -H 'Content-Type: application/json' -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",

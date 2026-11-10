@@ -55,7 +55,7 @@ The V1 document-only endpoint is `/update/json/docs`:
 
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update/json/docs' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/solr/{collectionName}/update/json/docs' -H 'Content-Type: application/json' --data-binary '
 {
   "id": "1",
   "title": "Doc 1"
@@ -70,7 +70,7 @@ The V2 document-only endpoint is `/update/json`:
 
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update/json' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/update/json' -H 'Content-Type: application/json' --data-binary '
 {
   "id": "1",
   "title": "Doc 1"
@@ -90,7 +90,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H 'Content-Type: application/json' --data-binary '
 [
   {
     "id": "1",
@@ -109,7 +109,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/update' -H 'Content-Type: application/json' --data-binary '
 [
   {
     "id": "1",
@@ -133,7 +133,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-type:application/json' -d @example/exampledocs/books.json
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-type:application/json' --data-binary @example/exampledocs/books.json
 ----
 ====
 
@@ -142,7 +142,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-type:application/json' -d @example/exampledocs/books.json
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-type:application/json' --data-binary @example/exampledocs/books.json
 ----
 ====
 ======
@@ -159,7 +159,7 @@ V1 API::
 ====
 [source,bash,subs="verbatim,callouts"]
 ----
-curl 'http://localhost:8983/solr/my_collection/update' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H 'Content-Type: application/json' --data-binary '
 {
   "add": {
     "doc": {
@@ -191,7 +191,7 @@ V2 API::
 ====
 [source,bash,subs="verbatim,callouts"]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/update' -H 'Content-Type: application/json' --data-binary '
 {
   "add": {
     "doc": {
@@ -325,7 +325,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H "Content-Type: text/xml" --data-binary '
 <commit waitSearcher="false"/>
 <commit waitSearcher="false" expungeDeletes="true"/>
 <optimize waitSearcher="false"/>'
@@ -337,7 +337,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/update/xml' -H "Content-Type: text/xml" --data-binary '
 <commit waitSearcher="false"/>
 <commit waitSearcher="false" expungeDeletes="true"/>
 <optimize waitSearcher="false"/>'
@@ -360,7 +360,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H "Content-Type: text/xml" --data-binary '
 <delete>
   <id>0002166313</id>
   <id>0031745983</id>
@@ -375,7 +375,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/update/xml' -H "Content-Type: text/xml" --data-binary '
 <delete>
   <id>0002166313</id>
   <id>0031745983</id>
@@ -411,8 +411,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update \
-  -H "Content-Type: text/xml" -d '<rollback/>'
+curl 'http://localhost:8983/solr/{collectionName}/update' -H "Content-Type: text/xml" --data-binary '<rollback/>\'
 ----
 ====
 
@@ -421,8 +420,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/my_collection/update/xml \
-  -H "Content-Type: text/xml" -d '<rollback/>'
+curl 'http://localhost:8983/api/collections/{collectionName}/update/xml' -H "Content-Type: text/xml" --data-binary '<rollback/>\'
 ----
 ====
 ======
@@ -438,7 +436,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d '
+curl 'http://localhost:8983/solr/{collectionName}/update' -H "Content-Type: text/xml" --data-binary '
 <update>
   <add>
     <doc><!-- doc 1 content --></doc>
@@ -458,7 +456,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d '
+curl 'http://localhost:8983/api/collections/{collectionName}/update/xml' -H "Content-Type: text/xml" --data-binary '
 <update>
   <add>
     <doc><!-- doc 1 content --></doc>
@@ -558,7 +556,7 @@ One example usage would be to copy a Solr 1.3 index (which does not have CSV res
 ----
 curl 'http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xml' -o standard_solr_xml_format.xml
 
-curl 'http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl' -H 'Content-Type: text/xml' -d @standard_solr_xml_format.xml
+curl 'http://localhost:8983/solr/techproducts/update/xslt?commit=true&tr=updateXml.xsl' -H 'Content-Type: text/xml' --data-binary @standard_solr_xml_format.xml
 ----
 
 NOTE: You can see the opposite export/import cycle using the `tr` parameter in the xref:query-guide:response-writers.adoc#xslt-writer-example[Response Writer XSLT example].
@@ -576,7 +574,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/my_collection/update?commit=true' -H 'Content-type:application/csv' --data-binary @example/exampledocs/books.csv
+curl 'http://localhost:8983/solr/{collectionName}/update?commit=true' -H 'Content-type:application/csv' --data-binary @example/exampledocs/books.csv
 ----
 ====
 
@@ -585,7 +583,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update?commit=true' -H 'Content-type:application/csv' --data-binary @example/exampledocs/books.csv
+curl 'http://localhost:8983/api/collections/{collectionName}/update?commit=true' -H 'Content-type:application/csv' --data-binary @example/exampledocs/books.csv
 ----
 ====
 ======
@@ -807,7 +805,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
+curl 'http://localhost:8983/api/collections/{collectionName}/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
 ----
 ====
 ======
@@ -997,7 +995,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -d @myfile.xml
+curl 'http://localhost:8983/solr/{collectionName}/update' -H "Content-Type: text/xml" --data-binary @myfile.xml
 ----
 ====
 
@@ -1006,7 +1004,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -d @myfile.xml
+curl 'http://localhost:8983/api/collections/{collectionName}/update/xml' -H "Content-Type: text/xml" --data-binary @myfile.xml
 ----
 ====
 ======
@@ -1020,7 +1018,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
+curl 'http://localhost:8983/solr/{collectionName}/update' -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 ====
 
@@ -1029,7 +1027,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/my_collection/update/xml -H "Content-Type: text/xml" -T "myfile.xml" -X POST
+curl 'http://localhost:8983/api/collections/{collectionName}/update/xml' -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 ====
 ======

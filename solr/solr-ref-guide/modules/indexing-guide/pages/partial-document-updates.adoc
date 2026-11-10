@@ -108,9 +108,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update' -H 'Content-Type: application/json' --data-binary '[
   {"id":"SOLR1000",
    "price":{"set":9.99},
    "popularity":{"inc":5},
@@ -125,9 +123,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update' -H 'Content-Type: application/json' --data-binary '[
   {"id":"SOLR1000",
    "price":{"set":9.99},
    "popularity":{"inc":5},
@@ -197,9 +193,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
   {
     "id": "APPLE-MACBOOK-PRO-14",
     "type_s": "product",
@@ -247,9 +241,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
   {
     "id": "APPLE-MACBOOK-PRO-14",
     "type_s": "product",
@@ -304,9 +296,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -321,9 +311,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -345,9 +333,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -371,9 +357,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -404,9 +388,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -424,9 +406,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -453,9 +433,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -469,9 +447,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "APPLE-MBP14-M3-16-512",
   "_root_": "APPLE-MACBOOK-PRO-14",
@@ -555,9 +531,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[{"id":"SOLR1000","price":{"set":1.0},"popularity":{"inc":1}}]'
+curl 'http://localhost:8983/solr/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[{"id":"SOLR1000","price":{"set":1.0},"popularity":{"inc":1}}]'
 ----
 ====
 
@@ -566,9 +540,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' \
-  -H 'Content-Type: application/json' \
-  -d '[{"id":"SOLR1000","price":{"set":1.0},"popularity":{"inc":1}}]'
+curl 'http://localhost:8983/api/collections/techproducts/update?commit=true' -H 'Content-Type: application/json' --data-binary '[{"id":"SOLR1000","price":{"set":1.0},"popularity":{"inc":1}}]'
 ----
 ====
 ======
@@ -629,9 +601,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [ { "id" : "SOLR1000" },
   { "id" : "0579B002" } ]'
 ----
@@ -642,9 +612,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [ { "id" : "SOLR1000" },
   { "id" : "0579B002" } ]'
 ----
@@ -687,9 +655,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update?_version_=999999&versions=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
   [{ "id" : "SOLR1000",
      "name" : "update attempt with wrong existing version" }]'
 ----
@@ -700,9 +666,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?_version_=999999&versions=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update?_version_=999999&versions=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
   [{ "id" : "SOLR1000",
      "name" : "update attempt with wrong existing version" }]'
 ----
@@ -730,9 +694,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "SOLR1000",
    "name" : "update attempt with correct existing version" }]'
 ----
@@ -743,9 +705,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update?_version_=1632740120218042368&versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "SOLR1000",
    "name" : "update attempt with correct existing version" }]'
 ----
@@ -785,9 +745,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?versions=true&commit=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "SOLR1000", "_version_" : 100,
    "name" : "update attempt with wrong existing version embedded in document" }]'
 ----
@@ -798,9 +756,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&commit=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "SOLR1000", "_version_" : 100,
    "name" : "update attempt with wrong existing version embedded in document" }]'
 ----
@@ -828,9 +784,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?versions=true&commit=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "SOLR1000", "_version_" : 1632740462042284032,
    "name" : "update attempt with correct version embedded in document" }]'
 ----
@@ -841,9 +795,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&commit=true&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&commit=true&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [{ "id" : "SOLR1000", "_version_" : 1632740462042284032,
    "name" : "update attempt with correct version embedded in document" }]'
 ----
@@ -905,9 +857,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/solr/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [ { "id" : "SOLR1000" },
   { "id" : "IW-02" } ]'
 ----
@@ -918,9 +868,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' \
-  -H 'Content-Type: application/json' \
-  -d '
+curl 'http://localhost:8983/api/collections/techproducts/update?versions=true&_version_=-1&failOnVersionConflicts=false&omitHeader=true' -H 'Content-Type: application/json' --data-binary '
 [ { "id" : "SOLR1000" },
   { "id" : "IW-02" } ]'
 ----
