@@ -250,7 +250,28 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
   }
 
   @SuppressWarnings("unchecked")
+  @Test
+  public void testSolrJCreateWithoutCollectionMatchesAny() throws Exception {
+    String path = "/any-collection/*";
+    var create = authed(new AuthorizationApi.CreatePermission());
+    create.setPath(List.of(path));
+    create.setRole(List.of("admin"));
+    create.process(solrTestRule.getAdminClient());
+    Map<String, Object> stored = storedPermission(path);
+    assertFalse("collection narrowed in " + stored, stored.containsKey("collection"));
+
+    authed(new AuthorizationApi.DeletePermission(((Number) stored.get("index")).intValue()))
+        .process(solrTestRule.getAdminClient());
+  }
+
   private static void assertStoredCollectionIsNull(String path) throws Exception {
+    Map<String, Object> stored = storedPermission(path);
+    assertTrue("collection key missing in " + stored, stored.containsKey("collection"));
+    assertNull(stored.get("collection"));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> storedPermission(String path) throws Exception {
     var authz =
         (Map<String, Object>)
             authed(new GenericSolrRequest(METHOD.GET, "/admin/authorization"))
@@ -260,8 +281,7 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
     Map<String, Object> stored =
         ((List<Map<String, Object>>) authz.get("permissions"))
             .stream().filter(p -> List.of(path).equals(p.get("path"))).findFirst().orElseThrow();
-    assertTrue("collection key missing in " + stored, stored.containsKey("collection"));
-    assertNull(stored.get("collection"));
+    return stored;
   }
 
   @Test

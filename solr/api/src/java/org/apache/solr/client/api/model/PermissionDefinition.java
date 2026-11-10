@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
@@ -40,6 +41,7 @@ public class PermissionDefinition {
               + " empty list (or null) for requests not tied to a collection, such as the"
               + " Collections API.")
   @JsonProperty("collection")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonSetter(nulls = Nulls.AS_EMPTY)
   public List<String> collection;
 
