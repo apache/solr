@@ -99,11 +99,7 @@ public class PackageSchemaReloadTest extends SolrCloudTestCase {
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
-        Map.of(
-            ":result:packages:schemapkg[0]:version",
-            "1.0",
-            ":result:packages:schemapkg[0]:files[0]",
-            FILE1));
+        Map.of(":packages:schemapkg[0]:version", "1.0", ":packages:schemapkg[0]:files[0]", FILE1));
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 2)
         .process(cluster.getSolrClient());
@@ -133,11 +129,7 @@ public class PackageSchemaReloadTest extends SolrCloudTestCase {
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
-        Map.of(
-            ":result:packages:schemapkg[1]:version",
-            "2.0",
-            ":result:packages:schemapkg[1]:files[0]",
-            FILE1));
+        Map.of(":packages:schemapkg[1]:version", "2.0", ":packages:schemapkg[1]:files[0]", FILE1));
 
     // even though package version 2.0 uses exactly the same files
     // as version 1.0, the core schema should still reload, and

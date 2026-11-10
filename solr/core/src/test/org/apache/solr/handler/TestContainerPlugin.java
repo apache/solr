@@ -313,11 +313,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     waitForAllNodesToSync(
         "/cluster/packages",
-        Map.of(
-            ":result:packages:mypkg[0]:version",
-            "1.0",
-            ":result:packages:mypkg[0]:files[0]",
-            FILE1));
+        Map.of(":packages:mypkg[0]:version", "1.0", ":packages:mypkg[0]:files[0]", FILE1));
 
     // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();

@@ -149,11 +149,7 @@ public class TestPackages extends SolrCloudTestCase {
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
-        Map.of(
-            ":result:packages:mypkg[0]:version",
-            "1.0",
-            ":result:packages:mypkg[0]:files[0]",
-            FILE1));
+        Map.of(":packages:mypkg[0]:version", "1.0", ":packages:mypkg[0]:files[0]", FILE1));
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
         .process(cluster.getSolrClient());
@@ -171,11 +167,7 @@ public class TestPackages extends SolrCloudTestCase {
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
-        Map.of(
-            ":result:packages:mypkg[1]:version",
-            "2.0",
-            ":result:packages:mypkg[1]:files[0]",
-            FILE1));
+        Map.of(":packages:mypkg[1]:version", "2.0", ":packages:mypkg[1]:files[0]", FILE1));
     new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION_NAME);
 
     verifyComponent(
@@ -228,11 +220,7 @@ public class TestPackages extends SolrCloudTestCase {
                 .withMethod(SolrRequest.METHOD.GET)
                 .build()
                 .process(cluster.getSolrClient()),
-        Map.of(
-            ":result:packages:mypkg[0]:version",
-            "1.0",
-            ":result:packages:mypkg[0]:files[0]",
-            FILE1));
+        Map.of(":packages:mypkg[0]:version", "1.0", ":packages:mypkg[0]:files[0]", FILE1));
     Map<String, ConfigPlugin> plugins = new LinkedHashMap<>();
     ConfigPlugin p = new ConfigPlugin();
     p.klass = "mypkg:org.apache.solr.core.RuntimeLibReqHandler";
