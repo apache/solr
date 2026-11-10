@@ -212,6 +212,17 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
   }
 
   @Test
+  public void testUpdateRejectsBefore() throws Exception {
+    var update = authed(new AuthorizationApi.UpdatePermission(1));
+    update.setRole(List.of("admin"));
+    update.setBefore(1);
+    assertEquals(
+        400,
+        expectThrows(RemoteSolrException.class, () -> update.process(solrTestRule.getAdminClient()))
+            .code());
+  }
+
+  @Test
   public void testCollectionNullStaysNarrow() throws Exception {
     String path = "/null-collection/*";
     var create =

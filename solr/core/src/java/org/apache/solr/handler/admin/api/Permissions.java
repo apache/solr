@@ -76,7 +76,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     // Identical permissions cannot be distinguished by their fields.
     int existingCount = fetchPermissions().size();
 
-    Map<String, Object> dataMap = toDataMap(requestBody, /* includeBefore= */ true);
+    Map<String, Object> dataMap = toDataMap(requestBody);
     securityConfHandler.editSecurityConfig(
         solrQueryRequest,
         AUTHORIZATION_KEY,
@@ -95,9 +95,13 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
+    if (requestBody.before != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "'before' is only supported when creating");
+    }
     ensurePermissionExists(index);
 
-    Map<String, Object> dataMap = toDataMap(requestBody, /* includeBefore= */ true);
+    Map<String, Object> dataMap = toDataMap(requestBody);
     dataMap.put("index", index);
 
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
@@ -190,7 +194,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
    * Converts the non-null fields of a {@link PermissionDefinition} request body into the {@code
    * Map} shape the legacy {@code set-permission}/{@code update-permission} commands expect.
    */
-  private static Map<String, Object> toDataMap(PermissionDefinition def, boolean includeBefore) {
+  private static Map<String, Object> toDataMap(PermissionDefinition def) {
     Map<String, Object> dataMap = new LinkedHashMap<>();
     if (def.name != null) {
       dataMap.put("name", def.name);
@@ -210,7 +214,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     if (def.params != null) {
       dataMap.put("params", def.params);
     }
-    if (includeBefore && def.before != null) {
+    if (def.before != null) {
       dataMap.put("before", def.before);
     }
     return dataMap;
