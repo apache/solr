@@ -632,7 +632,7 @@ To sort by the density of the box and return the value of the density in score, 
 
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/select?q=boxname:findbox _val_:"div(weight,product(x,y,z))"&fl=boxname x y z weight score
+http://localhost:8983/solr/{collectionName}/select?q=boxname:findbox _val_:"div(weight,product(x,y,z))"&fl=boxname x y z weight score
 ----
 
 == Sort By Function
@@ -642,7 +642,7 @@ For example, to sort results by distance, you could enter:
 
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/select?q=*:*&sort=dist(2, point1, point2) desc
+http://localhost:8983/solr/{collectionName}/select?q=*:*&sort=dist(2, point1, point2) desc
 ----
 
 Sort by function also supports pseudo-fields: fields can be generated dynamically and return results as though it was normal field in the index.

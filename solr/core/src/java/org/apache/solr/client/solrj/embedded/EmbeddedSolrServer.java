@@ -43,8 +43,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -54,10 +52,14 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 
 /**
  * SolrClient that connects directly to a CoreContainer.
@@ -244,6 +246,7 @@ public class EmbeddedSolrServer extends SolrClient {
       responseParser = new JavaBinResponseParser();
     }
     var addParams = SolrParams.of(CommonParams.WT, responseParser.getWriterType());
+    addParams = SolrParams.wrapDefaults(addParams, responseParser.getAdditionalRequestParams());
     return SolrParams.wrapDefaults(addParams, params);
   }
 
@@ -289,7 +292,7 @@ public class EmbeddedSolrServer extends SolrClient {
           };
 
       // invoke callbacks, and writes the rest to byteBuffer
-      try (var javaBinCodec = createJavaBinCodec(callback, resolver)) {
+      try (var javaBinCodec = createJavaBinCodec(callback, resolver, req.getSchema())) {
         javaBinCodec.setWritableDocFields(resolver).marshal(rsp.getValues(), byteBuffer);
       }
     }
@@ -371,12 +374,17 @@ public class EmbeddedSolrServer extends SolrClient {
   }
 
   private JavaBinCodec createJavaBinCodec(
-      final StreamingResponseCallback callback, final JavaBinResponseWriter.Resolver resolver) {
+      final StreamingResponseCallback callback,
+      final JavaBinResponseWriter.Resolver resolver,
+      final IndexSchema schema) {
     return new JavaBinCodec(resolver) {
 
       @Override
       public void writeSolrDocument(SolrDocument doc) {
-        callback.streamSolrDocument(doc);
+        // The callback receives the document itself, so it bypasses the conversion the
+        // Resolver applies when a document is serialized. Convert stored fields here so
+        // streamed documents carry the same native types as query() results.
+        callback.streamSolrDocument(DocsStreamer.externalizeStoredValues(doc, schema));
         // super.writeSolrDocument( doc, fields );
       }
 

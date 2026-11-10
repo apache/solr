@@ -36,7 +36,7 @@ Shards become INACTIVE when they are split, and the documents they contain are n
 Configuration using the cluster plugin API
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".inactive-shard-remover",
         "class": "org.apache.solr.cluster.maintenance.InactiveShardRemover",
@@ -46,7 +46,6 @@ curl -X POST -H 'Content-type: application/json' -d '{
           "maxDeletesPerCycle": 20
         }
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 Configuration in solr.xml

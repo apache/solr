@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -50,6 +51,20 @@ public abstract class ResponseParser {
 
   /** The writer type placed onto the request as the {@code wt} param. */
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
+
+  /**
+   * Params this parser requires on the request in order to read the response, applied alongside
+   * {@code wt}.
+   *
+   * <p>These take precedence over the request's own params, as {@code wt} does: a parser that
+   * cannot read the form the caller asked for would fail rather than honour it. The JSON map parser
+   * requires {@code json.nl=map}, since a NamedList written any other way cannot be reconstructed.
+   *
+   * @return the params to apply, or null if the parser needs nothing beyond {@code wt}
+   */
+  public SolrParams getAdditionalRequestParams() {
+    return null;
+  }
 
   public abstract NamedList<Object> processResponse(InputStream body, String encoding)
       throws IOException;

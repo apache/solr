@@ -486,7 +486,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         float finalScore,
         List<Explanation> featureExplanations) {
       return Explanation.match(
-          finalScore, toString() + " logging model, used only for logging the features");
+          finalScore, this + " logging model, used only for logging the features");
     }
   }
 }

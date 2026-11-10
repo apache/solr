@@ -48,6 +48,20 @@ public class TestJoinColumnModel extends SolrTestCase {
   }
 
   /** The layouts have to agree at the extremes too: nothing matched, and everything matched. */
+  /**
+   * Both layouts report as their cost the matches they hold, not the width they span: a conjunction
+   * picks its lead by cost, so a dense column counting its empty slots would pass for denser than
+   * it is.
+   */
+  public void testCostIsTheMatchCountInEitherLayout() throws IOException {
+    for (int iter = 0; iter < 50; iter++) {
+      int[] toDocByFromDoc = randomMap(TestUtil.nextInt(random(), 1, 500), random().nextFloat());
+      long matches = expectedWalk(toDocByFromDoc).size();
+      assertEquals(matches, dense(toDocByFromDoc).toDocByFromDoc().cost());
+      assertEquals(matches, sparse(toDocByFromDoc).toDocByFromDoc().cost());
+    }
+  }
+
   public void testDegenerateColumns() throws IOException {
     int maxDoc = TestUtil.nextInt(random(), 1, 100);
     int[] empty = new int[maxDoc];

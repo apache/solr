@@ -119,8 +119,16 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
             } catch (SolrException e) {
               log.error(
                   "Error happened during incremental backup for collection: {}", collectionName, e);
-              CollectionHandlingUtils.cleanBackup(
-                  repository, backupUri, backupMgr.getBackupId(), ccc);
+              try {
+                CollectionHandlingUtils.cleanBackup(
+                    repository, backupUri, backupMgr.getBackupId(), ccc);
+              } catch (Exception cleanupException) {
+                log.warn(
+                    "Unable to clean up incomplete backup for collection: {}",
+                    collectionName,
+                    cleanupException);
+                e.addSuppressed(cleanupException);
+              }
               throw e;
             }
             break;
@@ -183,7 +191,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     if (!repository.exists(backupNamePath)) {
       repository.createDirectory(backupNamePath);
     } else {
-      final String[] directoryContents = repository.listAll(backupNamePath);
+      final String[] directoryContents =
+          BackupFilePaths.findCollectionDirs(repository.listAll(backupNamePath));
       if (directoryContents.length == 1) {
         String directoryContentsName = directoryContents[0];
         // Strip the trailing '/' if it exists

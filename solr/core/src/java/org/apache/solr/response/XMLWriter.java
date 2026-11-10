@@ -179,7 +179,7 @@ public class XMLWriter extends TextResponseWriter {
     incLevel();
 
     for (String fname : doc.getFieldNames()) {
-      if (returnFields != null && !returnFields.wantsField(fname)) {
+      if (returnFields != null && !returnFields.returnsField(fname)) {
         continue;
       }
 

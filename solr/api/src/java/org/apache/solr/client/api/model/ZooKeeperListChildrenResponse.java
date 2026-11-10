@@ -18,6 +18,7 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +31,9 @@ public class ZooKeeperListChildrenResponse extends ExperimentalResponse {
   //  object with only one key - the name of the root node - with separate objects under there for
   //  each child.  The additional nesting under the root node doesn't serve much purpose afaict
   //  and should be removed.
-  public Map<String, Map<String, ZooKeeperStat>> unknownFields = new HashMap<>();
+  // @JsonIgnore prevents this from ALSO being serialized as its own "unknownFields" property --
+  // @JsonAnyGetter below already flattens its entries directly onto the response.
+  @JsonIgnore public Map<String, Map<String, ZooKeeperStat>> unknownFields = new HashMap<>();
 
   @JsonAnyGetter
   public Map<String, Map<String, ZooKeeperStat>> unknownProperties() {

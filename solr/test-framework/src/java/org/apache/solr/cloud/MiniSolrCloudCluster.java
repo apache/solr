@@ -79,11 +79,9 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.slf4j.Logger;
@@ -644,7 +642,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
       if (!externalZkServer) {
         zkServer.shutdown();
       }
-      resetRecordingFlag();
     }
   }
 
@@ -895,16 +892,23 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
   }
 
+  /**
+   * Matches when the collection has exactly {@code expectedShards} {@link
+   * org.apache.solr.common.cloud.Slice.State#ACTIVE} slices, and exactly {@code expectedReplicas}
+   * active replicas across them. Slices in any other state (e.g. a split parent, or a slice under
+   * construction during a restore) and their replicas are not counted.
+   */
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(
       int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
-      if (collectionState.getSlices().size() != expectedShards) {
+      Collection<Slice> activeSlices = collectionState.getActiveSlices();
+      if (activeSlices.size() != expectedShards) {
         return false;
       }
 
       int activeReplicas = 0;
-      for (Slice slice : collectionState) {
+      for (Slice slice : activeSlices) {
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes)) {
             activeReplicas++;
@@ -915,11 +919,24 @@ public class MiniSolrCloudCluster implements SolrBackend {
     };
   }
 
+  /**
+   * Matches when every slice is either {@link org.apache.solr.common.cloud.Slice.State#ACTIVE} or
+   * {@link org.apache.solr.common.cloud.Slice.State#INACTIVE} (none are mid-split or mid-restore),
+   * and every replica of the active slices is active.
+   */
   public static CollectionStatePredicate expectedActive() {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
 
       for (Slice slice : collectionState) {
+        switch (slice.getState()) {
+          case INACTIVE:
+            continue;
+          case ACTIVE:
+            break;
+          default:
+            return false;
+        }
         for (Replica replica : slice) {
           if (!replica.isActive(liveNodes)) {
             return false;
@@ -997,7 +1014,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     private boolean overseerEnabled =
         EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
-    private boolean disableTraceIdGeneration = false;
 
     /**
      * Create a builder
@@ -1128,11 +1144,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     public MiniSolrCloudCluster build() throws Exception {
       System.setProperty("solr.cloud.overseer.enabled", Boolean.toString(overseerEnabled));
 
-      if (!disableTraceIdGeneration && OpenTelemetryConfigurator.TRACE_ID_GEN_ENABLED) {
-        OpenTelemetryConfigurator.initializeOpenTelemetrySdk(null, null);
-        injectRandomRecordingFlag();
-      }
-
       JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster =
           new MiniSolrCloudCluster(
@@ -1169,44 +1180,5 @@ public class MiniSolrCloudCluster implements SolrBackend {
       cluster.put(key, value);
       return this;
     }
-
-    /**
-     * Disables the default/built-in simple trace ID generation/propagation.
-     *
-     * <p>Tracers are registered as global singletons and if for example a test needs to use a
-     * MockTracer or a "real" Tracer, it needs to call this method so that the test setup doesn't
-     * accidentally reset the Tracer it wants to use.
-     */
-    public Builder withTraceIdGenerationDisabled() {
-      this.disableTraceIdGeneration = true;
-      return this;
-    }
-  }
-
-  /**
-   * Randomizes the tracing Span::isRecording check.
-   *
-   * <p>This will randomize the Span::isRecording check so we have better coverage of all methods
-   * that deal with span creation without having to enable otel module.
-   *
-   * <p>It only makes sense to call this if we are using the alwaysOn tracer, the OTEL tracer
-   * already has this flag turned on and randomizing it would risk not recording trace data.
-   *
-   * <p>Note. Tracing is not a SolrCloud only feature. this method is placed here for convenience
-   * only, any test can make use of this example for more complete coverage of the tracing
-   * mechanics.
-   */
-  private static void injectRandomRecordingFlag() {
-    try {
-      boolean isRecording = LuceneTestCase.rarely();
-      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
-    } catch (IllegalStateException e) {
-      // This can happen in benchmarks or other places that aren't in a randomized test
-      log.warn("Unable to inject random recording flag due to outside randomized context", e);
-    }
-  }
-
-  private static void resetRecordingFlag() {
-    TraceUtils.IS_RECORDING = TraceUtils.DEFAULT_IS_RECORDING;
   }
 }

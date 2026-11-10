@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -48,17 +49,26 @@ public class DriverImpl implements Driver {
     }
   }
 
+  /**
+   * Property naming a {@link SolrClientCache} for this connection to use instead of creating one
+   * (which isn't permitted within Solr). The caller retains ownership.
+   */
+  public static final String SOLR_CLIENT_CACHE_PROP = "solrClientCache";
+
   @Override
   public Connection connect(String url, Properties props) throws SQLException {
     if (!acceptsURL(url)) {
       return null;
     }
     var jdbcConnMetadata = JdbcConnectionMetadata.parse(url, props);
+    var properties = jdbcConnMetadata.properties();
+    var solrClientCache = (SolrClientCache) properties.remove(SOLR_CLIENT_CACHE_PROP);
     return new ConnectionImpl(
         jdbcConnMetadata.originalUrl(),
         jdbcConnMetadata.solrConnection(),
         jdbcConnMetadata.collection(),
-        jdbcConnMetadata.properties());
+        properties,
+        solrClientCache);
   }
 
   public Connection connect(String url) throws SQLException {

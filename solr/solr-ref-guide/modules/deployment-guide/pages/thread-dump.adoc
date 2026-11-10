@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Thread Dump screen lets you inspect the currently active threads on your server.
+The Thread Dump screen lets you inspect the currently active threads on the selected Solr node.
 
 Each thread is listed and access to the stacktraces is available where applicable.
 Icons to the left indicate the state of the thread: for example, threads with a green check-mark in a green circle are in a "RUNNABLE" state.

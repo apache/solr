@@ -55,6 +55,7 @@ public class JSONTupleStream implements TupleStreamParser {
     QueryRequest query = new QueryRequest(requestParams, SolrRequest.METHOD.POST);
     query.setResponseParser(new InputStreamResponseParser("json"));
     NamedList<Object> genericResponse = server.request(query);
+    InputStreamResponseParser.checkHttpStatus(genericResponse);
     InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     return new JSONTupleStream(reader);

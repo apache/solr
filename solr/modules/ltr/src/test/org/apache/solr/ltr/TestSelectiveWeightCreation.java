@@ -59,7 +59,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      Map<String, Object> params = new HashMap<String, Object>();
+      Map<String, Object> params = new HashMap<>();
       params.put("value", i);
       final Feature f =
           Feature.getInstance(solrResourceLoader, ValueFeature.class.getName(), "f" + i, params);
@@ -70,7 +70,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   }
 
   private LTRScoringQuery.ModelWeight performQuery(
-      TopDocs hits, IndexSearcher searcher, int docid, LTRScoringQuery model)
+      TopDocs hits, IndexSearcher searcher, LTRScoringQuery model)
       throws IOException, ModelException {
     final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext().leaves();
     final int n = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts);
@@ -165,7 +165,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         performQuery(
             hits,
             searcher,
-            hits.scoreDocs[0].doc,
             new LTRScoringQuery(ltrScoringModel1)); // features not requested in response
     LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getAllFeaturesInStore();
 
@@ -190,7 +189,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     LTRScoringQuery ltrQuery2 = new LTRScoringQuery(ltrScoringModel2);
     // features requested in response
     ltrQuery2.setFeatureLogger(new CSVFeatureLogger(FeatureLogger.FeatureFormat.DENSE, true));
-    modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc, ltrQuery2);
+    modelWeight = performQuery(hits, searcher, ltrQuery2);
     featuresInfo = modelWeight.getAllFeaturesInStore();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);

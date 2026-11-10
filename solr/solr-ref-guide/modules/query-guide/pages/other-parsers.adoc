@@ -733,6 +733,12 @@ Invoked with the syntax `{!intervals df=<field>}{"phrase":{"terms":["hash","map"
 
 Details of this query parser are in the section xref:intervals-query-parser.adoc[].
 
+== Global Ordinals Join Query Parser
+
+The Global Ordinals Join Query Parser joins documents within an index using Lucene's global ordinals (`OrdinalMap`) over a shared single-valued docValues string field.
+
+Details of this query parser are in the section xref:global-ordinals-join-query-parser.adoc[].
+
 == Join Query Parser
 
 The Join Query Parser allows users to run queries that normalize relationships between documents, similar to SQL-style joins.
@@ -1279,7 +1285,7 @@ For full analysis on all fields, including text fields, you may want to use the 
 
 == Ranking Query Parser
 
-The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/core/org/apache/solr/schema/RankField.html[`RankFields`] type.
+The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-core-javadocs}/org/apache/solr/schema/RankField.html[`RankFields`] type.
 
 It allows queries like:
 
@@ -1570,7 +1576,7 @@ Scales well with index size and moderately with the number of query terms.
 
 == XML Query Parser
 
-The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML.
+The {solr-core-javadocs}/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-core-javadocs}/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML.
 Example:
 
 [%autowidth.stretch,options="header"]
@@ -1601,7 +1607,7 @@ Example:
 ----
 |===
 
-The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class.
+The XmlQParser implementation uses the {solr-core-javadocs}/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class.
 XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
 [%autowidth.stretch,cols="30,70",options="header"]
@@ -1629,7 +1635,7 @@ XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/query
 === Customizing XML Query Parser
 
 You can configure your own custom query builders for additional XML elements.
-The custom builders need to extend the {solr-javadocs}/core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class.
+The custom builders need to extend the {solr-core-javadocs}/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-core-javadocs}/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class.
 Example `solrconfig.xml` snippet:
 
 [source,xml]

@@ -373,7 +373,7 @@ final class JoinIndexUtils {
      */
     SortedNumericDocValues toDocByFromDoc() {
       return toDocPlusOneByFromDoc != null
-          ? new DenseColumnValues(toDocPlusOneByFromDoc)
+          ? new DenseColumnValues(toDocPlusOneByFromDoc, edges.toCount())
           : new SparseColumnValues(matchedFromDocs, matchedToDocs);
     }
 
@@ -408,14 +408,23 @@ final class JoinIndexUtils {
   private static final class DenseColumnValues extends SortedNumericDocValues {
     private final PackedLongValues toDocPlusOneByFromDoc;
     private final int size;
+
+    /**
+     * Slots holding a match, for {@link #cost()}: {@link #size} also counts the empty slots between
+     * matches, and a conjunction choosing its lead by cost would take this column for denser than
+     * it is.
+     */
+    private final int matches;
+
     private int doc = -1;
 
     /** The to-doc at {@link #doc}, read by the same probe that found it. */
     private long toDoc;
 
-    DenseColumnValues(PackedLongValues toDocPlusOneByFromDoc) {
+    DenseColumnValues(PackedLongValues toDocPlusOneByFromDoc, int matches) {
       this.toDocPlusOneByFromDoc = toDocPlusOneByFromDoc;
       this.size = Math.toIntExact(toDocPlusOneByFromDoc.size());
+      this.matches = matches;
     }
 
     @Override
@@ -465,7 +474,7 @@ final class JoinIndexUtils {
 
     @Override
     public long cost() {
-      return size;
+      return matches;
     }
   }
 
@@ -479,9 +488,8 @@ final class JoinIndexUtils {
    * {@link org.apache.lucene.index.DocValuesIterator} contract, and the one the on-disk columns
    * already impose on the same call sites; both of them here -- {@code
    * JoinColumnDocWriter.PairColumn} walking {@code nextDoc()} up the batch, and {@code
-   * JoinIndexScorerSupplier.LeafJoin dumpMatchesInto} calling {@code advanceExact(fromDoc)} along a
-   * forward-only from-doc iterator -- take a freshly positioned cursor and only ever move it
-   * forward.
+   * JoinIndexScorerSupplier.LeafJoin#dumpMatchesInto} advancing it along a forward-only from-doc
+   * iterator -- take a freshly positioned cursor and only ever move it forward.
    */
   private static final class SparseColumnValues extends SortedNumericDocValues {
     private final PackedLongValues matchedFromDocs;

@@ -160,7 +160,7 @@ include::example$PaginationRefGuideExamplesTest.java[tag=cursormark-query]
 
 If you wanted to do this by hand using curl, the sequence of requests would look something like this:
 
-[source,plain]
+[source,console]
 ----
 $ curl '...&rows=10&sort=id+asc&cursorMark=*'
 {
