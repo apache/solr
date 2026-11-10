@@ -36,6 +36,8 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.MultiAuthPlugin;
 
 /** V2 APIs for Basic Authentication users, using the existing security configuration commands. */
@@ -56,6 +58,7 @@ public class Users extends AdminAPIBase implements AuthenticationUsersApi {
   @Override
   @PermissionName(SECURITY_READ_PERM)
   public ListUsersResponse listUsers(String scheme) {
+    requireUserStore(scheme);
     final var response = instantiateJerseyResponse(ListUsersResponse.class);
     response.users = new ArrayList<>(fetchCredentials(scheme).keySet());
     return response;
@@ -65,6 +68,7 @@ public class Users extends AdminAPIBase implements AuthenticationUsersApi {
   @PermissionName(SECURITY_EDIT_PERM)
   public SolrJerseyResponse createOrUpdateUser(
       String scheme, String username, SetUserRequestBody requestBody) throws Exception {
+    requireUserStore(scheme);
     if (requestBody == null || requestBody.password == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Missing required field 'password'");
@@ -80,6 +84,7 @@ public class Users extends AdminAPIBase implements AuthenticationUsersApi {
   @Override
   @PermissionName(SECURITY_EDIT_PERM)
   public SolrJerseyResponse deleteUser(String scheme, String username) throws Exception {
+    requireUserStore(scheme);
     Map<String, Object> credentials = fetchCredentials(scheme);
     if (!credentials.containsKey(username)) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such user [" + username + "]");
@@ -93,6 +98,19 @@ public class Users extends AdminAPIBase implements AuthenticationUsersApi {
         AUTHENTICATION_KEY,
         List.of(buildCommand("delete-user", scheme, List.of(username))));
     return response;
+  }
+
+  private void requireUserStore(String scheme) {
+    AuthenticationPlugin plugin = coreContainer.getAuthenticationPlugin();
+    if (plugin instanceof MultiAuthPlugin multiAuth) {
+      plugin = multiAuth.getPlugin(scheme);
+    } else if (!"basic".equalsIgnoreCase(scheme)) {
+      plugin = null;
+    }
+    if (!(plugin instanceof BasicAuthPlugin)) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND, "Scheme [" + scheme + "] has no users in Solr");
+    }
   }
 
   private boolean isMultiAuth() {

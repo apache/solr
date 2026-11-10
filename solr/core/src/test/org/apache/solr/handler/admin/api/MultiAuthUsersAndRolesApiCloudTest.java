@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.solr.client.api.model.GetUserRolesResponse;
 import org.apache.solr.client.api.model.ListUserRolesResponse;
 import org.apache.solr.client.api.model.ListUsersResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.AuthenticationApi;
 import org.apache.solr.client.solrj.request.AuthorizationApi;
@@ -168,5 +169,18 @@ public class MultiAuthUsersAndRolesApiCloudTest extends SolrCloudTestCase {
 
   private static List<String> sorted(List<String> values) {
     return values.stream().sorted().toList();
+  }
+
+  @Test
+  public void testUnknownSchemeIsNotFound() throws Exception {
+    var client = cluster.getSolrClient();
+    var listUsers = asAdmin(new AuthenticationApi.ListUsers("nope"));
+    assertEquals(
+        404, expectThrows(RemoteSolrException.class, () -> listUsers.process(client)).code());
+
+    var setRoles = asAdmin(new AuthorizationApi.SetUserRoles("nope", SEED_USER));
+    setRoles.setRoles(List.of("admin"));
+    assertEquals(
+        404, expectThrows(RemoteSolrException.class, () -> setRoles.process(client)).code());
   }
 }

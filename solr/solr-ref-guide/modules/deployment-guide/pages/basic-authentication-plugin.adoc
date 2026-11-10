@@ -339,7 +339,8 @@ In addition to the `set-user`/`delete-user` commands above, Solr provides a reso
 
 This endpoint is not collection-specific, so users are created for the entire Solr cluster.
 
-The `scheme` path segment names the authentication scheme these users belong to, as configured under `MultiAuthPlugin`'s `schemes` list (e.g. `basic`) - see <<Edit Plugin Configuration Using the MultiAuthPlugin>> above. It is ignored when `MultiAuthPlugin` isn't in use - a plain `BasicAuthPlugin` setup has only one set of users, and any value may be supplied; the examples below use `basic` by convention.
+The `scheme` path segment names the authentication scheme these users belong to, as configured under `MultiAuthPlugin`'s `schemes` list (e.g. `basic`) - see <<Edit Plugin Configuration Using the MultiAuthPlugin>> above. Without `MultiAuthPlugin`, use `basic`.
+A scheme whose users don't live in `security.json`, such as JWT, returns 404.
 
 === List Users
 

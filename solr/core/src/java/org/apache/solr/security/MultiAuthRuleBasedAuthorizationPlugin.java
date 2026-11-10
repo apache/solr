@@ -103,6 +103,11 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
    * @param principal the user Principal which should contain roles
    * @return set of roles as strings
    */
+  /** Returns the plugin configured for the given scheme, or null. */
+  public RuleBasedAuthorizationPluginBase getPlugin(String scheme) {
+    return pluginMap.get(scheme.toLowerCase(Locale.ROOT));
+  }
+
   @Override
   public Set<String> getUserRoles(Principal principal) {
     Set<String> mergedRoles = new HashSet<>();

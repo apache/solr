@@ -39,7 +39,9 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.MultiAuthRuleBasedAuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 
 /** V2 APIs for user role assignments, using the existing security configuration commands. */
 public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
@@ -59,6 +61,7 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
   @Override
   @PermissionName(SECURITY_READ_PERM)
   public ListUserRolesResponse listUserRoles(String scheme) {
+    requireRoleStore(scheme);
     final var response = instantiateJerseyResponse(ListUserRolesResponse.class);
     Map<String, List<String>> userRoles = new LinkedHashMap<>();
     fetchUserRoleMap(scheme).forEach((user, roles) -> userRoles.put(user, normalizeToList(roles)));
@@ -69,6 +72,7 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
   @Override
   @PermissionName(SECURITY_READ_PERM)
   public GetUserRolesResponse getUserRoles(String scheme, String username) {
+    requireRoleStore(scheme);
     final var response = instantiateJerseyResponse(GetUserRolesResponse.class);
     response.roles = normalizeToList(fetchUserRoleMap(scheme).get(username));
     return response;
@@ -78,6 +82,7 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
   @PermissionName(SECURITY_EDIT_PERM)
   public SolrJerseyResponse setUserRoles(
       String scheme, String username, SetUserRolesRequestBody requestBody) throws Exception {
+    requireRoleStore(scheme);
     if (requestBody == null || requestBody.roles == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Missing required field 'roles'");
@@ -93,12 +98,24 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
   @Override
   @PermissionName(SECURITY_EDIT_PERM)
   public SolrJerseyResponse deleteUserRoles(String scheme, String username) throws Exception {
+    requireRoleStore(scheme);
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
     Map<String, Object> revokeRoles = new HashMap<>();
     revokeRoles.put(username, null);
     securityConfHandler.editSecurityConfig(
         solrQueryRequest, AUTHORIZATION_KEY, List.of(buildCommand(scheme, revokeRoles)));
     return response;
+  }
+
+  private void requireRoleStore(String scheme) {
+    AuthorizationPlugin plugin = coreContainer.getAuthorizationPlugin();
+    if (plugin instanceof MultiAuthRuleBasedAuthorizationPlugin multiAuth) {
+      plugin = multiAuth.getPlugin(scheme);
+    }
+    if (!(plugin instanceof RuleBasedAuthorizationPlugin)) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND, "Scheme [" + scheme + "] has no user roles in Solr");
+    }
   }
 
   private boolean isMultiAuth() {

@@ -687,7 +687,8 @@ In addition to the `set-user-role`/`set-permission`/`update-permission`/`delete-
 
 * v2: `\http://localhost:8983/api/cluster/security/authorization/\{scheme}/roles`
 
-The `scheme` path segment names the authentication scheme these role mappings belong to, as configured under `MultiAuthRuleBasedAuthorizationPlugin`'s `schemes` list (e.g. `basic`). It is ignored when that plugin isn't in use - a plain `RuleBasedAuthorizationPlugin` setup has only one set of role mappings, and any value may be supplied; the examples below use `basic` by convention. Unlike roles, permissions are shared across every scheme, so the Permissions API below has no such segment.
+The `scheme` path segment names the authentication scheme these role mappings belong to, as configured under `MultiAuthRuleBasedAuthorizationPlugin`'s `schemes` list (e.g. `basic`). It is ignored when that plugin isn't in use - a plain `RuleBasedAuthorizationPlugin` setup has only one set of role mappings; the examples below use `basic` by convention.
+A scheme using `ExternalRoleRuleBasedAuthorizationPlugin`, which takes roles from the request, returns 404. Unlike roles, permissions are shared across every scheme, so the Permissions API below has no such segment.
 
 ==== List Every User's Roles
 
