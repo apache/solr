@@ -106,10 +106,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     if (analyzerAttributes != null) analyzerNamedList.addAll(analyzerAttributes);
     List<Map<String, Object>> charFiltersAttributes = analyzerDefinition.getCharFilters();
     if (charFiltersAttributes != null) {
-      List<Map<String, Object>> charFiltersList = new ArrayList<>();
-      for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
-        charFiltersList.add(charFilterAttributes);
-      analyzerNamedList.add("charFilters", charFiltersList);
+      analyzerNamedList.add("charFilters", charFiltersAttributes);
     }
     Map<String, Object> tokenizerAttributes = analyzerDefinition.getTokenizer();
     if (tokenizerAttributes != null) {
@@ -117,10 +114,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
-      List<Map<String, Object>> filtersList = new ArrayList<>();
-      for (Map<String, Object> filterAttributes : filtersAttributes)
-        filtersList.add(filterAttributes);
-      analyzerNamedList.add("filters", filtersList);
+      analyzerNamedList.add("filters", filtersAttributes);
     }
     return analyzerNamedList;
   }
