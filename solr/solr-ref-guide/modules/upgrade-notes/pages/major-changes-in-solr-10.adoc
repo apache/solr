@@ -66,6 +66,12 @@ Javadocs published for earlier releases are unaffected, so existing links to tho
 
 Searching from any Javadoc page now covers the whole API rather than the one module.
 
+=== JSON Lines on /update/json/docs is deprecated
+
+The `/update/json/docs` path, and the v2 `/update` and `/update/json` paths that map to it, currently accept a payload of several whitespace separated JSON objects.
+In a future version, only valid JSON will be allowed for this endpoint, either a single JSON object or an array of objects.
+Use the `/update/ndjson` endpoint for JSON Lines (newline-delimited JSON) payloads.
+
 == Solr 10.1
 
 === Misc
@@ -77,12 +83,6 @@ The "urlScheme" cluster property and httpShardHandlerFactory configuration is li
 If you use xref:configuration-guide:index-segments-merging.adoc#customizing-merge-policies[`SortingMergePolicyFactory`] for index sorting and your schema declares `\_root_`, Solr configures a new mechanism in Lucene that affects the index to support nested/block documents with sorted indexes.
 This requires a fresh Solr 10.1 index.
 To retain compatibility with existing sorted indexes, deferring a reindex, keep `luceneMatchVersion` at 10.3.1 or earlier in solrconfig.xml.
-
-=== JSON Lines on /update/json/docs is deprecated
-
-The `/update/json/docs` path, and the v2 `/update` and `/update/json` paths that map to it, currently accept a payload of several whitespace separated JSON objects.
-In a future version, only valid JSON will be allowed for this endpoint, either a single JSON object or an array of objects.
-Use the `/update/ndjson` endpoint for JSON Lines (newline-delimited JSON) payloads.
 
 === Universal connection string support
 
