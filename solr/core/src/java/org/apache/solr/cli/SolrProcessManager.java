@@ -200,22 +200,37 @@ public class SolrProcessManager {
   }
 
   /**
-   * Resolves the host to use when connecting locally to a Solr process. The advertised host is
-   * preferred when set, as that is the name the node is reachable by and, with SSL, the name its
-   * certificate is issued for. Otherwise the bind host is used if it is a specific non-loopback
-   * address. Wildcard and loopback binds are reachable as {@code localhost}. IPv6 literals are
-   * bracketed for use in URLs.
+   * Resolves the host to use when connecting locally to a Solr process. An advertised host is used
+   * as-is, as that is the name the node is reachable by and, with SSL, the name its certificate is
+   * issued for; this holds for an advertised loopback address too, which may well be what the
+   * certificate covers. Otherwise the bind host is used if it is a specific non-loopback address.
+   * Wildcard binds, loopback binds and a missing advertised host are reachable as {@code
+   * localhost}. IPv6 literals are bracketed for use in URLs.
    */
   static String localConnectHost(Optional<String> advertiseHost, Optional<String> bindHost) {
-    String host =
-        advertiseHost
-            .map(String::trim)
-            .filter(h -> !h.isEmpty())
-            .orElseGet(() -> bindHost.map(String::trim).orElse(""));
-    return switch (host) {
-      case "", "0.0.0.0", "::", "[::]", "127.0.0.1", "::1", "[::1]", "localhost" -> "localhost";
-      default -> host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
-    };
+    String advertise = advertiseHost.map(String::trim).orElse("");
+    if (!advertise.isEmpty() && !isWildcardAddress(advertise)) {
+      return bracketIpv6(advertise);
+    }
+    String bind = bindHost.map(String::trim).orElse("");
+    if (bind.isEmpty() || isWildcardAddress(bind) || isLoopbackHost(bind)) {
+      return "localhost";
+    }
+    return bracketIpv6(bind);
+  }
+
+  /** True for an address a Solr node may bind to but that cannot be connected to */
+  private static boolean isWildcardAddress(String host) {
+    return List.of("0.0.0.0", "::", "[::]").contains(host);
+  }
+
+  private static boolean isLoopbackHost(String host) {
+    return List.of("127.0.0.1", "::1", "[::1]", "localhost").contains(host);
+  }
+
+  /** Brackets an IPv6 literal so that it can be used in a URL */
+  private static String bracketIpv6(String host) {
+    return host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
   }
 
   private boolean isProcessSsl(ProcessHandle ph) {

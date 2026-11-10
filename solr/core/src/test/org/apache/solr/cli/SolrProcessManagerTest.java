@@ -189,6 +189,13 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals("myhost.example.com", localConnectHost("myhost.example.com", "10.0.0.5"));
     assertEquals("myhost.example.com", localConnectHost("myhost.example.com", null));
     assertEquals("localhost", localConnectHost("localhost", "10.0.0.5"));
+    // An advertised loopback address is kept, as a certificate may be issued for it
+    assertEquals("127.0.0.1", localConnectHost("127.0.0.1", null));
+    assertEquals("[::1]", localConnectHost("::1", null));
+    assertEquals("[::1]", localConnectHost("[::1]", null));
+    // An advertised wildcard address cannot be connected to, so the bind host decides
+    assertEquals("10.0.0.5", localConnectHost("0.0.0.0", "10.0.0.5"));
+    assertEquals("localhost", localConnectHost("::", null));
     // Blank advertise host falls back to the bind host
     assertEquals("10.0.0.5", localConnectHost("", "10.0.0.5"));
     assertEquals("10.0.0.5", localConnectHost(" ", "10.0.0.5"));
