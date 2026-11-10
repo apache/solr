@@ -21,7 +21,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,16 +143,8 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     if (authorizationConf == null) {
       return List.of();
     }
-    // Read-only config snapshots may use Collection wrappers that do not implement List.
-    Object rawPermissions = authorizationConf.get("permissions");
-    if (!(rawPermissions instanceof Collection)) {
-      return List.of();
-    }
-    List<Map<String, Object>> permissions = new ArrayList<>();
-    for (Object p : (Collection<?>) rawPermissions) {
-      permissions.add((Map<String, Object>) p);
-    }
-    return permissions;
+    Object permissions = authorizationConf.get("permissions");
+    return permissions == null ? List.of() : (List<Map<String, Object>>) permissions;
   }
 
   private static PermissionDetails toPermissionDetails(Map<String, Object> raw) {

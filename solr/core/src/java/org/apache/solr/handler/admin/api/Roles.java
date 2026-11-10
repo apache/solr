@@ -20,7 +20,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT
 import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_READ_PERM;
 
 import jakarta.inject.Inject;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -168,15 +167,8 @@ public class Roles extends AdminAPIBase implements AuthorizationRolesApi {
     if (rolesValue == null) {
       return List.of();
     }
-    // Not guaranteed to arrive as a java.util.List: Utils.getDeepCopy(..., mutable=false), used
-    // when building read-only snapshots of a cached security config, wraps collections in
-    // Collections.unmodifiableCollection(), which only implements Collection, not List.
-    if (rolesValue instanceof Collection) {
-      List<String> roles = new ArrayList<>();
-      for (Object r : (Collection<?>) rolesValue) {
-        roles.add(String.valueOf(r));
-      }
-      return roles;
+    if (rolesValue instanceof List<?> roles) {
+      return roles.stream().map(String::valueOf).toList();
     }
     return List.of(String.valueOf(rolesValue));
   }
