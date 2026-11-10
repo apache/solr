@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
+
 import groovy.json.JsonOutput
 import javax.inject.Inject
-import org.gradle.process.ExecOperations
 import org.apache.tools.ant.util.TeeOutputStream
 
 apply plugin: 'java'
@@ -783,10 +783,6 @@ String postProcessCliManPage(File rawFile, Set stems, String asfHeader, String d
 
   // picocli emits man-page style headings; match the house style used by every other page.
   content = content.replaceAll(/(?m)^==\s+(.*?):\s*$/, '== $1')
-
-  // Inserted last, after the blanket 'xref:solr-' -> 'xref:cli/solr-' rewrite above, which would
-  // otherwise redirect this notice's own link into pages/cli/.
-  content = content.replace(":page-toclevels: 2\n", ":page-toclevels: 2\n\n")
 
   return asfHeader + doNotEditNotice + "\n" + content.stripTrailing() + "\n"
 }
