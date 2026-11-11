@@ -35,15 +35,14 @@ public class SolrShellRoundTripTest extends SolrShellTestCase {
     run("solr start").assertSuccess();
     run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
 
-    bind("collection", COLLECTION);
-    run("solr create -c {{collection}}")
+    run("solr create -c " + COLLECTION)
         .assertSuccess()
-        .assertOutputContains("Created collection '{{collection}}'");
+        .assertOutputContains("Created collection '" + COLLECTION + "'");
     assertTrue("collection should exist in ZooKeeper", collectionExists(COLLECTION));
 
-    run("""
-        solr post -c {{collection}} "${SOLR_TIP}/example/exampledocs/books.json"
-        """)
+    // argv form: the path needs quoting, and this way the harness quotes it for whichever shell is
+    // running instead of the test hardcoding double quotes into the line.
+    run(List.of("solr", "post", "-c", COLLECTION, "${SOLR_TIP}/example/exampledocs/books.json"))
         .assertSuccess();
 
     // Searching twice over, once through the CLI and once through the harness' own HTTP helper,

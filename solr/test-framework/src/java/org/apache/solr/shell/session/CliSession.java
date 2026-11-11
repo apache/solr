@@ -94,7 +94,6 @@ public class CliSession implements AutoCloseable {
   private final Map<String, String> vars;
   private final Shell shell;
 
-  private final Map<String, String> bindings = new LinkedHashMap<>();
   private final List<Process> startedProcesses = new ArrayList<>();
   private final Map<Integer, Long> ownedNodes = new LinkedHashMap<>();
 
@@ -152,7 +151,6 @@ public class CliSession implements AutoCloseable {
     Path childCwd = cwd.equals(workDir) ? childWorkDir : cwd;
     CliSession child =
         new CliSession(harnessEnv, this, childName, childWorkDir, childVars, childCwd, shell);
-    child.bindings.putAll(bindings);
     child.timeout = timeout;
     child.startTimeout = startTimeout;
     return child;
@@ -164,42 +162,6 @@ public class CliSession implements AutoCloseable {
   public CliSession env(String key, String value) {
     vars.put(key, value);
     return this;
-  }
-
-  /**
-   * Binds a value for {@code {{name}}} in a command line or an assertion.
-   *
-   * <p>For a value that comes from the test rather than from the environment — a path under {@link
-   * #workDir()}, a collection name, a port worked out in Java. It keeps the command readable:
-   *
-   * <pre>
-   *   bind("download", workDir().resolve("recursive_download"));
-   *   run("""
-   *       solr zk cp zk:/ -r "{{download}}/" """);
-   * </pre>
-   *
-   * <p>Unlike {@link #env(String, String)} a binding is <em>not</em> exported to the command's
-   * environment; it exists only for the harness to substitute. That is also why the double-brace
-   * spelling is right for it: {@code ${NAME}} reads as "the environment variable", {@code {{NAME}}}
-   * as "the value the harness puts here".
-   *
-   * <p>Inherited by {@linkplain #child child} sessions and discarded with them, as the environment
-   * is.
-   */
-  public CliSession bind(String name, Object value) {
-    bindings.put(name, String.valueOf(value));
-    return this;
-  }
-
-  /** The environment plus this session's bindings, which win. What {@code {{NAME}}} resolves in. */
-  private Map<String, String> resolutionVars() {
-    if (bindings.isEmpty()) {
-      return vars;
-    }
-    Map<String, String> merged = newEnvMap();
-    merged.putAll(vars);
-    merged.putAll(bindings);
-    return merged;
   }
 
   /**
@@ -330,17 +292,22 @@ public class CliSession implements AutoCloseable {
    * <p>{@code %NAME%} is rejected rather than substituted, because {@code %} is also {@link
    * String#format}'s. {@code $'..'}, {@code $1} and a bare {@code $} are left for the shell.
    *
-   * <p>{@code fmtArgs}, when given, are applied first with {@link String#format} under {@code
-   * Locale.ROOT}, for values that come from Java rather than the environment.
+   * <p>A value that comes from Java rather than the environment is simply concatenated — {@code
+   * run("solr start -p " + myPort)} — which reads better than any format placeholder. One sharp
+   * edge: concatenation happens before the harness resolves the line, so a value that itself
+   * contains {@code ${...}} is taken as a variable reference.
+   *
+   * <p>An argument needing per-shell quoting goes through {@link #run(List)} instead, which quotes
+   * each element correctly for bash and for cmd.exe.
    */
-  public CommandResult run(String line, Object... fmtArgs) {
-    String resolved = resolveForRun(format(line, fmtArgs));
+  public CommandResult run(String line) {
+    String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), false);
   }
 
   /** Runs a command line with an explicit timeout. */
-  public CommandResult run(Duration commandTimeout, String line, Object... fmtArgs) {
-    return execute(resolveForRun(format(line, fmtArgs)), commandTimeout, false);
+  public CommandResult run(Duration commandTimeout, String line) {
+    return execute(resolveForRun(line), commandTimeout, false);
   }
 
   /**
@@ -352,9 +319,9 @@ public class CliSession implements AutoCloseable {
     return execute(line, timeoutFor(line), false);
   }
 
-  /** Like {@link #run(String, Object...)} but keeps {@code stdout()} and {@code stderr()} apart. */
-  public CommandResult runSeparated(String line, Object... fmtArgs) {
-    String resolved = resolveForRun(format(line, fmtArgs));
+  /** Like {@link #run(String)} but keeps {@code stdout()} and {@code stderr()} apart. */
+  public CommandResult runSeparated(String line) {
+    String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), true);
   }
 
@@ -377,13 +344,7 @@ public class CliSession implements AutoCloseable {
           "No " + shell + " script supplied for this test");
     }
     return execute(
-        Variables.resolve(chosen, Variables.BRACES_ONLY, resolutionVars(), "a script"),
-        timeout,
-        false);
-  }
-
-  private static String format(String line, Object... fmtArgs) {
-    return fmtArgs.length == 0 ? line : String.format(Locale.ROOT, line, fmtArgs);
+        Variables.resolve(chosen, Variables.BRACES_ONLY, vars, "a script"), timeout, false);
   }
 
   private void requireOpen() {
@@ -403,7 +364,7 @@ public class CliSession implements AutoCloseable {
           "A run() line must be a single command; use script(bashBody, cmdBody) for several: "
               + line);
     }
-    String resolved = Variables.resolve(line, Variables.ANY, resolutionVars(), "a command line");
+    String resolved = Variables.resolve(line, Variables.ANY, vars, "a command line");
     Matcher cmdForm = Variables.CMD_FORM.matcher(resolved);
     if (cmdForm.find()) {
       throw new AssertionError(
@@ -440,8 +401,7 @@ public class CliSession implements AutoCloseable {
             workDir,
             "cmd-" + SEQ.incrementAndGet(),
             commandTimeout,
-            separateStreams,
-            resolutionVars());
+            separateStreams);
     CommandResult result = ShellExecutor.execute(spec, startedProcesses::add);
     lastResult = result;
     transcript.record(result, envDiff);

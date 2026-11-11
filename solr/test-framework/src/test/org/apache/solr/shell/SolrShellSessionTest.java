@@ -173,11 +173,23 @@ public class SolrShellSessionTest extends SolrTestCase {
   }
 
   @Test
-  public void formatArgsAndVariablesCoexist() {
+  public void aJavaValueIsConcatenated() {
+    // The recommended way to get a Java-side value into a command: no format placeholder, no
+    // binding, and it reads as the command it is.
     session
-        .run("echo %s-${ZK_PORT}", "prefix")
+        .run("echo prefix-" + env.ports().zk())
         .assertSuccess()
         .assertOutputEquals("prefix-" + env.ports().zk());
+  }
+
+  @Test
+  public void aConcatenatedValueIsStillScannedForVariables() {
+    // The one sharp edge of concatenation: it happens before the harness resolves the line, so a
+    // Java value that itself contains ${...} is read as a variable reference rather than text.
+    String awkward = "${NO_SUCH_VAR}";
+    AssertionError failure =
+        expectThrows(AssertionError.class, () -> session.run("echo " + awkward));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("Unknown variable"));
   }
 
   @Test

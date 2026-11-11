@@ -213,20 +213,20 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   // run("solr zk ls /"). Only {@code @BeforeClass} and {@code @AfterClass} have to name a session,
   // and there the session is {@link #classCli} — which keeps setup_file scope visible.
 
-  protected CommandResult run(String line, Object... fmtArgs) {
-    return cli.run(line, fmtArgs);
+  protected CommandResult run(String line) {
+    return cli.run(line);
   }
 
-  protected CommandResult run(Duration commandTimeout, String line, Object... fmtArgs) {
-    return cli.run(commandTimeout, line, fmtArgs);
+  protected CommandResult run(Duration commandTimeout, String line) {
+    return cli.run(commandTimeout, line);
   }
 
   protected CommandResult run(List<String> argv) {
     return cli.run(argv);
   }
 
-  protected CommandResult runSeparated(String line, Object... fmtArgs) {
-    return cli.runSeparated(line, fmtArgs);
+  protected CommandResult runSeparated(String line) {
+    return cli.runSeparated(line);
   }
 
   protected CommandResult script(String bashScript, String cmdScript) {
@@ -243,10 +243,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   protected CliSession unset(String key) {
     return cli.unset(key);
-  }
-
-  protected CliSession bind(String name, Object value) {
-    return cli.bind(name, value);
   }
 
   protected String env(String key) {

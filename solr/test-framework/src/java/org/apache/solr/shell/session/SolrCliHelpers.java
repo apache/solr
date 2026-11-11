@@ -88,7 +88,7 @@ public final class SolrCliHelpers {
   }
 
   private List<String> zkChildren(String zkPath) {
-    CommandResult result = cli.run("solr zk ls %s -z localhost:${ZK_PORT}", zkPath);
+    CommandResult result = cli.run("solr zk ls " + zkPath + " -z localhost:${ZK_PORT}");
     if (result.failed()) {
       return List.of();
     }
@@ -98,7 +98,7 @@ public final class SolrCliHelpers {
   /** Port of {@code delete_all_collections}. */
   public void deleteAllCollections() {
     for (String collection : zkChildren("/collections")) {
-      cli.run("solr delete -c %s --delete-config", collection);
+      cli.run("solr delete -c " + collection + " --delete-config");
     }
   }
 
