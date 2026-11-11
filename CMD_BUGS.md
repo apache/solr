@@ -137,7 +137,23 @@ missing — and then giving it a test that says so.
 
 Found while porting `test_basic_auth.bats`.
 
-## 7. Pre-existing staleness in the test build, unrelated to the CLI
+## 7. A duplicate `solr snapshot-create` exits 0 instead of erroring
+
+`test_snapshots.bats` carries the comment:
+
+```
+# the way snapshots live, if you run create twice you get an error because snapshot already exists
+```
+
+Observed otherwise. In a run where an earlier test aborted before deleting its snapshot, the next
+test created a snapshot of the same name on the same collection and the command exited 0.
+
+Neither the BATS file nor the port asserts on this, so nothing fails either way — but the comment
+and the behaviour disagree, and one of them is wrong. For whoever owns `SnapshotCreateTool`.
+
+Found while porting `test_snapshots.bats`.
+
+## 8. Pre-existing staleness in the test build, unrelated to the CLI
 
 Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmless, but misleading.
 
