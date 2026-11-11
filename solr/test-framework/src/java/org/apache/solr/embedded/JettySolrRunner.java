@@ -352,6 +352,7 @@ public class JettySolrRunner implements SolrBackend {
         staticHolder.setHeldClass(ResourceServlet.class);
         staticHolder.setInitParameter("pathInfoOnly", "false");
         staticHolder.setInitParameter("dirAllowed", "false");
+        staticHolder.setInitParameter("cacheControl", "no-cache");
         for (String pathSpec :
             new String[] {
               "/partials/*", "/libs/*", "/css/*", "/js/*", "/img/*", "/templates/*", "/ui/*"
