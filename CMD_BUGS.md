@@ -171,7 +171,46 @@ succeed, which is what the test is about.
 
 Found while porting `test_postlogs.bats`.
 
-## 9. Pre-existing staleness in the test build, unrelated to the CLI
+## 9. `solr start -e <example>` ignores the `SOLR_HOME` environment variable
+
+The example tool decides where to put the example's home like this (`RunExampleTool:595-604`):
+
+```java
+if (solrHomeArg != null)            solrHomeDir = Path.of(solrHomeArg);          // --solr-home
+else if (solr.home property set)    solrHomeDir = Path.of(solrHomeProp);
+else if (cloud example)             solrHomeDir = exampleDir.resolve("cloud");   // $SOLR_TIP/example/cloud
+else                                solrHomeDir = serverDir.resolve("solr");     // $SOLR_TIP/server/solr
+```
+
+Nothing in that chain sees the `SOLR_HOME` environment variable:
+
+- `bin/solr` adds `--solr-home` to the example tool's arguments **only** in the `--solr-home`
+  command-line branch (`solr/bin/solr:735-744`). The environment variable is not forwarded.
+- `SOLR_HOME` maps to the system property `solr.solr.home`
+  (`EnvToSyspropMappings.properties:15`), while the tool reads `solr.home`.
+
+So `SOLR_HOME=/var/solr solr start -e techproducts` silently ignores `/var/solr` and writes the
+example — cores, index data and, for a cloud example, `zoo_data` — into the **installation
+directory**. On a packaged install that directory may well be read-only or root-owned.
+
+**Observed**, not just inferred: a run of the ported `test_export.bats` suite left a `zoo_data`
+directory in `solr/packaging/build/solr-11.0.0-SNAPSHOT/server/solr/`, which is not part of the
+distribution and is not tracked in git.
+
+This is not specific to the new harness. `configureBatsTask` sets `SOLR_HOME` as an environment
+variable too (`solr/packaging/build.gradle:340`), so every BATS test using `solr start -e` has been
+writing into the unpacked distribution that all the other tests then read — a shared, build-tree
+directory, which is exactly what a test must not mutate.
+
+Worth a JIRA on its own terms, independently of the tests: either the example tool should honour
+`SOLR_HOME`, or `bin/solr` should forward it, or the tool should refuse to write into its own
+installation directory.
+
+Workaround used by the ports meanwhile: pass `--solr-home "${SOLR_HOME}"` explicitly
+(`ExampleTest`, `ExportTest`), or avoid `-e` altogether and build the fixture with
+`solr create` + `solr post` (`CompressionTest`, `SnapshotsTest`, `StreamTest`).
+
+## 10. Pre-existing staleness in the test build, unrelated to the CLI
 
 Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmless, but misleading.
 

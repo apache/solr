@@ -69,6 +69,9 @@ dependencies {
   // the BATS tests they are ported from.
   testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
+  // For suites whose BATS original ran a 'docker run' by hand: a Testcontainers @ClassRule starts
+  // the container once per class, maps a free port and skips when Docker is absent.
+  testImplementation libs.testcontainers
 
   solrFullTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
     builtBy ":solr:distribution:signFullBinaryTgz"
