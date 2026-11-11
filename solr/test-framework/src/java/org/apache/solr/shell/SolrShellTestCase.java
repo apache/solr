@@ -21,24 +21,21 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
 import org.apache.solr.shell.env.ProcessScopeLock;
 import org.apache.solr.shell.exec.CommandResult;
+import org.apache.solr.shell.exec.PidFile;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.exec.SolrProcesses;
@@ -77,8 +74,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Pattern PID_FILE = Pattern.compile("solr-(\\d+)\\.pid");
-
   /** How long the post-flight check waits for the port block to come free. */
   private static final Duration LEAK_CHECK_TIMEOUT = Duration.ofSeconds(10);
 
@@ -114,8 +109,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
       requireNoForeignSolr();
     }
     CliSession.resetKnownNodes();
-    cleanSolrHome();
+    // Order matters: SOLR_PID_DIR lives inside SOLR_HOME, so wiping the home first would delete
+    // the pid file that is the only record of a node an earlier, hard-killed run left behind.
     preFlightLeakCheck();
+    cleanSolrHome();
     classCli = CliSession.forScope(harnessEnv, getTestClass().getSimpleName());
     if (log.isInfoEnabled()) {
       log.info(
@@ -139,7 +136,9 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     List<String> problems = new ArrayList<>();
     try {
       if (classCli != null) {
-        classCli.shutdownAll();
+        // close() stops the nodes this class owns, by port. No 'stop --all' first: it would walk
+        // the same per-class SOLR_PID_DIR, so every node would then be stopped twice — a wasted
+        // subprocess and a misleading "failed to stop" warning for each.
         classCli.close();
       }
     } catch (RuntimeException | AssertionError e) {
@@ -325,7 +324,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   private static void cleanSolrHome() throws IOException {
     Path solrHome = harnessEnv.solrHome();
     if (Files.isDirectory(solrHome)) {
-      deleteRecursively(solrHome);
+      IOUtils.rm(solrHome);
     }
     Files.createDirectories(solrHome);
     Files.createDirectories(harnessEnv.logsDir());
@@ -336,26 +335,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
    * earlier run left behind.
    */
   private static void preFlightLeakCheck() throws IOException {
-    Path pidDir = harnessEnv.pidDir();
-    if (Files.isDirectory(pidDir)) {
-      try (Stream<Path> files = Files.list(pidDir)) {
-        for (Path file : files.toList()) {
-          Matcher m = PID_FILE.matcher(file.getFileName().toString());
-          if (!m.matches()) {
-            continue;
-          }
-          log.warn("Stale Solr pid file from an earlier run: {}; killing and removing", file);
-          String text = Files.readString(file, StandardCharsets.UTF_8).trim();
-          if (!text.isEmpty()) {
-            try {
-              ProcessKill.killTree(Long.parseLong(text), Duration.ofSeconds(10));
-            } catch (NumberFormatException e) {
-              log.warn("Unreadable pid in {}", file);
-            }
-          }
-          Files.deleteIfExists(file);
-        }
-      }
+    for (PidFile pidFile : PidFile.listIn(harnessEnv.pidDir())) {
+      log.warn("Stale Solr pid file from an earlier run: {}; killing and removing", pidFile);
+      pidFile.pid().ifPresent(pid -> ProcessKill.killTree(pid, Duration.ofSeconds(10)));
+      Files.deleteIfExists(pidFile.path());
     }
 
     List<Integer> busy = new ArrayList<>();
@@ -374,26 +357,21 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   private static void postFlightLeakCheck() {
     List<String> leaks = new ArrayList<>();
 
-    Path pidDir = harnessEnv.pidDir();
-    if (Files.isDirectory(pidDir)) {
-      try (Stream<Path> files = Files.list(pidDir)) {
-        for (Path file : files.toList()) {
-          if (PID_FILE.matcher(file.getFileName().toString()).matches()) {
-            leaks.add("leftover pid file " + file);
-            try {
-              String text = Files.readString(file, StandardCharsets.UTF_8).trim();
-              if (!text.isEmpty()) {
-                ProcessKill.killTree(Long.parseLong(text), Duration.ofSeconds(10));
-              }
-              Files.deleteIfExists(file);
-            } catch (IOException | NumberFormatException e) {
-              log.warn("Could not clear {}", file, e);
-            }
-          }
+    try {
+      for (PidFile pidFile : PidFile.listIn(harnessEnv.pidDir())) {
+        // A file whose process is already gone is litter, not a leak: Solr removes its own pid
+        // file on a clean shutdown, but a node killed outright never gets the chance. Only a live
+        // process means this class failed to clean up after itself.
+        if (pidFile.isProcessAlive()) {
+          leaks.add("Solr still running: " + pidFile + " (pid " + pidFile.pid().orElse(-1) + ")");
+          pidFile.pid().ifPresent(pid -> ProcessKill.killTree(pid, Duration.ofSeconds(10)));
+        } else {
+          log.warn("Removing pid file for a node that is already gone: {}", pidFile);
         }
-      } catch (IOException e) {
-        log.warn("Could not scan {}", pidDir, e);
+        Files.deleteIfExists(pidFile.path());
       }
+    } catch (IOException e) {
+      log.warn("Could not scan {}", harnessEnv.pidDir(), e);
     }
 
     long deadline = System.nanoTime() + LEAK_CHECK_TIMEOUT.toNanos();
@@ -435,7 +413,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
                 description.getTestClass().getSimpleName() + "-" + description.getMethodName());
     try {
       if (Files.exists(target)) {
-        deleteRecursively(target);
+        IOUtils.rm(target);
       }
       Files.createDirectories(target);
       copyRecursively(harnessEnv.solrHome(), target.resolve("solr-home"));
@@ -448,25 +426,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   }
 
   // ---------------------------------------------------------------- file utils
-
-  private static void deleteRecursively(Path root) throws IOException {
-    Files.walkFileTree(
-        root,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
-            Files.deleteIfExists(file);
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-            Files.deleteIfExists(dir);
-            return FileVisitResult.CONTINUE;
-          }
-        });
-  }
 
   private static void copyRecursively(Path source, Path target) throws IOException {
     if (!Files.exists(source)) {

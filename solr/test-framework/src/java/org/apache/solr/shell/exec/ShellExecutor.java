@@ -21,6 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -140,8 +143,15 @@ public final class ShellExecutor {
       byte[] head = new byte[(int) OUTPUT_LIMIT_BYTES];
       try (var in = Files.newInputStream(file)) {
         int read = in.readNBytes(head, 0, head.length);
+        // Decoded leniently: the cut almost certainly lands mid-character, and a replacement
+        // character in a truncation marker beats throwing away the output we did capture.
+        CharsetDecoder decoder =
+            StandardCharsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
         text =
-            new String(head, 0, read, StandardCharsets.UTF_8)
+            decoder.decode(ByteBuffer.wrap(head, 0, read))
                 + "\n... ["
                 + (size - read)
                 + " more bytes truncated]";

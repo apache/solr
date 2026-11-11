@@ -34,6 +34,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +47,7 @@ import java.util.stream.Stream;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
 import org.apache.solr.shell.exec.CommandResult;
+import org.apache.solr.shell.exec.PidFile;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.exec.ShellExecutor;
@@ -69,14 +71,12 @@ public class CliSession implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Pattern PID_FILE = Pattern.compile("solr-(\\d+)\\.pid");
-
   /**
-   * {@code {{NAME}}} placeholders in a command line. Double braces are inert in both bash — which
-   * only expands braces containing a comma or {@code ..} — and cmd.exe, unlike {@code $NAME} and
-   * {@code %NAME%}.
+   * {@code {{NAME}}} alone — the only form substituted inside a shell-specific {@code script}.
+   *
+   * <p>Double braces are inert in both bash, which only expands braces containing a comma or {@code
+   * ..}, and cmd.exe — unlike {@code $NAME} and {@code %NAME%}.
    */
-  /** {@code {{NAME}}} alone — the only form substituted inside a shell-specific {@code script}. */
   private static final Pattern TEMPLATE = Pattern.compile("\\{\\{([A-Za-z_][A-Za-z0-9_]*)}}");
 
   /**
@@ -319,6 +319,7 @@ public class CliSession implements AutoCloseable {
    * @throws org.junit.AssumptionViolatedException if the current shell has no script
    */
   public CommandResult script(String bashScript, String cmdScript) {
+    requireOpen();
     String chosen = shell == Shell.BASH ? bashScript : cmdScript;
     if (chosen == null) {
       throw new org.junit.AssumptionViolatedException(
@@ -331,8 +332,15 @@ public class CliSession implements AutoCloseable {
     return fmtArgs.length == 0 ? line : String.format(Locale.ROOT, line, fmtArgs);
   }
 
+  private void requireOpen() {
+    if (closed) {
+      throw new IllegalStateException("Session '" + name + "' is already closed");
+    }
+  }
+
   /** Resolves every variable spelling a cross-shell line may use, then rejects the cmd.exe one. */
   private String resolveForRun(String line) {
+    requireOpen();
     String resolved = interpolate(line, VARIABLE);
     Matcher cmdForm = CMD_VARIABLE.matcher(resolved);
     if (cmdForm.find()) {
@@ -386,9 +394,6 @@ public class CliSession implements AutoCloseable {
   }
 
   private CommandResult execute(String rawLine, Duration commandTimeout, boolean separateStreams) {
-    if (closed) {
-      throw new IllegalStateException("Session '" + name + "' is already closed");
-    }
     // stripTrailing so a """ text block whose closing delimiter sits on its own line — which
     // carries a trailing newline — behaves the same as a plain string.
     String line = rawLine.stripTrailing();
@@ -418,7 +423,14 @@ public class CliSession implements AutoCloseable {
     return result;
   }
 
-  /** Only what this session changed relative to the resolved base environment. */
+  /**
+   * Only what this session changed relative to the resolved base environment — the full environment
+   * is hundreds of entries and tells a reader nothing.
+   *
+   * <p>A session starts as a copy of the base, and {@link #env(String, String)} can only add or
+   * replace, so an entry present in the base is always present here too; there is nothing to report
+   * as unset.
+   */
   private Map<String, String> envDiff() {
     Map<String, String> base = harnessEnv.baseEnv();
     Map<String, String> diff = new LinkedHashMap<>();
@@ -428,7 +440,6 @@ public class CliSession implements AutoCloseable {
             diff.put(k, v);
           }
         });
-    base.keySet().stream().filter(k -> !vars.containsKey(k)).forEach(k -> diff.put(k, "<unset>"));
     return diff;
   }
 
@@ -440,23 +451,16 @@ public class CliSession implements AutoCloseable {
    * is re-parented as soon as its launching shell exits.
    */
   private void claimNewNodes() {
-    Path pidDir = harnessEnv.pidDir();
-    if (!Files.isDirectory(pidDir)) {
-      return;
-    }
-    try (Stream<Path> files = Files.list(pidDir)) {
-      for (Path file : files.toList()) {
-        Matcher m = PID_FILE.matcher(file.getFileName().toString());
-        if (!m.matches()) {
+    try {
+      for (PidFile pidFile : PidFile.listIn(harnessEnv.pidDir())) {
+        OptionalLong read = pidFile.pid();
+        if (read.isEmpty()) {
           continue;
         }
-        int port = Integer.parseInt(m.group(1));
-        Long pid = readPid(file);
-        if (pid == null) {
-          continue;
-        }
+        long pid = read.getAsLong();
+        int port = pidFile.port();
         Long known = KNOWN_PID_FILES.get(port);
-        if (known != null && known.equals(pid)) {
+        if (known != null && known == pid) {
           continue;
         }
         KNOWN_PID_FILES.put(port, pid);
@@ -465,16 +469,7 @@ public class CliSession implements AutoCloseable {
         log.info("Session '{}' now owns Solr node on port {} (pid {})", name, port, pid);
       }
     } catch (IOException e) {
-      log.warn("Could not scan {} for Solr pid files", pidDir, e);
-    }
-  }
-
-  private static Long readPid(Path pidFile) {
-    try {
-      String text = Files.readString(pidFile, StandardCharsets.UTF_8).trim();
-      return text.isEmpty() ? null : Long.parseLong(text);
-    } catch (IOException | NumberFormatException e) {
-      return null;
+      log.warn("Could not scan {} for Solr pid files", harnessEnv.pidDir(), e);
     }
   }
 
@@ -656,16 +651,16 @@ public class CliSession implements AutoCloseable {
     }
   }
 
-  /** Runs a cleanup command without letting a timeout turn into a test failure. */
+  /**
+   * Runs a cleanup command without letting a timeout turn into a test failure, and without the
+   * closed check that {@link #run} applies — cleanup runs after the session is already closed.
+   */
   private CommandResult runForCleanup(String line) {
-    closed = false;
     try {
-      return run(Duration.ofSeconds(60), line);
+      return execute(line, Duration.ofSeconds(60), false);
     } catch (AssertionError e) {
       log.warn("Cleanup command failed: {}", line, e);
       return null;
-    } finally {
-      closed = true;
     }
   }
 
