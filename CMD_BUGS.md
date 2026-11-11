@@ -119,7 +119,25 @@ Tightening it to assert *why* the handshake failed needs the TLS cause chain, wh
 
 Found while porting `test_ssl.bats`.
 
-## 6. Pre-existing staleness in the test build, unrelated to the CLI
+## 6. `solr post` reports success when the target collection does not exist
+
+`test_basic_auth.bats` posts to a collection it never creates:
+
+```
+solr post --name monitors ... monitor.xml
+```
+
+and asserts `1 files indexed.` — which the command does print. The post succeeds from the CLI's
+point of view even though nothing was indexed anywhere, so the assertion is far weaker than it
+reads.
+
+The `BasicAuthTest` port keeps it verbatim rather than quietly changing what the original asserted.
+Worth deciding separately whether `solr post` should fail, or at least warn, when the collection is
+missing — and then giving it a test that says so.
+
+Found while porting `test_basic_auth.bats`.
+
+## 7. Pre-existing staleness in the test build, unrelated to the CLI
 
 Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmless, but misleading.
 
