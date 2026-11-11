@@ -27,22 +27,27 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 - See `dev-docs/gradle-help/tests.txt` for hints on running tests
 - To run a specific test: `gradlew :solr:core:test --tests "org.apache.solr.search.TestCaffeineCache"`
-- To run a specific BATS test: `gradlew iTest --tests test_adminconsole_urls.bats`
+- To run the cross-platform CLI suites: `gradlew -p solr/packaging shellTests --tests "*ZkTest"`
+- To run a specific BATS test (deprecated layer): `gradlew iTest --tests test_adminconsole_urls.bats`
 - The randomization seed is important.  To repeat a failing tests, pass the same seed given in the failure by adding to Gradle: `-Ptests.seed=HEXADECIMALHERE`.
 - Test output goes to `solr/<module>/build/test-results/test/outputs/OUTPUT-<fully.qualified.TestName>.txt` (stdout/stderr log) and `solr/<module>/build/test-results/test/TEST-<fully.qualified.TestName>.xml` (JUnit XML with pass/fail/error details)
 - To scan test output for a specific issue across already-run tests: `grep -rl "pattern" solr/*/build/test-results/test/outputs/`
 
 ## Writing Tests
 
+Pick the cheapest harness that can catch the bug. Conventions, `@Rule` practice, randomization guidance and a worked example for each kind: `dev-docs/writing-tests.adoc`.
+
+- `SolrTestCase` — the default. For an embedded Solr add `SolrJettyTestRule` (when HTTP matters) or `EmbeddedSolrServerTestRule` (when it does not)
+- `SolrCloudTestCase` — only when the test genuinely needs a cluster; it costs seconds to minutes, not milliseconds
+- `SolrShellTestCase` — `bin/solr` and `bin\solr.cmd` behaviour, as real subprocesses; suites in `solr/packaging/src/test/`
+- `AdminUiTestBase` — Admin UI in a browser; see `dev-docs/admin-ui-tests.md`
+- `SolrTestCaseJ4` — deprecated, never in a new test
+- BATS (`solr/packaging/test/*.bats`) — deprecated and bash-only, so it never ran on Windows. Do not add or extend one; write a `SolrShellTestCase` instead
+
+Beyond that:
+
 - When adding a test to an existing suite/file, keep the same style / design choices
-- When adding a *new* Java test suite/file:
-    - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
-    - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
-    - Use SolrTestCase instead of SolrTestCaseJ4 for new tests
 - System properties set in a test are restored after each test by the base classes (`SystemPropertiesRestoreRule`); do not add `try/finally` + `System.clearProperty` cleanup
-- For BATS shell integration tests in `solr/packaging/test/`:
-    - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
-    - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
 - Avoid `Thread.sleep`; fixed sleeps waste build time on every run and can flake under load.
     - Have the other thread signal when it reaches a point, e.g. complete a `CompletableFuture` that the test thread `get`s with a timeout.
     - If you must poll, use `org.apache.solr.util.TimeOut#waitFor` (solr-core) rather than a hand-rolled sleep loop.
@@ -73,6 +78,7 @@ Internals:
 Process & tooling:
 
 - `dev-docs/solr-source-code.adoc`, `git.adoc`, `IDEs.adoc`, `jvms.adoc` — build and dev environment
+- `dev-docs/writing-tests.adoc` — the test harnesses, how to choose one, lifecycle and randomization conventions
 - `dev-docs/ref-guide/` — ref-guide authoring (AsciiDoc syntax, Antora templates)
 - `dev-docs/dependency-upgrades.adoc`, `lucene-upgrade.md`, `working-between-major-versions.adoc` — upgrades and branch management
 - `dev-docs/releasing.adoc`, `changelog.adoc`, `asf-jenkins.adoc` — release and CI process

@@ -33,7 +33,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | Current, opt-in with `-Ptests.selenium=true`. See link:admin-ui-tests.md[admin-ui-tests.md].
 
 | `SolrTestCaseJ4`
-| Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. Still the base of ~600 tests, and of `SolrCloudTestCase`.
+| Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. Directly extended by ~600 test classes and transitively the base of ~1250 — four in five Solr tests, mostly via `SolrCloudTestCase`.
 | as `SolrTestCase`
 | Deprecated. Not in new tests.
 
@@ -77,14 +77,14 @@ Randomize when the input space is large and uniform and correctness does not dep
 
 == @Rule and lifecycle
 
-`SolrTestCase` already installs, for every subclass: `SystemPropertiesRestoreRule` at both class and method scope, `LogLevelTestRule` (honours `@LogLevel`), `RevertDefaultThreadHandlerRule`, `QueryLimitsTestInjectionRule`, an `ObjectReleaseTracker` check, `@ThreadLeakFilters` with `SolrIgnoredThreadsFilter` + `QuickPatchThreadsFilter`, and `@ThreadLeakLingering(linger = 1000)`. Do not re-add any of it, and do not restore system properties by hand.
+`SolrTestCase` already installs, for every subclass: `SystemPropertiesRestoreRule` at both class and method scope, `LogLevelTestRule` (honours `@LogLevel`), `RevertDefaultThreadHandlerRule`, `QueryLimitsTestInjectionRule`, an `ObjectReleaseTracker` check, `@ThreadLeakFilters` with `SolrIgnoredThreadsFilter` + `QuickPatchThreadsFilter`, `@ThreadLeakLingering(linger = 1000)`, and `@SuppressSysoutChecks` (which is why Solr tests may log freely to the console). Do not re-add any of it, and do not restore system properties by hand.
 
 Do:
 
-* Order rules with `RuleChain.outerRule(a).around(b)` in one field — JUnit 4 defines no order between separate `@Rule` fields.
+* Order rules with `RuleChain.outerRule(a).around(b)` in one field, as `SolrTestCase` itself does. Separate `@Rule` fields are applied in an undefined, reflection-dependent order unless you set `@Rule(order = n)` (JUnit 4.13+), which Solr does not use.
 * Use a `TestRule` rather than `@After` when cleanup must know whether the test failed. Worked example: `SolrShellTestCase.shellSessionRule` snapshots `SOLR_HOME` and the command transcript on a throwable, before the harness stops the node. A rule also sees the `Description`, which is how `@EnabledOnShell`/`@EnabledOnCli` skip individual shell tests.
 * Prefer a `@ClassRule` `ExternalResource` over `@BeforeClass`/`@AfterClass` pairs for anything that must be closed — that is what `SolrJettyTestRule` and `EmbeddedSolrServerTestRule` are.
-* In `SolrCloudTestCase`, configure the cluster in `@BeforeClass`; the base class's `@AfterClass` shuts it down. For per-test isolation use `@After cluster.deleteAllCollections()`, not a cluster per method.
+* In `SolrCloudTestCase`, configure the cluster in `@BeforeClass`; the base class's `@AfterClass` shuts it down. For per-test isolation use `@After cluster.deleteAllCollections()` (which removes aliases too), not a cluster per method.
 * Call `super.setUp()`/`super.tearDown()` if you override them, and use `createTempDir()` for scratch space.
 * Mute expected ERRORs: `try (ErrorLogMuter errors = ErrorLogMuter.substring("...")) { ... }`.
 
@@ -92,13 +92,13 @@ Don't:
 
 * Don't set up in a `static` initializer — runners may load all test classes long before a suite runs.
 * Don't assume `@AfterClass` sees a complete fixture: JUnit 4 runs it even when `@BeforeClass` threw or raised an assumption failure.
-* Don't add a thread to `SolrIgnoredThreadsFilter` instead of fixing the leak; anything listed there must be completely stateless. Raising `@ThreadLeakLingering` is for a slow-but-correct shutdown only.
+* Don't add a thread to `SolrIgnoredThreadsFilter` instead of fixing the leak; anything listed there must be completely stateless. `@ThreadLeakLingering` is resolved the same way, so a subclass declaration replaces the inherited 1000 rather than raising it — and is for a slow-but-correct shutdown only.
 * Don't redeclare `@ThreadLeakFilters` without repeating the inherited filters — the annotation is not additive. `AdminUiTestBase` shows the correct form.
-* Don't leak tracked objects. `ObjectReleaseTracker` is asserted empty only when the suite passed, so "ObjectTracker found N objects" on a green test means your test left a `SolrCore`, `SolrIndexSearcher`, `Directory` or similar open.
+* Don't leak tracked objects. `ObjectReleaseTracker` is asserted empty only when the suite passed, so `ObjectTracker found N object(s) that were not released` on a suite whose methods all passed means your test left a `SolrCore`, `SolrIndexSearcher`, `Directory` or similar open.
 
 Annotations:
 
-These are randomizedtesting *test groups*, disabled by default. Annotating a test with one means it stops running in ordinary builds and in PR CI, so it is a decision about coverage, not a formality:
+These are Lucene annotations wired up as randomizedtesting *test groups*, disabled by default. Annotating a test with one means it stops running in ordinary builds and in PR CI, so it is a decision about coverage, not a formality:
 
 * `@Nightly` — correct, but too slow to run every time.
 * `@AwaitsFix(bugUrl = "...")` — known-broken. The bug URL is required, which is what keeps it discoverable. Prefer it to `@Ignore`: `@Ignore` is plain JUnit and invisible to group filters, so it disappears rather than being tracked. Use `@Ignore` only where nothing is broken, such as an abstract base the runner would otherwise pick up.
