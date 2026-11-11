@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -308,7 +309,11 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             CollectionAdminParams.COLL_CONF,
             configName,
             CollectionHandlingUtils.CREATE_NODE_SET,
-            sourceLeader.getNodeName());
+            sourceLeader.getNodeName(),
+            // the getLeaderRetry(...) call below is this method's own wait; don't let
+            // CreateCollectionCmd's own wait run (and block on) first.
+            CommonAdminParams.WAIT_FOR_FINAL_STATE,
+            "false");
     String internalAsyncId = null;
     if (adminCmdContext.getAsyncId() != null) {
       internalAsyncId = adminCmdContext.getAsyncId() + Math.abs(System.nanoTime());
@@ -400,6 +405,9 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     props.put(SHARD_ID_PROP, tempSourceSlice.getName());
     props.put("node", targetLeader.getNodeName());
     props.put(CoreAdminParams.NAME, tempCollectionReplica2);
+    // the syncRequestTracker below is this method's own wait; don't let AddReplicaCmd's own
+    // wait run (and block on) first.
+    props.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, "false");
     // copy over property params:
     for (String key : message.keySet()) {
       if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
