@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -77,6 +78,67 @@ public record CommandResult(
   /** The merged output split on {@code \n}; empty output yields an empty list. */
   public List<String> lines() {
     return output.isEmpty() ? List.of() : List.of(output.split("\n", -1));
+  }
+
+  /** Port of {@code | wc -l}. */
+  public int lineCount() {
+    return lines().size();
+  }
+
+  /** Port of {@code | grep <regex>}: the lines the pattern matches anywhere in. */
+  public List<String> linesMatching(String regex) {
+    Pattern pattern = Pattern.compile(resolve(regex));
+    return lines().stream().filter(line -> pattern.matcher(line).find()).toList();
+  }
+
+  /**
+   * Port of a {@code sed} capture: the first match of {@code regex}, narrowed to capturing group
+   * one when the pattern has one.
+   *
+   * @throws AssertionError if the pattern does not match, since a test that goes on to use the
+   *     empty string would fail later and less clearly
+   */
+  public String firstMatch(String regex) {
+    Matcher matcher = Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output);
+    if (!matcher.find()) {
+      throw fail("output did not match: " + resolve(regex));
+    }
+    return matcher.groupCount() >= 1 ? matcher.group(1) : matcher.group();
+  }
+
+  /** Port of {@code | head -n <count>}. Fewer lines than asked for is not an error. */
+  public List<String> firstLines(int count) {
+    List<String> lines = lines();
+    return lines.subList(0, Math.min(count, lines.size()));
+  }
+
+  /** Port of {@code | tail -n <count>}. Fewer lines than asked for is not an error. */
+  public List<String> lastLines(int count) {
+    List<String> lines = lines();
+    return lines.subList(Math.max(0, lines.size() - count), lines.size());
+  }
+
+  /** Port of {@code | awk '{print $n}'}: the whitespace-separated fields of one output line. */
+  public List<String> fields(int lineIndex) {
+    List<String> lines = lines();
+    if (lineIndex < 0 || lineIndex >= lines.size()) {
+      throw fail("output has " + lines.size() + " line(s), wanted line " + lineIndex);
+    }
+    String line = lines.get(lineIndex).strip();
+    return line.isEmpty() ? List.of() : List.of(line.split("\\s+"));
+  }
+
+  /** Port of {@code | grep -c}: how many times {@code substring} occurs in the output. */
+  public int countOccurrences(String substring) {
+    String needle = resolve(substring);
+    if (needle.isEmpty()) {
+      throw new IllegalArgumentException("countOccurrences needs a non-empty substring");
+    }
+    int count = 0;
+    for (int from = output.indexOf(needle); from >= 0; from = output.indexOf(needle, from + 1)) {
+      count++;
+    }
+    return count;
   }
 
   public CommandResult assertSuccess() {
@@ -157,6 +219,29 @@ public record CommandResult(
     }
     if (!lines.get(index).equals(resolve(expected))) {
       throw fail("line " + index + " was not: " + resolve(expected));
+    }
+    return this;
+  }
+
+  /** Port of {@code [ $(... | wc -l) -eq n ]}. */
+  public CommandResult assertLineCount(int expected) {
+    if (lineCount() != expected) {
+      throw fail("output had " + lineCount() + " line(s), expected " + expected);
+    }
+    return this;
+  }
+
+  /** Port of {@code [ $(... | grep -c x) -eq n ]}. */
+  public CommandResult assertContainsTimes(String substring, int expected) {
+    int actual = countOccurrences(substring);
+    if (actual != expected) {
+      throw fail(
+          "output contained "
+              + resolve(substring)
+              + " "
+              + actual
+              + " time(s), expected "
+              + expected);
     }
     return this;
   }

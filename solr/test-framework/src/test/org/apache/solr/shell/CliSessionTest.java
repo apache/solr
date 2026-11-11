@@ -142,7 +142,11 @@ public class CliSessionTest extends SolrTestCase {
   public void aHarnessResolvedVariableIsNotLeftForTheShell() {
     // The proof that it is the harness and not bash doing the work: the resolved value reaches the
     // command even inside single quotes, where bash would never have expanded anything.
-    session.run("echo '${ZK_PORT}'").assertSuccess().assertExact(String.valueOf(env.ports().zk()));
+    session
+        .allowShellSpecific()
+        .run("echo '${ZK_PORT}'")
+        .assertSuccess()
+        .assertExact(String.valueOf(env.ports().zk()));
   }
 
   @Test
@@ -443,5 +447,102 @@ public class CliSessionTest extends SolrTestCase {
     session.env("MiXeD_Case_Var", "value");
     assertEquals("value", session.env("mixed_case_var"));
     session.script(null, "echo %MIXED_CASE_VAR%").assertSuccess().assertExact("value");
+  }
+
+  // ------------------------------------------------------- portability rails
+
+  @Test
+  public void aPipeIsRejectedWithTheAlternative() {
+    AssertionError failure =
+        expectThrows(AssertionError.class, () -> session.run("echo hello | grep hello"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("a pipe (|) is not portable"));
+  }
+
+  @Test
+  public void aUnixOnlyToolIsRejectedWithTheAlternative() {
+    AssertionError failure =
+        expectThrows(AssertionError.class, () -> session.run("grep -c solr somefile.txt"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("linesMatching()"));
+    // And the same mistake spelled with a path.
+    expectThrows(AssertionError.class, () -> session.run("/usr/bin/awk {print} f"));
+    // Also in the argv form, where only the tool name can be judged.
+    expectThrows(AssertionError.class, () -> session.run(List.of("sed", "s/a/b/", "f")));
+  }
+
+  @Test
+  public void chainedCommandsAndSubstitutionsAreRejected() {
+    expectThrows(AssertionError.class, () -> session.run("echo a && echo b"));
+    expectThrows(AssertionError.class, () -> session.run("echo a ; echo b"));
+    expectThrows(AssertionError.class, () -> session.run("echo $(date)"));
+    expectThrows(AssertionError.class, () -> session.run("echo > /dev/null"));
+    AssertionError assignment =
+        expectThrows(AssertionError.class, () -> session.run("SOLR_LOG_LEVEL=DEBUG echo hi"));
+    assertTrue(assignment.getMessage(), assignment.getMessage().contains("env(\"SOLR_LOG_LEVEL\""));
+  }
+
+  @Test
+  public void singleQuotesAreRejectedBecauseCmdHasNoSuchQuoting() {
+    AssertionError failure =
+        expectThrows(AssertionError.class, () -> session.run("echo 'hello world'"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("single-quote quoting"));
+  }
+
+  @Test
+  public void aMetacharacterInsideDoubleQuotesIsFine() {
+    // Both shells protect it, so a URL with a query string must not trip the rails.
+    session
+        .run("echo \"http://localhost:${SOLR_PORT}/solr/x?q=*:*&rows=10\"")
+        .assertSuccess()
+        .assertContains("&rows=10");
+  }
+
+  // ------------------------------------------------------- output extraction
+
+  @Test
+  public void outputExtractionReplacesTheUnixTextTools() {
+    var result =
+        session.script(
+            "printf 'alpha 1\\nbeta 2\\ngamma 3\\n'", "(echo alpha 1&echo beta 2&echo gamma 3)");
+    result.assertSuccess().assertLineCount(3);
+    assertEquals(List.of("beta 2"), result.linesMatching("^beta"));
+    assertEquals(List.of("alpha 1"), result.firstLines(1));
+    assertEquals(List.of("gamma 3"), result.lastLines(1));
+    assertEquals("2", result.fields(1).get(1));
+    assertEquals("beta", result.firstMatch("(beta)"));
+    assertEquals(5, result.countOccurrences("a"));
+    result.assertContainsTimes("beta", 1);
+  }
+
+  // ------------------------------------------------------- file work
+
+  @Test
+  public void fileHelpersReplaceTheShellFileTools() throws IOException {
+    session.write("dir/file.txt", "one\ntwo\n");
+    assertTrue(session.exists("dir/file.txt"));
+    assertEquals("one\ntwo\n", session.read("dir/file.txt"));
+    session.append("dir/file.txt", "three\n");
+    assertTrue(session.fileContains("dir/file.txt", "three"));
+    assertEquals(List.of("two"), session.readLinesMatching("dir/file.txt", "^two$"));
+
+    session.mkdirs("dir/nested");
+    session.copy("dir/file.txt", "dir/nested/copy.txt");
+    assertEquals(
+        List.of("copy.txt"),
+        session.list("dir/nested").stream().map(f -> f.getFileName().toString()).toList());
+    assertEquals(1, session.list("dir", "*.txt").size());
+    assertEquals(1, session.list("dir", "**/*.txt").size());
+
+    session.copy("dir", "tree");
+    assertTrue(session.exists("tree/nested/copy.txt"));
+
+    session.rm("dir");
+    assertFalse(session.exists("dir"));
+    // Removing what is not there is not an error, as 'rm -rf' is not.
+    session.rm("dir");
+  }
+
+  @Test
+  public void relativePathsResolveAgainstTheSessionDirectory() {
+    assertEquals(session.cwd().resolve("x").toString(), session.path("x").toString());
   }
 }

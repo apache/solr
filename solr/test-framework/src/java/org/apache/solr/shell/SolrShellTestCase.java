@@ -165,6 +165,12 @@ public abstract class SolrShellTestCase extends SolrTestCase {
               requireShell(description.getAnnotation(EnabledOnShell.class));
               requireCli(description.getAnnotation(EnabledOnCli.class));
               cli = classCli.child(description.getMethodName());
+              // A test restricted to one shell may use that shell freely: there is no other shell
+              // left for a pipe or a Unix tool to break on, so the portability rails step aside.
+              if (description.getAnnotation(EnabledOnShell.class) != null
+                  || description.getTestClass().getAnnotation(EnabledOnShell.class) != null) {
+                cli.allowShellSpecific();
+              }
               try {
                 base.evaluate();
               } catch (Throwable failure) {
@@ -259,6 +265,57 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   protected Path touch(String path) {
     return cli.touch(path);
+  }
+
+  // File work the BATS originals did with mkdir, rm, cp, cat, ls and find. Paths resolve against
+  // the session's working directory, so a relative path reads exactly as it did in the shell.
+
+  protected Path path(String path) {
+    return cli.path(path);
+  }
+
+  protected Path mkdirs(String dir) {
+    return cli.mkdirs(dir);
+  }
+
+  protected Path write(String path, String content) {
+    return cli.write(path, content);
+  }
+
+  protected Path append(String path, String content) {
+    return cli.append(path, content);
+  }
+
+  protected String read(String path) {
+    return cli.read(path);
+  }
+
+  protected List<String> readLinesMatching(String path, String regex) {
+    return cli.readLinesMatching(path, regex);
+  }
+
+  protected boolean fileContains(String path, String text) {
+    return cli.fileContains(path, text);
+  }
+
+  protected boolean exists(String path) {
+    return cli.exists(path);
+  }
+
+  protected void rm(String path) {
+    cli.rm(path);
+  }
+
+  protected Path copy(String from, String to) {
+    return cli.copy(from, to);
+  }
+
+  protected List<Path> list(String dir) {
+    return cli.list(dir);
+  }
+
+  protected List<Path> list(String dir, String glob) {
+    return cli.list(dir, glob);
   }
 
   protected Path cwd() {

@@ -408,6 +408,12 @@ tasks.register('shellTests', Test) {
   configureShellTestTask(it, 'shell-test-output', null)
 }
 
+tasks.register('shellTestsPicocli', Test) {
+  group = 'verification'
+  description = 'Runs the shell harness suites against the experimental picocli CLI.'
+  configureShellTestTask(it, 'shell-test-output-picocli', 'true')
+}
+
 // Deprecated: delete along with commons-cli itself, once picocli is the only CLI in Solr 11. Until
 // then the two differ in some usage and error wording, so it is worth being able to run the suites
 // against whichever bin/solr is not defaulting to. A test that genuinely cannot hold for both

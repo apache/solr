@@ -20,8 +20,12 @@ package org.apache.solr.shell.session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,7 +40,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
@@ -103,6 +109,7 @@ public class CliSession implements AutoCloseable {
   private Duration startTimeout = DEFAULT_START_TIMEOUT;
   private CommandResult lastResult;
   private boolean closed;
+  private boolean shellSpecific;
 
   private CliSession(
       HarnessEnv harnessEnv,
@@ -154,6 +161,7 @@ public class CliSession implements AutoCloseable {
         new CliSession(harnessEnv, this, childName, childWorkDir, childVars, childCwd, shell);
     child.timeout = timeout;
     child.startTimeout = startTimeout;
+    child.shellSpecific = shellSpecific;
     return child;
   }
 
@@ -218,6 +226,151 @@ public class CliSession implements AutoCloseable {
     return file;
   }
 
+  // ------------------------------------------------------------ file work, in Java
+  // The shell file tools a BATS test reaches for — mkdir, rm, cp, cat, ls, find, wc — exist on
+  // bash and not on cmd.exe, so the harness offers them instead of letting a line hardcode one
+  // shell. Every path is resolved against {@link #cwd()}, which is the scope's own work directory,
+  // so a relative path behaves exactly as it would in the shell.
+
+  /** Resolves a path the way the shell would: relative to the session's working directory. */
+  public Path path(String path) {
+    return cwd.resolve(path).normalize();
+  }
+
+  /** Port of {@code mkdir -p}. */
+  public Path mkdirs(String path) {
+    Path dir = path(path);
+    try {
+      Files.createDirectories(dir);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not create directory " + dir, e);
+    }
+    return dir;
+  }
+
+  /** Port of {@code echo <content> > <path>}, creating parent directories as needed. */
+  public Path write(String path, String content) {
+    Path file = path(path);
+    try {
+      Files.createDirectories(file.getParent());
+      Files.writeString(file, content, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not write " + file, e);
+    }
+    return file;
+  }
+
+  /** Port of {@code echo <content> >> <path>}. */
+  public Path append(String path, String content) {
+    Path file = path(path);
+    try {
+      Files.createDirectories(file.getParent());
+      Files.writeString(
+          file,
+          content,
+          StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not append to " + file, e);
+    }
+    return file;
+  }
+
+  /** Port of {@code cat}. */
+  public String read(String path) {
+    Path file = path(path);
+    try {
+      return Files.readString(file, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not read " + file, e);
+    }
+  }
+
+  /** Port of {@code cat <path> | grep <regex>}: the file's lines the pattern matches. */
+  public List<String> readLinesMatching(String path, String regex) {
+    Pattern pattern = Pattern.compile(regex);
+    return read(path).lines().filter(line -> pattern.matcher(line).find()).toList();
+  }
+
+  /** Port of {@code grep -q <text> <path>}. */
+  public boolean fileContains(String path, String text) {
+    return read(path).contains(Variables.resolve(text, Variables.ANY, vars, "a file assertion"));
+  }
+
+  /** Port of {@code [ -e <path> ]}. */
+  public boolean exists(String path) {
+    return Files.exists(path(path));
+  }
+
+  /** Port of {@code rm -rf}. Removing something that is not there is not an error. */
+  public void rm(String path) {
+    Path target = path(path);
+    try {
+      if (Files.isDirectory(target)) {
+        IOUtils.rm(target);
+      } else {
+        Files.deleteIfExists(target);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not delete " + target, e);
+    }
+  }
+
+  /** Port of {@code cp} and {@code cp -r}: copies a file, or a directory tree, recursively. */
+  public Path copy(String from, String to) {
+    Path source = path(from);
+    Path target = path(to);
+    try {
+      if (Files.isDirectory(source)) {
+        try (Stream<Path> tree = Files.walk(source)) {
+          for (Path entry : tree.toList()) {
+            Path destination = target.resolve(source.relativize(entry).toString());
+            if (Files.isDirectory(entry)) {
+              Files.createDirectories(destination);
+            } else {
+              Files.createDirectories(destination.getParent());
+              Files.copy(entry, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+          }
+        }
+      } else {
+        Files.createDirectories(target.getParent());
+        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not copy " + source + " to " + target, e);
+    }
+    return target;
+  }
+
+  /**
+   * Port of {@code ls <glob>} and of {@code find <dir> -name <glob>}: the matching paths, sorted.
+   *
+   * <p>{@code glob} is a {@link java.nio.file.FileSystem#getPathMatcher glob} pattern relative to
+   * {@code dir}, so {@code "*.txt"} lists one level and {@code "**&#47;*.xml"} walks the tree.
+   */
+  public List<Path> list(String dir, String glob) {
+    Path base = path(dir);
+    if (!Files.isDirectory(base)) {
+      return List.of();
+    }
+    PathMatcher matcher = base.getFileSystem().getPathMatcher("glob:" + glob);
+    try (Stream<Path> tree = Files.walk(base)) {
+      return tree.filter(entry -> !entry.equals(base))
+          .filter(entry -> matcher.matches(base.relativize(entry)))
+          .sorted()
+          .toList();
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not list " + base, e);
+    }
+  }
+
+  /** Port of {@code ls <dir>}: the names directly in a directory, sorted. */
+  public List<Path> list(String dir) {
+    return list(dir, "*");
+  }
+
   public Path cwd() {
     return cwd;
   }
@@ -246,6 +399,18 @@ public class CliSession implements AutoCloseable {
   /** The Solr-aware conveniences for this session: collections, configs, HTTP, log dumps. */
   public SolrCliHelpers helpers() {
     return helpers;
+  }
+
+  /**
+   * Turns off the cross-shell portability rails for this session.
+   *
+   * <p>For a test that has already declared itself one shell's with {@link
+   * org.apache.solr.shell.EnabledOnShell} — set automatically there. Such a test may use that
+   * shell's pipes, quoting and tools freely, since there is no other shell for it to break on.
+   */
+  public CliSession allowShellSpecific() {
+    this.shellSpecific = true;
+    return this;
   }
 
   /** Overrides the default per-command timeout for this session. */
@@ -303,6 +468,9 @@ public class CliSession implements AutoCloseable {
    */
   public CommandResult run(String line) {
     requireSingleCommand(line);
+    if (!shellSpecific) {
+      requirePortableLine(line);
+    }
     String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), false);
   }
@@ -310,6 +478,9 @@ public class CliSession implements AutoCloseable {
   /** Runs a command line with an explicit timeout. */
   public CommandResult run(Duration commandTimeout, String line) {
     requireSingleCommand(line);
+    if (!shellSpecific) {
+      requirePortableLine(line);
+    }
     return execute(resolveForRun(line), commandTimeout, false);
   }
 
@@ -318,6 +489,10 @@ public class CliSession implements AutoCloseable {
    * its variables resolved before it is quoted.
    */
   public CommandResult run(List<String> argv) {
+    // Only the tool name: an argv element may contain anything, since the harness quotes it.
+    if (!shellSpecific) {
+      requirePortableTool(argv.isEmpty() ? "" : argv.get(0));
+    }
     String line = shell.joinArgs(argv.stream().map(this::resolveForRun).toList());
     return execute(line, timeoutFor(line), false);
   }
@@ -325,6 +500,9 @@ public class CliSession implements AutoCloseable {
   /** Like {@link #run(String)} but keeps {@code stdout()} and {@code stderr()} apart. */
   public CommandResult runSeparated(String line) {
     requireSingleCommand(line);
+    if (!shellSpecific) {
+      requirePortableLine(line);
+    }
     String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), true);
   }
@@ -375,7 +553,6 @@ public class CliSession implements AutoCloseable {
     }
   }
 
-  /** Resolves every variable spelling a cross-shell line may use, then rejects the cmd.exe one. */
   /**
    * A run is one command. A newline in the line would change what cmd.exe does without saying so:
    * Shell.CMD drops the {@code call} for a multi-line body, and without {@code call} a batch file
@@ -394,6 +571,157 @@ public class CliSession implements AutoCloseable {
     }
   }
 
+  /**
+   * The Unix-only tools a BATS line reaches for, each with the harness feature that replaces it.
+   *
+   * <p>None of these exist on cmd.exe, so a line invoking one is a test that silently only works on
+   * one platform. Caught here rather than on Windows three weeks later, and with the replacement
+   * named, because the replacement is the whole point: the harness grew {@link #read}, {@link
+   * #list}, {@code linesMatching} and the rest precisely so a port does not have to shell out.
+   */
+  private static final Map<String, String> UNIX_ONLY_TOOLS =
+      Map.ofEntries(
+          Map.entry("grep", "assert on the output: assertContains/assertMatches/linesMatching()"),
+          Map.entry("egrep", "assertMatches(), or linesMatching()"),
+          Map.entry("fgrep", "assertContains(), or linesMatching()"),
+          Map.entry("awk", "fields(lineIndex) on the result"),
+          Map.entry("cut", "fields(lineIndex) on the result"),
+          Map.entry("sed", "firstMatch(regex) on the result, or plain Java on output()"),
+          Map.entry("tr", "plain Java on output()"),
+          Map.entry("wc", "lineCount() on the result"),
+          Map.entry("head", "firstLines(n) on the result"),
+          Map.entry("tail", "lastLines(n) on the result"),
+          Map.entry("sort", "sort the result's lines() in Java"),
+          Map.entry("uniq", "de-duplicate the result's lines() in Java"),
+          Map.entry("cat", "read(path)"),
+          Map.entry("ls", "list(dir) or list(dir, glob)"),
+          Map.entry("find", "list(dir, glob)"),
+          Map.entry("rm", "rm(path)"),
+          Map.entry("rmdir", "rm(path)"),
+          Map.entry("cp", "copy(from, to)"),
+          Map.entry("mv", "Files.move(path(from), path(to))"),
+          Map.entry("mkdir", "mkdirs(path)"),
+          Map.entry("touch", "touch(path)"),
+          Map.entry("diff", "compare read(a) and read(b) in Java"),
+          Map.entry("curl", "http(pathAndQuery), which needs no external tool"),
+          Map.entry("wget", "http(pathAndQuery)"),
+          Map.entry("jq", "assert on http(..).body(), or parse it in Java"),
+          Map.entry("sleep", "awaitOrFail(what, timeout, interval, condition)"),
+          Map.entry("ps", "the harness tracks what a test started; see solr status"),
+          Map.entry("kill", "the harness stops what a test started; see solr stop"),
+          Map.entry("pkill", "the harness stops what a test started; see solr stop"),
+          Map.entry("pgrep", "the harness tracks what a test started"),
+          Map.entry("lsof", "the harness owns its port block; no process lookup needed"),
+          Map.entry("chmod", "no cmd.exe equivalent — mark the test @EnabledOnShell(Shell.BASH)"),
+          Map.entry("chown", "no cmd.exe equivalent — mark the test @EnabledOnShell(Shell.BASH)"),
+          Map.entry("ln", "Files.createSymbolicLink, and @EnabledOnShell(Shell.BASH)"),
+          Map.entry("openssl", "no cmd.exe equivalent — mark the test @EnabledOnShell(Shell.BASH)"),
+          Map.entry("tar", "unpack it in Java, or mark the test @EnabledOnShell(Shell.BASH)"),
+          Map.entry("unzip", "unpack it in Java, or mark the test @EnabledOnShell(Shell.BASH)"),
+          Map.entry("xargs", "loop in Java"),
+          Map.entry("tee", "the harness already captures the output"),
+          Map.entry("which", "no cmd.exe equivalent"),
+          Map.entry("basename", "path(p).getFileName()"),
+          Map.entry("dirname", "path(p).getParent()"),
+          Map.entry("realpath", "path(p), which normalizes"),
+          Map.entry("pwd", "cwd()"),
+          Map.entry("export", "env(name, value)"),
+          Map.entry("unset", "unset(name)"),
+          Map.entry("source", "script(bashBody, cmdBody) if it really is shell-specific"),
+          Map.entry("eval", "script(bashBody, cmdBody) if it really is shell-specific"));
+
+  /** bash syntax with no cmd.exe equivalent, each with what to write instead. */
+  private static final List<String[]> UNPORTABLE_SYNTAX =
+      List.of(
+          new String[] {
+            "|", "a pipe", "assert on the command's own output, or use script(bashBody, cmdBody)"
+          },
+          new String[] {"&&", "a chained command", "run() is one command; make it two run() calls"},
+          new String[] {
+            "||", "a chained command", "run() is one command; assert the status in Java instead"
+          },
+          new String[] {";", "a command sequence", "make it two run() calls"},
+          new String[] {
+            "$(", "command substitution", "compute the value in Java and concatenate it"
+          },
+          new String[] {
+            "`", "command substitution", "compute the value in Java and concatenate it"
+          },
+          new String[] {"/dev/null", "a Unix device path", "the harness discards nothing you need"},
+          new String[] {"/tmp/", "a Unix path", "use a workDir()-relative path"});
+
+  /**
+   * Rejects a cross-shell line that only works on bash.
+   *
+   * <p>Checked outside quoted spans, so a URL carrying {@code &} inside double quotes is fine —
+   * both shells protect it — while a bare pipe is not.
+   */
+  private static void requirePortableLine(String line) {
+    StringBuilder unquoted = new StringBuilder();
+    boolean inDouble = false;
+    boolean inSingle = false;
+    for (int i = 0; i < line.length(); i++) {
+      char c = line.charAt(i);
+      if (c == '"' && !inSingle) {
+        inDouble = !inDouble;
+      } else if (c == '\'' && !inDouble) {
+        if (!inSingle) {
+          throw new AssertionError(
+              "cmd.exe has no single-quote quoting, so '...' would reach the command verbatim: "
+                  + line
+                  + "\nUse double quotes, or run(List.of(...)) which quotes each argument for the "
+                  + "shell in use.");
+        }
+        inSingle = false;
+      } else if (!inDouble && !inSingle) {
+        unquoted.append(c);
+      }
+    }
+    String bare = unquoted.toString();
+    for (String[] rule : UNPORTABLE_SYNTAX) {
+      if (bare.contains(rule[0])) {
+        throw new AssertionError(
+            rule[1]
+                + " ("
+                + rule[0]
+                + ") is not portable to cmd.exe: "
+                + line
+                + "\nInstead: "
+                + rule[2]);
+      }
+    }
+    String[] words = bare.strip().split("\\s+");
+    String command = words[0];
+    if (command.contains("=")) {
+      throw new AssertionError(
+          "A leading NAME=value is bash-only syntax: "
+              + line
+              + "\nInstead: env(\""
+              + command.substring(0, command.indexOf('='))
+              + "\", ...) before the run().");
+    }
+    requirePortableTool(command);
+  }
+
+  /** Rejects a command that cmd.exe has no equivalent of, naming what to use instead. */
+  private static void requirePortableTool(String command) {
+    // The command's own name, with any directory prefix stripped: 'grep' and '/usr/bin/grep' are
+    // the same mistake.
+    String tool = command.substring(command.replace('\\', '/').lastIndexOf('/') + 1);
+    String replacement = UNIX_ONLY_TOOLS.get(tool);
+    if (replacement != null) {
+      throw new AssertionError(
+          "'"
+              + tool
+              + "' does not exist on cmd.exe, so this command could only ever pass on bash.\n"
+              + "Instead: "
+              + replacement
+              + ".\nIf the test genuinely is shell-specific, use script(bashBody, cmdBody) and "
+              + "@EnabledOnShell.");
+    }
+  }
+
+  /** Resolves every variable spelling a cross-shell line may use, then rejects the cmd.exe one. */
   private String resolveForRun(String line) {
     requireOpen();
     String resolved = Variables.resolve(line, Variables.ANY, vars, "a command line");
