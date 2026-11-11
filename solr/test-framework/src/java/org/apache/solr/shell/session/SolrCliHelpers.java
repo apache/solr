@@ -78,6 +78,17 @@ public final class SolrCliHelpers {
       return this;
     }
 
+    /**
+     * Port of {@code run ! curl ...}: the request must not have completed at all — a TLS handshake
+     * failure or a refused connection rather than an HTTP error status.
+     */
+    public HttpResult assertConnectionFailed() {
+      if (status >= 0) {
+        throw fail("the request completed with status " + status + ", expected it to fail");
+      }
+      return this;
+    }
+
     private AssertionError fail(String reason) {
       return new ShellAssertionError("\nHTTP " + status + "\n| " + body + "\n\nFAILED: " + reason);
     }
@@ -110,6 +121,20 @@ public final class SolrCliHelpers {
     }
   }
 
+  /**
+   * A GET against {@code https://localhost:<SOLR_PORT><pathAndQuery>}, as a builder because TLS
+   * needs the client-side options {@code curl} spells {@code --cacert}, {@code -u} and {@code
+   * --resolve}'s host.
+   */
+  public HttpsRequest https(String pathAndQuery) {
+    return https(cli.ports().solr(), pathAndQuery);
+  }
+
+  /** As {@link #https(String)} but against an explicit port. */
+  public HttpsRequest https(int port, String pathAndQuery) {
+    return new HttpsRequest(port, pathAndQuery);
+  }
+
   /** Whether the named collection is in ZooKeeper. Port of {@code collection_exists}. */
   public boolean collectionExists(String collection) {
     return zkChildren("/collections").contains(collection);
@@ -120,12 +145,26 @@ public final class SolrCliHelpers {
     return zkChildren("/configs").contains(configName);
   }
 
+  /**
+   * The child node names under a ZooKeeper path.
+   *
+   * <p>Reads stdout alone, then keeps only lines that could be a node name. Both filters earn their
+   * place: addressing ZooKeeper directly with {@code -z} makes SolrZkClient log a WARN about
+   * default ACLs, and the BATS helper this replaces fed exactly that line back into {@code solr
+   * delete}. BATS never noticed, because it discarded the delete's output.
+   */
   private List<String> zkChildren(String zkPath) {
-    CommandResult result = cli.run("solr zk ls " + zkPath + " -z localhost:${ZK_PORT}");
+    CommandResult result = cli.runSeparated("solr zk ls " + zkPath + " -z localhost:${ZK_PORT}");
     if (result.failed()) {
       return List.of();
     }
-    return result.lines().stream().map(String::trim).filter(s -> !s.isEmpty()).toList();
+    return result
+        .stdout()
+        .lines()
+        .map(String::trim)
+        // A ZooKeeper node name carries no whitespace, while every log line does.
+        .filter(line -> !line.isEmpty() && line.chars().noneMatch(Character::isWhitespace))
+        .toList();
   }
 
   /** Port of {@code delete_all_collections}. */
