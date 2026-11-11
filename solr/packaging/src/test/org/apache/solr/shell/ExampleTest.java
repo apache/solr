@@ -31,20 +31,16 @@ import org.junit.Test;
  * concurrently. The BATS {@code test_stream.bats} passed {@code --solr-home} for the same reason,
  * though its port no longer uses an example at all.
  *
- * <p><b>Please keep the {@code solr start -e} invocation below.</b> Several other ports replaced
- * theirs with {@code solr start} plus {@code create} and {@code post} — {@code CompressionTest},
- * {@code SnapshotsTest} and {@code StreamTest} all say so in their own javadoc — because the
- * example was only a convenient way to get a populated collection, and using it cost them their
- * Windows coverage for no benefit. That reasoning does not apply here: driving {@code
- * RunExampleTool} from the command line is what this suite is for, and this is now the only place
- * in the shell suites that does it at all. {@code RunExampleTool} is covered by ordinary unit tests
- * as well, so this does not need to be exhaustive — but it should not reach zero.
+ * <p><b>Please keep the {@code solr start -e} invocation below.</b> {@code CompressionTest}, {@code
+ * SnapshotsTest} and {@code StreamTest} all replaced theirs with {@code solr start} plus {@code
+ * create} and {@code post}, the example having been only a convenient way to get a populated
+ * collection. Driving {@code RunExampleTool} from the command line is what this suite is
+ * <em>for</em>, and it is now the only shell suite that does it at all.
  */
 @EnabledOnShell(Shell.BASH)
-// RunExampleTool#startSolr drops every SOLR_* variable from the environment of the nodes it spawns
-// on Windows, so the example's nodes would get neither the harness' process-scan marker nor
-// SOLR_PID_DIR, and could not be discovered or stopped afterwards. Both tests here depend on the
-// cluster the example starts, so the restriction is the class's.
+// Bash-only: on Windows RunExampleTool#startSolr drops every SOLR_* variable from the spawned
+// nodes' environment, so they get neither the process-scan marker nor SOLR_PID_DIR and cannot be
+// discovered or stopped. Both tests depend on the cluster the example starts, hence a class gate.
 public class ExampleTest extends SolrShellTestCase {
 
   @BeforeClass

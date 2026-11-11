@@ -30,8 +30,7 @@ import org.apache.solr.shell.exec.CommandResult;
  * The record of what a scope has run, written to {@code transcript.log} as it goes and kept in
  * memory so a failure can quote it.
  *
- * <p>Formatted to read like a shell session rather than like a data dump, because that is what it
- * is for: when a test fails, this is the whole diagnosis.
+ * <p>Formatted to read like a shell session, because on a failure this is the whole diagnosis.
  *
  * <pre>
  *   $ solr start

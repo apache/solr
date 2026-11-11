@@ -33,14 +33,13 @@ import org.junit.Test;
  * in SOLR_PID_DIR, so that they never reap Solr instances belonging to another installation.
  *
  * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: the original's {@code mv} becomes {@link Files#move}, and the file name is
+ * Where it differs: the original's {@code mv} becomes {@link Files#move}, with the file name
  * resolved per platform because {@code bin/solr} writes {@code solr-<port>.pid} while {@code
  * bin\solr.cmd} writes {@code solr-<port>.port}; the original's teardown moved the PID file back so
- * that its {@code stop --all} could reap the node, which the harness does not need — it stops the
- * nodes a test started by port, which is exactly the path {@link #stopByPortWorksWithoutAPidFile}
- * covers, and kills by PID if that ever failed; and the refutation in that test matches both
- * scripts' wording, since {@code bin\solr.cmd} words the not-found case differently and the
- * original text alone would assert nothing there.
+ * its {@code stop --all} could reap the node, where the harness stops by port — the path {@link
+ * #stopByPortWorksWithoutAPidFile} covers — and kills by PID if that fails; and the refutation in
+ * that test matches both scripts' wording, {@code bin\solr.cmd} phrasing the not-found case
+ * differently.
  */
 public class NoPidFileTest extends SolrShellTestCase {
 

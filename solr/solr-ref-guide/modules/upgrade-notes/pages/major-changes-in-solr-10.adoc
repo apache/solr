@@ -38,12 +38,10 @@ Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 === BATS tests for `bin/solr` are deprecated
 
-The BATS suites under `solr/packaging/test` are replaced by CATS — Cross-platform Automated Testing System — a JUnit harness in `org.apache.solr.shell`, and are deprecated in Solr 10.2.
+The BATS suites under `solr/packaging/test` are deprecated in Solr 10.2, replaced by CATS — Cross-platform Automated Testing System — a JUnit harness in `org.apache.solr.shell`.
+One test source now runs against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, so the start scripts are covered on Windows for the first time; the bash-only BATS suites never were.
 
-One test source now runs against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, so the start scripts are covered on Windows for the first time; the BATS suites are bash-only and never were.
-The ported suites live in `solr/packaging/src/test/org/apache/solr/shell` and run with `gradlew -p solr/packaging catsTests`.
-
-This affects contributors rather than users: new tests for `bin/solr` should extend `SolrShellTestCase`, and the `.bats` files should be changed only to keep them working until they are removed.
+This affects contributors rather than users: new tests for `bin/solr` extend `SolrShellTestCase` in `solr/packaging/src/test/org/apache/solr/shell` and run with `gradlew -p solr/packaging catsTests`, and the `.bats` files should be changed only to keep them working until they are removed.
 See `dev-docs/writing-tests.adoc`.
 
 === Snapshot commands are now `bin/solr snapshot` sub-commands

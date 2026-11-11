@@ -34,9 +34,9 @@ import org.junit.Test;
  *       file://} onto the path — the same string as the original produces on Unix, and a valid file
  *       URL on Windows too, where a bare {@code file://C:\...} would not be;
  *   <li>{@code solr start} and {@code solr create}, which the original ran without looking at the
- *       outcome, assert their exit status: everything after them is meaningless if either failed;
- *   <li>the rejected backup also asserts a non-zero exit status — "it should fail" is part of the
- *       claim, and the request is answered with HTTP 500 either way the rejection happens.
+ *       outcome, assert their exit status;
+ *   <li>the rejected backup also asserts a non-zero exit status; the request is answered with HTTP
+ *       500 either way the rejection happens.
  * </ul>
  *
  * <p>The node's security manager is what this suite is about. On Java 24 and later {@code bin/solr}

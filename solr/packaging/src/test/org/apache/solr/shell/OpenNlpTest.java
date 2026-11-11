@@ -56,9 +56,8 @@ public class OpenNlpTest extends SolrShellTestCase {
   // I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
   // like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
   @Test
-  // The original's 'bats test_tags=nightly'. It is nightly because it downloads a 160MB ONNX
-  // sentiment model and its vocabulary from nightlies.apache.org: an ordinary build has no
-  // business reaching out to the network, and no way to succeed when it cannot.
+  // The original's 'bats test_tags=nightly': it downloads a 160MB ONNX sentiment model and its
+  // vocabulary from nightlies.apache.org, which an ordinary build has no business doing.
   @Nightly
   public void checkLifecycleOfSentimentClassification() {
     // Downloading onnx model and vocab...

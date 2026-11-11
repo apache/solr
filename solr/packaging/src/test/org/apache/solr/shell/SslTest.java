@@ -41,14 +41,13 @@ import org.junit.Test;
  *   <li>The {@code keytool ... | keytool -gencert > file} pipes of the mTLS tests use keytool's own
  *       {@code -file}/{@code -infile}/{@code -outfile} options instead, a pipe being bash-only.
  *   <li>The original wipes {@code SOLR_HOME} before every test; the harness does it once per class,
- *       so {@link #wipeSolrHomeBeforeEachTest} does the rest. Without it the collection named
- *       {@code test} would survive from one test into the next.
+ *       so {@link #wipeSolrHomeBeforeEachTest} does the rest — without it the collection named
+ *       {@code test} would survive into the next test.
  *   <li>The two {@code curl --resolve} lines of the peer-name test have no cross-shell equivalent —
- *       no HTTP client in the JDK can send a {@code Host} header for a name it has not resolved —
- *       so they live in a bash-only companion test, {@link #useDifferentHostnameWithCurlResolve}.
- *   <li>{@code solr auth enable} appends to the include file, which by default belongs to the
- *       distribution every test class shares, so the auth test points {@code SOLR_INCLUDE} at a
- *       private copy.
+ *       no JDK HTTP client can send a {@code Host} header for a name it has not resolved — so they
+ *       live in a bash-only companion test, {@link #useDifferentHostnameWithCurlResolve}.
+ *   <li>{@code solr auth enable} appends to the include file, by default the distribution's own and
+ *       so shared with every test class, hence {@code SOLR_INCLUDE} pointing at a private copy.
  *   <li>The original's subshells, which restore an environment variable on exit, become explicit
  *       re-assignments at the same points.
  * </ul>

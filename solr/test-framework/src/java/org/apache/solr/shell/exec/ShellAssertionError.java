@@ -20,14 +20,11 @@ package org.apache.solr.shell.exec;
 /**
  * A shell test failure, reported as the commands that ran rather than as a Java stack trace.
  *
- * <p>Carries no stack trace at all. For a failing shell test the Java frames say nothing a reader
- * wants — they are all harness internals — while the transcript says which command ran, what it
- * printed and how it differed from what the test expected. A stack trace would bury that.
- *
- * <p>This is only for a command's <em>outcome</em>: it exited wrongly, its output did not match, it
- * timed out. A malformed test — an unknown {@code ${NAME}}, a cmd-only spelling in a cross-shell
- * line — still throws an ordinary {@link AssertionError} with its frames intact, because there the
- * useful information is which line of the test is wrong.
+ * <p>Carries no stack trace: the frames would all be harness internals, and would bury the
+ * transcript. Only for a command's <em>outcome</em> — a wrong exit status, output that did not
+ * match, a timeout. A malformed test, such as an unknown {@code ${NAME}} or a cmd-only spelling in
+ * a cross-shell line, still throws an ordinary {@link AssertionError} with its frames, because
+ * there the useful information is which line of the test is wrong.
  */
 public final class ShellAssertionError extends AssertionError {
 

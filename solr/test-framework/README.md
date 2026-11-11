@@ -35,9 +35,7 @@ Built on `lucene-test-framework`: `SolrTestCase` extends `LuceneTestCase`, so te
 
 ## SolrTestCase
 
-Deliberately thin — its javadoc asks you to keep it that way. It contributes the rules every Solr test needs: thread-leak filters (`SolrIgnoredThreadsFilter`), `SystemPropertiesRestoreRule`, `ObjectReleaseTracker` verification after a passing class, `@LogLevel` support, and the test-class naming check.
-
-`@ThreadLeakFilters` is not additive: a subclass adding a filter must restate the inherited ones.
+Deliberately thin — its javadoc asks you to keep it that way. It contributes the rules every Solr test needs: thread-leak filters (`SolrIgnoredThreadsFilter`), `SystemPropertiesRestoreRule`, `ObjectReleaseTracker` verification after a passing class, `@LogLevel` support, and the test-class naming check. `@ThreadLeakFilters` is not additive: a subclass adding a filter must restate the inherited ones. [`dev-docs/writing-tests.adoc`](../../dev-docs/writing-tests.adoc) has the full list and the lifecycle conventions.
 
 ## SolrCloudTestCase
 
@@ -135,14 +133,7 @@ The ones you actually reach for:
 
 ## Running tests
 
-```bash
-./gradlew test                                        # everything
-./gradlew -p solr/core test --tests TestDemo          # one class
-./gradlew -p solr/core test -Ptests.seed=DEADBEEF     # reproduce a failure
-./gradlew helpTests                                   # the full set of options
-```
-
-CATS has two tasks of the same name, so `./gradlew catsTests` from the root runs both: `solr/test-framework`'s runs the harness' own unit tests and is part of `check`; `solr/packaging`'s runs the CLI suites against an unpacked distribution and is not. To run a suite from an IDE, build a distribution (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
+`./gradlew helpTests` covers seeds, filtering and the rest. Two things specific to CATS: `./gradlew catsTests` from the root runs both tasks of that name — `solr/test-framework`'s harness unit tests, which are part of `check`, and `solr/packaging`'s CLI suites, which are not because they need an unpacked distribution. To run a suite from an IDE, build one (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
 
 ## See also
 

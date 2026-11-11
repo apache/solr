@@ -54,18 +54,16 @@ jobs:
 
     - uses: ./.github/actions/prepare-for-build
 
-    # The harness' own unit tests. No distribution needed, so this fails fast if the library
-    # itself is broken, before spending minutes on the suites that drive bin/solr. Worth running on
-    # both platforms: a good third of these cases exercise the cmd.exe half of the harness.
+    # The harness' own unit tests. No distribution needed, so this fails fast if the library itself
+    # is broken. Run on both platforms: many of these cases exercise the cmd.exe half of it.
     - name: Test the CATS harness library
       run: ./gradlew -p solr/test-framework catsTests
 
     - name: Test bin/solr with CATS
       run: ./gradlew -p solr/packaging catsTests
 
-    # Linux only. The two CLI implementations differ in Java-side wording, which is identical on
-    # both platforms, so running this twice would buy nothing. Reuses the distribution built above,
-    # so it only costs the suite run.
+    # Linux only: the two CLI implementations differ in Java-side wording, which is the same on both
+    # platforms. Reuses the distribution built above, so it costs only the suite run.
     - name: Test bin/solr with CATS using the experimental picocli CLI
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: ./gradlew -p solr/packaging catsTestsPicocli

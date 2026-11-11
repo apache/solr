@@ -55,28 +55,21 @@ import org.testcontainers.utility.DockerImageName;
  * <p>Upgrades from the latest release of the previous major version to an image of the Solr version
  * under test. Either end can be overridden, e.g. {@code export SOLR_BEGIN_IMAGE=solr:9.11-slim}.
  *
- * <p>This class runs only from the {@code catsTestsDockerBuild} Gradle task, which builds the image
- * from the working tree, tags it under a local-only name and passes that in {@code SOLR_END_IMAGE};
- * the ordinary shell-test tasks exclude the class. So the upgrade is always onto the code in the
- * tree, not onto whatever {@code apache/solr:<version>} happens to be tagged on the machine — which
- * may be the official release image, or a build from another commit days ago.
+ * <p>Runs only from the {@code catsTestsDockerBuild} Gradle task, which builds the image from the
+ * working tree, tags it under a local-only name and passes that in {@code SOLR_END_IMAGE}; the
+ * ordinary CATS tasks exclude the class. That keeps the upgrade onto the code in the tree rather
+ * than whatever {@code apache/solr:<version>} happens to be tagged on the machine, and keeps a
+ * Docker- and network-using test out of ordinary builds — which is why there is no {@code @Nightly}
+ * as well.
  *
- * <p>That task selection is also why the suite carries no {@code @Nightly}: the annotation's only
- * job here would be to keep a Docker- and network-using test out of ordinary builds, which the task
- * filter already does, and carrying it as well would only force the task to pass {@code
- * -Ptests.nightly=true} for no gain.
+ * <p>Kept close to the original, including the order of the steps and the text each asserts on.
+ * {@code docker} command lines become Testcontainers calls, so nothing is shell-specific and no
+ * {@code @EnabledOnShell} is needed. A {@code @ClassRule} is not an option here: replacing a
+ * running node with one on the new image mid-test <em>is</em> the thing under test.
  *
- * <p>Kept close to the original, including the order of the steps and the text each asserts on. The
- * original's {@code docker} command lines become Testcontainers calls, so nothing here is
- * shell-specific and the suite needs no {@code @EnabledOnShell}: it runs wherever Docker can run
- * the Solr images, and skips cleanly where it cannot. Unlike the other container-based Solr suites
- * this one cannot use a {@code @ClassRule}, because replacing a running node with one on the new
- * image mid-test <em>is</em> the thing under test.
- *
- * <p>8983-8985 and 9983 here are container ports reached over a private Docker network, not host
- * ports: this class binds none of the four ports it owns, and the one host port per node that
- * Testcontainers publishes for its wait strategy is chosen by Docker, so a class running in
- * parallel cannot collide with it.
+ * <p>8983-8985 and 9983 below are container ports on a private Docker network, not host ports: this
+ * class binds none of the four ports it owns, and Testcontainers' published wait-strategy port is
+ * chosen by Docker, so a class running in parallel cannot collide with it.
  *
  * <p>Where it differs:
  *
@@ -84,29 +77,21 @@ import org.testcontainers.utility.DockerImageName;
  *   <li>{@code docker run} becomes a {@link GenericContainer}, and {@code docker exec} {@link
  *       GenericContainer#execInContainer}, so an argument needs no shell quoting — which is what
  *       lets the inline JSON update body be written as-is;
- *   <li>containers get Testcontainers' generated names and carry {@code solr-node1..3} as network
- *       aliases instead, so a leftover container from an earlier run cannot make this one fail to
- *       create one. The volumes likewise get a per-run suffix rather than the original's bare
- *       {@code solr-dataN}: a Docker volume is global to the daemon, so two runs on one machine
- *       would otherwise destroy each other's data mid-upgrade. They are still removed before use as
- *       well as after, so nothing a killed run left behind can poison the next one;
- *   <li>{@code docker pull} and {@code docker image inspect} are gone. The pull policy sits on the
- *       container instead, keeping the original's behaviour of always re-pulling the begin image
- *       and preferring a local end image. An image that cannot be resolved now fails the test,
- *       where the original skipped: a test that skips itself because nobody built an image has
- *       quietly stopped testing anything;
- *   <li>the teardown's {@code docker logs} and {@code ps aux} artifacts are written from Java,
- *       while {@code docker inspect}'s container state is reduced to the id and image name logged
- *       on failure; {@code date -Iseconds} is gone with the {@code --since} it scoped, since every
- *       container here was created by this test;
- *   <li>{@code jq} becomes a regex over the JSON response, there being no need for a JSON library
- *       to read one number out of each of two responses;
+ *   <li>containers take Testcontainers' generated names and carry {@code solr-node1..3} as network
+ *       aliases, so a leftover container cannot make this run fail to create one. The volumes get a
+ *       per-run suffix rather than the original's bare {@code solr-dataN}, a Docker volume being
+ *       global to the daemon, and are removed before use as well as after;
+ *   <li>{@code docker pull} and {@code docker image inspect} are gone; the pull policy sits on the
+ *       container instead, keeping the original's always-re-pull of the begin image and preference
+ *       for a local end image. An unresolvable image now fails rather than skips;
+ *   <li>the teardown's {@code docker logs} and {@code ps aux} artifacts are written from Java, and
+ *       {@code docker inspect}'s state is reduced to the id and image name logged on failure;
+ *       {@code date -Iseconds} is gone with the {@code --since} it scoped;
+ *   <li>{@code jq} becomes a regex over the JSON response, for one number out of each of two
+ *       responses;
  *   <li>three of the original's {@code assert_success} lines sat after a bare {@code docker exec}
- *       and so re-asserted the status of the {@code run curl} from much earlier in the test; here
- *       every step asserts its own exit status instead, those included;
- *   <li>the suite is reached through its own Gradle task rather than running in every build: it
- *       pulls the previous major's image from Docker Hub, and an ordinary build has no business
- *       reaching out to the network.
+ *       and so re-asserted a {@code run curl} from much earlier in the test; here every step
+ *       asserts its own exit status.
  * </ul>
  */
 // ThreadLeakFilters are not additive, so SolrTestCase's own two are repeated here.
@@ -249,17 +234,15 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   /**
    * Works out which two images to upgrade between.
    *
-   * <p>The two versions come from different places on purpose. The previous major is a property of
-   * the code, so it comes from {@link SolrVersion#LATEST}. The version to upgrade <em>to</em> is
-   * named by {@code SOLR_END_IMAGE}, which the {@code catsTestsDockerBuild} task sets to the image
-   * it has just built from this tree. The fallback is there for a hand-run of the suite, and is the
-   * tag {@code ./gradlew dockerTag} applies: {@code project.version}, which carries the {@code
-   * -SNAPSHOT} qualifier that {@code SolrVersion} does not, so the unpacked distribution's
-   * directory name is the honest source for it.
+   * <p>The previous major is a property of the code, so it comes from {@link SolrVersion#LATEST}.
+   * The version to upgrade <em>to</em> is named by {@code SOLR_END_IMAGE}, which {@code
+   * catsTestsDockerBuild} sets to the image it just built. The fallback, for a hand-run, is the tag
+   * {@code ./gradlew dockerTag} applies — {@code project.version}, which carries the {@code
+   * -SNAPSHOT} qualifier {@code SolrVersion} does not, hence reading it off the distribution
+   * directory name.
    *
-   * <p>Neither end is checked for availability. The original skipped in that case; a missing image
-   * should fail instead, loudly, at the point a container needs it — a test that quietly skips
-   * because nobody built an image is a test that has stopped testing anything without saying so.
+   * <p>Neither end is checked for availability: a missing image should fail loudly where a
+   * container needs it, not skip as the original did.
    */
   private void resolveImages() throws IOException {
     int previousMajor = SolrVersion.LATEST.getMajorVersion() - 1;
@@ -372,10 +355,8 @@ public class RollingUpgradeTest extends SolrShellTestCase {
 
     Node(int number, Network network, String runId) {
       this.name = "solr-node" + number;
-      // Per run, unlike the original's bare solr-dataN. A Docker volume is global to the daemon,
-      // so two runs on one machine - two checkouts, or a retry overlapping a hung run - would
-      // otherwise wipe each other's data mid-upgrade, and a developer who happened to have a
-      // solr-data1 volume would lose it.
+      // Per run, unlike the original's bare solr-dataN: a Docker volume is global to the daemon, so
+      // two runs on one machine would otherwise wipe each other's data mid-upgrade.
       this.volume = "solr-data" + number + "-" + runId;
       this.port = 8982 + number;
       this.network = network;
@@ -385,9 +366,8 @@ public class RollingUpgradeTest extends SolrShellTestCase {
      * Where another node reaches this one's embedded ZooKeeper, as {@code <alias>:<port>}.
      *
      * <p>The host part is this container's network alias, resolved by Docker's DNS inside the
-     * private network, and the port is Solr's embedded-ZooKeeper convention of the Solr port plus
-     * 1000. Derived rather than written out, so it cannot drift from {@link #name} — the alias the
-     * container is actually created with.
+     * private network; the port is Solr's embedded-ZooKeeper convention of the Solr port plus 1000.
+     * Derived from {@link #name} so it cannot drift from the alias the container is created with.
      */
     String zkAddress() {
       return name + ":" + (port + 1000);

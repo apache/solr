@@ -35,7 +35,9 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Writing Tests
 
-**Read `dev-docs/writing-tests.adoc` before writing any test.** It is short, and it is the authority on which harness to use: `SolrTestCase` by default, `SolrCloudTestCase` only when a cluster is genuinely needed, `SolrShellTestCase` for `bin/solr` and `bin\solr.cmd`, `AdminUiTestBase` for the browser, a Testcontainers `@ClassRule` for a real external service — and never `SolrTestCaseJ4`, a new `.bats` file, or `docker run` from a test. It also covers the lifecycle and `@Rule` conventions, when to randomize, how to wait for something instead of sleeping, and a worked example to copy for each kind. When adding a test to a suite that already exists, match the design choices of the file you are editing rather than starting afresh.
+**Read `dev-docs/writing-tests.adoc` before writing any test.** It is the authority on which harness to use — `SolrTestCase` by default, `SolrCloudTestCase` only when a cluster is needed, `SolrShellTestCase` for `bin/solr` and `bin\solr.cmd`, `AdminUiTestBase` for the browser, a Testcontainers `@ClassRule` for a real external service, and never `SolrTestCaseJ4`, a new `.bats` file, or `docker run` from a test — and on the lifecycle, randomization and waiting conventions, with a worked example per kind.
+
+When adding a test to a suite that already exists, match the design choices of the file you are editing.
 
 ## Documentation
 

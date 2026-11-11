@@ -83,9 +83,8 @@ public final class SolrCliHelpers {
 
     /**
      * Resolves {@code ${NAME}} in an assertion's expected text, exactly as {@link CommandResult}
-     * does. The two assertion families have to behave the same way: a ported BATS line asserting on
-     * {@code ${SOLR_PORT}} must either work or fail loudly, never pass by comparing against the
-     * unresolved text.
+     * does: a ported BATS line asserting on {@code ${SOLR_PORT}} must either work or fail loudly,
+     * never pass by comparing against the unresolved text.
      */
     private String resolve(String expected) {
       return Variables.resolve(expected, Variables.ANY, vars, "an HTTP assertion");

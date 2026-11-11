@@ -32,14 +32,13 @@ import org.junit.Test;
  *       part of the body is asserted on as the response headers instead.
  *   <li>{@code curl --compressed} becomes a request that asks for {@code Accept-Encoding}; the
  *       harness decompresses the body the same way curl does.
- *   <li>The original's {@code solr start -e films} is deliberately not used. {@code
- *       RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the environment of the
- *       node it spawns on Windows, so an example-started node carries neither the harness'
- *       process-scan marker nor {@code SOLR_PID_DIR} and cannot be discovered or stopped — which
- *       would make this suite bash-only for a reason that has nothing to do with what it tests.
- *       These tests only need a collection with enough documents in it that a response exceeds
- *       Jetty's 2048-byte {@code minGzipSize}, so a plain start, {@code solr create} and {@code
- *       solr post} of the example docs stand in, and the suite runs on both shells.
+ *   <li>The original's {@code solr start -e films} is deliberately not used: on Windows {@code
+ *       RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the spawned node's
+ *       environment, so the node cannot be discovered or stopped and the suite would be bash-only
+ *       for a reason unrelated to what it tests (see {@code SnapshotsTest}). These tests only need
+ *       a collection with enough documents that a response exceeds Jetty's 2048-byte {@code
+ *       minGzipSize}, so a plain start, {@code solr create} and {@code solr post} of the example
+ *       docs stand in.
  *   <li>The first two tests also assert the status, and the second and third that the negotiated
  *       encoding really was gzip — the claim their names make.
  * </ul>

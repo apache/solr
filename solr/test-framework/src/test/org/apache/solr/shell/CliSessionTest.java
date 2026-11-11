@@ -379,13 +379,11 @@ public class CliSessionTest extends SolrTestCase {
   @Test
   @EnabledOnShell(Shell.CMD)
   public void cmdQuotingProtectsMetacharacters() {
-    // Characters cmd's parser would otherwise act on: & separates commands, | pipes, > redirects.
-    // Passed as argv so the harness quotes each one.
-    //
+    // Characters cmd's parser would otherwise act on, passed as argv so the harness quotes each.
     // Checked with contains rather than equals because cmd's echo prints the quotes that quoting
-    // has to add. Note also why this does not go through a batch variable: cmd expands %VAR% and
-    // then re-parses the result, so "echo %ARG%" with ARG=a&b runs 'b' as a second command. That
-    // re-parse is exactly the trap the harness avoids by resolving ${NAME} itself.
+    // has to add. Not via a batch variable: cmd expands %VAR% and then re-parses the result, so
+    // "echo %ARG%" with ARG=a&b runs 'b' as a second command — the trap the harness avoids by
+    // resolving ${NAME} itself.
     for (String nasty : List.of("a&b", "a|b", "a>b", "a<b", "a b")) {
       session.run(List.of("echo", nasty)).assertSuccess().assertContains(nasty);
     }

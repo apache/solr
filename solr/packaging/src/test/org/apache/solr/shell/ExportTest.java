@@ -37,12 +37,9 @@ public class ExportTest extends SolrShellTestCase {
 
   @Test
   public void checkExportCommand() {
-    // The original built this fixture with 'solr start -e techproducts'. That would make the whole
-    // test bash-only, because RunExampleTool strips every SOLR_* variable from the environment of
-    // the node it spawns on Windows, leaving it without the harness' process-scan marker or
-    // SOLR_PID_DIR. The subject here is 'solr export', not the example tool, so the fixture is
-    // built the long way instead and the test keeps its Windows coverage. StreamTest does the same
-    // for the same reason; ExampleTest is where 'solr start -e' is covered deliberately.
+    // The original built this fixture with 'solr start -e techproducts', which would make the test
+    // bash-only (see SnapshotsTest). The subject here is 'solr export', so the fixture is built the
+    // long way instead; ExampleTest is where 'solr start -e' is covered deliberately.
     run("solr start").assertSuccess();
     run("solr create -c techproducts -d sample_techproducts_configs").assertSuccess();
     run("solr post --type application/xml --filetypes xml --solr-url http://localhost:${SOLR_PORT}"

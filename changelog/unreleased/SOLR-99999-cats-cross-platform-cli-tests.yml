@@ -1,10 +1,10 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 
 title: >
-  CATS (Cross-platform Automated Testing System), a new cross-platform test harness for the Solr
-  CLI, in `org.apache.solr.shell`. One JUnit test source exercises `bin/solr` under bash and
-  `bin\solr.cmd` under cmd.exe, so the start scripts are covered on Windows for the first time. The
-  BATS suites in `solr/packaging/test` are ported to CATS and deprecated.
+  CATS (Cross-platform Automated Testing System), a new test harness for the Solr CLI in
+  `org.apache.solr.shell`, exercises `bin/solr` under bash and `bin\solr.cmd` under cmd.exe from one
+  JUnit test source, covering the start scripts on Windows for the first time. The BATS suites in
+  `solr/packaging/test` are ported to CATS and deprecated.
 type: other
 authors:
   - name: Jan Høydahl

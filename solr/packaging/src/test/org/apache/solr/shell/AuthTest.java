@@ -33,16 +33,15 @@ import org.junit.Test;
  * <ul>
  *   <li>{@code curl} becomes {@link #http}, which now also carries credentials, {@code curl -u
  *       user:password --basic} being half of what this suite does.
- *   <li>{@code solr auth enable} rewrites the include file, which by default is the distribution's
- *       own and therefore shared with every class running concurrently, so {@link #cleanSetup}
- *       points {@code SOLR_INCLUDE} at a private copy — as {@code SslTest} does.
+ *   <li>{@code solr auth enable} rewrites the include file, by default the distribution's own and
+ *       so shared with every concurrent class, so {@link #cleanSetup} points {@code SOLR_INCLUDE}
+ *       at a private copy — as {@code SslTest} does.
  *   <li>The original's {@code setup} runs {@code solr auth disable} before every test, to undo what
  *       a previous test left in the include file and in ZooKeeper. Here the include file is a
  *       pristine copy per test and {@code SOLR_HOME} — which holds the embedded ZooKeeper's data —
- *       is wiped per test, so there is nothing left to disable.
- *   <li>Strengthened, per the harness convention that a claim of rejection includes the exit
- *       status: the two {@code auth enable} calls that the original lets succeed-or-fail silently
- *       are asserted to succeed.
+ *       is wiped per test, so there is nothing to disable.
+ *   <li>The two {@code auth enable} calls the original lets succeed-or-fail silently are asserted
+ *       to succeed.
  * </ul>
  */
 public class AuthTest extends SolrShellTestCase {

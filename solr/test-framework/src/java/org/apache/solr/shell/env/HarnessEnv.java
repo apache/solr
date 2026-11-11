@@ -93,12 +93,11 @@ public final class HarnessEnv {
    * Builds the environment for one test class: its own {@code SOLR_HOME}, {@code SOLR_PID_DIR},
    * logs and port block, all derived from the shared {@code TEST_OUTPUT_DIR}.
    *
-   * <p>Everything a class can write to or listen on is keyed by {@code className}, so classes
-   * running concurrently in separate forked JVMs cannot touch each other. That matters more than it
-   * sounds: {@code SOLR_PID_DIR} is what scopes {@code solr stop --all}, and the class setup wipes
-   * {@code SOLR_HOME} — sharing either across forks would have one class kill or delete another's
-   * running node. Class names are unique within a run, so no coordination is needed for the
-   * directories; only the ports need the cross-fork claim in {@link PortBlocks}.
+   * <p>Everything a class can write to or listen on is keyed by {@code className}: {@code
+   * SOLR_PID_DIR} is what scopes {@code solr stop --all}, and the class setup wipes {@code
+   * SOLR_HOME}, so sharing either across forks would have one class kill or delete another's
+   * running node. Class names are unique within a run, so only the ports need the cross-fork claim
+   * in {@link PortBlocks}.
    */
   public static HarnessEnv forClass(String className) {
     String solrTip = lookup("SOLR_TIP");
@@ -152,20 +151,15 @@ public final class HarnessEnv {
     // BATS' common_setup does the same; the checks are noisy and irrelevant under test.
     vars.put("SOLR_ULIMIT_CHECKS", "false");
 
-    // Sandbox node discovery to the nodes this scope starts. Two channels are needed, because two
-    // different JVMs have to agree:
+    // Sandbox node discovery to the nodes this scope starts; without it 'solr status' with no port
+    // reports every Solr on the host. Two JVMs have to agree, hence two channels:
     //
     //   SOLR_PROCESS_SCAN_MARKER  the CLI's own JVM. EnvUtils turns any SOLR_* variable into the
     //                             matching solr.* property, so SolrProcessManager reads it without
-    //                             the harness having to touch SOLR_TOOL_OPTS — which some tests
-    //                             legitimately set for themselves.
-    //   SOLR_OPTS_INTERNAL        the node's command line, which is where the CLI looks for the
-    //                             marker. bin/solr and bin/solr.cmd both append this to the node's
-    //                             options, it is documented as internal, and no test sets it, so a
-    //                             test overriding SOLR_OPTS cannot lose the marker.
-    //
-    // Without this, 'solr status' with no port reports every Solr on the host: a developer's own
-    // node, or another suite sharing a CI machine.
+    //                             the harness touching SOLR_TOOL_OPTS, which some tests set.
+    //   SOLR_OPTS_INTERNAL        the node's command line, where the CLI looks for the marker. Both
+    //                             scripts append it, it is documented as internal and no test sets
+    //                             it, so a test overriding SOLR_OPTS cannot lose the marker.
     String marker = marker(out, ports);
     vars.put("SOLR_PROCESS_SCAN_MARKER", marker);
     vars.put("SOLR_OPTS_INTERNAL", "-D" + SolrProcessManager.PROCESS_SCAN_MARKER + "=" + marker);

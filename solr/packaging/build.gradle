@@ -374,12 +374,10 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   // excluded here for all of them. catsTestsDockerBuild clears this again.
   task.filter.excludeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
 
-  // Unlike BATS, which runs every file sequentially against one shared SOLR_HOME and port block,
-  // each class here gets its own of both (see HarnessEnv.forClass), so classes can run in parallel.
-  // Defaults to the build's own tests.jvms, capped because the ceiling here is memory rather than
-  // CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pcats.tests.jvms.
+  // Each class gets its own SOLR_HOME and port block (see HarnessEnv.forClass), so classes can run
+  // in parallel. Defaults to the build's tests.jvms, capped because the ceiling is memory not CPU:
+  // every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pcats.tests.jvms.
   // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
-  //
   task.maxParallelForks = (project.findProperty('cats.tests.jvms')
       ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer
   task.timeout.set(java.time.Duration.ofMinutes(60))
@@ -393,14 +391,12 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   }
 
   task.doFirst {
-    // Nodes left behind by a run that was killed outright are reaped by the harness itself, in
-    // SolrShellTestCase's pre-flight check: it matches on the command-line marker, which works on
-    // both platforms and needs no files. Doing it here instead would mean reading pid files, which
-    // bin/solr and bin/solr.cmd disagree about, or reading process command lines, which the Gradle
-    // daemon cannot do on Windows.
-    //
-    // Wiped per run, not per fork, so the port-block counter starts at zero and last run's
+    // Wiped per run, not per fork, so the port-block counter starts at zero and the last run's
     // failure snapshots do not pile up. Matches what configureBatsTask does for the BATS output.
+    // Nodes a killed run left behind are reaped by SolrShellTestCase's pre-flight check instead,
+    // which matches on the command-line marker: reaping here would mean reading pid files, whose
+    // names the two scripts disagree about, or process command lines, which the Gradle daemon
+    // cannot read on Windows.
     delete catsTestOutput
     catsTestOutput.mkdirs()
     // The harness spawns bin/solr and writes outside the test sandbox, neither of which the test
@@ -409,10 +405,9 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
     logger.lifecycle("Running CATS with ${task.maxParallelForks} parallel fork(s)")
   }
 
-  // BATS printed a line per test as it ran. Gradle buffers each fork's output and prints nothing
-  // but failures, so a CATS run looks hung for minutes at a time. Suites here are few and slow
-  // enough that one line each is a progress bar rather than noise. The class name is included
-  // because forks interleave, and skips are shown because most of them mean a missing Docker.
+  // Gradle buffers each fork's output and prints nothing but failures, so a CATS run looks hung for
+  // minutes at a time. One line per test, as BATS printed. The class name is included because forks
+  // interleave, and skips are shown because most of them mean a missing Docker.
   def marks = [SUCCESS: 'ok  ', SKIPPED: 'skip', FAILURE: 'FAIL']
   task.afterTest { desc, result ->
     // Locale.ROOT, or the decimal separator follows the randomized test locale ("0,9s" on nb-NO).
@@ -437,9 +432,8 @@ tasks.register('catsTestsPicocli', Test) {
 }
 
 // Deprecated: delete along with commons-cli itself, once picocli is the only CLI in Solr 11. Until
-// then the two differ in some usage and error wording, so it is worth being able to run the suites
-// against whichever bin/solr is not defaulting to. A test that genuinely cannot hold for both
-// carries @EnabledOnCli; where only the wording differs, a test uses assertContainsForCli.
+// then the two differ in some usage and error wording, so it is worth running the suites against
+// whichever bin/solr is not defaulting to.
 tasks.register('catsTestsCommonsCli', Test) {
   group = 'verification'
   description = 'Deprecated. Runs the CATS suites against the commons-cli implementation.'
@@ -447,15 +441,15 @@ tasks.register('catsTestsCommonsCli', Test) {
 }
 
 // Builds a Solr Docker image from this working tree and points RollingUpgradeTest at it, for the
-// two tasks that run that suite. Onto an image from the tree rather than whatever
-// apache/solr:<version> happens to be tagged on the machine - the property a release candidate
+// two tasks that run that suite. Upgrading onto an image from the tree, rather than whatever
+// apache/solr:<version> happens to be tagged on the machine, is the property a release candidate
 // needs. Every Docker dependency sits on these two tasks and not in configureCatsTestTask, so a
-// plain catsTests run still neither needs Docker nor touches the network.
+// plain catsTests run neither needs Docker nor touches the network.
 def configureCatsDockerImage = { Test task ->
   // dockerBuild rather than dockerTag, which would move apache/solr:<version> - a name a developer
   // may be deliberately keeping on the official image. The id dockerBuild writes is tagged in
-  // doFirst instead, under a name with no org/repo shape so that nothing, Testcontainers included,
-  // can mistake it for something to fetch from a registry.
+  // doFirst instead, under a name with no org/repo shape so nothing can mistake it for something
+  // to fetch from a registry.
   task.dependsOn ':solr:docker:dockerBuild'
   // gitRev and gitRevShort are set by that task's action, not at configuration time.
   task.dependsOn ':gitStatus'
@@ -501,12 +495,11 @@ tasks.register('catsTestsDockerBuild', Test) {
 
 // Everything, in one command, in parallel. One Test task rather than a task depending on the two
 // others: Gradle runs tasks within a project sequentially, so an aggregate would have run the
-// rolling upgrade after the rest rather than alongside it. Here all 29 classes go into the same
-// fork pool, so the upgrade runs concurrently with the CLI suites.
+// rolling upgrade after the rest rather than alongside it. Every class goes into one fork pool
+// instead.
 //
-// Not the default, because it builds a Docker image. Note it is the heaviest thing in the build:
-// the upgrade holds three containers while four forks may each hold a Solr JVM and an embedded
-// ZooKeeper, so lower -Pcats.tests.jvms if the machine struggles.
+// The heaviest thing in the build: the upgrade holds three containers while four forks may each
+// hold a Solr JVM and an embedded ZooKeeper, so lower -Pcats.tests.jvms if the machine struggles.
 tasks.register('catsTestsAll', Test) {
   group = 'verification'
   description = 'Slow. Every CATS suite including the rolling upgrade, which builds a Docker image.'

@@ -33,14 +33,14 @@ import org.junit.Test;
  *
  * <ul>
  *   <li>The original's {@code setup()} ran before every test; the harness wipes {@code SOLR_HOME}
- *       once per class, so {@link #startSolrWithBasicAuth} does the rest. Each test therefore gets
- *       its own node, its own embedded ZooKeeper data and its own {@code security.json}, which is
- *       what lets two tests share the collection name {@code COLL_NAME}.
+ *       once per class, so {@link #startSolrWithBasicAuth} does the rest. Each test gets its own
+ *       node, embedded ZooKeeper data and {@code security.json}, which is what lets two tests share
+ *       the collection name {@code COLL_NAME}.
  *   <li>The one-command {@code SOLR_INCLUDE=/force/credentials/to/be/supplied} prefix becomes an
- *       {@code env()} that stays set for the test: the harness environment is per-session, not
- *       per-command, and the path is one inside the work directory rather than an absolute Unix
- *       one. Keeping it set for the whole test also keeps {@code solr auth disable} away from the
- *       distribution's own include file, which every test class shares.
+ *       {@code env()} that stays set for the test, the harness environment being per-session rather
+ *       than per-command, and points inside the work directory rather than at an absolute Unix
+ *       path. That also keeps {@code solr auth disable} away from the distribution's own include
+ *       file, which every test class shares.
  *   <li>{@code curl -I} becomes {@link #http}: its status is the original's {@code "HTTP/1.1 200"},
  *       and the header assertion is lower-cased because {@code java.net.http} lower-cases header
  *       names.

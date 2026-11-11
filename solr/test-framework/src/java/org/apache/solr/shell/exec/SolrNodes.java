@@ -24,11 +24,10 @@ import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 /**
  * Which Solr nodes the harness has running, asked of the same code {@code bin/solr status} uses.
  *
- * <p>Deliberately not done by reading pid files. {@link SolrProcessManager} already knows that
- * {@code bin/solr} writes {@code solr-<port>.pid} holding a PID into {@code SOLR_PID_DIR} while
- * {@code bin/solr.cmd} writes {@code solr-<port>.port} holding a port into {@code %SOLR_TIP%\bin},
- * and it resolves either to a PID. Going through it means one code path for both platforms, and it
- * finds a node started in the <em>foreground</em>, which writes no file at all.
+ * <p>Deliberately not done by reading pid files: {@code bin/solr} writes {@code solr-<port>.pid}
+ * holding a PID while {@code bin\solr.cmd} writes {@code solr-<port>.port} holding a port. Going
+ * through {@link SolrProcessManager}, which resolves either, means one code path for both platforms
+ * and finds a node started in the <em>foreground</em>, which writes no file at all.
  *
  * <p>Scoped by the command-line marker the harness starts its nodes with, so what comes back is the
  * harness' own nodes and never a developer's Solr or another suite's.

@@ -24,23 +24,17 @@ import java.util.regex.Pattern;
 /**
  * Variable references in the text a test writes, resolved by the harness rather than by a shell.
  *
- * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} all name an environment variable, and all
- * mean the same thing wherever a test writes them — in a command line and in the expected text of
- * an assertion. That is what lets a BATS line port over unchanged, assertion included.
- *
- * <p>Resolving in Java rather than letting the shell do it is what makes one line work on both
- * shells: bash expands {@code $NAME} and cmd.exe does not, while cmd.exe wants {@code %NAME%},
- * which bash leaves alone. It also means an unknown name fails the test instead of quietly becoming
- * the empty string.
+ * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} all name an environment variable, and mean
+ * the same wherever a test writes them — in a command line and in an assertion's expected text
+ * alike — which is what lets a BATS line port over unchanged. See {@code CliSession#run(String)}
+ * for why the harness resolves them rather than the shell.
  */
 public final class Variables {
 
   /**
    * Every spelling allowed in a cross-shell command line, and in an assertion's expected text.
    *
-   * <p>{@code $'..'}, {@code $1} and a bare {@code $} do not match and are left for the shell. It
-   * is sound to read {@code $NAME} as an environment variable because a harness command line has no
-   * shell state of its own — one process per command, so no locals and no positional parameters.
+   * <p>{@code $'..'}, {@code $1} and a bare {@code $} do not match and are left for the shell.
    */
   public static final Pattern ANY =
       Pattern.compile(

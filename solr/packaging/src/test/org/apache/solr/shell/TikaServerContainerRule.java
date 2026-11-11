@@ -30,13 +30,11 @@ import org.testcontainers.containers.wait.strategy.Wait;
  * JUnit rule that manages a single Apache Tika Server Testcontainer for a shell test class, a copy
  * of the extraction module's own {@code TikaServerContainerRule} kept local to these suites.
  *
- * <p>Declare as a {@code @ClassRule} so the (expensive to start) server is shared across all
- * {@code @Test} methods in a class instead of being restarted for each one; JUnit starts it before,
- * and stops it after, the whole class runs.
+ * <p>Declare as a {@code @ClassRule}: starting the server is expensive, so it is shared across the
+ * class rather than restarted per {@code @Test}.
  *
- * <p>Skips the calling class (via {@link Assume}) instead of failing outright if
- * Docker/Testcontainers isn't available in this environment — which is what the {@code
- * DOCKER_UNAVAILABLE} bypass in {@code test_extraction.bats} did.
+ * <p>Skips the calling class (via {@link Assume}) rather than failing where Docker is unavailable —
+ * the {@code DOCKER_UNAVAILABLE} bypass of {@code test_extraction.bats}.
  *
  * <p>The host port is whatever Docker mapped, not a port derived from {@code SOLR_PORT}: a shell
  * test class owns four ports and no more, and a derived one would sit inside another class' block.

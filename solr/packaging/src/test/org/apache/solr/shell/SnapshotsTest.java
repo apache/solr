@@ -27,20 +27,18 @@ import org.junit.Test;
  * Where it differs:
  *
  * <ul>
- *   <li>The original's {@code solr start -e films} is deliberately not used. {@code
- *       RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the environment of the
- *       node it spawns on Windows, so an example-started node carries neither the harness'
- *       process-scan marker nor {@code SOLR_PID_DIR} and cannot be discovered or stopped — which
- *       would make this suite bash-only for a reason that has nothing to do with what it tests
- *       ({@code CompressionTest} replaces the same {@code setup_file} for the same reason). All
- *       these tests need is a collection named {@code films} with some documents in it, so a plain
- *       start plus {@code solr create} and a {@code solr post} of the example documents stand in,
- *       and the suite runs on both shells.
- *   <li>Every snapshot a test creates it also deletes, exactly as the original does. Unlike the
- *       original, no two tests share a snapshot name: {@code SOLR_HOME} is wiped per class rather
- *       than per test, so a failure between a create and its delete would otherwise surface again
- *       as a second, unrelated failure in the sibling test that reused the name — and the comment
- *       below records that creating the same snapshot twice is supposed to error.
+ *   <li>The original's {@code solr start -e films} is deliberately not used: on Windows {@code
+ *       RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the spawned node's
+ *       environment, so the node carries neither the harness' process-scan marker nor {@code
+ *       SOLR_PID_DIR} and cannot be discovered or stopped — which would make this suite bash-only
+ *       for a reason unrelated to what it tests ({@code CompressionTest} and {@code StreamTest}
+ *       replace the same {@code setup_file} for the same reason). These tests only need a
+ *       collection named {@code films} with documents in it, so a plain start plus {@code solr
+ *       create} and {@code solr post} of the example documents stand in.
+ *   <li>Every snapshot a test creates it also deletes, as the original does, but no two tests share
+ *       a snapshot name: {@code SOLR_HOME} is wiped per class rather than per test, so a failure
+ *       between a create and its delete would otherwise resurface as a second failure in the
+ *       sibling test that reused the name.
  * </ul>
  */
 public class SnapshotsTest extends SolrShellTestCase {

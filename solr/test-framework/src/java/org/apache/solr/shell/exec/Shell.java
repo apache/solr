@@ -54,10 +54,6 @@ public enum Shell {
     @Override
     public List<String> processArgs(String line, Path scriptDir, String scriptName)
         throws IOException {
-      // 'call' is required for a single command, because without it a batch file invoking
-      // solr.cmd never gets control back. It takes one command though, so a multi-line body —
-      // which is the whole point of script(bash, cmd) — is written verbatim instead, and is
-      // responsible for its own 'call' where it invokes another batch file.
       String command = line.contains("\n") ? line : "call " + line;
       String body =
           String.join("\r\n", "@echo off", "chcp 65001 >nul", command, "exit /b %ERRORLEVEL%")
@@ -73,18 +69,11 @@ public enum Shell {
      * these scripts never enable delayed expansion. {@code %} is expanded even inside double
      * quotes, so a literal one is written {@code %%} as any batch file must.
      *
-     * <p>Two characters are refused outright rather than mangled, because cmd offers no escape for
-     * them that is both correct and predictable here:
-     *
-     * <ul>
-     *   <li>A double quote has no escape that survives cmd's own quote counting and the target
-     *       program's parser at once.
-     *   <li>A caret is doubled by the {@code call} these scripts use for a single command: {@code
-     *       call} re-parses its line, so {@code "a^b"} arrives as {@code "a^^b"}. Observed on
-     *       Windows, which is what prompted refusing it.
-     * </ul>
-     *
-     * <p>{@code script(bashBody, cmdBody)} is the way to pass either.
+     * <p>Two characters are refused outright, cmd offering no escape that is both correct and
+     * predictable: a double quote, which has no escape surviving cmd's quote counting and the
+     * target program's parser at once, and a caret, which the {@code call} used for a single
+     * command doubles as it re-parses its line, so {@code "a^b"} arrives as {@code "a^^b"}. Pass
+     * either with {@code script(bashBody, cmdBody)}.
      */
     @Override
     public String quote(String arg) {

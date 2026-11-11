@@ -1,10 +1,6 @@
-# DEPRECATED. The BATS suites this workflow runs are deprecated as of Solr 10.2, replaced by CATS —
-# Cross-platform Automated Testing System — see cats-test.yml, which runs on pull requests and
-# covers bin/solr.cmd as well. Every .bats file here has a ported counterpart in
-# solr/packaging/src/test/org/apache/solr/shell.
-#
-# So this workflow no longer runs automatically: it is manual-only, for the occasional check that
-# the old suites still pass while they remain in the tree. It goes away with them.
+# DEPRECATED, and manual-only: the BATS suites it runs are deprecated as of Solr 10.2, and every
+# .bats file has a ported counterpart under solr/packaging/src/test/org/apache/solr/shell run by
+# cats-test.yml, which also covers bin/solr.cmd. This workflow goes away with the .bats files.
 name: Solr Script Tests (BATS, deprecated)
 
 on:

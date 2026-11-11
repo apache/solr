@@ -137,11 +137,10 @@ public final class ShellExecutor {
   /**
    * Decodes as UTF-8, normalises CRLF to LF and strips one trailing newline, as BATS does.
    *
-   * <p>Decoding is lenient, never strict. The bytes a command writes are not ours to guarantee:
-   * {@code bin/solr.cmd} output comes back in the console code page rather than the {@code chcp
-   * 65001} the harness asks for, a truncated capture is cut mid-character, and any command is free
-   * to emit a stray byte. A replacement character in the transcript is a far better outcome than a
-   * {@link java.nio.charset.MalformedInputException} standing in for the test's real result.
+   * <p>Decoding is lenient, never strict: {@code bin\solr.cmd} output can come back in the console
+   * code page rather than the {@code chcp 65001} the harness asks for, and a truncated capture is
+   * cut mid-character. A replacement character in the transcript beats a {@link
+   * java.nio.charset.MalformedInputException} standing in for the test's real result.
    */
   private static String read(Path file) throws IOException {
     if (!Files.exists(file)) {

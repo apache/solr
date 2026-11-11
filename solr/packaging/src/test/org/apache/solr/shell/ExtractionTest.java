@@ -39,16 +39,16 @@ import org.junit.Test;
  *       loop, and its host port is the one Docker mapped instead of {@code SOLR_PORT+5} — a port
  *       this class does not own and which would collide with another class running in parallel. The
  *       rule's assumption is the original's {@code DOCKER_UNAVAILABLE} bypass;
- *   <li>Solr is started once for the class rather than once per test, which is what the harness
- *       gives a ported {@code setup_file}; the three tests already use a collection name each;
- *   <li>{@code curl} becomes the harness' own HTTP helpers: {@link #http} for the queries, {@code
+ *   <li>Solr is started once for the class rather than once per test; the three tests already use a
+ *       collection name each;
+ *   <li>{@code curl} becomes the harness' HTTP helpers: {@link #http} for the queries, {@code
  *       httpPost} for the Config API call and {@code httpPostFile} for {@code curl -F
  *       "myfile=@..."};
  *   <li>the helper's {@code sleep 5} becomes a wait on the thing it was hiding — the {@code
- *       /update/extract} handler actually being registered on the collection, which in cloud mode
- *       happens only once the core has picked up the config overlay the POST wrote;
- *   <li>{@code solr create} and the extraction POST assert their exit status and HTTP status; the
- *       original ignored both, so everything after them was asserted on an unknown state.
+ *       /update/extract} handler being registered on the collection, which in cloud mode happens
+ *       only once the core has picked up the config overlay the POST wrote;
+ *   <li>{@code solr create} and the extraction POST assert their exit status and HTTP status, which
+ *       the original ignored.
  * </ul>
  */
 // Testcontainers' own threads outlive the container, as the extraction module's integration tests

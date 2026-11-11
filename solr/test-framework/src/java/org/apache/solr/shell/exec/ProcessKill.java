@@ -30,11 +30,10 @@ public final class ProcessKill {
    * Kills {@code handle}'s descendants first, then the process itself, and waits up to {@code
    * timeout} for it to be gone.
    *
-   * <p>Note that a detached Solr node ({@code nohup} on Unix, {@code start /B} on Windows) is
-   * re-parented once its launching shell exits, so it will generally <em>not</em> show up as a
-   * descendant of anything the harness started. The running process list, via {@link SolrNodes}, is
-   * how the harness finds Solr; this method is for killing a command process that overran its
-   * timeout, and for killing a PID that discovery returned.
+   * <p>A detached Solr node ({@code nohup} on Unix, {@code start /B} on Windows) is re-parented
+   * once its launching shell exits, so it will generally <em>not</em> be a descendant of anything
+   * the harness started — {@link SolrNodes} is how the harness finds Solr. This method is for a
+   * command process that overran its timeout, and for a PID discovery returned.
    *
    * @return whether the process is no longer alive
    */

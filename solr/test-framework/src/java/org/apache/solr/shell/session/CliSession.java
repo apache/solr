@@ -402,17 +402,12 @@ public class CliSession implements AutoCloseable {
    * Serves a directory over HTTP on a free port, and returns the port.
    *
    * <p>For a test whose subject is Solr reading a URL — {@code solr post --mode web}, a remote
-   * config set, a module fetching a resource. Pointing such a test at a real site makes it depend
-   * on the network and on that site's current content; serving a snapshot locally does not, and it
-   * still exercises the whole HTTP path.
+   * config set, a module fetching a resource — without depending on the network or on a real site's
+   * current content. The port is an ephemeral one the OS picks rather than one from this class's
+   * block: nothing needs to predict it, and it does not spend one of the four ports a class owns.
    *
-   * <p>The port is an ephemeral one the OS picks, not one from this class's block, because a web
-   * server is not a Solr node: nothing else needs to predict its number, and asking the OS avoids
-   * spending one of the four ports a class owns.
-   *
-   * <p>Every server a scope starts is stopped when the scope ends, so a test needs no teardown.
-   * {@link #serveHttpShutdown(int)} stops one early, for a test that wants to observe a fetch
-   * failing.
+   * <p>Every server a scope starts is stopped when the scope ends. {@link #serveHttpShutdown(int)}
+   * stops one early, for a test that wants to observe a fetch failing.
    *
    * @param webRoot the directory to serve, resolved against {@link #cwd()}
    * @return the port it is listening on
@@ -553,36 +548,27 @@ public class CliSession implements AutoCloseable {
   /**
    * Runs a command line.
    *
-   * <p>Environment variables are written the way the BATS suites write them, so a ported line needs
-   * no edit at all:
+   * <p>Variables are written the way the BATS suites write them, so a ported line needs no edit:
    *
    * <pre>
    *   run("solr zk ls / -z localhost:${ZK_PORT}");
    *   run("solr start -p $SOLR2_PORT");
    * </pre>
    *
-   * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} all resolve against the session
-   * environment — {@code SOLR_PORT}, {@code ZK_PORT}, {@code SOLR_TIP} and the rest, plus anything
-   * {@link #env(String, String)} has set.
+   * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} resolve against the session environment,
+   * substituted by the <em>harness</em> rather than the shell — which is what makes one line work
+   * on both, since bash expands {@code $NAME} and cmd.exe wants {@code %NAME%}. Resolving in Java
+   * also fails the test on an unknown name instead of quietly substituting the empty string, and
+   * lets the transcript record the real command. Reading {@code $NAME} as an environment variable
+   * is sound because a {@code run} line has no shell state of its own: one process per command, so
+   * no locals or positional parameters. {@code %NAME%} is rejected rather than substituted, {@code
+   * %} being {@link String#format}'s; {@code $'..'}, {@code $1} and a bare {@code $} are left for
+   * the shell.
    *
-   * <p>The <em>harness</em> substitutes them, not the shell. That is what makes one line work on
-   * both: bash would expand {@code $NAME} and cmd.exe would not, and cmd.exe wants {@code %NAME%},
-   * which bash would not expand. Resolving in Java also means an unknown name fails the test
-   * instead of quietly becoming the empty string, and that the transcript records the real command.
-   * It is sound to read {@code $NAME} as an environment variable here because a {@code run} line
-   * has no shell state of its own — one process per command, so there are no locals or positional
-   * parameters it could refer to.
-   *
-   * <p>{@code %NAME%} is rejected rather than substituted, because {@code %} is also {@link
-   * String#format}'s. {@code $'..'}, {@code $1} and a bare {@code $} are left for the shell.
-   *
-   * <p>A value that comes from Java rather than the environment is simply concatenated — {@code
-   * run("solr start -p " + myPort)} — which reads better than any format placeholder. One sharp
-   * edge: concatenation happens before the harness resolves the line, so a value that itself
-   * contains {@code ${...}} is taken as a variable reference.
-   *
-   * <p>An argument needing per-shell quoting goes through {@link #run(List)} instead, which quotes
-   * each element correctly for bash and for cmd.exe.
+   * <p>A Java value is simply concatenated — {@code run("solr start -p " + myPort)}. Sharp edge:
+   * that happens before the harness resolves the line, so a value containing {@code ${...}} is
+   * taken as a variable reference. An argument needing per-shell quoting goes through {@link
+   * #run(List)}.
    */
   public CommandResult run(String line) {
     requireSingleCommand(line);
@@ -629,10 +615,9 @@ public class CliSession implements AutoCloseable {
    * Escape hatch for shell-specific, possibly multi-line logic. The script for the current shell
    * runs as a single process; passing null for it means the test cannot run here.
    *
-   * <p>Here {@code $NAME}, {@code %NAME%} and the rest are left entirely to the shell — a script
-   * has its own locals, loop variables and positional parameters, and you have already committed to
-   * one shell by writing two bodies. {@code {{NAME}}} is the one form the harness still resolves,
-   * for when you want a harness value in a script without the shell seeing a variable at all.
+   * <p>{@code $NAME} and {@code %NAME%} are left entirely to the shell here — a script has its own
+   * locals, loop variables and positional parameters. {@code {{NAME}}} is the one form the harness
+   * still resolves, for a harness value the shell should not see as a variable at all.
    *
    * @throws org.junit.AssumptionViolatedException if the current shell has no script
    */
@@ -693,9 +678,8 @@ public class CliSession implements AutoCloseable {
    * The Unix-only tools a BATS line reaches for, each with the harness feature that replaces it.
    *
    * <p>None of these exist on cmd.exe, so a line invoking one is a test that silently only works on
-   * one platform. Caught here rather than on Windows three weeks later, and with the replacement
-   * named, because the replacement is the whole point: the harness grew {@link #read}, {@link
-   * #list}, {@code linesMatching} and the rest precisely so a port does not have to shell out.
+   * one platform — caught here rather than on Windows three weeks later, and with the replacement
+   * named.
    */
   private static final Map<String, String> UNIX_ONLY_TOOLS =
       Map.ofEntries(
@@ -1098,11 +1082,9 @@ public class CliSession implements AutoCloseable {
       }
       ALL_RECORDED_PIDS.remove(pid);
       KNOWN_NODES.remove(node.getKey(), pid);
-      // Both spellings: bin/solr writes solr-<port>.pid holding a PID, bin\solr.cmd writes
-      // solr-<port>.port holding a port, and SolrProcessManager reads either
-      // (pidFilePattern = ^solr-([0-9]+)\.(pid|port)$). Only the graceful stop cleans up after
-      // itself, so a force-killed node leaves its file behind — and a stale file in this class's
-      // SOLR_PID_DIR is what 'solr stop --all' and 'solr status' would then walk.
+      // Both spellings: bin/solr writes solr-<port>.pid, bin\solr.cmd writes solr-<port>.port, and
+      // SolrProcessManager reads either. Only a graceful stop removes its own file, so a stale one
+      // left by a force-kill is what 'solr stop --all' and 'solr status' would later walk.
       for (String suffix : List.of(".pid", ".port")) {
         Path pidFile = harnessEnv.pidDir().resolve("solr-" + node.getKey() + suffix);
         try {

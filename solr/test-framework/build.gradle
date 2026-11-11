@@ -117,10 +117,8 @@ tasks.register('catsTests', Test) {
   }
 }
 
-// Part of 'check', unlike the CLI suites in solr/packaging: these need no Solr distribution and
-// run in seconds, and without them a regression in the harness would not be caught until someone
-// ran the slow suites. They have to be their own task rather than part of 'test' only because the
-// test security policy grants 'execute' for java alone, and the harness spawns a shell.
+// Part of 'check', unlike the CLI suites in solr/packaging: these need no Solr distribution and run
+// in seconds, so a harness regression is caught without running the slow suites.
 tasks.named('check').configure {
   dependsOn tasks.named('catsTests')
 }

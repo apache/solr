@@ -58,17 +58,15 @@ public class SolrProcessManager {
   /**
    * System property ({@code solr.process.scan.marker}, or the {@code SOLR_PROCESS_SCAN_MARKER}
    * environment variable) restricting process discovery to Solr nodes whose command line contains
-   * the given string. Unset, which is the default, every Solr node on the host is discovered as
-   * before.
+   * the given string. Unset by default, in which case every Solr node on the host is discovered.
    *
-   * <p>This exists so that automated tests can treat the host as if it were theirs alone. Node
-   * discovery is host-wide by nature, so without it a test asserting on the set of running nodes
-   * also sees a developer's own Solr, or a second test suite sharing a CI machine. A test harness
-   * sets this to a value unique to itself and starts its nodes with the same marker on their
-   * command lines, via {@code SOLR_OPTS_INTERNAL}.
+   * <p>For automated tests: discovery is host-wide by nature, so without this a test asserting on
+   * the set of running nodes also sees a developer's own Solr or another suite sharing a CI
+   * machine. A harness sets this to a value unique to itself and starts its nodes carrying the same
+   * marker, via {@code SOLR_OPTS_INTERNAL}.
    *
-   * <p>Note that while this is set, a PID file belonging to a node without the marker counts as
-   * stale and is removed by {@link #scanSolrPidFiles()}.
+   * <p>While it is set, a PID file belonging to a node without the marker counts as stale and is
+   * removed by {@link #scanSolrPidFiles()}.
    */
   public static final String PROCESS_SCAN_MARKER = "solr.process.scan.marker";
 
