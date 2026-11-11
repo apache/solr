@@ -129,5 +129,8 @@ Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmles
 - The build's failure summary hardcodes `:test` when it composes its reproduce line
   (`gradle/testing/failed-tests-at-end.gradle:33`), so a failure in `shellTests`, `integrationTests`
   or a `beast` run prints a command that names a task the test does not belong to.
-- `dev-docs/solr-source-code.adoc` is written in Markdown heading syntax (`#`, `##`, `###`) despite
-  its `.adoc` extension, so it does not render as AsciiDoc intends.
+- Most `dev-docs/*.adoc` files are partly or wholly Markdown despite the `.adoc` extension, so they
+  do not render as AsciiDoc intends: 10 of the 12 carry Markdown headings or fenced code blocks, and
+  four have no AsciiDoc syntax at all (`how-to-contribute.adoc`, `solr-source-code.adoc`,
+  `IDEs.adoc`, `jvms.adoc`). The new `writing-tests.adoc` is AsciiDoc throughout and renders clean
+  under `asciidoctor --failure-level=WARN`; converting the rest is its own cleanup.
