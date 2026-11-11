@@ -4,8 +4,7 @@ title: >
   New cross-platform test harness for the Solr CLI, in `org.apache.solr.shell`. One JUnit test
   source exercises `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, so the start scripts are
   covered on Windows for the first time. The BATS suites in `solr/packaging/test` are ported to it
-  and deprecated. `SolrProcessManager` gains an optional `solr.process.scan.marker` so node
-  discovery can be scoped to one test class, which is what lets the suites run in parallel.
+  and deprecated.
 type: other
 authors:
   - name: Jan Høydahl
