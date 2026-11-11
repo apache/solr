@@ -43,10 +43,19 @@ The test tasks use `build/solr-<version>`, so a `dev` directory you are poking a
 | Layer | Task | Status |
 | --- | --- | --- |
 | Shell harness (JUnit, cross-platform) | `shellTests`, `shellTestsPicocli`, `shellTestsCommonsCli` | preferred |
+| Rolling upgrade (Docker) | `shellTestsDockerBuild` | builds the image first, so it has its own task |
 | BATS suites (bash) | `integrationTests`, `integrationTestsPicocli` | deprecated, being ported |
 | Stock `test` | — | disabled here |
 
-Both real layers start Solr nodes and take minutes, so neither is in `check`; ask for them by name. The `*CommonsCli` and `*Picocli` variants pin `SOLR_PICOCLI`, since the two CLI implementations still differ in some wording.
+The real layers all start Solr nodes and take minutes, so none of them is in `check`; ask for them by name. The `*CommonsCli` and `*Picocli` variants pin `SOLR_PICOCLI`, since the two CLI implementations still differ in some wording.
+
+One suite is not selected by any of those: the rolling upgrade, which upgrades a three-node cluster from the previous major's released image to one built from your working tree. It needs that image built first, so it has its own task, and only that task runs it:
+
+```bash
+./gradlew -p solr/packaging shellTestsDockerBuild
+```
+
+Nothing else triggers a Docker build — not `shellTests`, not `check`. The task builds the image under a local name of its own and leaves `apache/solr:<version>` alone, so an image you pulled from Docker Hub to test against is never overwritten.
 
 **Shell harness** — JUnit suites in `src/test/org/apache/solr/shell/` extending `SolrShellTestCase`. One test source runs against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe. Each test class gets its own `SOLR_HOME`, `SOLR_PID_DIR` and port block, so classes run in parallel forks (`min(4, tests.jvms)`, override with `-Pshell.tests.jvms`). See [`solr/test-framework/README.md`](../test-framework/README.md) for the API.
 

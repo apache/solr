@@ -164,6 +164,7 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 `./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the parts specific to a module's own test task are here:
 
 * `./gradlew -p solr/packaging shellTests` builds the distribution first, then runs the shell suites; classes run in parallel, each with its own `SOLR_HOME` and port block (`-Pshell.tests.jvms=N` sets the fork count, which defaults to `min(4, tests.jvms)`). `shellTestsPicocli` and `shellTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
+* `./gradlew -p solr/packaging shellTestsDockerBuild` builds a Solr Docker image from your working tree and runs the rolling-upgrade suite against it. Nothing else triggers that build.
 * `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
 * Neither `solr/packaging` test task is part of `check` — both need an unpacked distribution. The harness' own unit tests, under the same task name in `solr/test-framework`, are. The browser tests are in `check` but stay skipped until their test group is enabled.
