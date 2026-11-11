@@ -17,9 +17,13 @@
 
 package org.apache.solr.shell.session;
 
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.SimpleFileServer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -47,6 +51,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
@@ -110,6 +115,7 @@ public class CliSession implements AutoCloseable {
 
   private final List<Process> startedProcesses = new ArrayList<>();
   private final Map<Integer, Long> ownedNodes = new LinkedHashMap<>();
+  private final Map<Integer, HttpServer> fileServers = new LinkedHashMap<>();
 
   private Path cwd;
   private Duration timeout = DEFAULT_TIMEOUT;
@@ -376,6 +382,59 @@ public class CliSession implements AutoCloseable {
   /** Port of {@code ls <dir>}: the names directly in a directory, sorted. */
   public List<Path> list(String dir) {
     return list(dir, "*");
+  }
+
+  // ------------------------------------------------------------ a local web server
+
+  /**
+   * Serves a directory over HTTP on a free port, and returns the port.
+   *
+   * <p>For a test whose subject is Solr reading a URL — {@code solr post --mode web}, a remote
+   * config set, a module fetching a resource. Pointing such a test at a real site makes it depend
+   * on the network and on that site's current content; serving a snapshot locally does not, and it
+   * still exercises the whole HTTP path.
+   *
+   * <p>The port is an ephemeral one the OS picks, not one from this class's block, because a web
+   * server is not a Solr node: nothing else needs to predict its number, and asking the OS avoids
+   * spending one of the four ports a class owns.
+   *
+   * <p>Every server a scope starts is stopped when the scope ends, so a test needs no teardown.
+   * {@link #serveHttpShutdown(int)} stops one early, for a test that wants to observe a fetch
+   * failing.
+   *
+   * @param webRoot the directory to serve, resolved against {@link #cwd()}
+   * @return the port it is listening on
+   */
+  @SuppressForbidden(reason = "com.sun.net.httpserver is where the JDK's own web server lives")
+  public int serveHttp(String webRoot) {
+    requireOpen();
+    Path root = path(webRoot);
+    if (!Files.isDirectory(root)) {
+      throw new AssertionError("serveHttp: not a directory: " + root);
+    }
+    // The JDK's own file server, JEP 408. Nothing to get wrong here: it maps the path, picks the
+    // content type, serves index.html for a directory and refuses anything outside the root.
+    // Bound to loopback — a fixture has no business being reachable from off the machine — and to
+    // port 0, meaning whatever is free.
+    HttpServer server =
+        SimpleFileServer.createFileServer(
+            new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+            root.toAbsolutePath(),
+            SimpleFileServer.OutputLevel.NONE);
+    server.start();
+    int port = server.getAddress().getPort();
+    fileServers.put(port, server);
+    transcript.note("serving " + root + " at http://localhost:" + port);
+    return port;
+  }
+
+  /** Stops one server started by {@link #serveHttp}. Stopping one twice is not an error. */
+  @SuppressForbidden(reason = "com.sun.net.httpserver is where the JDK's own web server lives")
+  public void serveHttpShutdown(int port) {
+    HttpServer server = fileServers.remove(port);
+    if (server != null) {
+      server.stop(0);
+    }
   }
 
   /**
@@ -931,6 +990,16 @@ public class CliSession implements AutoCloseable {
     }
     closed = true;
     List<String> problems = new ArrayList<>();
+
+    // Fixture web servers first: they hold only a loopback socket, and a test that failed
+    // mid-fetch should not leave one listening.
+    for (Integer port : List.copyOf(fileServers.keySet())) {
+      try {
+        serveHttpShutdown(port);
+      } catch (RuntimeException e) {
+        problems.add("stopping the web server on port " + port + ": " + e);
+      }
+    }
 
     // Graceful stop first, so Solr gets to shut down cleanly and remove its own pid file.
     for (Map.Entry<Integer, Long> node : ownedNodes.entrySet()) {

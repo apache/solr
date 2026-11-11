@@ -108,10 +108,19 @@ public class ExtractionTest extends SolrShellTestCase {
     awaitQueryable("website_extraction");
     applyExtractHandler("website_extraction");
 
+    // The original crawled https://solr.apache.org/ live. This serves a snapshot of that page
+    // locally instead: the subject is the post tool's web mode, not the website, and depending on
+    // the network and on whatever the site says today buys nothing. The server is stopped for us
+    // when the test ends.
+    copyResource("website/index.html", "website/index.html");
+    int webPort = serveHttp("website");
+
     // Change to --recursive 1 to crawl multiple pages, but may be too slow.
     run("solr post --mode web --solr-url http://localhost:${SOLR_PORT} -c website_extraction"
-            + " --recursive 0 --delay 1 https://solr.apache.org/")
-        .assertContains("POSTed web resource https://solr.apache.org (depth: 0)")
+            + " --recursive 0 --delay 1 http://localhost:"
+            + webPort
+            + "/")
+        .assertContains("POSTed web resource http://localhost:" + webPort + " (depth: 0)")
         .assertNotContains("ERROR");
 
     http("/solr/website_extraction/select?q=*:*").assertContains("\"numFound\":1");

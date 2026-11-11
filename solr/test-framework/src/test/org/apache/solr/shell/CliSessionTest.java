@@ -624,4 +624,46 @@ public class CliSessionTest extends SolrTestCase {
     String url = "http://localhost:" + session.ports().solr() + "/model.onnx";
     expectThrows(UncheckedIOException.class, () -> session.download(url, "model.onnx"));
   }
+
+  // ------------------------------------------------------- a local web server
+
+  @Test
+  public void serveHttpServesTheDirectoryAndStopsOnRequest() {
+    session.write("site/index.html", "<html><body>hello from the fixture</body></html>");
+    session.write("site/data.json", "{\"k\":1}");
+    int port = session.serveHttp("site");
+    assertTrue("an ephemeral port was chosen", port > 0);
+
+    // The directory's index.html is what / serves, and the content type follows the extension.
+    session
+        .helpers()
+        .http(port, "/")
+        .assertStatus(200)
+        .assertContains("hello from the fixture")
+        .assertHeaderContains("content-type: text/html");
+    session.helpers().http(port, "/data.json").assertStatus(200).assertContains("\"k\":1");
+    session.helpers().http(port, "/nope.html").assertStatus(404);
+
+    // Stopping it early is what a test does to watch a fetch fail; stopping twice is harmless.
+    session.serveHttpShutdown(port);
+    session.serveHttpShutdown(port);
+    session.helpers().http(port, "/").assertConnectionFailed();
+  }
+
+  @Test
+  public void serveHttpRefusesSomethingThatIsNotADirectory() {
+    session.write("afile.txt", "x");
+    AssertionError failure =
+        expectThrows(AssertionError.class, () -> session.serveHttp("afile.txt"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("not a directory"));
+  }
+
+  @Test
+  public void closingTheSessionStopsAServerTheTestForgot() {
+    session.write("site/index.html", "<html><body>x</body></html>");
+    int port = session.serveHttp("site");
+    session.helpers().http(port, "/").assertStatus(200);
+    session.close();
+    session.helpers().http(port, "/").assertConnectionFailed();
+  }
 }

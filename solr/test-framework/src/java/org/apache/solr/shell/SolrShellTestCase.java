@@ -18,6 +18,7 @@
 package org.apache.solr.shell;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -318,6 +319,46 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   protected List<Path> list(String dir, String glob) {
     return cli.list(dir, glob);
+  }
+
+  /**
+   * Copies a file from the test classpath into the session's working directory, for a fixture that
+   * is checked in rather than generated — a config set, a document, a web page to serve.
+   *
+   * <p>{@code resource} is resolved against the test class's own package, or from the classpath
+   * root if it starts with {@code /}. Test resources live in {@code src/test-files}.
+   *
+   * @return the absolute path of the copy
+   */
+  protected Path copyResource(String resource, String path) {
+    String name =
+        resource.startsWith("/")
+            ? resource.substring(1)
+            : getClass().getPackageName().replace('.', '/') + "/" + resource;
+    try (InputStream in = getClass().getClassLoader().getResourceAsStream(name)) {
+      if (in == null) {
+        throw new AssertionError("No such resource on the test classpath: " + name);
+      }
+      Path target = cli.path(path);
+      Files.createDirectories(target.getParent());
+      Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+      return target;
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not copy resource " + name, e);
+    }
+  }
+
+  /**
+   * Serves a directory over HTTP on a free port, for a test whose subject is Solr reading a URL.
+   * Stopped automatically when the test ends.
+   */
+  protected int serveHttp(String webRoot) {
+    return cli.serveHttp(webRoot);
+  }
+
+  /** Stops a server from {@link #serveHttp} early, for a test that wants a fetch to fail. */
+  protected void serveHttpShutdown(int port) {
+    cli.serveHttpShutdown(port);
   }
 
   protected Path download(String url, String path) {
