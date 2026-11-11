@@ -106,7 +106,7 @@ public final class HarnessEnv {
       throw new IllegalStateException(
           "SOLR_TIP is not set, so there is no Solr distribution to test. Run "
               + "'./gradlew -p solr/packaging dev' and set SOLR_TIP (or -Dsolr.cli.solr.tip=...) "
-              + "to the unpacked distribution, or run the tests via the 'shellTests' Gradle task.");
+              + "to the unpacked distribution, or run the tests via the 'catsTests' Gradle task.");
     }
     Path tip = requireDistribution(Path.of(solrTip).toAbsolutePath().normalize());
     Path out = dir("TEST_OUTPUT_DIR", () -> tempDir("solr-shell-tests"));

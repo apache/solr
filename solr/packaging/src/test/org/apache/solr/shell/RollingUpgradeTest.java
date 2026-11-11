@@ -55,11 +55,11 @@ import org.testcontainers.utility.DockerImageName;
  * <p>Upgrades from the latest release of the previous major version to an image of the Solr version
  * under test. Either end can be overridden, e.g. {@code export SOLR_BEGIN_IMAGE=solr:9.11-slim}.
  *
- * <p>This class runs only from the {@code shellTestsDockerBuild} Gradle task, which builds the
- * image from the working tree, tags it under a local-only name and passes that in {@code
- * SOLR_END_IMAGE}; the ordinary shell-test tasks exclude the class. So the upgrade is always onto
- * the code in the tree, not onto whatever {@code apache/solr:<version>} happens to be tagged on the
- * machine — which may be the official release image, or a build from another commit days ago.
+ * <p>This class runs only from the {@code catsTestsDockerBuild} Gradle task, which builds the image
+ * from the working tree, tags it under a local-only name and passes that in {@code SOLR_END_IMAGE};
+ * the ordinary shell-test tasks exclude the class. So the upgrade is always onto the code in the
+ * tree, not onto whatever {@code apache/solr:<version>} happens to be tagged on the machine — which
+ * may be the official release image, or a build from another commit days ago.
  *
  * <p>That task selection is also why the suite carries no {@code @Nightly}: the annotation's only
  * job here would be to keep a Docker- and network-using test out of ordinary builds, which the task
@@ -251,7 +251,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
    *
    * <p>The two versions come from different places on purpose. The previous major is a property of
    * the code, so it comes from {@link SolrVersion#LATEST}. The version to upgrade <em>to</em> is
-   * named by {@code SOLR_END_IMAGE}, which the {@code shellTestsDockerBuild} task sets to the image
+   * named by {@code SOLR_END_IMAGE}, which the {@code catsTestsDockerBuild} task sets to the image
    * it has just built from this tree. The fallback is there for a hand-run of the suite, and is the
    * tag {@code ./gradlew dockerTag} applies: {@code project.version}, which carries the {@code
    * -SNAPSHOT} qualifier that {@code SolrVersion} does not, so the unpacked distribution's

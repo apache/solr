@@ -27,8 +27,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 - See `dev-docs/gradle-help/tests.txt` for hints on running tests
 - To run a specific test: `gradlew :solr:core:test --tests "org.apache.solr.search.TestCaffeineCache"`
-- To run the cross-platform CLI suites: `gradlew -p solr/packaging shellTests --tests "*ZkTest"`
-- To run a specific BATS test (deprecated layer): `gradlew iTest --tests test_adminconsole_urls.bats`
+- To run CATS (Cross-platform Automated Testing System), the cross-platform CLI suites: `gradlew -p solr/packaging catsTests --tests "*ZkTest"`
+- To run a specific BATS test (deprecated, replaced by CATS): `gradlew iTest --tests test_adminconsole_urls.bats`
 - The randomization seed is important.  To repeat a failing tests, pass the same seed given in the failure by adding to Gradle: `-Ptests.seed=HEXADECIMALHERE`.
 - Test output goes to `solr/<module>/build/test-results/test/outputs/OUTPUT-<fully.qualified.TestName>.txt` (stdout/stderr log) and `solr/<module>/build/test-results/test/TEST-<fully.qualified.TestName>.xml` (JUnit XML with pass/fail/error details)
 - To scan test output for a specific issue across already-run tests: `grep -rl "pattern" solr/*/build/test-results/test/outputs/`

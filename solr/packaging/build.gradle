@@ -24,7 +24,7 @@ import org.apache.tools.ant.util.TeeOutputStream
 plugins {
   id 'base'
   id 'distribution'
-  // Only for the shell test harness suites under src/test; this project ships no Java of its own.
+  // Only for the CATS suites under src/test; this project ships no Java of its own.
   id 'java'
 }
 
@@ -65,7 +65,7 @@ dependencies {
 
   docker project(path: ':solr:docker', configuration: 'packaging')
 
-  // The shell test harness lives in solr/test-framework; the suites that use it live here, next to
+  // The CATS harness lives in solr/test-framework; the suites that use it live here, next to
   // the BATS tests they are ported from.
   testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
@@ -353,41 +353,41 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   }
 }
 
-// Cross-platform CLI suites built on the org.apache.solr.shell harness in solr/test-framework.
-// Like the BATS suites these need the unpacked distribution, so they are not part of 'check' and
-// the stock 'test' task is turned off.
+// CATS - Cross-platform Automated Testing System - the CLI suites built on the
+// org.apache.solr.shell harness in solr/test-framework. Like the BATS suites these need the
+// unpacked distribution, so they are not part of 'check' and the stock 'test' task is turned off.
 tasks.named('test') {
   enabled = false
 }
 
-// Shared configuration for the shell harness suites, mirroring configureBatsTask. outputName keeps
+// Shared configuration for the CATS suites, mirroring configureBatsTask. outputName keeps
 // each variant's SOLR_HOMEs, port-block counter and failure snapshots apart; picocli selects the
 // CLI implementation, or null to take whatever bin/solr defaults to.
-def configureShellTestTask(Test task, String outputName, String picocli) {
+def configureCatsTestTask(Test task, String outputName, String picocli) {
   task.dependsOn installFullDist
 
   task.testClassesDirs = sourceSets.test.output.classesDirs
   task.classpath = sourceSets.test.runtimeClasspath
 
   // RollingUpgradeTest upgrades onto a Docker image built from this working tree, which only
-  // shellTestsDockerBuild arranges; no other suite run should need Docker or the network, so it is
-  // excluded here for all of them. shellTestsDockerBuild clears this again.
+  // catsTestsDockerBuild arranges; no other suite run should need Docker or the network, so it is
+  // excluded here for all of them. catsTestsDockerBuild clears this again.
   task.filter.excludeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
 
   // Unlike BATS, which runs every file sequentially against one shared SOLR_HOME and port block,
   // each class here gets its own of both (see HarnessEnv.forClass), so classes can run in parallel.
   // Defaults to the build's own tests.jvms, capped because the ceiling here is memory rather than
-  // CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pshell.tests.jvms.
+  // CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pcats.tests.jvms.
   // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
   //
-  task.maxParallelForks = (project.findProperty('shell.tests.jvms')
+  task.maxParallelForks = (project.findProperty('cats.tests.jvms')
       ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer
   task.timeout.set(java.time.Duration.ofMinutes(60))
 
-  def shellTestOutput = file("$buildDir/$outputName")
+  def catsTestOutput = file("$buildDir/$outputName")
   task.inputs.dir(distDir)
   task.environment SOLR_TIP: distDir.toString()
-  task.environment TEST_OUTPUT_DIR: shellTestOutput.toString()
+  task.environment TEST_OUTPUT_DIR: catsTestOutput.toString()
   if (picocli != null) {
     task.environment SOLR_PICOCLI: picocli
   }
@@ -401,42 +401,42 @@ def configureShellTestTask(Test task, String outputName, String picocli) {
     //
     // Wiped per run, not per fork, so the port-block counter starts at zero and last run's
     // failure snapshots do not pile up. Matches what configureBatsTask does for the BATS output.
-    delete shellTestOutput
-    shellTestOutput.mkdirs()
+    delete catsTestOutput
+    catsTestOutput.mkdirs()
     // The harness spawns bin/solr and writes outside the test sandbox, neither of which the test
     // security policy allows. Dropping the property is enough; nothing installs an SM later.
     task.systemProperties.remove('java.security.manager')
-    logger.lifecycle("Running shell tests with ${task.maxParallelForks} parallel fork(s)")
+    logger.lifecycle("Running CATS with ${task.maxParallelForks} parallel fork(s)")
   }
 }
 
-tasks.register('shellTests', Test) {
+tasks.register('catsTests', Test) {
   group = 'verification'
-  description = 'Runs the bin/solr shell test harness suites against the unpacked distribution.'
-  configureShellTestTask(it, 'shell-test-output', null)
+  description = 'Runs the CATS bin/solr CLI suites against the unpacked distribution.'
+  configureCatsTestTask(it, 'cats-test-output', null)
 }
 
-tasks.register('shellTestsPicocli', Test) {
+tasks.register('catsTestsPicocli', Test) {
   group = 'verification'
-  description = 'Runs the shell harness suites against the experimental picocli CLI.'
-  configureShellTestTask(it, 'shell-test-output-picocli', 'true')
+  description = 'Runs the CATS suites against the experimental picocli CLI.'
+  configureCatsTestTask(it, 'cats-test-output-picocli', 'true')
 }
 
 // Deprecated: delete along with commons-cli itself, once picocli is the only CLI in Solr 11. Until
 // then the two differ in some usage and error wording, so it is worth being able to run the suites
 // against whichever bin/solr is not defaulting to. A test that genuinely cannot hold for both
 // carries @EnabledOnCli; where only the wording differs, a test uses assertContainsForCli.
-tasks.register('shellTestsCommonsCli', Test) {
+tasks.register('catsTestsCommonsCli', Test) {
   group = 'verification'
-  description = 'Deprecated. Runs the shell harness suites against the commons-cli implementation.'
-  configureShellTestTask(it, 'shell-test-output-commons-cli', 'false')
+  description = 'Deprecated. Runs the CATS suites against the commons-cli implementation.'
+  configureCatsTestTask(it, 'cats-test-output-commons-cli', 'false')
 }
 
 // The rolling upgrade, onto an image built from this working tree rather than whatever
 // apache/solr:<version> happens to be tagged on the machine - the property a release candidate
-// needs. Every Docker dependency sits on this task alone and not in configureShellTestTask, so a
-// plain shellTests run still neither needs Docker nor touches the network.
-tasks.register('shellTestsDockerBuild', Test) {
+// needs. Every Docker dependency sits on this task alone and not in configureCatsTestTask, so a
+// plain catsTests run still neither needs Docker nor touches the network.
+tasks.register('catsTestsDockerBuild', Test) {
   group = 'verification'
   description =
       'Slow. Builds the Solr Docker image from this working tree, then rolling-upgrades onto it.'
@@ -451,9 +451,9 @@ tasks.register('shellTestsDockerBuild', Test) {
   def imageIdFile = project(':solr:docker').layout.buildDirectory.file('image-id')
   def imageVersion = project.version.toString()
 
-  configureShellTestTask(it, 'shell-test-output-docker-build', null)
+  configureCatsTestTask(it, 'cats-test-output-docker-build', null)
 
-  // An exclude beats an include in Gradle's filter, so the one configureShellTestTask adds has to
+  // An exclude beats an include in Gradle's filter, so the one configureCatsTestTask adds has to
   // go before this class can be selected at all.
   filter.excludePatterns = []
   filter.includeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'

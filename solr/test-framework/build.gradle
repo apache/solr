@@ -93,19 +93,20 @@ dependencies {
   })
 }
 
-// The org.apache.solr.shell harness spawns real shell processes, which the test security policy
-// forbids (it grants 'execute' only for java itself). So its own unit tests run from a task with
-// the manager turned off, and are kept out of 'test'. Same task name as the CLI suites in
-// solr/packaging, so './gradlew shellTests' from the root runs both.
+// The org.apache.solr.shell harness behind CATS - Cross-platform Automated Testing System -
+// spawns real shell processes, which the test security policy forbids (it grants 'execute' only
+// for java itself). So its own unit tests run from a task with the manager turned off, and are
+// kept out of 'test'. Same task name as the CATS suites in solr/packaging, so
+// './gradlew catsTests' from the root runs both.
 def shellTestPattern = 'org/apache/solr/shell/**'
 
 tasks.named('test') {
   exclude shellTestPattern
 }
 
-tasks.register('shellTests', Test) {
+tasks.register('catsTests', Test) {
   group = 'verification'
-  description = 'Unit tests for the bin/solr shell test harness. Needs no Solr distribution.'
+  description = 'Unit tests for the CATS harness itself. Needs no Solr distribution.'
 
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
@@ -121,5 +122,5 @@ tasks.register('shellTests', Test) {
 // ran the slow suites. They have to be their own task rather than part of 'test' only because the
 // test security policy grants 'execute' for java alone, and the harness spawns a shell.
 tasks.named('check').configure {
-  dependsOn tasks.named('shellTests')
+  dependsOn tasks.named('catsTests')
 }

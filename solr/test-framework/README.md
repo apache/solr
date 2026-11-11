@@ -45,7 +45,7 @@ Deliberately thin — its javadoc asks you to keep it that way. It contributes t
 
 ## SolrShellTestCase
 
-A cross-platform harness for the start scripts: one Java test runs `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, which the BATS suites cannot do. Suites live in `solr/packaging/src/test/org/apache/solr/shell/`; the harness' own unit tests are in `src/test/org/apache/solr/shell/`.
+CATS — Cross-platform Automated Testing System — the harness for the start scripts: one Java test runs `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, which the BATS suites cannot do. Suites live in `solr/packaging/src/test/org/apache/solr/shell/`; the harness' own unit tests are in `src/test/org/apache/solr/shell/`.
 
 No long-lived shell process — each command starts a fresh one with the session's environment and cwd, so quoting and expansion are the real shell's while control flow stays in Java.
 
@@ -142,7 +142,7 @@ The ones you actually reach for:
 ./gradlew helpTests                                   # the full set of options
 ```
 
-The shell harness has two tasks of the same name, so `./gradlew shellTests` from the root runs both: `solr/test-framework`'s runs the harness' own unit tests and is part of `check`; `solr/packaging`'s runs the CLI suites against an unpacked distribution and is not. To run a suite from an IDE, build a distribution (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
+CATS has two tasks of the same name, so `./gradlew catsTests` from the root runs both: `solr/test-framework`'s runs the harness' own unit tests and is part of `check`; `solr/packaging`'s runs the CLI suites against an unpacked distribution and is not. To run a suite from an IDE, build a distribution (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
 
 ## See also
 

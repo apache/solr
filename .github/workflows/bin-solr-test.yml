@@ -1,6 +1,6 @@
-# DEPRECATED. The BATS suites this workflow runs are deprecated as of Solr 10.2, replaced by the
-# cross-platform JUnit harness in org.apache.solr.shell — see shell-harness-test.yml, which runs on
-# pull requests and covers bin/solr.cmd as well. Every .bats file here has a ported counterpart in
+# DEPRECATED. The BATS suites this workflow runs are deprecated as of Solr 10.2, replaced by CATS —
+# Cross-platform Automated Testing System — see cats-test.yml, which runs on pull requests and
+# covers bin/solr.cmd as well. Every .bats file here has a ported counterpart in
 # solr/packaging/src/test/org/apache/solr/shell.
 #
 # So this workflow no longer runs automatically: it is manual-only, for the occasional check that

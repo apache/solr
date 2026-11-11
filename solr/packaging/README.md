@@ -42,9 +42,9 @@ The test tasks use `build/solr-<version>`, so a `dev` directory you are poking a
 
 | Layer | Task | Status |
 | --- | --- | --- |
-| Shell harness (JUnit, cross-platform) | `shellTests`, `shellTestsPicocli`, `shellTestsCommonsCli` | preferred |
-| Rolling upgrade (Docker) | `shellTestsDockerBuild` | builds the image first, so it has its own task |
-| BATS suites (bash) | `integrationTests`, `integrationTestsPicocli` | deprecated, being ported |
+| CATS (JUnit, cross-platform) | `catsTests`, `catsTestsPicocli`, `catsTestsCommonsCli` | preferred |
+| Rolling upgrade (Docker) | `catsTestsDockerBuild` | builds the image first, so it has its own task |
+| BATS suites (bash) | `integrationTests`, `integrationTestsPicocli` | deprecated, being ported to CATS |
 | Stock `test` | — | disabled here |
 
 The real layers all start Solr nodes and take minutes, so none of them is in `check`; ask for them by name. The `*CommonsCli` and `*Picocli` variants pin `SOLR_PICOCLI`, since the two CLI implementations still differ in some wording.
@@ -52,32 +52,32 @@ The real layers all start Solr nodes and take minutes, so none of them is in `ch
 One suite is not selected by any of those: the rolling upgrade, which upgrades a three-node cluster from the previous major's released image to one built from your working tree. It needs that image built first, so it has its own task, and only that task runs it:
 
 ```bash
-./gradlew -p solr/packaging shellTestsDockerBuild
+./gradlew -p solr/packaging catsTestsDockerBuild
 ```
 
-Nothing else triggers a Docker build — not `shellTests`, not `check`. The task builds the image under a local name of its own and leaves `apache/solr:<version>` alone, so an image you pulled from Docker Hub to test against is never overwritten.
+Nothing else triggers a Docker build — not `catsTests`, not `check`. The task builds the image under a local name of its own and leaves `apache/solr:<version>` alone, so an image you pulled from Docker Hub to test against is never overwritten.
 
-**Shell harness** — JUnit suites in `src/test/org/apache/solr/shell/` extending `SolrShellTestCase`. One test source runs against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe. Each test class gets its own `SOLR_HOME`, `SOLR_PID_DIR` and port block, so classes run in parallel forks (`min(4, tests.jvms)`, override with `-Pshell.tests.jvms`). See [`solr/test-framework/README.md`](../test-framework/README.md) for the API.
+**CATS** — Cross-platform Automated Testing System. JUnit suites in `src/test/org/apache/solr/shell/` extending `SolrShellTestCase`. One test source runs against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe. Each test class gets its own `SOLR_HOME`, `SOLR_PID_DIR` and port block, so classes run in parallel forks (`min(4, tests.jvms)`, override with `-Pcats.tests.jvms`). See [`solr/test-framework/README.md`](../test-framework/README.md) for the API.
 
 ```bash
-./gradlew -p solr/packaging shellTests --tests "*ZkTest"
+./gradlew -p solr/packaging catsTests --tests "*ZkTest"
 ```
 
-**BATS** — `test/*.bats`. Deprecated: bash-only, so they have never run on Windows. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`. Touch these only to keep them working, or to delete one once its port is in place.
+**BATS** — `test/*.bats`. Deprecated in favour of CATS: bash-only, so they have never run on Windows. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`. Touch these only to keep them working, or to delete one once its port is in place.
 
-New CLI coverage goes in the shell harness. If the thing can be tested without spawning a script, test it as an ordinary JUnit test instead of either layer.
+New CLI coverage goes in CATS. If the thing can be tested without spawning a script, test it as an ordinary JUnit test instead of either layer.
 
 ## When something fails
 
-| | Shell harness | BATS |
+| | CATS | BATS |
 | --- | --- | --- |
-| Output root | `build/shell-test-output[-picocli|-commons-cli]` | `build/test-output[-picocli]` |
+| Output root | `build/cats-test-output[-picocli|-commons-cli]` | `build/test-output[-picocli]` |
 | JUnit XML | `build/test-results/<task>` | the output root |
 | Failure snapshot | `<root>/failure-snapshots/<Class>-<method>/`, with `SOLR_HOME` and `transcript.log` | `<root>/failure-snapshots/` |
 
 The harness prints the snapshot path for each failed test, and `transcript.log` holds every command with its output. Output roots are wiped at the start of each run.
 
-CI runs the BATS tasks from `.github/workflows/bin-solr-test.yml`.
+CI runs CATS on pull requests that touch `solr/bin`, this module or the CLI, from `.github/workflows/cats-test.yml`. The BATS workflow, `.github/workflows/bin-solr-test.yml`, is manual-only now that every suite has a CATS counterpart.
 
 ## See also
 

@@ -1,11 +1,13 @@
-name: Solr Shell Harness Tests
+# CATS — Cross-platform Automated Testing System: the JUnit-based harness that drives bin/solr and
+# bin\solr.cmd. Named after BATS, which it replaces.
+name: Solr CATS Tests
 
 on:
   pull_request:
     branches:
       - '*'
     paths:
-      - '.github/workflows/shell-harness-test.yml'
+      - '.github/workflows/cats-test.yml'
       - 'solr/bin/**'
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
@@ -18,7 +20,7 @@ concurrency:
 
 jobs:
   test:
-    name: Run Solr Shell Harness Tests
+    name: Run Solr CATS Tests
 
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -31,15 +33,15 @@ jobs:
 
     # The harness' own unit tests. No distribution needed, so this fails fast if the library
     # itself is broken, before spending minutes on the suites that drive bin/solr.
-    - name: Test the shell harness library
-      run: ./gradlew -p solr/test-framework shellTests
+    - name: Test the CATS harness library
+      run: ./gradlew -p solr/test-framework catsTests
 
-    - name: Test bin/solr through the shell harness
-      run: ./gradlew -p solr/packaging shellTests
+    - name: Test bin/solr with CATS
+      run: ./gradlew -p solr/packaging catsTests
 
     # Reuses the distribution built above, so this only costs the suite run.
-    - name: Test bin/solr through the shell harness with the experimental picocli CLI
-      run: ./gradlew -p solr/packaging shellTestsPicocli
+    - name: Test bin/solr with CATS using the experimental picocli CLI
+      run: ./gradlew -p solr/packaging catsTestsPicocli
 
     - name: Archive logs
       if: ${{ failure() }}
@@ -47,6 +49,6 @@ jobs:
       with:
         name: logs
         path: |
-          solr/packaging/build/shell-test-output
-          solr/packaging/build/shell-test-output-picocli
-          solr/test-framework/build/test-results/shellTests
+          solr/packaging/build/cats-test-output
+          solr/packaging/build/cats-test-output-picocli
+          solr/test-framework/build/test-results/catsTests

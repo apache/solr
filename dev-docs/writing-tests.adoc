@@ -23,7 +23,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | Current, but not a default.
 
 | `SolrShellTestCase`
-| `bin/solr` and `bin\solr.cmd` as real subprocesses through the platform's own shell. Harness in `solr/test-framework/src/java/org/apache/solr/shell/`, suites in `solr/packaging/src/test/`.
+| CATS — Cross-platform Automated Testing System: `bin/solr` and `bin\solr.cmd` as real subprocesses through the platform's own shell. Harness in `solr/test-framework/src/java/org/apache/solr/shell/`, suites in `solr/packaging/src/test/`.
 | seconds to minutes
 | Current. New CLI coverage goes here.
 
@@ -45,7 +45,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | BATS, `solr/packaging/test/*.bats`
 | The original bash `bin/solr` tests. `./gradlew integrationTests`.
 | seconds to minutes, sequential
-| Deprecated in favour of `SolrShellTestCase`, which runs the same coverage on both shells. Bash-only; never ran on Windows.
+| Deprecated in favour of CATS, which runs the same coverage on both shells. Bash-only; never ran on Windows.
 |===
 
 `SolrCloudTestCase` is not the default because `configureCluster(n)` starts `n` Jetty servers and an embedded ZooKeeper in the test JVM before your first assertion, and every collection then goes through the real Collections API with real leader election — slow, memory-hungry, and full of async state to race against. Most cluster-test flakiness is a missing `waitForState`.
@@ -88,7 +88,7 @@ Randomize when the input space is large and uniform and correctness does not dep
 Do:
 
 * Order rules with `RuleChain.outerRule(a).around(b)` in one field, as `SolrTestCase` itself does. Separate `@Rule` fields are applied in an undefined, reflection-dependent order unless you set `@Rule(order = n)` (JUnit 4.13+), which Solr does not use.
-* Use a `TestRule` rather than `@After` when cleanup must know whether the test failed. Worked example: `SolrShellTestCase.shellSessionRule` snapshots `SOLR_HOME` and the command transcript on a throwable, before the harness stops the node. A rule also sees the `Description`, which is how `@EnabledOnShell`/`@EnabledOnCli` skip individual shell tests.
+* Use a `TestRule` rather than `@After` when cleanup must know whether the test failed. Worked example: `SolrShellTestCase.shellSessionRule` snapshots `SOLR_HOME` and the command transcript on a throwable, before the harness stops the node. A rule also sees the `Description`, which is how `@EnabledOnShell`/`@EnabledOnCli` skip individual CATS tests.
 * Prefer a `@ClassRule` `ExternalResource` over `@BeforeClass`/`@AfterClass` pairs for anything that must be closed — that is what `SolrJettyTestRule` and `EmbeddedSolrServerTestRule` are.
 * In `SolrCloudTestCase`, configure the cluster in `@BeforeClass`; the base class's `@AfterClass` shuts it down. For per-test isolation use `@After cluster.deleteAllCollections()` (which removes aliases too), not a cluster per method.
 * Call `super.setUp()`/`super.tearDown()` if you override them, and use `createTempDir()` for scratch space.
@@ -163,8 +163,8 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 
 `./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the parts specific to a module's own test task are here:
 
-* `./gradlew -p solr/packaging shellTests` builds the distribution first, then runs the shell suites; classes run in parallel, each with its own `SOLR_HOME` and port block (`-Pshell.tests.jvms=N` sets the fork count, which defaults to `min(4, tests.jvms)`). `shellTestsPicocli` and `shellTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
-* `./gradlew -p solr/packaging shellTestsDockerBuild` builds a Solr Docker image from your working tree and runs the rolling-upgrade suite against it. Nothing else triggers that build.
+* `./gradlew -p solr/packaging catsTests` builds the distribution first, then runs CATS; classes run in parallel, each with its own `SOLR_HOME` and port block (`-Pcats.tests.jvms=N` sets the fork count, which defaults to `min(4, tests.jvms)`). `catsTestsPicocli` and `catsTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
+* `./gradlew -p solr/packaging catsTestsDockerBuild` builds a Solr Docker image from your working tree and runs the rolling-upgrade suite against it. Nothing else triggers that build.
 * `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
 * Neither `solr/packaging` test task is part of `check` — both need an unpacked distribution. The harness' own unit tests, under the same task name in `solr/test-framework`, are. The browser tests are in `check` but stay skipped until their test group is enabled.
@@ -174,7 +174,7 @@ When one fails, start with the artifacts rather than the stack trace: `SolrShell
 == See also
 
 * `solr/test-framework/README.md` — what the framework provides and how to depend on it.
-* `solr/packaging/README.md` — the distribution, the shell harness and the BATS suites it is replacing.
+* `solr/packaging/README.md` — the distribution, CATS and the BATS suites it is replacing.
 * link:admin-ui-tests.md[admin-ui-tests.md] — how the browser suite works and what it skips.
 * `./gradlew helpTests` (`dev-docs/gradle-help/tests.txt`) — the guide to running tests. `./gradlew -p solr/core testOpts` lists every test property with its default and current value.
 * xref:solr-source-code.adoc[solr-source-code.adoc] — building, and what to do about a test that only fails for you.
