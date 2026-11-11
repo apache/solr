@@ -77,6 +77,8 @@ New CLI coverage goes in CATS. If the thing can be tested without spawning a scr
 
 The harness prints the snapshot path for each failed test, and `transcript.log` holds every command with its output. Output roots are wiped at the start of each run.
 
+A CATS run prints one line per test as it finishes (`ok`, `skip` or `FAIL`, with the class name because forks interleave), so a long run shows progress rather than going quiet for minutes. Note that `build/test-results/<task>/*.xml` is only written when the task ends, so it is no use for watching a run in flight.
+
 CI runs CATS on pull requests that touch `solr/bin`, this module or the CLI, from `.github/workflows/cats-test.yml`. The BATS workflow, `.github/workflows/bin-solr-test.yml`, is manual-only now that every suite has a CATS counterpart.
 
 ## See also

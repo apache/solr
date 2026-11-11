@@ -408,6 +408,20 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
     task.systemProperties.remove('java.security.manager')
     logger.lifecycle("Running CATS with ${task.maxParallelForks} parallel fork(s)")
   }
+
+  // BATS printed a line per test as it ran. Gradle buffers each fork's output and prints nothing
+  // but failures, so a CATS run looks hung for minutes at a time. Suites here are few and slow
+  // enough that one line each is a progress bar rather than noise. The class name is included
+  // because forks interleave, and skips are shown because most of them mean a missing Docker.
+  def marks = [SUCCESS: 'ok  ', SKIPPED: 'skip', FAILURE: 'FAIL']
+  task.afterTest { desc, result ->
+    // Locale.ROOT, or the decimal separator follows the randomized test locale ("0,9s" on nb-NO).
+    task.logger.lifecycle(String.format(Locale.ROOT, "%s %s.%s (%.1fs)",
+        marks[result.resultType.name()] ?: result.resultType.name(),
+        desc.className.substring(desc.className.lastIndexOf('.') + 1),
+        desc.name,
+        (result.endTime - result.startTime) / 1000.0d))
+  }
 }
 
 tasks.register('catsTests', Test) {
@@ -432,33 +446,23 @@ tasks.register('catsTestsCommonsCli', Test) {
   configureCatsTestTask(it, 'cats-test-output-commons-cli', 'false')
 }
 
-// The rolling upgrade, onto an image built from this working tree rather than whatever
+// Builds a Solr Docker image from this working tree and points RollingUpgradeTest at it, for the
+// two tasks that run that suite. Onto an image from the tree rather than whatever
 // apache/solr:<version> happens to be tagged on the machine - the property a release candidate
-// needs. Every Docker dependency sits on this task alone and not in configureCatsTestTask, so a
+// needs. Every Docker dependency sits on these two tasks and not in configureCatsTestTask, so a
 // plain catsTests run still neither needs Docker nor touches the network.
-tasks.register('catsTestsDockerBuild', Test) {
-  group = 'verification'
-  description =
-      'Slow. Builds the Solr Docker image from this working tree, then rolling-upgrades onto it.'
-
+def configureCatsDockerImage = { Test task ->
   // dockerBuild rather than dockerTag, which would move apache/solr:<version> - a name a developer
   // may be deliberately keeping on the official image. The id dockerBuild writes is tagged in
   // doFirst instead, under a name with no org/repo shape so that nothing, Testcontainers included,
   // can mistake it for something to fetch from a registry.
-  dependsOn ':solr:docker:dockerBuild'
+  task.dependsOn ':solr:docker:dockerBuild'
   // gitRev and gitRevShort are set by that task's action, not at configuration time.
-  dependsOn ':gitStatus'
+  task.dependsOn ':gitStatus'
   def imageIdFile = project(':solr:docker').layout.buildDirectory.file('image-id')
   def imageVersion = project.version.toString()
 
-  configureCatsTestTask(it, 'cats-test-output-docker-build', null)
-
-  // An exclude beats an include in Gradle's filter, so the one configureCatsTestTask adds has to
-  // go before this class can be selected at all.
-  filter.excludePatterns = []
-  filter.includeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
-
-  doFirst {task ->
+  task.doFirst {
     // Outside a checkout gitRevShort reads "(not a git checkout)", and on an IntelliJ import it can
     // be missing altogether; anything that is not a hex revision leaves the bare version.
     def rev = rootProject.hasProperty('gitRevShort') ? rootProject.gitRevShort as String : ''
@@ -477,6 +481,42 @@ tasks.register('catsTestsDockerBuild', Test) {
     // The variable RollingUpgradeTest already reads for the image to upgrade to.
     task.environment('SOLR_END_IMAGE', image)
   }
+}
+
+// Just the rolling upgrade, for iterating on that one suite.
+tasks.register('catsTestsDockerBuild', Test) {
+  group = 'verification'
+  description =
+      'Slow. Builds the Solr Docker image from this working tree, then rolling-upgrades onto it.'
+
+  configureCatsTestTask(it, 'cats-test-output-docker-build', null)
+
+  // An exclude beats an include in Gradle's filter, so the one configureCatsTestTask adds has to
+  // go before this class can be selected at all.
+  filter.excludePatterns = []
+  filter.includeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
+
+  configureCatsDockerImage(it)
+}
+
+// Everything, in one command, in parallel. One Test task rather than a task depending on the two
+// others: Gradle runs tasks within a project sequentially, so an aggregate would have run the
+// rolling upgrade after the rest rather than alongside it. Here all 29 classes go into the same
+// fork pool, so the upgrade runs concurrently with the CLI suites.
+//
+// Not the default, because it builds a Docker image. Note it is the heaviest thing in the build:
+// the upgrade holds three containers while four forks may each hold a Solr JVM and an embedded
+// ZooKeeper, so lower -Pcats.tests.jvms if the machine struggles.
+tasks.register('catsTestsAll', Test) {
+  group = 'verification'
+  description = 'Slow. Every CATS suite including the rolling upgrade, which builds a Docker image.'
+
+  configureCatsTestTask(it, 'cats-test-output-all', null)
+
+  // No include filter, so clearing the exclude leaves every suite selected.
+  filter.excludePatterns = []
+
+  configureCatsDockerImage(it)
 }
 
 task integrationTests(type: BatsTask) {
