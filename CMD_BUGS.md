@@ -153,7 +153,25 @@ and the behaviour disagree, and one of them is wrong. For whoever owns `Snapshot
 
 Found while porting `test_snapshots.bats`.
 
-## 8. Pre-existing staleness in the test build, unrelated to the CLI
+## 8. `solr postlogs` skips log records with an NPE message
+
+Indexing Solr's own `solr.log`, the tool reports:
+
+```
+Error reading log record:43 from file:solr.log
+Cannot invoke "String.split(String)" because "params" is null
+```
+
+for a handful of records (43-46 and 91 in one run), then carries on and exits 0. So a few records
+are silently dropped and the message is an NPE rather than a diagnosis of the malformed line.
+
+The log-record parser is reading a `params` field that is absent on some records. The BATS test
+tolerated this because it only asserted partials, and the port does the same — the indexing does
+succeed, which is what the test is about.
+
+Found while porting `test_postlogs.bats`.
+
+## 9. Pre-existing staleness in the test build, unrelated to the CLI
 
 Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmless, but misleading.
 
