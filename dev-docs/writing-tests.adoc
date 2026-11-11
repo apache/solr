@@ -58,28 +58,22 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 
 == Randomized testing
 
-Every Solr test runs under randomizedtesting's `RandomizedRunner`, inherited from `LuceneTestCase`. One master seed per run drives every `random()` call, so runs are reproducible: a failure prints a "reproduce with" line carrying the seed, and `-Ptests.seed=` replays it. Randomness is cheap extra coverage precisely because it is reproducible.
+Every test that extends `SolrTestCase` runs under randomizedtesting's `RandomizedRunner`, inherited from `LuceneTestCase`. One master seed per run drives every `random()` call, so a failure is reproducible from the seed the runner prints — which is what makes randomness cheap coverage rather than a flake generator.
 
-The runner already varies things you did not ask for — Lucene codec and postings format, directory implementation, merge policy, locale, time zone, SSL (`RandomizeSSL`) and the order of test methods. So no test may depend on method order, on the default locale or time zone, or on whether the run is HTTP or HTTPS.
+The framework already varies things you did not ask for: Lucene codec and postings format, directory implementation, merge policy, locale, time zone, and the order of test methods. So no test may depend on method order, on the default locale, or on the default time zone. SSL is randomized too, but only for `SolrTestCaseJ4` subclasses, which is where `@RandomizeSSL` sits — opt out with `@SuppressSSL`.
 
 What to use:
 
 * `random()` — the per-test `Random`. Never `new Random()` or `Math.random()`: an unseeded source makes the failure unreproducible.
-* `atLeast(n)` — a count that is at least `n` and larger in nightly runs; the normal way to size a document loop.
-* `rarely()` / `usually()` — take an unusual branch some of the time.
+* `atLeast(n)` — `n * RANDOM_MULTIPLIER`, plus up to 50% random fudge. The normal way to size a loop.
+* `rarely()` / `usually()` — take an unusual branch about 1% of the time (5% in nightly runs).
 * `TestUtil.randomSimpleString(random())` and its neighbours for field values.
-* `TEST_NIGHTLY` to do more work only in nightly runs.
-* `-Ptests.iters=N` to re-run a test while chasing a rare seed. `@Repeat` does the same in code; `@Seed` pins the seed and throws away the coverage you just added, so don't commit it.
+
+`RANDOM_MULTIPLIER` is 2 in a nightly run and 1 otherwise, so `atLeast` and `rarely` scale themselves; read `TEST_NIGHTLY` directly only when you need to skip or resize work that those two cannot express.
+
+Never commit `@Seed`: it pins the master seed and throws away the coverage you just added. `@Repeat` is for chasing a rare seed while you work, not for keeping.
 
 Randomize when the input space is large and uniform and correctness does not depend on the particular value — field values, document and shard counts, segment counts, the order of unrelated operations — and when you can state the property without reimplementing the logic: a round trip, an invariant, or a comparison against a simpler reference or a control core.
-
-Do not randomize when:
-
-* The expected value has to be computed from the random input. You then write the implementation twice and assert only that the two agree.
-* You have to branch on the random choice. Two explicit tests are clearer than one with an `if`.
-* The failure depends on state the seed does not capture — ports, the clock, the filesystem. The seed will not reproduce it.
-* A boundary is what matters. Random values hit boundaries rarely: assert 0, 1, the maximum and the off-by-one explicitly, and randomize the middle.
-* Keeping it green would mean excluding known-bad values. Fix the bug or `assumeTrue(..)` it; do not quietly narrow the generator.
 
 == @Rule and lifecycle
 
@@ -104,10 +98,13 @@ Don't:
 
 Annotations:
 
-* `@Nightly` — correct but too slow for every build; `-Ptests.nightly=true`. PR CI does not pass that flag.
-* `@AwaitsFix(bugUrl = "...")` — a known failure. It is a randomizedtesting test group (`-Ptests.awaitsfix=true`) and demands a bug URL, so it stays discoverable. `@Ignore` is plain JUnit, invisible to group filters: use it only where nothing is broken, e.g. an abstract base class the runner would otherwise pick up. Read solr-source-code.adoc's "Frequently failing Tests" before disabling anything.
-* `@LuceneTestCase.Monster(value)` — needs unusual disk or RAM; `-Ptests.monster=true`. Two tests in the repo use it.
-* There is no `@Slow`, and `@BadApple` no longer exists. Slow is `@Nightly`; broken is `@AwaitsFix`.
+These are randomizedtesting *test groups*, disabled by default. Annotating a test with one means it stops running in ordinary builds and in PR CI, so it is a decision about coverage, not a formality:
+
+* `@Nightly` — correct, but too slow to run every time.
+* `@AwaitsFix(bugUrl = "...")` — known-broken. The bug URL is required, which is what keeps it discoverable. Prefer it to `@Ignore`: `@Ignore` is plain JUnit and invisible to group filters, so it disappears rather than being tracked. Use `@Ignore` only where nothing is broken, such as an abstract base the runner would otherwise pick up.
+* `@LuceneTestCase.Monster(value)` — needs unusual disk or RAM.
+
+There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@AwaitsFix`. Read solr-source-code.adoc's guidance on frequently-failing tests before disabling anything.
 
 == Worked examples
 
@@ -131,18 +128,16 @@ Annotations:
 +
 `solr/webapp/src/test/org/apache/solr/webapp/AdminUiSmokeTest.java` — walks every screen, asserting it renders with no severe console errors.
 
-== Running tests
+== Running what you just wrote
 
-* `./gradlew -p solr/core test --tests BackupIdTest` — `--tests` also takes `"org.apache.solr.index.*"` and `"*RPTField*"`.
-* Each run prints its master seed, and a failure prints a "reproduce with" line carrying seed and filter. Replay it verbatim, or set `-Ptests.seed=DEADBEEF`.
-* `-Ptests.iters=5` re-runs each matched test in the same JVM; `beast -Ptests.dups=10` re-runs whole suites, for randomization in static setup.
-* `-Ptests.nightly=true`, `-Ptests.awaitsfix=true`, `-Ptests.monster=true`, `-Ptests.selenium=true` enable the disabled groups; `-Ptests.filter="default and not(@awaitsfix)"` filters on the runner and composes with `--tests`.
-* `./gradlew -p solr/packaging shellTests` — builds the distribution, then runs the shell suites; each class gets its own `SOLR_HOME` and port block and they run in parallel (`-Pshell.tests.jvms=N` to cap). `shellTestsPicocli` and `shellTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
-* `./gradlew integrationTests` (`iTest`) — the BATS suites; `-Psolr.bats.nightly=true`, `-Pbats.port=8983`, `integrationTestsPicocli`.
-* `./gradlew :solr:webapp:test -Ptests.selenium=true` — Admin UI browser tests; needs a local Chrome.
-* `shellTests` and `integrationTests` are not wired into `check`; the browser tests are, but stay skipped until `-Ptests.selenium=true` enables their test group.
+`./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the parts specific to a module's own test task are here:
 
-On failure, `SolrShellTestCase` prints the path to a `SOLR_HOME` snapshot plus the full command transcript, and `AdminUiTestBase` saves a screenshot, the page source and the browser console log.
+* `./gradlew -p solr/packaging shellTests` builds the distribution first, then runs the shell suites; classes run in parallel, each with its own `SOLR_HOME` and port block (`-Pshell.tests.jvms=N` to cap). `shellTestsPicocli` and `shellTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
+* `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant.
+* `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
+* Neither `solr/packaging` test task is part of `check` — both need an unpacked distribution. The harness' own unit tests, under the same task name in `solr/test-framework`, are. The browser tests are in `check` but stay skipped until their test group is enabled.
+
+When one fails, start with the artifacts rather than the stack trace: `SolrShellTestCase` prints the path to a `SOLR_HOME` snapshot and a transcript of every command with its output, and `AdminUiTestBase` saves a screenshot, the page source and the browser console log.
 
 == See also
 
