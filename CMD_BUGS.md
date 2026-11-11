@@ -210,7 +210,29 @@ Workaround used by the ports meanwhile: pass `--solr-home "${SOLR_HOME}"` explic
 (`ExampleTest`, `ExportTest`), or avoid `-e` altogether and build the fixture with
 `solr create` + `solr post` (`CompressionTest`, `SnapshotsTest`, `StreamTest`).
 
-## 10. Pre-existing staleness in the test build, unrelated to the CLI
+## 10. The extraction module needs the security manager turned off
+
+`test_extraction.bats` carries this, twice:
+
+```
+# Disable security manager to allow extraction
+# This appears to be a bug.
+export SOLR_SECURITY_MANAGER_ENABLED=false
+solr start -Dsolr.modules=extraction
+```
+
+So the extraction module does not work under the security manager `bin/solr` installs by default,
+and the test suite has been papering over it with the variable since whenever. Either the module
+needs permissions it is not being granted in `solr-tests.policy` / the shipped policy, or it is
+doing something it should not.
+
+`ExtractionTest` sets the variable exactly as the original did and does not investigate. Whoever
+picks this up should start with the comment's own author: somebody already suspected a bug and
+wrote it down instead of filing it.
+
+Found while porting `test_extraction.bats`.
+
+## 11. Pre-existing staleness in the test build, unrelated to the CLI
 
 Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmless, but misleading.
 
