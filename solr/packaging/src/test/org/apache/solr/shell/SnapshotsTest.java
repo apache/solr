@@ -33,9 +33,9 @@ import org.junit.Test;
  *       process-scan marker nor {@code SOLR_PID_DIR} and cannot be discovered or stopped — which
  *       would make this suite bash-only for a reason that has nothing to do with what it tests
  *       ({@code CompressionTest} replaces the same {@code setup_file} for the same reason). All
- *       these tests need is a collection named {@code films}, so a plain start plus {@code solr
- *       create} stands in and the suite runs on both shells. Snapshotting does not care what is
- *       indexed, so the example documents are not posted.
+ *       these tests need is a collection named {@code films} with some documents in it, so a plain
+ *       start plus {@code solr create} and a {@code solr post} of the example documents stand in,
+ *       and the suite runs on both shells.
  *   <li>Every snapshot a test creates it also deletes, exactly as the original does. Unlike the
  *       original, no two tests share a snapshot name: {@code SOLR_HOME} is wiped per class rather
  *       than per test, so a failure between a create and its delete would otherwise surface again

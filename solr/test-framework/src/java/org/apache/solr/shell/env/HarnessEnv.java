@@ -332,18 +332,17 @@ public final class HarnessEnv {
     return Path.of(vars.get("TEST_FAILURE_DIR"));
   }
 
-  /**
-   * Which command-line implementation {@code bin/solr} will dispatch to for this run.
-   *
-   * <p>The default tracks {@code SolrCLI.main}, which reads {@code solr.picocli} with a default of
-   * false. When that flips to picocli, this flips with it — it is the one place the harness encodes
-   * the default.
-   */
   /** The command-line marker this scope's nodes carry, and that node discovery is scoped to. */
   public String marker() {
     return vars.get("SOLR_PROCESS_SCAN_MARKER");
   }
 
+  /**
+   * Which command-line implementation {@code bin/solr} will dispatch to for this run.
+   *
+   * <p>The default tracks {@code SolrCLI.main}, which reads {@code solr.picocli} with a default of
+   * false. When that flips to picocli, this flips with it.
+   */
   public Cli cli() {
     return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "false"))
         ? Cli.PICOCLI

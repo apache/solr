@@ -95,8 +95,9 @@ import org.testcontainers.utility.DockerImageName;
  *       and preferring a local end image. An image that cannot be resolved now fails the test,
  *       where the original skipped: a test that skips itself because nobody built an image has
  *       quietly stopped testing anything;
- *   <li>the teardown's {@code docker logs} / {@code inspect} / {@code ps aux} artifacts are written
- *       from Java; {@code date -Iseconds} is gone with the {@code --since} it scoped, since every
+ *   <li>the teardown's {@code docker logs} and {@code ps aux} artifacts are written from Java,
+ *       while {@code docker inspect}'s container state is reduced to the id and image name logged
+ *       on failure; {@code date -Iseconds} is gone with the {@code --since} it scoped, since every
  *       container here was created by this test;
  *   <li>{@code jq} becomes a regex over the JSON response, there being no need for a JSON library
  *       to read one number out of each of two responses;
@@ -143,7 +144,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
 
   private static final String HEAP = "200m";
 
-  /** Equivalent of the original's {@code solr assert --started --timeout}, as a startup wait. */
+  /** How long Testcontainers waits for a node's port to listen before giving up. */
   private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(120);
 
   private String beginImage;

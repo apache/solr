@@ -75,8 +75,9 @@ import org.slf4j.LoggerFactory;
  * setup_file}; each test gets a {@linkplain #child child} of it whose environment and cwd changes
  * are discarded afterwards.
  *
- * <p>Sessions track which Solr nodes they started, by diffing {@code SOLR_PID_DIR} after each
- * command, and stop exactly those on {@link #close()}.
+ * <p>Sessions track which Solr nodes they started by scanning the running process list after each
+ * command, filtered to this scope's marker and port block, and stop exactly those on {@link
+ * #close()}.
  */
 public class CliSession implements AutoCloseable {
 
@@ -1161,7 +1162,7 @@ public class CliSession implements AutoCloseable {
     }
   }
 
-  /** Forgets the PID files seen so far, so a fresh class starts with a clean slate. */
+  /** Forgets the nodes seen so far, so a fresh class starts with a clean slate. */
   public static void resetKnownNodes() {
     KNOWN_NODES.clear();
   }

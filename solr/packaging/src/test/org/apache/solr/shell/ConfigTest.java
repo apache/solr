@@ -25,9 +25,10 @@ import org.junit.Test;
  *
  * <p>Kept close to the original, including the order of the tests and the text each asserts on.
  * Nothing in the original needs a shell construct, so the port runs on both shells. Where it
- * differs: the original wiped {@code SOLR_HOME} between tests and so reused one collection name,
- * while here the tests share it, so each test owns a distinct collection; and the missing-{@code
- * --value} case also asserts the non-zero exit the message implies.
+ * differs: the original leaned on a {@code delete_all_collections} teardown to reuse one collection
+ * name, while here the class shares one {@code SOLR_HOME} and ZooKeeper, so each test owns a
+ * distinct collection; and the missing-{@code --value} case also asserts the non-zero exit the
+ * message implies.
  */
 public class ConfigTest extends SolrShellTestCase {
 

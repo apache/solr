@@ -32,9 +32,9 @@ public final class ProcessKill {
    *
    * <p>Note that a detached Solr node ({@code nohup} on Unix, {@code start /B} on Windows) is
    * re-parented once its launching shell exits, so it will generally <em>not</em> show up as a
-   * descendant of anything the harness started. The PID file is the source of truth for finding
-   * Solr; this method is for killing a command process that overran its timeout, and for killing a
-   * PID read back from such a file.
+   * descendant of anything the harness started. The running process list, via {@link SolrNodes}, is
+   * how the harness finds Solr; this method is for killing a command process that overran its
+   * timeout, and for killing a PID that discovery returned.
    *
    * @return whether the process is no longer alive
    */

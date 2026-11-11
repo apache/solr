@@ -30,10 +30,11 @@ import org.junit.Test;
  * Port of {@code test_zk.bats}.
  *
  * <p>Kept deliberately close to the original so the two can be compared line by line, including the
- * order of the tests and the text each one asserts on. Three things differ, each for a reason the
+ * order of the tests and the text each one asserts on. Four things differ, each for a reason the
  * comment at the site explains: files are created through Java rather than {@code touch}, {@code
- * curl} becomes {@link #http}, and the symlink test works on a copy of the config set instead of
- * mutating the shared distribution.
+ * curl} becomes {@link #http}, the symlink test works on a copy of the config set instead of
+ * mutating the shared distribution, and the {@code ZK_HOST} test asserts only the fallback message,
+ * not the original's refutation of a listing from port 8983.
  */
 public class ZkTest extends SolrShellTestCase {
 

@@ -46,8 +46,9 @@ public enum Shell {
    *
    * <p>The line goes into a temp {@code .cmd} script rather than onto the {@code cmd /c} command
    * line, because {@code ProcessBuilder}'s quoting rules for {@code cmd /c} and {@code .cmd}
-   * arguments are special and fragile. {@code call} is required: without it a batch file invoking
-   * {@code solr.cmd} never gets control back. {@code /d} disables AutoRun registry hooks.
+   * arguments are special and fragile. {@code call} is prepended to a single-command line — without
+   * it a batch file invoking {@code solr.cmd} never gets control back — while a multi-line body is
+   * written verbatim and is responsible for its own. {@code /d} disables AutoRun registry hooks.
    */
   CMD {
     @Override

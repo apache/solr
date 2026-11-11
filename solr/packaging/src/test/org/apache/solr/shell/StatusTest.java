@@ -24,8 +24,9 @@ import org.junit.Test;
  * Port of {@code test_status.bats}.
  *
  * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Nothing in the original needs a shell construct, so the port is line for line and runs on both
- * shells.
+ * Nothing in the original needs a shell construct, so the port runs on both shells. Where it
+ * differs: the multiple-connection-options case also asserts the non-zero exit that "prevented"
+ * implies, which the original left unchecked.
  */
 public class StatusTest extends SolrShellTestCase {
 
