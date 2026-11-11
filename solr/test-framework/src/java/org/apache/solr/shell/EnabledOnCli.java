@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  *
  * <p>For the handful of tests that cannot hold for both — usually because they assert on usage or
  * error wording the two phrase differently. Where only a word or two differs, {@code
- * CommandResult.assertOutputForCli(commonsCliText, picocliText)} keeps one test covering both,
+ * CommandResult.assertContainsForCli(commonsCliText, picocliText)} keeps one test covering both,
  * which is preferable to skipping half the coverage.
  *
  * <pre>

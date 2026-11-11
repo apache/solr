@@ -37,7 +37,7 @@ public class SolrShellRoundTripTest extends SolrShellTestCase {
 
     run("solr create -c " + COLLECTION)
         .assertSuccess()
-        .assertOutputContains("Created collection '" + COLLECTION + "'");
+        .assertContains("Created collection '" + COLLECTION + "'");
     assertTrue("collection should exist in ZooKeeper", collectionExists(COLLECTION));
 
     // argv form: the path needs quoting, and this way the harness quotes it for whichever shell is
@@ -55,7 +55,7 @@ public class SolrShellRoundTripTest extends SolrShellTestCase {
             "--solr-url",
             "http://localhost:${SOLR_PORT}/solr/" + COLLECTION + "/select?q=*:*&rows=0"))
         .assertSuccess()
-        .assertOutputContains("\"numFound\":4");
+        .assertContains("\"numFound\":4");
 
     var response = http("/solr/" + COLLECTION + "/select?q=name:Monsters");
     assertEquals("search should return HTTP 200", 200, response.status());

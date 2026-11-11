@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
  * @param vars an unmodifiable view of the session environment this ran with. Assertions resolve
  *     {@code ${NAME}} in their expected text against it, so an assertion reads exactly like the
  *     BATS one it was ported from.
+ * @param history everything the scope has run, which a failure quotes instead of a stack trace
  */
 public record CommandResult(
     String command,
@@ -49,7 +50,8 @@ public record CommandResult(
     String stderr,
     Duration duration,
     boolean timedOut,
-    Map<String, String> vars) {
+    Map<String, String> vars,
+    CommandHistory history) {
 
   /** Whether this run targets the experimental picocli CLI. */
   public boolean picocli() {
@@ -79,64 +81,70 @@ public record CommandResult(
 
   public CommandResult assertSuccess() {
     if (failed()) {
-      throw fail("expected exit status 0");
+      throw fail("command exited " + status + ", expected 0");
     }
     return this;
   }
 
   public CommandResult assertFailure() {
     if (succeeded()) {
-      throw fail("expected a non-zero exit status");
+      throw fail("command exited 0, expected a non-zero status");
     }
     return this;
   }
 
   public CommandResult assertStatus(int expected) {
     if (status != expected) {
-      throw fail("expected exit status " + expected);
+      throw fail("command exited " + status + ", expected " + expected);
     }
     return this;
   }
 
   /** Port of {@code assert_output --partial}. */
-  public CommandResult assertOutputContains(String substring) {
+  public CommandResult assertContains(String substring) {
     String expected = resolve(substring);
     if (!output.contains(expected)) {
-      throw fail("expected output to contain: " + expected);
+      throw fail("output did not contain: " + expected);
     }
     return this;
   }
 
   /** Port of {@code refute_output --partial}. */
-  public CommandResult assertOutputNotContains(String substring) {
+  public CommandResult assertNotContains(String substring) {
     String expected = resolve(substring);
     if (output.contains(expected)) {
-      throw fail("expected output NOT to contain: " + expected);
+      throw fail("output contained what it should not: " + expected);
     }
     return this;
   }
 
   /** Port of {@code assert_output --regexp}. The pattern may match anywhere in the output. */
-  public CommandResult assertOutputMatches(String regex) {
+  public CommandResult assertMatches(String regex) {
     if (!Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output).find()) {
-      throw fail("expected output to match regex: " + regex);
+      throw fail("output did not match: " + resolve(regex));
     }
     return this;
   }
 
   /** Port of {@code refute_output --regexp}. */
-  public CommandResult assertOutputNotMatches(String regex) {
+  public CommandResult assertNotMatches(String regex) {
     if (Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output).find()) {
-      throw fail("expected output NOT to match regex: " + regex);
+      throw fail("output matched what it should not: " + resolve(regex));
     }
     return this;
   }
 
-  /** Port of {@code assert_output} with no flag: the whole output must equal {@code expected}. */
-  public CommandResult assertOutputEquals(String expectedText) {
+  /**
+   * Port of {@code assert_output} with no flag: the whole output must be exactly {@code expected}.
+   *
+   * <p>Named {@code assertExact} rather than {@code assertEquals} so it cannot be mistaken, in a
+   * diff, for the static {@code assertEquals(expected, actual)} every test class inherits from
+   * JUnit.
+   */
+  public CommandResult assertExact(String expectedText) {
     String expected = resolve(expectedText);
     if (!output.equals(expected)) {
-      throw fail("expected output to equal: " + expected);
+      throw fail("output was not exactly: " + expected);
     }
     return this;
   }
@@ -145,10 +153,10 @@ public record CommandResult(
   public CommandResult assertLine(int index, String expected) {
     List<String> lines = lines();
     if (index < 0 || index >= lines.size()) {
-      throw fail("expected at least " + (index + 1) + " output line(s)");
+      throw fail("output has " + lines.size() + " line(s), wanted line " + index);
     }
     if (!lines.get(index).equals(resolve(expected))) {
-      throw fail("expected line " + index + " to equal: " + resolve(expected));
+      throw fail("line " + index + " was not: " + resolve(expected));
     }
     return this;
   }
@@ -158,31 +166,28 @@ public record CommandResult(
    * when the run targets the picocli CLI.
    */
   // TODO: Remove this once the commons-cli cleanup happens.
-  public CommandResult assertOutputForCli(String commonsCliText, String picocliText) {
-    return assertOutputContains(picocli() ? picocliText : commonsCliText);
+  public CommandResult assertContainsForCli(String commonsCliText, String picocliText) {
+    return assertContains(picocli() ? picocliText : commonsCliText);
   }
 
-  private AssertionError fail(String what) {
-    return new AssertionError(what + "\n\n" + transcriptEntry());
-  }
-
-  /** A single human-readable block describing this command and its outcome. */
-  public String transcriptEntry() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("command : ").append(command).append('\n');
-    sb.append("shell   : ").append(shell).append('\n');
-    sb.append("cwd     : ").append(cwd).append('\n');
-    sb.append("status  : ").append(status);
-    if (timedOut) {
-      sb.append("  (TIMED OUT)");
+  /**
+   * The failure a test sees: everything the scope ran, then one line saying how this command
+   * differed from what the test expected.
+   *
+   * <p>A {@link ShellAssertionError}, so no Java stack trace is printed over it. The frames would
+   * all be harness internals, while the commands and their output are the diagnosis.
+   */
+  private AssertionError fail(String reason) {
+    String ran = history.text();
+    StringBuilder report = new StringBuilder("\n");
+    if (ran.isBlank()) {
+      // No session behind this result, so report the one command we do have.
+      report.append("$ ").append(command).append('\n').append(truncate(output)).append("\n\n");
+    } else {
+      report.append(ran);
     }
-    sb.append('\n');
-    sb.append("duration: ").append(duration.toMillis()).append(" ms\n");
-    sb.append("output  :\n").append(truncate(output)).append('\n');
-    if (!stderr.isEmpty() && !stderr.equals(output)) {
-      sb.append("stderr  :\n").append(truncate(stderr)).append('\n');
-    }
-    return sb.toString();
+    report.append("FAILED: ").append(reason).append('\n');
+    return new ShellAssertionError(report.toString());
   }
 
   private static String truncate(String s) {

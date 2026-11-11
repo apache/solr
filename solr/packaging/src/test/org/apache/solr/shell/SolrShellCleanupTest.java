@@ -32,17 +32,17 @@ public class SolrShellCleanupTest extends SolrShellTestCase {
 
   @Test
   public void statusSaysSoWhenNothingIsRunning() {
-    run("solr status").assertSuccess().assertOutputContains("No Solr nodes are running");
+    run("solr status").assertSuccess().assertContains("No Solr nodes are running");
   }
 
   @Test
   public void aNodeWeStartIsTheOnlyOneListed() {
     env("SOLR_HEAP", "512m");
     run("solr start").assertSuccess();
-    run("solr create -c books --shards 2").assertSuccess().assertOutputContains("2 shard(s)");
-    run("solr status").assertSuccess().assertOutputContains("running on port ${SOLR_PORT}");
+    run("solr create -c books --shards 2").assertSuccess().assertContains("2 shard(s)");
+    run("solr status").assertSuccess().assertContains("running on port ${SOLR_PORT}");
 
     run("solr stop --all").assertSuccess();
-    run("solr status").assertSuccess().assertOutputContains("No Solr nodes are running");
+    run("solr status").assertSuccess().assertContains("No Solr nodes are running");
   }
 }

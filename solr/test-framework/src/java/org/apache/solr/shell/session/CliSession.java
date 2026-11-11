@@ -43,6 +43,7 @@ import org.apache.solr.shell.env.Ports;
 import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
+import org.apache.solr.shell.exec.ShellAssertionError;
 import org.apache.solr.shell.exec.ShellExecutor;
 import org.apache.solr.shell.exec.SolrNodes;
 import org.apache.solr.shell.exec.Variables;
@@ -401,17 +402,19 @@ public class CliSession implements AutoCloseable {
             workDir,
             "cmd-" + SEQ.incrementAndGet(),
             commandTimeout,
-            separateStreams);
+            separateStreams,
+            transcript);
     CommandResult result = ShellExecutor.execute(spec, startedProcesses::add);
     lastResult = result;
     transcript.record(result, envDiff);
     claimNewNodes();
     if (result.timedOut()) {
-      throw new AssertionError(
-          "Command did not finish within "
+      throw new ShellAssertionError(
+          "\n"
+              + transcript.text()
+              + "FAILED: command did not finish within "
               + commandTimeout.toSeconds()
-              + "s and was killed\n\n"
-              + result.transcriptEntry());
+              + "s and was killed\n");
     }
     return result;
   }
@@ -498,8 +501,14 @@ public class CliSession implements AutoCloseable {
   public void awaitOrFail(
       String what, Duration waitTimeout, Duration interval, BooleanSupplier condition) {
     if (!waitFor(waitTimeout, interval, condition)) {
-      throw new AssertionError(
-          "Timed out after " + waitTimeout.toSeconds() + "s waiting for: " + what);
+      throw new ShellAssertionError(
+          "\n"
+              + transcript.text()
+              + "FAILED: timed out after "
+              + waitTimeout.toSeconds()
+              + "s waiting for "
+              + what
+              + "\n");
     }
   }
 

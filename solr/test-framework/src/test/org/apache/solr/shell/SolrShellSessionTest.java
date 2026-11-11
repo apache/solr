@@ -68,10 +68,7 @@ public class SolrShellSessionTest extends SolrTestCase {
   @Test
   public void envReachesTheShell() {
     session.env("MARKER", "hello world");
-    session
-        .script("echo \"$MARKER\"", "echo %MARKER%")
-        .assertSuccess()
-        .assertOutputEquals("hello world");
+    session.script("echo \"$MARKER\"", "echo %MARKER%").assertSuccess().assertExact("hello world");
   }
 
   @Test
@@ -94,7 +91,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .script("echo \"$SOLR_HOME\"", "echo %SOLR_HOME%")
         .assertSuccess()
-        .assertOutputEquals(env.solrHome().toString());
+        .assertExact(env.solrHome().toString());
   }
 
   @Test
@@ -102,26 +99,25 @@ public class SolrShellSessionTest extends SolrTestCase {
     // All three mean "the environment variable", resolved by the harness before any shell sees it.
     // ${NAME} is the one BATS uses, so a ported line needs no edit.
     String zk = String.valueOf(env.ports().zk());
-    session.run("echo ${ZK_PORT}").assertSuccess().assertOutputEquals(zk);
-    session.run("echo $ZK_PORT").assertSuccess().assertOutputEquals(zk);
-    session.run("echo {{ZK_PORT}}").assertSuccess().assertOutputEquals(zk);
+    session.run("echo ${ZK_PORT}").assertSuccess().assertExact(zk);
+    session.run("echo $ZK_PORT").assertSuccess().assertExact(zk);
+    session.run("echo {{ZK_PORT}}").assertSuccess().assertExact(zk);
   }
 
   @Test
   public void assertionsResolveVariablesToo() {
     // The same spelling means the same thing in an assertion as in a command line, so a BATS
     // assert_output --partial "...${ZK_PORT}" ports over unchanged.
-    session.run("echo port-${ZK_PORT}").assertOutputContains("port-${ZK_PORT}");
-    session.run("echo port-${ZK_PORT}").assertOutputEquals("port-${ZK_PORT}");
-    session.run("echo nothing").assertOutputNotContains("port-${ZK_PORT}");
+    session.run("echo port-${ZK_PORT}").assertContains("port-${ZK_PORT}");
+    session.run("echo port-${ZK_PORT}").assertExact("port-${ZK_PORT}");
+    session.run("echo nothing").assertNotContains("port-${ZK_PORT}");
   }
 
   @Test
   public void anUnknownVariableInAnAssertionFailsToo() {
     AssertionError failure =
         expectThrows(
-            AssertionError.class,
-            () -> session.run("echo hi").assertOutputContains("${NO_SUCH_VAR}"));
+            AssertionError.class, () -> session.run("echo hi").assertContains("${NO_SUCH_VAR}"));
     assertTrue(failure.getMessage(), failure.getMessage().contains("Unknown variable"));
     assertTrue(failure.getMessage(), failure.getMessage().contains("an assertion"));
   }
@@ -129,7 +125,7 @@ public class SolrShellSessionTest extends SolrTestCase {
   @Test
   public void runResolvesVariablesTheTestSetItself() {
     session.env("MARKER", "from-the-test");
-    session.run("echo ${MARKER}").assertSuccess().assertOutputEquals("from-the-test");
+    session.run("echo ${MARKER}").assertSuccess().assertExact("from-the-test");
   }
 
   @Test
@@ -137,7 +133,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .run(List.of("echo", "${ZK_PORT}"))
         .assertSuccess()
-        .assertOutputEquals(String.valueOf(env.ports().zk()));
+        .assertExact(String.valueOf(env.ports().zk()));
   }
 
   @Test
@@ -146,10 +142,7 @@ public class SolrShellSessionTest extends SolrTestCase {
   public void aHarnessResolvedVariableIsNotLeftForTheShell() {
     // The proof that it is the harness and not bash doing the work: the resolved value reaches the
     // command even inside single quotes, where bash would never have expanded anything.
-    session
-        .run("echo '${ZK_PORT}'")
-        .assertSuccess()
-        .assertOutputEquals(String.valueOf(env.ports().zk()));
+    session.run("echo '${ZK_PORT}'").assertSuccess().assertExact(String.valueOf(env.ports().zk()));
   }
 
   @Test
@@ -179,7 +172,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .run("echo prefix-" + env.ports().zk())
         .assertSuccess()
-        .assertOutputEquals("prefix-" + env.ports().zk());
+        .assertExact("prefix-" + env.ports().zk());
   }
 
   @Test
@@ -199,7 +192,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .script("mine=abc; echo \"$ZK_PORT-$mine\"", "set mine=abc\r\necho %ZK_PORT%-%mine%")
         .assertSuccess()
-        .assertOutputEquals(env.ports().zk() + "-abc");
+        .assertExact(env.ports().zk() + "-abc");
   }
 
   @Test
@@ -207,7 +200,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .script("echo {{ZK_PORT}}", "echo {{ZK_PORT}}")
         .assertSuccess()
-        .assertOutputEquals(String.valueOf(env.ports().zk()));
+        .assertExact(String.valueOf(env.ports().zk()));
   }
 
   @Test
@@ -233,7 +226,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .script("echo {{not-a-var}}", "echo {{not-a-var}}")
         .assertSuccess()
-        .assertOutputEquals("{{not-a-var}}");
+        .assertExact("{{not-a-var}}");
   }
 
   @Test
@@ -243,7 +236,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     Path target = createTempDir("elsewhere").toRealPath();
     session.cd(target);
     assertEquals(target.toString(), session.cwd().toString());
-    session.script("pwd", "cd").assertSuccess().assertOutputEquals(target.toString());
+    session.script("pwd", "cd").assertSuccess().assertExact(target.toString());
   }
 
   @Test
@@ -262,7 +255,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .script("echo out; echo err 1>&2", "echo out\r\necho err 1>&2")
         .assertSuccess()
-        .assertOutputContains("err");
+        .assertContains("err");
 
     var separated = session.runSeparated("echo ${ZK_PORT}");
     separated.assertSuccess();
@@ -278,7 +271,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .run(List.of("echo", "a b", "c&d", "e|f", "g'h"))
         .assertSuccess()
-        .assertOutputEquals("a b c&d e|f g'h");
+        .assertExact("a b c&d e|f g'h");
   }
 
   @Test
@@ -290,14 +283,14 @@ public class SolrShellSessionTest extends SolrTestCase {
             """
         echo hello
         """)
-        .assertOutputEquals("hello");
+        .assertExact("hello");
     assertEquals("echo hello", session.lastResult().command());
 
     session
         .run(
             """
         echo hello""")
-        .assertOutputEquals("hello");
+        .assertExact("hello");
     assertEquals("echo hello", session.lastResult().command());
   }
 
@@ -317,33 +310,50 @@ public class SolrShellSessionTest extends SolrTestCase {
     // build: the prompt sees EOF at once. What matters cross-shell is that it returns at all, not
     // what an unset variable then expands to, which the two shells spell differently.
     session.timeout(Duration.ofSeconds(10));
-    session
-        .script("read answer; echo done", "set /p answer=\r\necho done")
-        .assertOutputContains("done");
+    session.script("read answer; echo done", "set /p answer=\r\necho done").assertContains("done");
     assertFalse(session.lastResult().timedOut());
   }
 
   @Test
-  public void theTranscriptRecordsEachCommand() {
+  public void theTranscriptReadsLikeAShellSession() {
     session.run("echo first");
     session.run("echo second");
     String transcript = session.transcript().text();
-    assertTrue(transcript, transcript.contains("echo first"));
-    assertTrue(transcript, transcript.contains("echo second"));
-    assertTrue("the resolved status belongs in the transcript", transcript.contains("status  : 0"));
+    assertTrue(transcript, transcript.contains("$ echo first"));
+    assertTrue(transcript, transcript.contains("| first"));
+    assertTrue(transcript, transcript.contains("$ echo second"));
+    assertTrue(transcript, transcript.contains("exit 0 in "));
   }
 
   @Test
-  public void assertionFailuresCarryTheWholeTranscriptEntry() {
+  public void aFailureReportsEveryCommandAndCarriesNoStackTrace() {
+    session.run("echo earlier-command");
     AssertionError failure =
         expectThrows(
-            AssertionError.class,
-            () -> session.run("echo haystack").assertOutputContains("needle"));
+            AssertionError.class, () -> session.run("echo haystack").assertContains("needle"));
     String message = failure.getMessage();
-    assertTrue(message, message.contains("expected output to contain: needle"));
-    assertTrue(message, message.contains("command : echo haystack"));
-    assertTrue(message, message.contains("status  : 0"));
-    assertTrue(message, message.contains("haystack"));
+
+    // The whole history, so a reader sees how the test got here, not just the command that failed.
+    assertTrue(message, message.contains("$ echo earlier-command"));
+    assertTrue(message, message.contains("| earlier-command"));
+    assertTrue(message, message.contains("$ echo haystack"));
+    assertTrue(message, message.contains("| haystack"));
+
+    // Then one line saying what was expected, and nothing else.
+    assertTrue(message, message.contains("FAILED: output did not contain: needle"));
+
+    // No Java frames: they would all be harness internals, and would bury the above.
+    assertEquals(0, failure.getStackTrace().length);
+  }
+
+  @Test
+  public void aFailingExitStatusIsReportedPlainly() {
+    AssertionError failure =
+        expectThrows(
+            AssertionError.class, () -> session.script("exit 3", "exit /b 3").assertSuccess());
+    assertTrue(
+        failure.getMessage(),
+        failure.getMessage().contains("FAILED: command exited 3, expected 0"));
   }
 
   @Test
@@ -352,11 +362,8 @@ public class SolrShellSessionTest extends SolrTestCase {
     // Found on Windows, where bin/solr.cmd output comes back in the console code page: strict
     // decoding turned a passing command into a MalformedInputException. Nothing guarantees a
     // command's bytes are UTF-8, so decoding replaces rather than throws.
-    session
-        .script("printf 'before\\xffafter\\n'", null)
-        .assertSuccess()
-        .assertOutputContains("before");
-    session.lastResult().assertOutputContains("after");
+    session.script("printf 'before\\xffafter\\n'", null).assertSuccess().assertContains("before");
+    session.lastResult().assertContains("after");
   }
 
   // ---------------------------------------------------------------- cmd.exe specifics
@@ -372,7 +379,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     // then re-parses the result, so "echo %ARG%" with ARG=a&b runs 'b' as a second command. That
     // re-parse is exactly the trap the harness avoids by resolving ${NAME} itself.
     for (String nasty : List.of("a&b", "a|b", "a>b", "a<b", "a b")) {
-      session.run(List.of("echo", nasty)).assertSuccess().assertOutputContains(nasty);
+      session.run(List.of("echo", nasty)).assertSuccess().assertContains(nasty);
     }
   }
 
@@ -414,7 +421,7 @@ public class SolrShellSessionTest extends SolrTestCase {
     session
         .script(null, "set first=one\r\nset second=two\r\necho %first%-%second%")
         .assertSuccess()
-        .assertOutputEquals("one-two");
+        .assertExact("one-two");
   }
 
   @Test
@@ -423,6 +430,6 @@ public class SolrShellSessionTest extends SolrTestCase {
     // Windows environment names are case-insensitive, so the harness keeps its env map that way.
     session.env("MiXeD_Case_Var", "value");
     assertEquals("value", session.env("mixed_case_var"));
-    session.script(null, "echo %MIXED_CASE_VAR%").assertSuccess().assertOutputEquals("value");
+    session.script(null, "echo %MIXED_CASE_VAR%").assertSuccess().assertExact("value");
   }
 }

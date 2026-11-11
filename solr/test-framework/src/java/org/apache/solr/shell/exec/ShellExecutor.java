@@ -68,7 +68,8 @@ public final class ShellExecutor {
       Path workDir,
       String tag,
       Duration timeout,
-      boolean separateStreams) {}
+      boolean separateStreams,
+      CommandHistory history) {}
 
   /**
    * Runs the command, killing it if it overruns {@link Spec#timeout()}.
@@ -123,7 +124,8 @@ public final class ShellExecutor {
           duration,
           timedOut,
           // A view, not a copy: assertions resolve against it immediately after the command.
-          Collections.unmodifiableMap(spec.env()));
+          Collections.unmodifiableMap(spec.env()),
+          spec.history());
     } catch (IOException e) {
       throw new UncheckedIOException("Could not run: " + spec.line(), e);
     } catch (InterruptedException e) {

@@ -45,36 +45,35 @@ public class SolrShellZkTest extends SolrShellTestCase {
 
   @Test
   public void shortHelp() {
-    run("solr zk ls -h").assertOutputContains("usage: bin/solr zk");
+    run("solr zk ls -h").assertContains("usage: bin/solr zk");
   }
 
   @Test
   public void shortHelpIsInferred() {
-    run("solr zk ls").assertOutputContains("usage: bin/solr zk");
+    run("solr zk ls").assertContains("usage: bin/solr zk");
   }
 
   @Test
   public void longHelp() {
     run("solr zk -h")
-        .assertOutputContains("Pass --help or -h after any COMMAND")
-        .assertOutputContains("updateacls");
+        .assertContains("Pass --help or -h after any COMMAND")
+        .assertContains("updateacls");
   }
 
   @Test
   public void listingOutFiles() {
-    run("solr zk ls / -z localhost:${ZK_PORT} --recursive").assertOutputContains("aliases.json");
+    run("solr zk ls / -z localhost:${ZK_PORT} --recursive").assertContains("aliases.json");
   }
 
   @Test
   public void connectingViaVariousSolrUrlsAndZkHosts() {
-    run("solr zk ls / --solr-url http://localhost:${SOLR_PORT}")
-        .assertOutputContains("aliases.json");
+    run("solr zk ls / --solr-url http://localhost:${SOLR_PORT}").assertContains("aliases.json");
     run("solr zk ls / --solr-connection http://localhost:${SOLR_PORT}")
-        .assertOutputContains("aliases.json");
-    run("solr zk ls / -s http://localhost:${SOLR_PORT}").assertOutputContains("aliases.json");
-    run("solr zk ls /").assertOutputContains("aliases.json");
-    run("solr zk ls / -z localhost:${ZK_PORT}").assertOutputContains("aliases.json");
-    run("solr zk ls / --zk-host localhost:${ZK_PORT}").assertOutputContains("aliases.json");
+        .assertContains("aliases.json");
+    run("solr zk ls / -s http://localhost:${SOLR_PORT}").assertContains("aliases.json");
+    run("solr zk ls /").assertContains("aliases.json");
+    run("solr zk ls / -z localhost:${ZK_PORT}").assertContains("aliases.json");
+    run("solr zk ls / --zk-host localhost:${ZK_PORT}").assertContains("aliases.json");
   }
 
   @Test
@@ -86,17 +85,17 @@ public class SolrShellZkTest extends SolrShellTestCase {
     touch("myfile3.txt");
 
     run("solr zk cp myfile.txt zk:/myfile.txt -z localhost:${ZK_PORT}")
-        .assertOutputContains(
+        .assertContains(
             "Copying from 'myfile.txt' to 'zk:/myfile.txt'. ZooKeeper at localhost:${ZK_PORT}");
-    run("solr zk ls / -z localhost:${ZK_PORT}").assertOutputContains("myfile.txt");
+    run("solr zk ls / -z localhost:${ZK_PORT}").assertContains("myfile.txt");
 
     run("solr zk cp myfile2.txt zk:myfile2.txt -z localhost:${ZK_PORT}");
-    run("solr zk ls / -z localhost:${ZK_PORT}").assertOutputContains("myfile2.txt");
+    run("solr zk ls / -z localhost:${ZK_PORT}").assertContains("myfile2.txt");
 
     run("solr zk cp myfile3.txt zk:/myfile3.txt -z localhost:${ZK_PORT}")
-        .assertOutputContains(
+        .assertContains(
             "Copying from 'myfile3.txt' to 'zk:/myfile3.txt'. ZooKeeper at localhost:${ZK_PORT}");
-    run("solr zk ls / -z localhost:${ZK_PORT}").assertOutputContains("myfile3.txt");
+    run("solr zk ls / -z localhost:${ZK_PORT}").assertContains("myfile3.txt");
 
     run(
         """
@@ -114,8 +113,8 @@ public class SolrShellZkTest extends SolrShellTestCase {
         solr zk upconfig -d "${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs" \
             -n techproducts2 -z localhost:${ZK_PORT}
         """)
-        .assertOutputContains("Uploading")
-        .assertOutputNotContains("ERROR");
+        .assertContains("Uploading")
+        .assertNotContains("ERROR");
 
     // BATS polled with curl and grep; the harness' own HTTP helper needs no curl, which is what
     // makes this work on Windows.
@@ -150,8 +149,8 @@ public class SolrShellZkTest extends SolrShellTestCase {
     run("""
         solr zk upconfig -d "configset" -n techproducts_with_symlinks -z localhost:${ZK_PORT}
         """)
-        .assertOutputContains("Uploading")
-        .assertOutputContains("ERROR: Not uploading symbolic link");
+        .assertContains("Uploading")
+        .assertContains("ERROR: Not uploading symbolic link");
   }
 
   @Test
@@ -159,8 +158,8 @@ public class SolrShellZkTest extends SolrShellTestCase {
     run("""
         solr zk downconfig -z localhost:${ZK_PORT} -n _default -d "downconfig"
         """)
-        .assertOutputContains("Downloading")
-        .assertOutputNotContains("ERROR");
+        .assertContains("Downloading")
+        .assertNotContains("ERROR");
   }
 
   @Test
@@ -169,8 +168,8 @@ public class SolrShellZkTest extends SolrShellTestCase {
 
     run("solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} --verbose"
             + " --solr-home ${SOLR_TIP}/server/solr")
-        .assertOutputContains("Using SolrHome: ${SOLR_TIP}/server/solr")
-        .assertOutputNotContains("Failed to load solr.xml from ZK or SolrHome");
+        .assertContains("Using SolrHome: ${SOLR_TIP}/server/solr")
+        .assertNotContains("Failed to load solr.xml from ZK or SolrHome");
   }
 
   @Test
@@ -180,11 +179,11 @@ public class SolrShellZkTest extends SolrShellTestCase {
     unset("SOLR_PORT_LISTEN");
 
     run("solr zk ls / --recursive")
-        .assertOutputContains("assuming solr url is http://localhost:8983")
-        .assertOutputNotContains("aliases.json");
+        .assertContains("assuming solr url is http://localhost:8983")
+        .assertNotContains("aliases.json");
 
     env("ZK_HOST", "localhost:" + ports().zk());
-    run("solr zk ls / --recursive").assertOutputContains("aliases.json");
+    run("solr zk ls / --recursive").assertContains("aliases.json");
   }
 
   private static void copyDirectory(Path source, Path target) throws IOException {

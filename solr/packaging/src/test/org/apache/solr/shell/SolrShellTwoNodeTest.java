@@ -38,7 +38,7 @@ public class SolrShellTwoNodeTest extends SolrShellTestCase {
 
     // Both joined the same embedded ZooKeeper, which lives at SOLR_PORT + 1000.
     run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
-    run("solr zk ls / -z localhost:${ZK_PORT}").assertSuccess().assertOutputContains("live_nodes");
+    run("solr zk ls / -z localhost:${ZK_PORT}").assertSuccess().assertContains("live_nodes");
 
     run("solr stop -p ${SOLR2_PORT}").assertSuccess();
     run("solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
@@ -52,9 +52,9 @@ public class SolrShellTwoNodeTest extends SolrShellTestCase {
     // (StatusTool -> SolrProcessManager -> ProcessHandle.allProcesses), so under parallel forks it
     // also lists other classes' nodes. Only a "contains our port" assertion is safe here; an
     // exhaustive or negative one would be a race. Use 'status -p' when the scope matters.
-    run("solr status").assertSuccess().assertOutputContains("${SOLR_PORT}");
+    run("solr status").assertSuccess().assertContains("${SOLR_PORT}");
     run("solr status -p ${SOLR_PORT}")
         .assertSuccess()
-        .assertOutputContains("running on port ${SOLR_PORT}");
+        .assertContains("running on port ${SOLR_PORT}");
   }
 }

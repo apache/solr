@@ -23,7 +23,7 @@ package org.apache.solr.shell;
  *
  * <p>The two mostly agree, but not on every word of their usage and error text, so a test asserting
  * on wording may hold for only one of them. {@link EnabledOnCli} skips such a test on the other;
- * {@code CommandResult.assertOutputForCli} asserts the right wording for whichever is running.
+ * {@code CommandResult.assertContainsForCli} asserts the right wording for whichever is running.
  *
  * @see org.apache.solr.cli.SolrCLI#main
  */
