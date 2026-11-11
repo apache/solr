@@ -638,6 +638,8 @@ fi
 # Everything below here is to support start, stop and restart.
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then
+  # This has to re-scan the raw args rather than reuse $EXAMPLE (set further below by the
+  # full option-parsing loop): the ulimit check right below this runs before that loop does.
   for example_arg in "$@"; do
     if [[ "$example_arg" == "-e" || "$example_arg" == "--example" ]]; then
       export SOLR_ULIMIT_CHECKS=false

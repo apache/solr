@@ -24,7 +24,8 @@ Use a fresh full Solr installation on Unix or macOS, with ports 8983, 8984, and 
 Run the commands in the same Bash-compatible shell, from the installation directory, using an installation path without spaces.
 Do not run these commands against an existing cluster.
 
-IMPORTANT: This is a local learning exercise with demonstration passwords and a shared self-signed certificate.
+IMPORTANT: This exact setup is not ready or appropriate for production use.
+It is a local learning exercise with demonstration passwords and a shared self-signed certificate.
 Keep the cluster on loopback.
 ZooKeeper authentication and ACLs do not encrypt its connection; this exercise leaves ZooKeeper transport on loopback without TLS.
 For deployment guidance, see xref:deployment-guide:securing-solr.adoc[], xref:deployment-guide:enabling-ssl.adoc[], and xref:deployment-guide:zookeeper-access-control.adoc[].
@@ -90,7 +91,7 @@ Node logs are under `tutorial/secure/node1/logs` and `tutorial/secure/node2/logs
 == Create a Certificate and PKCS12 Stores
 
 Generate a private key and self-signed certificate directly in a PKCS12 keystore.
-The subject alternative names cover both names used in this exercise:
+The `-ext 'SAN=...'` option below sets the certificate's subject alternative names, so the certificate is considered valid for both `localhost` and `127.0.0.1`, the two names used in this exercise:
 
 [source,bash]
 ----
@@ -115,6 +116,8 @@ The PEM certificate lets `curl` verify the server without disabling certificate 
 Using the same keystore on both nodes simplifies the exercise; real deployments should manage certificates and private keys separately for each node.
 
 == Enable HTTPS on Both Nodes
+
+Solr only applies include-file changes when a node starts, so this section rewrites the include file and then stops and restarts both nodes to pick up HTTPS.
 
 Write an include file used only for this exercise.
 The unquoted heredoc expands the absolute working-directory path now; escaped dollar signs preserve variables for later launches:
@@ -149,12 +152,10 @@ Nodes advertise the IPv4 loopback address `127.0.0.1`; client URLs can also use 
 Hostname verification remains enabled.
 Client certificates are not required; later steps authenticate users with Basic Authentication over HTTPS.
 
-Before restarting, set the cluster's advertised URL scheme while ZooKeeper is still running.
-Then stop the second node before stopping the first node and its embedded ZooKeeper:
+Stop the second node before stopping the first node and its embedded ZooKeeper, then restart both with the updated include file:
 
 [source,bash]
 ----
-bin/solr cluster --property urlScheme --value https -z localhost:9983
 bin/solr stop -p 8984
 bin/solr stop -p 8983
 export SOLR_INCLUDE="$TUTORIAL_HOME/tls/solr.in.sh"
@@ -493,7 +494,7 @@ Stop any other cluster first if it uses the same ports.
 The example creates isolated homes in `example/secure/node1/solr` and `example/secure/node2/solr`, plus certificates and configuration in `example/secure/tls`.
 Each node writes its logs beside its home, in `node1/logs` or `node2/logs`.
 Its include file is `example/secure/tls/solr.in.sh`.
-The demonstration accounts `admin`, `index`, `search`, `zk-admin`, and `zk-readonly` all use the password `SolrRocks`.
+Unlike the manual steps above, the shortcut generates a fresh password each run instead of reusing a fixed one; it prints that password, and the demonstration accounts `admin`, `index`, `search`, `zk-admin`, and `zk-readonly` all use it.
 The example performs the setup from this tutorial and prints its configuration path and commands for checking status and stopping the nodes.
 Inspect its generated files to connect the automated setup to the manual steps above.
 

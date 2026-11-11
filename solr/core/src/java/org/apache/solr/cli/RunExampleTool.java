@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -656,9 +657,11 @@ public class RunExampleTool extends ToolBase {
         || params.scriptInputs() != null
         || System.getenv("SOLR_DATA_HOME") != null) {
       throw new IllegalArgumentException(
-          "Unsupported secure example option. Use --solr-home, -p, --no-prompt, -m, or --force.");
+          "Unsupported argument provided.  'secure' example currently only supports: --solr-home,"
+              + " -p, --no-prompt, -m, or --force.");
     }
     int port = params.basePort();
+    String password = generateSecureExamplePassword();
     Path home = solrHomeDir.toAbsolutePath().normalize();
     echo(
         "Commands below use paths relative to "
@@ -673,11 +676,14 @@ public class RunExampleTool extends ToolBase {
     environment.put("SOLR_HOME", tls.toString());
     environment.remove("SOLR_ZK_CREDS_AND_ACLS");
     environment.remove("ZK_HOST");
-    echo("This example uses 'SolrRocks' for its keystore and demonstration accounts.");
+    echo(
+        "Generated password: "
+            + password
+            + " (used for the keystore and all basic-auth/ZooKeeper demonstration accounts below).");
     echo("ZooKeeper is protected by digest ACLs; its transport remains plaintext on loopback.");
     if (!params.noPrompt()) {
       prompt(
-          new Scanner(userInput, StandardCharsets.UTF_8),
+          userInputScanner(),
           "Press Enter to delete and recreate "
               + secureExampleDisplayArgument(home.toString())
               + ", or Ctrl-C to cancel: ",
@@ -709,22 +715,12 @@ public class RunExampleTool extends ToolBase {
     boolean ready = false;
     try {
       echo("\n");
-      echo("1. Start both nodes and configure the shared SolrCloud URL scheme to https.");
+      echo("1. Start both nodes.");
       startSecureNodes(params, home, environment, zkHost);
       for (int nodePort : List.of(port, port + 1)) {
         waitForSecureExample(
             environment, tls, null, "http://localhost:" + nodePort + "/api/node/health");
       }
-      runSecureCommand(
-          environment,
-          script,
-          "cluster",
-          "--property",
-          "urlScheme",
-          "--value",
-          "https",
-          "-z",
-          zkHost);
       stopSecureNodes(port, environment);
 
       echo("\n");
@@ -751,9 +747,9 @@ public class RunExampleTool extends ToolBase {
           "-keystore",
           tls.resolve("solr-ssl.keystore.p12").toString(),
           "-storepass",
-          "SolrRocks",
+          password,
           "-keypass",
-          "SolrRocks");
+          password);
       runSecureCommand(
           environment,
           keytool,
@@ -766,7 +762,7 @@ public class RunExampleTool extends ToolBase {
           "-storetype",
           "PKCS12",
           "-storepass",
-          "SolrRocks",
+          password,
           "-file",
           tls.resolve("cert.pem").toString());
       runSecureCommand(
@@ -783,7 +779,7 @@ public class RunExampleTool extends ToolBase {
           "-keystore",
           tls.resolve("solr-ssl.truststore.p12").toString(),
           "-storepass",
-          "SolrRocks");
+          password);
       runSecureCommand(
           environment,
           "openssl",
@@ -801,20 +797,23 @@ public class RunExampleTool extends ToolBase {
               SOLR_SSL_ENABLED=true
               SOLR_SSL_KEY_STORE=%s
               SOLR_SSL_KEY_STORE_TYPE=PKCS12
-              SOLR_SSL_KEY_STORE_PASSWORD=SolrRocks
+              SOLR_SSL_KEY_STORE_PASSWORD=%s
               SOLR_SSL_TRUST_STORE=%s
               SOLR_SSL_TRUST_STORE_TYPE=PKCS12
-              SOLR_SSL_TRUST_STORE_PASSWORD=SolrRocks
+              SOLR_SSL_TRUST_STORE_PASSWORD=%s
               SOLR_SSL_CLIENT_TRUST_STORE=${SOLR_SSL_CLIENT_TRUST_STORE:-%s}
               SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12
-              SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=SolrRocks
+              SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=%s
               SOLR_SSL_NEED_CLIENT_AUTH=false
               SOLR_SSL_WANT_CLIENT_AUTH=false
               SOLR_SSL_CHECK_PEER_NAME=true
               """,
               secureExampleShellQuote(tls.resolve("solr-ssl.keystore.p12").toString()),
+              secureExampleShellQuote(password),
               secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString()),
-              secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString())),
+              secureExampleShellQuote(password),
+              secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString()),
+              secureExampleShellQuote(password)),
           StandardOpenOption.APPEND);
       for (String file : List.of("solr-ssl.keystore.p12", "solr-ssl.truststore.p12")) {
         Files.setPosixFilePermissions(
@@ -828,7 +827,7 @@ public class RunExampleTool extends ToolBase {
         waitForSecureExample(
             environment,
             tls,
-            "admin:SolrRocks",
+            "admin:" + password,
             "https://localhost:" + nodePort + "/api/node/health");
       }
       echo("\n");
@@ -843,30 +842,36 @@ public class RunExampleTool extends ToolBase {
           "--type",
           "basicAuth",
           "--credentials",
-          "admin:SolrRocks",
+          "admin:" + password,
           "--block-unknown",
           "true",
           "-z",
           zkHost);
       waitForSecureExample(
-          environment, tls, "admin:SolrRocks", "https://localhost:" + port + "/api/node/health");
+          environment, tls, "admin:" + password, "https://localhost:" + port + "/api/node/health");
       secureExampleRequest(
           environment,
           tls,
           port,
+          password,
           "/api/cluster/security/authentication",
-          """
-          {
-            "set-user": {
-              "index": "SolrRocks",
-              "search": "SolrRocks"
-            }
-          }
-          """);
+          String.format(
+              Locale.ROOT,
+              """
+              {
+                "set-user": {
+                  "index": "%s",
+                  "search": "%s"
+                }
+              }
+              """,
+              password,
+              password));
       secureExampleRequest(
           environment,
           tls,
           port,
+          password,
           "/api/cluster/security/authorization",
           """
           {
@@ -886,12 +891,16 @@ public class RunExampleTool extends ToolBase {
       Path credentials = tls.resolve("zk-credentials.properties");
       writeSecureExampleFile(
           credentials,
-          """
-          zkDigestUsername=zk-admin
-          zkDigestPassword=SolrRocks
-          zkDigestReadonlyUsername=zk-readonly
-          zkDigestReadonlyPassword=SolrRocks
-          """);
+          String.format(
+              Locale.ROOT,
+              """
+              zkDigestUsername=zk-admin
+              zkDigestPassword=%s
+              zkDigestReadonlyUsername=zk-readonly
+              zkDigestReadonlyPassword=%s
+              """,
+              password,
+              password));
       String zkOptions =
           "-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector "
               + "-DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider "
@@ -914,7 +923,7 @@ public class RunExampleTool extends ToolBase {
         waitForSecureExample(
             environment,
             tls,
-            "admin:SolrRocks",
+            "admin:" + password,
             "https://localhost:" + nodePort + "/api/node/health");
       }
       runSecureCommand(environment, script, "zk", "updateacls", "/", "-z", zkHost);
@@ -922,7 +931,7 @@ public class RunExampleTool extends ToolBase {
       adminEnvironment.put("SOLR_INCLUDE", "/dev/null");
       adminEnvironment.put(
           "SOLR_ZK_CREDS_AND_ACLS",
-          zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=SolrRocks");
+          zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=" + password);
       runSecureCommand(
           adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
 
@@ -946,7 +955,7 @@ public class RunExampleTool extends ToolBase {
           "--solr-url",
           "https://localhost:" + port,
           "--credentials",
-          "admin:SolrRocks");
+          "admin:" + password);
       runSecureCommand(
           environment,
           script,
@@ -954,7 +963,7 @@ public class RunExampleTool extends ToolBase {
           "-c",
           "techproducts",
           "--credentials",
-          "index:SolrRocks",
+          "index:" + password,
           "--solr-url",
           "https://localhost:" + port,
           exampleDir.resolve("exampledocs/*.xml").toAbsolutePath().toString());
@@ -978,7 +987,7 @@ public class RunExampleTool extends ToolBase {
       waitForSecureExample(
           environment,
           tls,
-          "search:SolrRocks",
+          "search:" + password,
           "https://localhost:"
               + nodePort
               + "/api/collections/techproducts/select?q=*:*&rows=0&shards.tolerant=false");
@@ -991,9 +1000,14 @@ public class RunExampleTool extends ToolBase {
             + (port + 1)
             + "/solr/");
     echo(
-        "HTTP accounts: admin (administration), index (indexing/search), search (search only). Password: SolrRocks.");
+        "HTTP accounts: admin (administration), index (indexing/search), search (search only)."
+            + " Password: "
+            + password
+            + ".");
     echo(
-        "ZooKeeper accounts: zk-admin (all), zk-readonly (metadata read only). Password: SolrRocks.");
+        "ZooKeeper accounts: zk-admin (all), zk-readonly (metadata read only). Password: "
+            + password
+            + ".");
     echo("Configuration: " + secureExampleDisplayArgument(include.toString()));
     echo(
         "Check status: SOLR_INCLUDE='"
@@ -1053,6 +1067,20 @@ public class RunExampleTool extends ToolBase {
     return "'" + value.replace("'", "'\\''") + "'";
   }
 
+  /**
+   * Generates a fresh password for the secure example's keystore and demonstration accounts, so
+   * every run gets its own secret instead of a hardcoded one.
+   */
+  private static String generateSecureExamplePassword() {
+    final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    SecureRandom random = new SecureRandom();
+    StringBuilder password = new StringBuilder(20);
+    for (int i = 0; i < 20; i++) {
+      password.append(alphabet.charAt(random.nextInt(alphabet.length())));
+    }
+    return password.toString();
+  }
+
   private void writeSecureExampleFile(Path file, String content) throws IOException {
     if (!Files.exists(file))
       Files.createFile(
@@ -1061,7 +1089,7 @@ public class RunExampleTool extends ToolBase {
   }
 
   private void secureExampleRequest(
-      Map<String, String> environment, Path tls, int port, String api, String json)
+      Map<String, String> environment, Path tls, int port, String password, String api, String json)
       throws IOException {
     runSecureCommand(
         environment,
@@ -1072,7 +1100,7 @@ public class RunExampleTool extends ToolBase {
         "--cacert",
         tls.resolve("cert.pem").toString(),
         "--user",
-        "admin:SolrRocks",
+        "admin:" + password,
         "-H",
         "Content-Type: application/json",
         "--data-binary",
@@ -1365,7 +1393,7 @@ public class RunExampleTool extends ToolBase {
       readInput.useDelimiter(",");
       prompt = true; // Enable prompting code path, but reading from script inputs instead of user
     } else if (prompt) {
-      readInput = new Scanner(userInput, StandardCharsets.UTF_8);
+      readInput = userInputScanner();
     }
 
     if (prompt) {
@@ -2011,6 +2039,11 @@ public class RunExampleTool extends ToolBase {
     }
 
     return (inputAsInt != null) ? inputAsInt : defVal;
+  }
+
+  /** A scanner reading from {@link #userInput}, for interactive (non-script-input) prompting. */
+  private Scanner userInputScanner() {
+    return new Scanner(userInput, StandardCharsets.UTF_8);
   }
 
   protected String prompt(Scanner s, String prompt) {

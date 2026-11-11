@@ -44,6 +44,9 @@ teardown() {
   refute_output --partial 'set SOLR_ULIMIT_CHECKS to false'
   assert_output --partial 'Check status: SOLR_INCLUDE='
 
+  password=$(echo "$output" | grep -o 'Generated password: [A-Za-z0-9]*' | awk '{print $NF}')
+  [ -n "$password" ]
+
   run ls -a "$SOLR_HOME"
   assert_success
   refute_output --partial '.secure-example'
@@ -55,14 +58,14 @@ teardown() {
   assert_output ''
 
   run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-    --user admin:SolrRocks "https://localhost:$SOLR_PORT/api/cluster/security/authentication"
+    --user "admin:$password" "https://localhost:$SOLR_PORT/api/cluster/security/authentication"
   assert_success
   assert_output --partial '"admin"'
   refute_output --partial '"solr"'
 
   for port in "$SOLR_PORT" "$SOLR2_PORT"; do
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user search:SolrRocks "https://localhost:$port/solr/techproducts/select?q=*:*&rows=0&shards.info=true"
+      --user "search:$password" "https://localhost:$port/solr/techproducts/select?q=*:*&rows=0&shards.info=true"
     assert_success
     assert_output --partial '"numFound":31'
     assert_output --partial "https://127.0.0.1:$SOLR_PORT/"
@@ -79,23 +82,23 @@ teardown() {
     assert_output --partial '401'
 
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user solr:SolrRocks "https://localhost:$port/api/node/health"
+      --user "solr:$password" "https://localhost:$port/api/node/health"
     assert_failure
     assert_output --partial '401'
 
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user admin:SolrRocks "https://localhost:$port/solr/techproducts/select?q=*:*"
+      --user "admin:$password" "https://localhost:$port/solr/techproducts/select?q=*:*"
     assert_failure
     assert_output --partial '403'
 
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user admin:SolrRocks -H 'Content-Type: application/json' --data-binary '[{"id":"forbidden-admin"}]' \
+      --user "admin:$password" -H 'Content-Type: application/json' --data-binary '[{"id":"forbidden-admin"}]' \
       "https://localhost:$port/solr/techproducts/update"
     assert_failure
     assert_output --partial '403'
 
     run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
-      --user search:SolrRocks -H 'Content-Type: application/json' --data-binary '[{"id":"forbidden"}]' \
+      --user "search:$password" -H 'Content-Type: application/json' --data-binary '[{"id":"forbidden"}]' \
       "https://localhost:$port/solr/techproducts/update"
     assert_failure
     assert_output --partial '403'
@@ -112,7 +115,7 @@ teardown() {
   assert_failure
   assert_output --partial 'NoAuth'
 
-  local readonly_opts='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=SolrRocks'
+  local readonly_opts="-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=$password"
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
     solr zk ls /collections --zk-host "localhost:$ZK_PORT"
   assert_success
