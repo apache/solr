@@ -263,10 +263,13 @@ public class SslTest extends SolrShellTestCase {
   }
 
   @Test
-  public void startSolrWithClientTruststoreAndSecurityManager() {
+  public void startSolrWithClientTruststoreAndSecurityManager() throws IOException {
     // Make a test tmp dir, as the security policy includes TMP, so that might already contain the
     // work directory the keystores live in.
-    Path testTmpDir = mkdirs("tmp");
+    // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
+    // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
+    // the node dies under the security manager. The BATS original used cd -P && pwd here.
+    Path testTmpDir = mkdirs("tmp").toRealPath();
 
     env("SOLR_SECURITY_MANAGER_ENABLED", "true");
     env("SOLR_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
@@ -325,8 +328,11 @@ public class SslTest extends SolrShellTestCase {
   }
 
   @Test
-  public void startSolrWithMtlsNeeded() {
-    Path testTmpDir = mkdirs("tmp");
+  public void startSolrWithMtlsNeeded() throws IOException {
+    // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
+    // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
+    // the node dies under the security manager. The BATS original used cd -P && pwd here.
+    Path testTmpDir = mkdirs("tmp").toRealPath();
 
     env("SOLR_SECURITY_MANAGER_ENABLED", "true");
     env("SOLR_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
@@ -433,8 +439,11 @@ public class SslTest extends SolrShellTestCase {
   }
 
   @Test
-  public void startSolrWithMtlsWanted() {
-    Path testTmpDir = mkdirs("tmp");
+  public void startSolrWithMtlsWanted() throws IOException {
+    // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
+    // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
+    // the node dies under the security manager. The BATS original used cd -P && pwd here.
+    Path testTmpDir = mkdirs("tmp").toRealPath();
 
     env("SOLR_SECURITY_MANAGER_ENABLED", "true");
     env("SOLR_OPTS", "-Djava.io.tmpdir=" + testTmpDir);

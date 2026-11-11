@@ -47,7 +47,12 @@ public class StartSolrTest extends SolrShellTestCase {
 
     // The original wrapped this in 'bash -c ... 2>&1' only to merge the streams; the harness
     // already merges them.
-    run("solr stop --all").assertNotContains("forcefully killing");
+    // Strengthened: 'stop --all' finding no node prints "No Solr nodes found to stop." and
+    // would satisfy the refutation on its own, so assert the graceful path positively too.
+    run("solr stop --all")
+        .assertSuccess()
+        .assertContains("Sending stop command")
+        .assertNotContains("forcefully killing");
   }
 
   @Test

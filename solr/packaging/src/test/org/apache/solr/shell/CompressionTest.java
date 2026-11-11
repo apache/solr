@@ -76,7 +76,6 @@ public class CompressionTest extends SolrShellTestCase {
   public void serverCompressesResponseWhenAcceptEncodingGzipIsRequested() {
     http(QUERY, Map.of("Accept-Encoding", "gzip"))
         .assertStatus(200)
-        .assertHeaderContains("gzip")
         .assertHeaderContains("Content-Encoding: gzip");
   }
 

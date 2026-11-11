@@ -212,7 +212,24 @@ public class PostTest extends SolrShellTestCase {
             "--mode",
             "args",
             "{'delete': {'query': '*:*'}}"))
+        // Strengthened: without the status, a post that failed and printed nothing recognisable
+        // would satisfy the refutation.
+        .assertSuccess()
         .assertNotContains("\"status\":0");
+  }
+
+  @Test
+  public void verboseEchoTheSolrResponse() {
+    run("solr create -c monitors_verbose -d _default")
+        .assertContains("Created collection 'monitors_verbose'");
+
+    run("solr post --verbose --type application/xml --solr-url http://localhost:${SOLR_PORT}"
+            + " -c monitors_verbose \""
+            + DOCS
+            + "/monitor.xml\"")
+        .assertContains("1 files indexed.")
+        .assertContains("<lst name=\"responseHeader\">")
+        .assertNotContains("ERROR");
   }
 
   @Test

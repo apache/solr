@@ -736,8 +736,11 @@ public class CliSession implements AutoCloseable {
           Map.entry("source", "script(bashBody, cmdBody) if it really is shell-specific"),
           Map.entry("eval", "script(bashBody, cmdBody) if it really is shell-specific"));
 
-  /** bash syntax with no cmd.exe equivalent, each with what to write instead. */
-  private static final List<String[]> UNPORTABLE_SYNTAX =
+  /**
+   * Shell operators with no cmd.exe equivalent. Double quotes neutralise all of these, so they are
+   * only a problem outside a quoted span — a URL carrying {@code &} in quotes is fine.
+   */
+  private static final List<String[]> UNPORTABLE_OPERATORS =
       List.of(
           new String[] {
             "|", "a pipe", "assert on the command's own output, or use script(bashBody, cmdBody)"
@@ -746,7 +749,19 @@ public class CliSession implements AutoCloseable {
           new String[] {
             "||", "a chained command", "run() is one command; assert the status in Java instead"
           },
-          new String[] {";", "a command sequence", "make it two run() calls"},
+          new String[] {";", "a command sequence", "make it two run() calls"});
+
+  /**
+   * bash constructs that double quotes do <em>not</em> protect, so they are a problem anywhere in
+   * the line.
+   *
+   * <p>Command substitution is the one that catches people out: {@code "$(date)"} looks quoted and
+   * safe, but bash still runs it — only single quotes suppress expansion, and those are rejected
+   * outright. A Unix path is listed here for a simpler reason: quoting does not make {@code
+   * /dev/null} exist on Windows.
+   */
+  private static final List<String[]> UNPORTABLE_ANYWHERE =
+      List.of(
           new String[] {
             "$(", "command substitution", "compute the value in Java and concatenate it"
           },
@@ -759,8 +774,9 @@ public class CliSession implements AutoCloseable {
   /**
    * Rejects a cross-shell line that only works on bash.
    *
-   * <p>Checked outside quoted spans, so a URL carrying {@code &} inside double quotes is fine —
-   * both shells protect it — while a bare pipe is not.
+   * <p>Shell operators are checked outside quoted spans, so a URL carrying {@code &} inside double
+   * quotes is fine — both shells protect it — while a bare pipe is not. Command substitution and
+   * Unix paths are checked across the whole line, because double quotes do not protect those.
    */
   private static void requirePortableLine(String line) {
     StringBuilder unquoted = new StringBuilder();
@@ -784,13 +800,25 @@ public class CliSession implements AutoCloseable {
       }
     }
     String bare = unquoted.toString();
-    for (String[] rule : UNPORTABLE_SYNTAX) {
+    for (String[] rule : UNPORTABLE_OPERATORS) {
       if (bare.contains(rule[0])) {
         throw new AssertionError(
             rule[1]
                 + " ("
                 + rule[0]
                 + ") is not portable to cmd.exe: "
+                + line
+                + "\nInstead: "
+                + rule[2]);
+      }
+    }
+    for (String[] rule : UNPORTABLE_ANYWHERE) {
+      if (line.contains(rule[0])) {
+        throw new AssertionError(
+            rule[1]
+                + " ("
+                + rule[0]
+                + ") is not portable to cmd.exe, and double quotes do not protect it: "
                 + line
                 + "\nInstead: "
                 + rule[2]);
@@ -1025,11 +1053,18 @@ public class CliSession implements AutoCloseable {
       }
       ALL_RECORDED_PIDS.remove(pid);
       KNOWN_NODES.remove(node.getKey(), pid);
-      Path pidFile = harnessEnv.pidDir().resolve("solr-" + node.getKey() + ".pid");
-      try {
-        Files.deleteIfExists(pidFile);
-      } catch (IOException e) {
-        problems.add("could not delete " + pidFile + ": " + e);
+      // Both spellings: bin/solr writes solr-<port>.pid holding a PID, bin\solr.cmd writes
+      // solr-<port>.port holding a port, and SolrProcessManager reads either
+      // (pidFilePattern = ^solr-([0-9]+)\.(pid|port)$). Only the graceful stop cleans up after
+      // itself, so a force-killed node leaves its file behind — and a stale file in this class's
+      // SOLR_PID_DIR is what 'solr stop --all' and 'solr status' would then walk.
+      for (String suffix : List.of(".pid", ".port")) {
+        Path pidFile = harnessEnv.pidDir().resolve("solr-" + node.getKey() + suffix);
+        try {
+          Files.deleteIfExists(pidFile);
+        } catch (IOException e) {
+          problems.add("could not delete " + pidFile + ": " + e);
+        }
       }
     }
 

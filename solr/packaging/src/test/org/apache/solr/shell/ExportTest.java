@@ -17,7 +17,6 @@
 
 package org.apache.solr.shell;
 
-import org.apache.solr.shell.exec.Shell;
 import org.junit.Test;
 
 /**
@@ -30,20 +29,26 @@ import org.junit.Test;
  * status, since a file-existence check alone would pass on a leftover file; and each test deletes
  * the collection it created, because the harness wipes {@code SOLR_HOME} once per class rather than
  * before every test and a stale core directory would be discovered by the other test's node.
+ *
+ * <p>Both tests build their own node, and neither uses {@code solr start -e}, so both run on
+ * cmd.exe as well — see the comment at the fixture.
  */
 public class ExportTest extends SolrShellTestCase {
 
   @Test
-  @EnabledOnShell(Shell.BASH)
-  // RunExampleTool#startSolr drops every SOLR_* variable from the environment of the node it spawns
-  // on Windows, so the example's node would get neither the harness' process-scan marker nor
-  // SOLR_PID_DIR, and could not be discovered or stopped afterwards.
   public void checkExportCommand() {
-    // --solr-home is not in the BATS original, and is not optional. RunExampleTool reads the
-    // property solr.home (RunExampleTool:597), while the SOLR_HOME environment variable maps to
-    // solr.solr.home (EnvToSyspropMappings.properties:15) — so the variable never reaches it and
-    // the example falls back to serverDir/solr, inside the distribution every class shares.
-    run("solr start -e techproducts --solr-home \"${SOLR_HOME}\"").assertSuccess();
+    // The original built this fixture with 'solr start -e techproducts'. That would make the whole
+    // test bash-only, because RunExampleTool strips every SOLR_* variable from the environment of
+    // the node it spawns on Windows, leaving it without the harness' process-scan marker or
+    // SOLR_PID_DIR. The subject here is 'solr export', not the example tool, so the fixture is
+    // built the long way instead and the test keeps its Windows coverage. StreamTest does the same
+    // for the same reason; ExampleTest is where 'solr start -e' is covered deliberately.
+    run("solr start").assertSuccess();
+    run("solr create -c techproducts -d sample_techproducts_configs").assertSuccess();
+    run("solr post --type application/xml --filetypes xml --solr-url http://localhost:${SOLR_PORT}"
+            + " -c techproducts \"${SOLR_TIP}/example/exampledocs\"")
+        .assertSuccess()
+        .assertNotContains("ERROR");
 
     // Stands in for ${BATS_TEST_TMPDIR}: the --output cases need both a file prefix and a real
     // directory below the session's work directory.
