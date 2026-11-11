@@ -302,12 +302,14 @@ public class CliSession implements AutoCloseable {
    * each element correctly for bash and for cmd.exe.
    */
   public CommandResult run(String line) {
+    requireSingleCommand(line);
     String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), false);
   }
 
   /** Runs a command line with an explicit timeout. */
   public CommandResult run(Duration commandTimeout, String line) {
+    requireSingleCommand(line);
     return execute(resolveForRun(line), commandTimeout, false);
   }
 
@@ -322,6 +324,7 @@ public class CliSession implements AutoCloseable {
 
   /** Like {@link #run(String)} but keeps {@code stdout()} and {@code stderr()} apart. */
   public CommandResult runSeparated(String line) {
+    requireSingleCommand(line);
     String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), true);
   }
@@ -355,16 +358,26 @@ public class CliSession implements AutoCloseable {
   }
 
   /** Resolves every variable spelling a cross-shell line may use, then rejects the cmd.exe one. */
-  private String resolveForRun(String line) {
-    requireOpen();
-    // A run is one command. Allowing a newline here would change what cmd.exe does without saying
-    // so: Shell.CMD drops the 'call' for a multi-line body, and without 'call' a batch file that
-    // invokes solr.cmd never gets control back. Easy to write by accident in a text block.
+  /**
+   * A run is one command. A newline in the line would change what cmd.exe does without saying so:
+   * Shell.CMD drops the {@code call} for a multi-line body, and without {@code call} a batch file
+   * that invokes {@code solr.cmd} never gets control back. Easy to write by accident in a text
+   * block.
+   *
+   * <p>Only the string form is checked. An argv element may legitimately contain a newline — the
+   * shell quoting takes care of it — which is how a BATS line like {@code $'id,value\nROW1,0.47'}
+   * ports over.
+   */
+  private void requireSingleCommand(String line) {
     if (line.strip().contains("\n")) {
       throw new AssertionError(
           "A run() line must be a single command; use script(bashBody, cmdBody) for several: "
               + line);
     }
+  }
+
+  private String resolveForRun(String line) {
+    requireOpen();
     String resolved = Variables.resolve(line, Variables.ANY, vars, "a command line");
     Matcher cmdForm = Variables.CMD_FORM.matcher(resolved);
     if (cmdForm.find()) {

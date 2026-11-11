@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import org.apache.solr.shell.exec.CommandResult;
+import org.apache.solr.shell.exec.ShellAssertionError;
 
 /**
  * The Solr-aware conveniences a shell test reaches for, ported from {@code bats_helper.bash}.
@@ -47,8 +48,40 @@ public final class SolrCliHelpers {
     this.cli = cli;
   }
 
-  /** The response to a harness HTTP request. */
-  public record HttpResult(int status, String body) {}
+  /**
+   * The response to a harness HTTP request, with the same shape of fluent assertions a command
+   * result has.
+   *
+   * <p>{@code curl} appears seventy times across the BATS suites, almost always followed by an
+   * assertion on the body, so this is what those lines port to.
+   */
+  public record HttpResult(int status, String body) {
+
+    public HttpResult assertStatus(int expected) {
+      if (status != expected) {
+        throw fail("status was " + status + ", expected " + expected);
+      }
+      return this;
+    }
+
+    public HttpResult assertContains(String substring) {
+      if (!body.contains(substring)) {
+        throw fail("body did not contain: " + substring);
+      }
+      return this;
+    }
+
+    public HttpResult assertNotContains(String substring) {
+      if (body.contains(substring)) {
+        throw fail("body contained what it should not: " + substring);
+      }
+      return this;
+    }
+
+    private AssertionError fail(String reason) {
+      return new ShellAssertionError("\nHTTP " + status + "\n| " + body + "\n\nFAILED: " + reason);
+    }
+  }
 
   /**
    * A GET against {@code http://localhost:<SOLR_PORT><pathAndQuery>}.
