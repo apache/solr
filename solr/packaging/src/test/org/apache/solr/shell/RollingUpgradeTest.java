@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -52,10 +51,19 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * Port of {@code test_rolling_upgrade.bats}.
  *
- * <p>Upgrades from the latest release of the previous major version to the image of the Solr
- * version under test, which must already exist locally — build it with {@code ./gradlew dockerTag},
- * or the test fails when the first container wants it. Either image can be overridden, e.g. {@code
- * export SOLR_BEGIN_IMAGE=solr:9.11-slim}.
+ * <p>Upgrades from the latest release of the previous major version to an image of the Solr version
+ * under test. Either end can be overridden, e.g. {@code export SOLR_BEGIN_IMAGE=solr:9.11-slim}.
+ *
+ * <p>This class runs only from the {@code shellTestsDockerBuild} Gradle task, which builds the
+ * image from the working tree, tags it under a local-only name and passes that in {@code
+ * SOLR_END_IMAGE}; the ordinary shell-test tasks exclude the class. So the upgrade is always onto
+ * the code in the tree, not onto whatever {@code apache/solr:<version>} happens to be tagged on the
+ * machine — which may be the official release image, or a build from another commit days ago.
+ *
+ * <p>That task selection is also why the suite carries no {@code @Nightly}: the annotation's only
+ * job here would be to keep a Docker- and network-using test out of ordinary builds, which the task
+ * filter already does, and carrying it as well would only force the task to pass {@code
+ * -Ptests.nightly=true} for no gain.
  *
  * <p>Kept close to the original, including the order of the steps and the text each asserts on. The
  * original's {@code docker} command lines become Testcontainers calls, so nothing here is
@@ -82,8 +90,8 @@ import org.testcontainers.utility.DockerImageName;
  *   <li>{@code docker pull} and {@code docker image inspect} are gone. The pull policy sits on the
  *       container instead, keeping the original's behaviour of always re-pulling the begin image
  *       and preferring a local end image. An image that cannot be resolved now fails the test,
- *       where the original skipped: a nightly test that skips itself because nobody built an image
- *       has quietly stopped testing anything;
+ *       where the original skipped: a test that skips itself because nobody built an image has
+ *       quietly stopped testing anything;
  *   <li>the teardown's {@code docker logs} / {@code inspect} / {@code ps aux} artifacts are written
  *       from Java; {@code date -Iseconds} is gone with the {@code --since} it scoped, since every
  *       container here was created by this test;
@@ -92,8 +100,9 @@ import org.testcontainers.utility.DockerImageName;
  *   <li>three of the original's {@code assert_success} lines sat after a bare {@code docker exec}
  *       and so re-asserted the status of the {@code run curl} from much earlier in the test; here
  *       every step asserts its own exit status instead, those included;
- *   <li>{@code @Nightly}, which the original does not carry: it pulls the previous major's image
- *       from Docker Hub, and an ordinary build has no business reaching out to the network.
+ *   <li>the suite is reached through its own Gradle task rather than running in every build: it
+ *       pulls the previous major's image from Docker Hub, and an ordinary build has no business
+ *       reaching out to the network.
  * </ul>
  */
 // ThreadLeakFilters are not additive, so SolrTestCase's own two are repeated here.
@@ -139,10 +148,10 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   private Path artifactDir;
 
   @Test
-  @Nightly
   public void dockerSolrCloudRollingUpgrade() throws IOException {
     // The other container suites get this from their @ClassRule; this one has no rule to put it in,
-    // because swapping a running node for one on the new image is the thing under test.
+    // because swapping a running node for one on the new image is the thing under test. It is the
+    // only skip left in the suite: a begin image that cannot be pulled is a failure, not a skip.
     assumeTrue("Docker is not available", DockerClientFactory.instance().isDockerAvailable());
     resolveImages();
 
@@ -231,27 +240,20 @@ public class RollingUpgradeTest extends SolrShellTestCase {
     }
   }
 
-  /** The original's pre-checks: Docker itself, then each end of the upgrade. */
-  /**
-   * Skips where Docker cannot run, and works out which two images to upgrade between.
-   *
-   * <p>The Docker check has to be here rather than in a {@code @ClassRule}, which is where the
-   * other container suites put theirs, because this test manages its containers itself.
-   *
-   * <p>It deliberately does not check that either image is available. The original skipped in that
-   * case; a missing image should fail instead, loudly, at the point a container needs it — a
-   * nightly test that quietly skips because nobody ran {@code ./gradlew dockerTag} is a test that
-   * has stopped testing anything without saying so.
-   */
   /**
    * Works out which two images to upgrade between.
    *
    * <p>The two versions come from different places on purpose. The previous major is a property of
-   * the code, so it comes from {@link SolrVersion#LATEST}. The version to upgrade <em>to</em> has
-   * to be the tag {@code ./gradlew dockerTag} applied, which is {@code project.version} and so
-   * carries the {@code -SNAPSHOT} qualifier that {@code SolrVersion} does not; the unpacked
-   * distribution under test is named for exactly that version, so its directory name is the honest
-   * source.
+   * the code, so it comes from {@link SolrVersion#LATEST}. The version to upgrade <em>to</em> is
+   * named by {@code SOLR_END_IMAGE}, which the {@code shellTestsDockerBuild} task sets to the image
+   * it has just built from this tree. The fallback is there for a hand-run of the suite, and is the
+   * tag {@code ./gradlew dockerTag} applies: {@code project.version}, which carries the {@code
+   * -SNAPSHOT} qualifier that {@code SolrVersion} does not, so the unpacked distribution's
+   * directory name is the honest source for it.
+   *
+   * <p>Neither end is checked for availability. The original skipped in that case; a missing image
+   * should fail instead, loudly, at the point a container needs it — a test that quietly skips
+   * because nobody built an image is a test that has stopped testing anything without saying so.
    */
   private void resolveImages() throws IOException {
     int previousMajor = SolrVersion.LATEST.getMajorVersion() - 1;
@@ -266,7 +268,9 @@ public class RollingUpgradeTest extends SolrShellTestCase {
 
   /**
    * The begin image is always re-pulled, so the test tracks the latest release of the previous
-   * major as the original did; the end image is the locally built one, so it is not.
+   * major as the original did. The end image keeps Testcontainers' default policy, which pulls only
+   * when the image is not already local: the one the Gradle task just built therefore never leaves
+   * the machine, while a hand-set {@code SOLR_END_IMAGE} naming a published image still resolves.
    */
   private ImagePullPolicy pullPolicyFor(String image) {
     return image.equals(beginImage) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy();

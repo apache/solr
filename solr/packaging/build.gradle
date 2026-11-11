@@ -369,6 +369,11 @@ def configureShellTestTask(Test task, String outputName, String picocli) {
   task.testClassesDirs = sourceSets.test.output.classesDirs
   task.classpath = sourceSets.test.runtimeClasspath
 
+  // RollingUpgradeTest upgrades onto a Docker image built from this working tree, which only
+  // shellTestsDockerBuild arranges; no other suite run should need Docker or the network, so it is
+  // excluded here for all of them. shellTestsDockerBuild clears this again.
+  task.filter.excludeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
+
   // Unlike BATS, which runs every file sequentially against one shared SOLR_HOME and port block,
   // each class here gets its own of both (see HarnessEnv.forClass), so classes can run in parallel.
   // Defaults to the build's own tests.jvms, capped because the ceiling here is memory rather than
@@ -425,6 +430,53 @@ tasks.register('shellTestsCommonsCli', Test) {
   group = 'verification'
   description = 'Deprecated. Runs the shell harness suites against the commons-cli implementation.'
   configureShellTestTask(it, 'shell-test-output-commons-cli', 'false')
+}
+
+// The rolling upgrade, onto an image built from this working tree rather than whatever
+// apache/solr:<version> happens to be tagged on the machine - the property a release candidate
+// needs. Every Docker dependency sits on this task alone and not in configureShellTestTask, so a
+// plain shellTests run still neither needs Docker nor touches the network.
+tasks.register('shellTestsDockerBuild', Test) {
+  group = 'verification'
+  description =
+      'Slow. Builds the Solr Docker image from this working tree, then rolling-upgrades onto it.'
+
+  // dockerBuild rather than dockerTag, which would move apache/solr:<version> - a name a developer
+  // may be deliberately keeping on the official image. The id dockerBuild writes is tagged in
+  // doFirst instead, under a name with no org/repo shape so that nothing, Testcontainers included,
+  // can mistake it for something to fetch from a registry.
+  dependsOn ':solr:docker:dockerBuild'
+  // gitRev and gitRevShort are set by that task's action, not at configuration time.
+  dependsOn ':gitStatus'
+  def imageIdFile = project(':solr:docker').layout.buildDirectory.file('image-id')
+  def imageVersion = project.version.toString()
+
+  configureShellTestTask(it, 'shell-test-output-docker-build', null)
+
+  // An exclude beats an include in Gradle's filter, so the one configureShellTestTask adds has to
+  // go before this class can be selected at all.
+  filter.excludePatterns = []
+  filter.includeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
+
+  doFirst {task ->
+    // Outside a checkout gitRevShort reads "(not a git checkout)", and on an IntelliJ import it can
+    // be missing altogether; anything that is not a hex revision leaves the bare version.
+    def rev = rootProject.hasProperty('gitRevShort') ? rootProject.gitRevShort as String : ''
+    def image = 'solr-rolling-upgrade:' + imageVersion + (rev ==~ /[0-9a-f]+/ ? '-' + rev : '')
+    def imageId = imageIdFile.get().asFile.text.trim()
+
+    def tagging = new ProcessBuilder('docker', 'tag', imageId, image)
+        .redirectErrorStream(true)
+        .start()
+    def taggingOutput = tagging.inputStream.text
+    if (tagging.waitFor() != 0) {
+      throw new GradleException("docker tag $imageId $image failed: $taggingOutput")
+    }
+    logger.lifecycle("Rolling upgrade will end on $image (image id $imageId)")
+
+    // The variable RollingUpgradeTest already reads for the image to upgrade to.
+    task.environment('SOLR_END_IMAGE', image)
+  }
 }
 
 task integrationTests(type: BatsTask) {
