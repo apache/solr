@@ -48,10 +48,7 @@ Beyond that:
 
 - When adding a test to an existing suite/file, keep the same style / design choices
 - System properties set in a test are restored after each test by the base classes (`SystemPropertiesRestoreRule`); do not add `try/finally` + `System.clearProperty` cleanup
-- Avoid `Thread.sleep`; fixed sleeps waste build time on every run and can flake under load.
-    - Have the other thread signal when it reaches a point, e.g. complete a `CompletableFuture` that the test thread `get`s with a timeout.
-    - If you must poll, use `org.apache.solr.util.TimeOut#waitFor` (solr-core) rather than a hand-rolled sleep loop.
-    - Derive timeouts from what they bound and define them as constants, e.g. `ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2`, not a bare `2, SECONDS`.
+- Never use `Thread.sleep` to wait for something; wait for the condition. See `dev-docs/writing-tests.adoc`
 
 ## Documentation
 

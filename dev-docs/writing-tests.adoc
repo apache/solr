@@ -106,6 +106,16 @@ These are Lucene annotations wired up as randomizedtesting *test groups*, disabl
 
 There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@AwaitsFix`. Read solr-source-code.adoc's guidance on frequently-failing tests before disabling anything.
 
+== Waiting, not sleeping
+
+A fixed `Thread.sleep` is paid on every run by every developer and still flakes under load, because the thing you are waiting for is slower on a busy machine, not faster. Wait for the condition instead:
+
+* Best: have the other side signal. Complete a `CompletableFuture` when it reaches the point you care about and `get(timeout)` it from the test thread.
+* If you must poll, use the wait your harness already has — `TimeOut#waitFor` (solr-core), `cluster.waitForState(..)` in `SolrCloudTestCase`, `awaitOrFail(..)` in `SolrShellTestCase` — rather than a hand-rolled loop.
+* Derive a timeout from whatever it bounds, and name it: `ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2`, not a bare `2, SECONDS`.
+
+A sleep you cannot replace is worth a comment saying what it is waiting for, because it usually marks a missing signal in the code under test rather than in the test.
+
 == Worked examples
 
 `SolrTestCase`::
