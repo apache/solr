@@ -392,21 +392,12 @@ def configureShellTestTask(Test task, String outputName, String picocli) {
   }
 
   task.doFirst {
-    // A run killed outright — Ctrl-C twice, or SIGKILL — gets no chance to run the harness'
-    // shutdown hook, so it can leave Solr nodes behind. Their pid files are the only record of
-    // them, and the wipe below is about to delete those, so reap first.
-    if (shellTestOutput.exists()) {
-      fileTree(shellTestOutput).matching {include '**/solr-*.pid'}.each {pidFile ->
-        def pid = pidFile.text.trim()
-        if (pid ==~ /\d+/) {
-          def handle = ProcessHandle.of(Long.parseLong(pid))
-          if (handle.isPresent() && handle.get().isAlive()) {
-            logger.lifecycle("Killing Solr left behind by an earlier run: pid ${pid}")
-            handle.get().destroyForcibly()
-          }
-        }
-      }
-    }
+    // Nodes left behind by a run that was killed outright are reaped by the harness itself, in
+    // SolrShellTestCase's pre-flight check: it matches on the command-line marker, which works on
+    // both platforms and needs no files. Doing it here instead would mean reading pid files, which
+    // bin/solr and bin/solr.cmd disagree about, or reading process command lines, which the Gradle
+    // daemon cannot do on Windows.
+    //
     // Wiped per run, not per fork, so the port-block counter starts at zero and last run's
     // failure snapshots do not pile up. Matches what configureBatsTask does for the BATS output.
     delete shellTestOutput

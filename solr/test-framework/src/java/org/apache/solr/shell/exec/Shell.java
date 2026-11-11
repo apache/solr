@@ -54,12 +54,17 @@ public enum Shell {
     @Override
     public List<String> processArgs(String line, Path scriptDir, String scriptName)
         throws IOException {
-      Path script = scriptDir.resolve(scriptName + ".cmd");
+      // 'call' is required for a single command, because without it a batch file invoking
+      // solr.cmd never gets control back. It takes one command though, so a multi-line body —
+      // which is the whole point of script(bash, cmd) — is written verbatim instead, and is
+      // responsible for its own 'call' where it invokes another batch file.
+      String command = line.contains("\n") ? line : "call " + line;
       String body =
-          String.join(
-                  "\r\n", "@echo off", "chcp 65001 >nul", "call " + line, "exit /b %ERRORLEVEL%")
+          String.join("\r\n", "@echo off", "chcp 65001 >nul", command, "exit /b %ERRORLEVEL%")
               + "\r\n";
-      Files.writeString(script, body, StandardCharsets.UTF_8);
+      Path script = scriptDir.resolve(scriptName + ".cmd");
+      Files.writeString(
+          script, body.replace("\n", "\r\n").replace("\r\r\n", "\r\n"), StandardCharsets.UTF_8);
       return List.of("cmd.exe", "/d", "/c", script.toString());
     }
 

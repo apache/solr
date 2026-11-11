@@ -100,6 +100,32 @@ public final class PortBlocks {
     }
   }
 
+  /**
+   * Whether {@code port} lies anywhere in the span this run can hand out.
+   *
+   * <p>Used to tell a node of this run from one an earlier run left behind: the counter file is
+   * created fresh per run with a random base, so a port outside the span cannot belong to a block
+   * claimed now. The span covers the {@code P-1000} stop ports and the {@code P+1000} ZooKeeper
+   * ports as well as the node ports themselves.
+   *
+   * <p>False when no block has been claimed yet, since there is then no span to be inside.
+   */
+  public static boolean belongsToThisRun(Path outputDir, int port) {
+    Path counter = outputDir.resolve(COUNTER_FILE);
+    if (!Files.isRegularFile(counter)) {
+      return false;
+    }
+    try (FileChannel channel = FileChannel.open(counter, StandardOpenOption.READ)) {
+      int base = Integer.parseInt(read(channel).getProperty(BASE_KEY, "0"));
+      if (base <= 0) {
+        return false;
+      }
+      return port >= base - 1000 && port <= base + MAX_BLOCKS * STRIDE + 1002;
+    } catch (IOException | NumberFormatException e) {
+      return false;
+    }
+  }
+
   private static Ports claimLocked(FileChannel channel, Path counter, int seedBase)
       throws IOException {
     Properties state = read(channel);

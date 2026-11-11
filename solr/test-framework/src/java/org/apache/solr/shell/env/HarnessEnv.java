@@ -166,7 +166,7 @@ public final class HarnessEnv {
     //
     // Without this, 'solr status' with no port reports every Solr on the host: a developer's own
     // node, or another suite sharing a CI machine.
-    String marker = marker(ports);
+    String marker = marker(out, ports);
     vars.put("SOLR_PROCESS_SCAN_MARKER", marker);
     vars.put("SOLR_OPTS_INTERNAL", "-D" + SolrProcessManager.PROCESS_SCAN_MARKER + "=" + marker);
     if (picocli != null && !picocli.isBlank()) {
@@ -182,11 +182,30 @@ public final class HarnessEnv {
    * random base per run — so two suites sharing a machine do not see each other's nodes. An
    * explicit {@code SOLR_PROCESS_SCAN_MARKER} wins, for a CI job that would rather name its own.
    */
-  private static String marker(Ports ports) {
+  private static String marker(Path outputDir, Ports ports) {
     String explicit = lookup("SOLR_PROCESS_SCAN_MARKER");
     return (explicit == null || explicit.isBlank())
-        ? SolrNodes.MARKER_PREFIX + ports.solr()
+        ? taskMarkerPrefix(outputDir) + ports.solr()
         : explicit;
+  }
+
+  /**
+   * The marker prefix shared by every node this Gradle task has started, in this checkout.
+   *
+   * <p>Keyed on the output directory, which is per task and per checkout and stable across runs —
+   * unlike the port, which is random per run. That is what lets a run find and kill a node an
+   * earlier run of the same task left behind, without touching one belonging to another suite,
+   * another checkout, or a developer's own Solr.
+   */
+  public static String taskMarkerPrefix(Path outputDir) {
+    return SolrNodes.MARKER_PREFIX
+        + Integer.toHexString(outputDir.toAbsolutePath().normalize().toString().hashCode())
+        + "-";
+  }
+
+  /** The marker prefix for this environment's task. */
+  public String taskMarkerPrefix() {
+    return taskMarkerPrefix(testOutputDir());
   }
 
   private static Path requireDistribution(Path tip) {

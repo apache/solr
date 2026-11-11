@@ -33,10 +33,10 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.shell.env.HarnessEnv;
+import org.apache.solr.shell.env.PortBlocks;
 import org.apache.solr.shell.env.Ports;
 import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.ProcessKill;
-import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.exec.SolrNodes;
 import org.apache.solr.shell.session.CliSession;
 import org.apache.solr.shell.session.SolrCliHelpers;
@@ -205,14 +205,8 @@ public abstract class SolrShellTestCase extends SolrTestCase {
         allowed.contains(harnessEnv.cli()));
   }
 
-  /** Skips the test, or the class, when {@link EnabledOnShell} does not name the current shell. */
   private static void requireShell(EnabledOnShell restriction) {
-    if (restriction == null) {
-      return;
-    }
-    Shell current = Shell.defaultShell();
-    List<Shell> allowed = List.of(restriction.value());
-    assumeTrue("Only runs on " + allowed + "; this run uses " + current, allowed.contains(current));
+    ShellGate.requireShell(restriction);
   }
 
   // ------------------------------------------------- method-scope shorthands
@@ -324,10 +318,15 @@ public abstract class SolrShellTestCase extends SolrTestCase {
    * never got to run.
    */
   private static void preFlightLeakCheck() {
-    for (SolrProcess node : SolrNodes.running(SolrNodes.MARKER_PREFIX)) {
-      if (harnessEnv.ports().contains(node.port())) {
+    // Nodes carrying this task's marker but sitting outside this run's port span can only come
+    // from an earlier run of the same task — the span is fixed when the run claims its first
+    // block, from a base that is random per run. So this is safe against a sibling class in this
+    // run, and against another suite or checkout, whose marker prefix differs.
+    for (SolrProcess node : SolrNodes.running(harnessEnv.taskMarkerPrefix())) {
+      boolean ours = PortBlocks.belongsToThisRun(harnessEnv.testOutputDir(), node.port());
+      if (!ours || harnessEnv.ports().contains(node.port())) {
         log.warn(
-            "A harness Solr node from an earlier run holds port {} (pid {}); killing it",
+            "Killing a Solr node left behind by an earlier run of this task: port {}, pid {}",
             node.port(),
             node.pid());
         ProcessKill.killTree(node.pid(), Duration.ofSeconds(10));

@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -131,33 +132,40 @@ public final class ShellExecutor {
     }
   }
 
-  /** Decodes as UTF-8, normalises CRLF to LF and strips one trailing newline, as BATS does. */
+  /**
+   * Decodes as UTF-8, normalises CRLF to LF and strips one trailing newline, as BATS does.
+   *
+   * <p>Decoding is lenient, never strict. The bytes a command writes are not ours to guarantee:
+   * {@code bin/solr.cmd} output comes back in the console code page rather than the {@code chcp
+   * 65001} the harness asks for, a truncated capture is cut mid-character, and any command is free
+   * to emit a stray byte. A replacement character in the transcript is a far better outcome than a
+   * {@link java.nio.charset.MalformedInputException} standing in for the test's real result.
+   */
   private static String read(Path file) throws IOException {
     if (!Files.exists(file)) {
       return "";
     }
     long size = Files.size(file);
-    String text;
+    byte[] bytes;
+    String truncationNote = "";
     if (size <= OUTPUT_LIMIT_BYTES) {
-      text = Files.readString(file, StandardCharsets.UTF_8);
+      bytes = Files.readAllBytes(file);
     } else {
       byte[] head = new byte[(int) OUTPUT_LIMIT_BYTES];
       try (var in = Files.newInputStream(file)) {
         int read = in.readNBytes(head, 0, head.length);
-        // Decoded leniently: the cut almost certainly lands mid-character, and a replacement
-        // character in a truncation marker beats throwing away the output we did capture.
-        CharsetDecoder decoder =
-            StandardCharsets.UTF_8
-                .newDecoder()
-                .onMalformedInput(CodingErrorAction.REPLACE)
-                .onUnmappableCharacter(CodingErrorAction.REPLACE);
-        text =
-            decoder.decode(ByteBuffer.wrap(head, 0, read))
-                + "\n... ["
-                + (size - read)
-                + " more bytes truncated]";
+        bytes = Arrays.copyOf(head, read);
       }
+      truncationNote = "\n... [" + (size - bytes.length) + " more bytes truncated]";
     }
+
+    CharsetDecoder decoder =
+        StandardCharsets.UTF_8
+            .newDecoder()
+            .onMalformedInput(CodingErrorAction.REPLACE)
+            .onUnmappableCharacter(CodingErrorAction.REPLACE);
+    String text = decoder.decode(ByteBuffer.wrap(bytes)) + truncationNote;
+
     text = text.replace("\r\n", "\n");
     if (text.endsWith("\n")) {
       text = text.substring(0, text.length() - 1);
