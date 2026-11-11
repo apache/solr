@@ -42,8 +42,7 @@ public enum Shell {
   },
 
   /**
-   * Windows {@code cmd.exe}. Not yet exercised by CI; the Windows side of the harness is a
-   * placeholder until {@code bin/solr.cmd} coverage lands.
+   * Windows {@code cmd.exe}.
    *
    * <p>The line goes into a temp {@code .cmd} script rather than onto the {@code cmd /c} command
    * line, because {@code ProcessBuilder}'s quoting rules for {@code cmd /c} and {@code .cmd}

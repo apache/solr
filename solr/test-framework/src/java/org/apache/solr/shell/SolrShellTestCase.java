@@ -52,8 +52,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for tests that drive Solr's start scripts the way the BATS suites do, with {@code
  * run}, {@code status}, {@code output}, reusable helpers and automatic cleanup — but as one test
- * that can run against {@code bin/solr} under bash and (eventually) {@code bin\solr.cmd} under
- * cmd.exe.
+ * that runs against {@code bin/solr} under bash and {@code bin\solr.cmd} under cmd.exe.
  *
  * <p>Two scopes, mirroring BATS:
  *
