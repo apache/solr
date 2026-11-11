@@ -34,6 +34,7 @@
 ** xref:tutorial-paramsets.adoc[]
 ** xref:tutorial-vectors.adoc[]
 ** xref:tutorial-solrcloud.adoc[]
+** xref:tutorial-securing-solr.adoc[]
 ** xref:tutorial-opennlp.adoc[]
 ** xref:tutorial-aws.adoc[]
 

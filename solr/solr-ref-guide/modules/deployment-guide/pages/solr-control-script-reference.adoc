@@ -177,7 +177,7 @@ Solr will create core directories under this directory.
 This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `--server-dir` parameter.
 If set, the specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 +
-This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
+This parameter is ignored when running examples (`-e`), except for `secure`, which uses it as the parent directory for both node homes and the TLS configuration.
 +
 The default value is `server/solr`.
 If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
@@ -264,6 +264,7 @@ These examples are provided to help you get started faster with Solr generally, 
 The available options are:
 
 * `cloud`: SolrCloud example
+* `secure`: Two-node SolrCloud example with HTTPS, Basic Authentication, and ZooKeeper ACLs (Bash only)
 * `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
 * `schemaless`: Schema-less example (schema is inferred from data during indexing)
 * `films`: Example of starting with _default configset and adding explicit fields dynamically
@@ -375,6 +376,10 @@ When using this example, you can choose from any of the available configsets fou
 The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_techproducts_configs`.
 +
 The data used can be found in `$SOLR_HOME/example/exampledocs/`.
+
+* *secure*: This example starts two local SolrCloud nodes with PKCS12 certificates, Basic Authentication, and ZooKeeper digest ACLs.
+It uses demonstration passwords and keeps ZooKeeper transport on loopback without TLS.
+See xref:getting-started:tutorial-securing-solr.adoc[] for the equivalent manual steps.
 
 * *schemaless*: This example starts a standalone Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and provides a very minimal pre-defined schema.
 Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.

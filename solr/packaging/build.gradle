@@ -365,6 +365,15 @@ abstract class BatsTask extends Exec {
   @Optional
   String filterTags = null
 
+  // Whether testFiles was populated via the --tests CLI option, as opposed to being
+  // preconfigured by the build script (e.g. integrationTestsPicocli's curated list).
+  // Explicitly requesting tests by name means the nightly tag filter should not apply.
+  // TODO: once the commons-cli/picocli split goes away (integrationTestsPicocli and its
+  // hardcoded testFiles list are removed), this field is redundant with `!testFiles.empty`
+  // and can be deleted in favor of that simpler check.
+  @Input
+  boolean testsSelectedViaCli = false
+
   /** Where to write the junit report. Defaults to the project's test-output directory. */
   @Internal
   String reportDir = null
@@ -372,6 +381,7 @@ abstract class BatsTask extends Exec {
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
     // TODO: bats --filter <regex>
+    testsSelectedViaCli = true
     tests.each {testFiles << "$testDir/$it"}
   }
 
@@ -384,7 +394,7 @@ abstract class BatsTask extends Exec {
     if (logger.isInfoEnabled()) {
       batsArgs << '--verbose-run'
     }
-    if (filterTags) {
+    if (filterTags && !testsSelectedViaCli) {
       batsArgs += ['--filter-tags', filterTags]
     }
     batsArgs +=

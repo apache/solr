@@ -27,6 +27,7 @@ separate directory. To run a specific example, do:
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
+    secure       : Two-node HTTPS example with Basic Authentication and ZooKeeper ACLs
     films        : Example of starting with _default configset and defining explicit fields dynamically.
 ```
 
