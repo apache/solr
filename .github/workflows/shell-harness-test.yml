@@ -1,0 +1,52 @@
+name: Solr Shell Harness Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/shell-harness-test.yml'
+      - 'solr/bin/**'
+      - 'solr/packaging/**'
+      - 'solr/core/src/java/org/apache/solr/cli/**'
+      - 'solr/test-framework/src/java/org/apache/solr/shell/**'
+      - 'solr/test-framework/src/test/org/apache/solr/shell/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Solr Shell Harness Tests
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    # The harness' own unit tests. No distribution needed, so this fails fast if the library
+    # itself is broken, before spending minutes on the suites that drive bin/solr.
+    - name: Test the shell harness library
+      run: ./gradlew -p solr/test-framework shellTests
+
+    - name: Test bin/solr through the shell harness
+      run: ./gradlew -p solr/packaging shellTests
+
+    # Reuses the distribution built above, so this only costs the suite run.
+    - name: Test bin/solr through the shell harness with the experimental picocli CLI
+      run: ./gradlew -p solr/packaging shellTestsPicocli
+
+    - name: Archive logs
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: logs
+        path: |
+          solr/packaging/build/shell-test-output
+          solr/packaging/build/shell-test-output-picocli
+          solr/test-framework/build/test-results/shellTests
