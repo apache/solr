@@ -18,6 +18,7 @@
 package org.apache.solr.shell;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.http.HttpHeaders;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -579,6 +580,18 @@ public class CliSessionTest extends SolrTestCase {
   }
 
   @Test
+  public void aMultipartFilePostReportsAConnectionFailureTheSameWay() {
+    // The overload that ports 'curl -F "field=@file"'; nothing is listening on this session's
+    // block, so it exercises building and sending the multipart body without needing a node.
+    Path document = session.write("doc.bin", "a document");
+    session
+        .helpers()
+        .httpPostFile(
+            session.ports().solr(), "/solr/x/update/extract?literal.id=doc1", "myfile", document)
+        .assertConnectionFailed();
+  }
+
+  @Test
   public void anHttpsRequestThatCannotConnectIsReportedAsAFailureNotAStatus() {
     // Nothing is listening on the block this session claimed, which is the shape of the BATS
     // 'run ! curl https://...' line: no status, and the reason readable in the body.
@@ -586,5 +599,29 @@ public class CliSessionTest extends SolrTestCase {
         session.helpers().https(session.ports().solr(), "/solr/admin/info/system").get();
     result.assertConnectionFailed();
     assertTrue(result.body(), result.body().contains("Connect"));
+  }
+
+  @Test
+  public void aPostOrPutThatCannotConnectIsReportedAsAFailureNotAStatus() {
+    // The body-carrying ports of 'curl -X POST -d ...' and 'curl --data-binary @file -X PUT ...'.
+    // Nothing is listening on the block this session claimed, so this exercises the request path
+    // without needing a node.
+    int port = session.ports().solr();
+    session
+        .helpers()
+        .httpPost(port, "/solr/films/schema", "application/json", "{\"add-field\":{}}")
+        .assertConnectionFailed();
+    Path file = session.write("upload.txt", "payload");
+    session
+        .helpers()
+        .httpPut(port, "/api/cluster/filestore/files/upload.txt", "application/octet-stream", file)
+        .assertConnectionFailed();
+  }
+
+  @Test
+  public void aDownloadThatCannotConnectFailsLoudlyRatherThanLeavingATruncatedFile() {
+    // Port of 'curl -o <file> <url>'. Nothing is listening on this session's block.
+    String url = "http://localhost:" + session.ports().solr() + "/model.onnx";
+    expectThrows(UncheckedIOException.class, () -> session.download(url, "model.onnx"));
   }
 }

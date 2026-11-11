@@ -20,6 +20,10 @@ package org.apache.solr.shell.session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,6 +82,9 @@ public class CliSession implements AutoCloseable {
 
   /** Timeout for lines that start or restart a Solr node, which is much slower. */
   public static final Duration DEFAULT_START_TIMEOUT = Duration.ofSeconds(300);
+
+  /** Timeout for {@link #download}, which fetches from the network rather than from a node. */
+  private static final Duration DOWNLOAD_TIMEOUT = Duration.ofMinutes(10);
 
   /** Every PID the harness has ever seen, so the shutdown hook can finish the job. */
   private static final Set<Long> ALL_RECORDED_PIDS = ConcurrentHashMap.newKeySet();
@@ -369,6 +376,46 @@ public class CliSession implements AutoCloseable {
   /** Port of {@code ls <dir>}: the names directly in a directory, sorted. */
   public List<Path> list(String dir) {
     return list(dir, "*");
+  }
+
+  /**
+   * Port of {@code curl -o <path> <url>}: fetches a URL into a file, creating parent directories.
+   *
+   * <p>In Java because neither {@code curl} nor {@code wget} is on a stock Windows runner. A
+   * non-2xx response, or a transport failure, fails the test rather than leaving a truncated file
+   * behind.
+   *
+   * @return the absolute path of the downloaded file
+   */
+  public Path download(String url, String path) {
+    Path file = path(path);
+    try (HttpClient client =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build()) {
+      Files.createDirectories(file.getParent());
+      HttpRequest request =
+          HttpRequest.newBuilder(URI.create(url)).timeout(DOWNLOAD_TIMEOUT).GET().build();
+      HttpResponse<Path> response =
+          client.send(
+              request,
+              HttpResponse.BodyHandlers.ofFile(
+                  file,
+                  StandardOpenOption.CREATE,
+                  StandardOpenOption.WRITE,
+                  StandardOpenOption.TRUNCATE_EXISTING));
+      if (response.statusCode() / 100 != 2) {
+        throw new AssertionError(
+            "Downloading " + url + " answered HTTP " + response.statusCode() + ", not 2xx");
+      }
+      return file;
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not download " + url + " to " + file, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted downloading " + url, e);
+    }
   }
 
   public Path cwd() {

@@ -18,8 +18,10 @@
 package org.apache.solr.shell.session;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
@@ -33,6 +35,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
@@ -50,6 +53,12 @@ import org.apache.solr.shell.exec.ShellAssertionError;
  * SolrShellTestCase}.
  */
 public final class SolrCliHelpers {
+
+  /** How long a request a node answers from memory may take. */
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
+  /** How long a request whose body is a file may take, which is bounded by its size. */
+  private static final Duration UPLOAD_TIMEOUT = Duration.ofMinutes(5);
 
   private final CliSession cli;
 
@@ -219,12 +228,115 @@ public final class SolrCliHelpers {
                     .encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8))));
   }
 
+  /**
+   * A POST carrying a text body, which is what {@code curl -X POST -H 'Content-type:<type>' -d
+   * '<body>'} ports to — the shape every BATS line that modifies a schema, a config or an index
+   * uses.
+   */
+  public HttpResult httpPost(String pathAndQuery, String contentType, String body) {
+    return httpPost(cli.ports().solr(), pathAndQuery, contentType, body);
+  }
+
+  /** As {@link #httpPost(String, String, String)} but against an explicit port. */
+  public HttpResult httpPost(int port, String pathAndQuery, String contentType, String body) {
+    return send(
+        "POST",
+        port,
+        pathAndQuery,
+        Map.of("Content-Type", contentType),
+        HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8),
+        REQUEST_TIMEOUT);
+  }
+
+  /**
+   * A PUT whose body is a file's bytes: the port of {@code curl --data-binary @<file> -X PUT}.
+   *
+   * <p>Given a longer timeout than the other requests, because what this uploads is a file rather
+   * than a request a node answers from memory.
+   */
+  public HttpResult httpPut(String pathAndQuery, String contentType, Path file) {
+    return httpPut(cli.ports().solr(), pathAndQuery, contentType, file);
+  }
+
+  /** As {@link #httpPut(String, String, Path)} but against an explicit port. */
+  public HttpResult httpPut(int port, String pathAndQuery, String contentType, Path file) {
+    HttpRequest.BodyPublisher body;
+    try {
+      body = HttpRequest.BodyPublishers.ofFile(file);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not read " + file + " to upload it", e);
+    }
+    return send(
+        "PUT", port, pathAndQuery, Map.of("Content-Type", contentType), body, UPLOAD_TIMEOUT);
+  }
+
+  /**
+   * A {@code multipart/form-data} POST of one file: the port of {@code curl -F "field=@<file>"},
+   * which is how a BATS line hands a binary document to a request handler.
+   *
+   * <p>Shares {@link #httpPut}'s longer timeout, for the same reason.
+   */
+  public HttpResult httpPostFile(String pathAndQuery, String fieldName, Path file) {
+    return httpPostFile(cli.ports().solr(), pathAndQuery, fieldName, file);
+  }
+
+  /** As {@link #httpPostFile(String, String, Path)} but against an explicit port. */
+  public HttpResult httpPostFile(int port, String pathAndQuery, String fieldName, Path file) {
+    String boundary = "SolrShellHarness" + UUID.randomUUID();
+    byte[] body;
+    try {
+      body = filePart(boundary, fieldName, file);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not read " + file + " to upload it", e);
+    }
+    return send(
+        "POST",
+        port,
+        pathAndQuery,
+        Map.of("Content-Type", "multipart/form-data; boundary=" + boundary),
+        HttpRequest.BodyPublishers.ofByteArray(body),
+        UPLOAD_TIMEOUT);
+  }
+
+  /** One file part, named the way {@code curl -F} names it: the field, and the file's base name. */
+  private static byte[] filePart(String boundary, String fieldName, Path file) throws IOException {
+    ByteArrayOutputStream body = new ByteArrayOutputStream();
+    body.write(
+        ("--"
+                + boundary
+                + "\r\nContent-Disposition: form-data; name=\""
+                + fieldName
+                + "\"; filename=\""
+                + file.getFileName()
+                + "\"\r\nContent-Type: application/octet-stream\r\n\r\n")
+            .getBytes(StandardCharsets.UTF_8));
+    body.write(Files.readAllBytes(file));
+    body.write(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+    return body.toByteArray();
+  }
+
   private HttpResult get(int port, String pathAndQuery, Map<String, String> requestHeaders) {
+    return send(
+        "GET",
+        port,
+        pathAndQuery,
+        requestHeaders,
+        HttpRequest.BodyPublishers.noBody(),
+        REQUEST_TIMEOUT);
+  }
+
+  private HttpResult send(
+      String method,
+      int port,
+      String pathAndQuery,
+      Map<String, String> requestHeaders,
+      HttpRequest.BodyPublisher body,
+      Duration requestTimeout) {
     String url = "http://localhost:" + port + pathAndQuery;
     try (HttpClient client =
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
       HttpRequest.Builder request =
-          HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).GET();
+          HttpRequest.newBuilder(URI.create(url)).timeout(requestTimeout).method(method, body);
       requestHeaders.forEach(request::header);
       HttpResponse<byte[]> response =
           client.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());

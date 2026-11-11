@@ -320,6 +320,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     return cli.list(dir, glob);
   }
 
+  protected Path download(String url, String path) {
+    return cli.download(url, path);
+  }
+
   protected Path cwd() {
     return cli.cwd();
   }
@@ -362,6 +366,25 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   protected SolrCliHelpers.HttpResult http(
       int port, String pathAndQuery, String user, String password) {
     return cli.helpers().http(port, pathAndQuery, user, password);
+  }
+
+  protected SolrCliHelpers.HttpResult httpPost(
+      String pathAndQuery, String contentType, String body) {
+    return cli.helpers().httpPost(pathAndQuery, contentType, body);
+  }
+
+  protected SolrCliHelpers.HttpResult httpPost(
+      int port, String pathAndQuery, String contentType, String body) {
+    return cli.helpers().httpPost(port, pathAndQuery, contentType, body);
+  }
+
+  protected SolrCliHelpers.HttpResult httpPut(String pathAndQuery, String contentType, Path file) {
+    return cli.helpers().httpPut(pathAndQuery, contentType, file);
+  }
+
+  protected SolrCliHelpers.HttpResult httpPut(
+      int port, String pathAndQuery, String contentType, Path file) {
+    return cli.helpers().httpPut(port, pathAndQuery, contentType, file);
   }
 
   protected HttpsRequest https(String pathAndQuery) {
