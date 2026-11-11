@@ -78,6 +78,18 @@ public class SolrShellRoundTripTest extends SolrShellTestCase {
   }
 
   @Test
+  @EnabledOnCli(Cli.COMMONS_CLI)
+  public void commonsCliOnlyTestsSeeCommonsCli() {
+    assertEquals(Cli.COMMONS_CLI, cli());
+  }
+
+  @Test
+  @EnabledOnCli(Cli.PICOCLI)
+  public void picocliOnlyTestsSeePicocli() {
+    assertEquals(Cli.PICOCLI, cli());
+  }
+
+  @Test
   @EnabledOnShell(Shell.CMD)
   public void cmdOnlyTestsAreSkippedUnderBash() {
     // The gate's own proof: under bash this must not execute, so the suite only stays green if

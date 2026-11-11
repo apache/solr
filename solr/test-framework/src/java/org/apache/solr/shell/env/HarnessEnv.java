@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 import org.apache.solr.cli.SolrProcessManager;
+import org.apache.solr.shell.Cli;
 
 /**
  * The environment a shell test run operates in: where the Solr distribution lives, which {@code
@@ -308,8 +309,16 @@ public final class HarnessEnv {
     return Path.of(vars.get("TEST_FAILURE_DIR"));
   }
 
-  /** Whether this run targets the experimental picocli CLI. */
-  public boolean picocli() {
-    return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "false"));
+  /**
+   * Which command-line implementation {@code bin/solr} will dispatch to for this run.
+   *
+   * <p>The default tracks {@code SolrCLI.main}, which reads {@code solr.picocli} with a default of
+   * false. When that flips to picocli, this flips with it — it is the one place the harness encodes
+   * the default.
+   */
+  public Cli cli() {
+    return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "false"))
+        ? Cli.PICOCLI
+        : Cli.COMMONS_CLI;
   }
 }

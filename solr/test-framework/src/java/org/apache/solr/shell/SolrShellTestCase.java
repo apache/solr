@@ -97,6 +97,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     // Per class, not per JVM: directories and ports keyed to this class are what let classes run
     // concurrently in separate forks.
     harnessEnv = HarnessEnv.forClass(getTestClass().getSimpleName());
+    requireCli(getTestClass().getAnnotation(EnabledOnCli.class));
     CliSession.resetKnownNodes();
     // Order matters: SOLR_PID_DIR lives inside SOLR_HOME, so wiping the home first would delete
     // the pid file that is the only record of a node an earlier, hard-killed run left behind.
@@ -162,6 +163,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
             @Override
             public void evaluate() throws Throwable {
               requireShell(description.getAnnotation(EnabledOnShell.class));
+              requireCli(description.getAnnotation(EnabledOnCli.class));
               cli = classCli.child(description.getMethodName());
               try {
                 base.evaluate();
@@ -181,6 +183,25 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   /** The ports this run owns. */
   protected Ports ports() {
     return harnessEnv.ports();
+  }
+
+  /** The command-line implementation this run targets. */
+  protected static Cli cli() {
+    return harnessEnv.cli();
+  }
+
+  /**
+   * Skips the test, or the class, when {@link EnabledOnCli} does not name the implementation this
+   * run targets.
+   */
+  private static void requireCli(EnabledOnCli restriction) {
+    if (restriction == null) {
+      return;
+    }
+    List<Cli> allowed = List.of(restriction.value());
+    assumeTrue(
+        "Only runs on " + allowed + "; this run uses " + harnessEnv.cli(),
+        allowed.contains(harnessEnv.cli()));
   }
 
   /** Skips the test, or the class, when {@link EnabledOnShell} does not name the current shell. */

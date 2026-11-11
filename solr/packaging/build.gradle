@@ -357,29 +357,33 @@ tasks.named('test') {
   enabled = false
 }
 
-tasks.register('shellTests', Test) {
-  group = 'verification'
-  description = 'Runs the bin/solr shell test harness suites against the unpacked distribution.'
-  dependsOn installFullDist
+// Shared configuration for the shell harness suites, mirroring configureBatsTask. outputName keeps
+// each variant's SOLR_HOMEs, port-block counter and failure snapshots apart; picocli selects the
+// CLI implementation, or null to take whatever bin/solr defaults to.
+def configureShellTestTask(Test task, String outputName, String picocli) {
+  task.dependsOn installFullDist
 
-  testClassesDirs = sourceSets.test.output.classesDirs
-  classpath = sourceSets.test.runtimeClasspath
+  task.testClassesDirs = sourceSets.test.output.classesDirs
+  task.classpath = sourceSets.test.runtimeClasspath
 
   // Unlike BATS, which runs every file sequentially against one shared SOLR_HOME and port block,
   // each class here gets its own of both (see HarnessEnv.forClass), so classes can run in parallel.
   // Defaults to the build's own tests.jvms, capped because the ceiling here is memory rather than
   // CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pshell.tests.jvms.
   // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
-  maxParallelForks = (project.findProperty('shell.tests.jvms')
+  task.maxParallelForks = (project.findProperty('shell.tests.jvms')
       ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer
-  timeout.set(java.time.Duration.ofMinutes(60))
+  task.timeout.set(java.time.Duration.ofMinutes(60))
 
-  def shellTestOutput = file("$buildDir/shell-test-output")
-  inputs.dir(distDir)
-  environment SOLR_TIP: distDir.toString()
-  environment TEST_OUTPUT_DIR: shellTestOutput.toString()
+  def shellTestOutput = file("$buildDir/$outputName")
+  task.inputs.dir(distDir)
+  task.environment SOLR_TIP: distDir.toString()
+  task.environment TEST_OUTPUT_DIR: shellTestOutput.toString()
+  if (picocli != null) {
+    task.environment SOLR_PICOCLI: picocli
+  }
 
-  doFirst {
+  task.doFirst {
     // A run killed outright — Ctrl-C twice, or SIGKILL — gets no chance to run the harness'
     // shutdown hook, so it can leave Solr nodes behind. Their pid files are the only record of
     // them, and the wipe below is about to delete those, so reap first.
@@ -401,9 +405,25 @@ tasks.register('shellTests', Test) {
     shellTestOutput.mkdirs()
     // The harness spawns bin/solr and writes outside the test sandbox, neither of which the test
     // security policy allows. Dropping the property is enough; nothing installs an SM later.
-    systemProperties.remove('java.security.manager')
-    logger.lifecycle("Running shell tests with ${maxParallelForks} parallel fork(s)")
+    task.systemProperties.remove('java.security.manager')
+    logger.lifecycle("Running shell tests with ${task.maxParallelForks} parallel fork(s)")
   }
+}
+
+tasks.register('shellTests', Test) {
+  group = 'verification'
+  description = 'Runs the bin/solr shell test harness suites against the unpacked distribution.'
+  configureShellTestTask(it, 'shell-test-output', null)
+}
+
+// Deprecated: delete along with commons-cli itself, once picocli is the only CLI in Solr 11. Until
+// then the two differ in some usage and error wording, so it is worth being able to run the suites
+// against whichever bin/solr is not defaulting to. A test that genuinely cannot hold for both
+// carries @EnabledOnCli; where only the wording differs, one test uses assertOutputForCli.
+tasks.register('shellTestsCommonsCli', Test) {
+  group = 'verification'
+  description = 'Deprecated. Runs the shell harness suites against the commons-cli implementation.'
+  configureShellTestTask(it, 'shell-test-output-commons-cli', 'false')
 }
 
 task integrationTests(type: BatsTask) {
