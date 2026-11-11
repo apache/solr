@@ -36,9 +36,11 @@ import org.junit.Test;
  *       these tests need is a collection named {@code films}, so a plain start plus {@code solr
  *       create} stands in and the suite runs on both shells. Snapshotting does not care what is
  *       indexed, so the example documents are not posted.
- *   <li>Every snapshot a test creates it also deletes, exactly as the original does, which is what
- *       lets two tests share the snapshot names {@code snapshot3} / {@code snapshot4} even though
- *       {@code SOLR_HOME} is wiped per class rather than per test.
+ *   <li>Every snapshot a test creates it also deletes, exactly as the original does. Unlike the
+ *       original, no two tests share a snapshot name: {@code SOLR_HOME} is wiped per class rather
+ *       than per test, so a failure between a create and its delete would otherwise surface again
+ *       as a second, unrelated failure in the sibling test that reused the name — and the comment
+ *       below records that creating the same snapshot twice is supposed to error.
  * </ul>
  */
 public class SnapshotsTest extends SolrShellTestCase {
@@ -92,15 +94,16 @@ public class SnapshotsTest extends SolrShellTestCase {
 
   @Test
   public void snapshotListViaSolrConnection() {
-    run("solr snapshot-create -c films --snapshot-name snapshot3 --solr-connection http://localhost:${SOLR_PORT}/solr")
+    run("solr snapshot-create -c films --snapshot-name snapshot3_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
         .assertSuccess();
 
     // Confirm that we continue to normalize away the /solr ending.
     run("solr snapshot-list -c films --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertContains("snapshot3");
+        .assertContains("snapshot3_conn");
 
-    run("solr snapshot-delete -c films --snapshot-name snapshot3 --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertContains("Successfully deleted snapshot with name snapshot3 for collection films");
+    run("solr snapshot-delete -c films --snapshot-name snapshot3_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
+        .assertContains(
+            "Successfully deleted snapshot with name snapshot3_conn for collection films");
   }
 
   @Test
@@ -117,13 +120,14 @@ public class SnapshotsTest extends SolrShellTestCase {
 
   @Test
   public void snapshotDescribeViaSolrConnection() {
-    run("solr snapshot-create -c films --snapshot-name snapshot4 --solr-connection http://localhost:${SOLR_PORT}/solr")
+    run("solr snapshot-create -c films --snapshot-name snapshot4_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
         .assertSuccess();
 
-    run("solr snapshot-describe -c films --snapshot-name snapshot4 --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertContains("Name: snapshot4");
+    run("solr snapshot-describe -c films --snapshot-name snapshot4_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
+        .assertContains("Name: snapshot4_conn");
 
-    run("solr snapshot-delete -c films --snapshot-name snapshot4 --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertContains("Successfully deleted snapshot with name snapshot4 for collection films");
+    run("solr snapshot-delete -c films --snapshot-name snapshot4_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
+        .assertContains(
+            "Successfully deleted snapshot with name snapshot4_conn for collection films");
   }
 }

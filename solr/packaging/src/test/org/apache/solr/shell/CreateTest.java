@@ -24,25 +24,27 @@ import org.junit.Test;
  *
  * <p>Kept close to the original, including the order of the tests and the text each asserts on.
  * Where it differs: BATS wiped {@code SOLR_HOME} before every test, while here the whole class
- * shares one, so the user-managed test deletes the core it created again — otherwise a stale {@code
- * COLL_NAME} core directory would be lying in {@code SOLR_HOME} when the cloud-mode test creates a
- * collection of that name.
+ * shares one. The original used the same name in both tests, which is safe only in one of the two
+ * orders the runner may pick — so each test gets its own name, and the user-managed test also
+ * deletes the core it created, since a core directory left behind is discovered by the other test's
+ * node and fails to load.
  */
 public class CreateTest extends SolrShellTestCase {
 
   @Test
   public void createForNonCloudMode() {
     run("solr start --user-managed");
-    run("solr create -c COLL_NAME").assertContains("Created new core 'COLL_NAME'");
+    run("solr create -c core_non_cloud").assertContains("Created new core 'core_non_cloud'");
 
-    // Not in the original: SOLR_HOME is class-scoped here, so the core has to go again.
-    run("solr delete -c COLL_NAME").assertSuccess();
+    // Not in the original: SOLR_HOME is class-scoped here, so the core has to go again, or the
+    // cloud-mode test's node would discover a user-managed core directory it cannot load.
+    run("solr delete -c core_non_cloud").assertSuccess();
   }
 
   @Test
   public void createForCloudMode() {
     run("solr start");
-    run("solr create -c COLL_NAME").assertContains("Created collection 'COLL_NAME'");
+    run("solr create -c coll_cloud").assertContains("Created collection 'coll_cloud'");
   }
 
   @Test

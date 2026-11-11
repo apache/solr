@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
@@ -85,8 +86,10 @@ import org.testcontainers.utility.DockerImageName;
  *       lets the inline JSON update body be written as-is;
  *   <li>containers get Testcontainers' generated names and carry {@code solr-node1..3} as network
  *       aliases instead, so a leftover container from an earlier run cannot make this one fail to
- *       create one; the volume names are the original's, and are removed before use as well as
- *       after, so stale data from a killed run cannot poison the upgrade;
+ *       create one. The volumes likewise get a per-run suffix rather than the original's bare
+ *       {@code solr-dataN}: a Docker volume is global to the daemon, so two runs on one machine
+ *       would otherwise destroy each other's data mid-upgrade. They are still removed before use as
+ *       well as after, so nothing a killed run left behind can poison the next one;
  *   <li>{@code docker pull} and {@code docker image inspect} are gone. The pull policy sits on the
  *       container instead, keeping the original's behaviour of always re-pulling the begin image
  *       and preferring a local end image. An image that cannot be resolved now fails the test,
@@ -158,9 +161,11 @@ public class RollingUpgradeTest extends SolrShellTestCase {
     boolean failed = true;
     // Networking & volumes
     try (Network network = Network.newNetwork()) {
-      Node node1 = new Node(1, network);
-      Node node2 = new Node(2, network);
-      Node node3 = new Node(3, network);
+      // Unique per run, so the volume names below cannot collide with another run's.
+      String runId = UUID.randomUUID().toString().substring(0, 8);
+      Node node1 = new Node(1, network, runId);
+      Node node2 = new Node(2, network, runId);
+      Node node3 = new Node(3, network, runId);
       List<Node> nodes = List.of(node1, node2, node3);
       try {
         // A volume is global to the Docker daemon, so data a killed run left behind would make the
@@ -199,7 +204,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
                 "Content-Type: application/json",
                 "--data-binary",
                 "[{\"id\":\"rolling-upgrade-smoke\"}]",
-                "http://localhost:8983/solr/test-collection/update?commit=true"));
+                node1.httpAddress() + "/solr/test-collection/update?commit=true"));
 
         // Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
         node3.upgradeTo(endImage, node1.zkAddress(), pullPolicyFor(endImage));
@@ -221,8 +226,8 @@ public class RollingUpgradeTest extends SolrShellTestCase {
             node1.exec(
                 "curl",
                 "-fsS",
-                "http://localhost:8983/solr/test-collection/select"
-                    + "?q=id%3Arolling-upgrade-smoke&wt=json");
+                node1.httpAddress()
+                    + "/solr/test-collection/select?q=id%3Arolling-upgrade-smoke&wt=json");
         assertExec(select);
         assertEquals("1", firstGroup(select.getStdout(), "\"numFound\"\\s*:\\s*(\\d+)"));
 
@@ -364,9 +369,13 @@ public class RollingUpgradeTest extends SolrShellTestCase {
 
     private GenericContainer<?> container;
 
-    Node(int number, Network network) {
+    Node(int number, Network network, String runId) {
       this.name = "solr-node" + number;
-      this.volume = "solr-data" + number;
+      // Per run, unlike the original's bare solr-dataN. A Docker volume is global to the daemon,
+      // so two runs on one machine - two checkouts, or a retry overlapping a hung run - would
+      // otherwise wipe each other's data mid-upgrade, and a developer who happened to have a
+      // solr-data1 volume would lose it.
+      this.volume = "solr-data" + number + "-" + runId;
       this.port = 8982 + number;
       this.network = network;
     }

@@ -30,6 +30,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Map;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.solr.shell.session.SolrCliHelpers.HttpResult;
@@ -53,10 +54,12 @@ public final class HttpsRequest {
   private Path trustStore;
   private String trustStorePassword;
   private String authorization;
+  private final Map<String, String> vars;
 
-  HttpsRequest(int port, String pathAndQuery) {
+  HttpsRequest(int port, String pathAndQuery, Map<String, String> vars) {
     this.port = port;
     this.pathAndQuery = pathAndQuery;
+    this.vars = vars;
   }
 
   /**
@@ -110,9 +113,9 @@ public final class HttpsRequest {
       }
       HttpResponse<String> response =
           client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-      return new HttpResult(response.statusCode(), response.body(), response.headers());
+      return new HttpResult(response.statusCode(), response.body(), response.headers(), vars);
     } catch (IOException e) {
-      return new HttpResult(-1, describe(e));
+      return new HttpResult(-1, describe(e), vars);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted requesting " + url, e);

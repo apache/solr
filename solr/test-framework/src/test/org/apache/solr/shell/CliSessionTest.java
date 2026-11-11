@@ -557,7 +557,11 @@ public class CliSessionTest extends SolrTestCase {
             200,
             "<html><script src=\"libs/solr/index.js\"></script></html>",
             HttpHeaders.of(
-                Map.of("Content-Type", List.of("text/html;charset=utf-8")), (name, value) -> true));
+                Map.of("Content-Type", List.of("text/html;charset=utf-8")), (name, value) -> true),
+            Map.of("SOLR_PORT", "1234"));
+    // ${NAME} resolves in an HTTP assertion exactly as it does in a command assertion; before
+    // this, the expected text was compared unresolved and a ported BATS line passed silently.
+    result.assertContains("libs/solr/index.js").assertNotContains("port ${SOLR_PORT}");
     result
         .assertHeaderContains("Content-Type: text/html")
         .assertHeaderNotContains("Cache-Control")

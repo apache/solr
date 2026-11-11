@@ -203,6 +203,14 @@ public class CliSession implements AutoCloseable {
     return vars.get(key);
   }
 
+  /**
+   * An unmodifiable view of this session's variables, for the assertion families that resolve
+   * {@code ${NAME}} in their expected text.
+   */
+  public Map<String, String> varsForAssertions() {
+    return java.util.Collections.unmodifiableMap(vars);
+  }
+
   /** Changes the working directory. A relative path resolves against the current one. */
   public CliSession cd(String dir) {
     Path target = cwd.resolve(dir).normalize();
@@ -302,7 +310,10 @@ public class CliSession implements AutoCloseable {
 
   /** Port of {@code cat <path> | grep <regex>}: the file's lines the pattern matches. */
   public List<String> readLinesMatching(String path, String regex) {
-    Pattern pattern = Pattern.compile(regex);
+    // Resolved, like fileContains' argument: the two are siblings and must not differ in whether
+    // a ${NAME} in the pattern means anything.
+    Pattern pattern =
+        Pattern.compile(Variables.resolve(regex, Variables.ANY, vars, "a file assertion"));
     return read(path).lines().filter(line -> pattern.matcher(line).find()).toList();
   }
 
@@ -953,12 +964,45 @@ public class CliSession implements AutoCloseable {
       }
       KNOWN_NODES.put(node.port(), node.pid());
       ALL_RECORDED_PIDS.add(node.pid());
+
+      // A node on a port an ancestor already owns stays the ancestor's, with its pid brought up to
+      // date. Otherwise a test that restarts the node its class started in @BeforeClass would take
+      // ownership of it, and stop it when that one test ended - tearing down the shared node every
+      // later test in the class still expects to be running.
+      CliSession owner = ownerOf(node.port());
+      if (owner != null && owner != this) {
+        owner.ownedNodes.put(node.port(), node.pid());
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Solr node on port {} restarted as pid {}; it stays owned by session '{}'",
+              node.port(),
+              node.pid(),
+              owner.name);
+        }
+        continue;
+      }
+
       ownedNodes.put(node.port(), node.pid());
       if (log.isInfoEnabled()) {
         log.info(
             "Session '{}' now owns Solr node on port {} (pid {})", name, node.port(), node.pid());
       }
     }
+  }
+
+  /**
+   * The session in this scope's ancestry that already owns a node on {@code port}, or null.
+   *
+   * <p>Walks parents only, never children: ownership may move up to a longer-lived scope, so that
+   * cleanup happens when that scope ends, but never down into a scope that is about to close.
+   */
+  private CliSession ownerOf(int port) {
+    for (CliSession s = this; s != null; s = s.parent) {
+      if (s.ownedNodes.containsKey(port)) {
+        return s;
+      }
+    }
+    return null;
   }
 
   /** The ports of the Solr nodes this session started, in the order they appeared. */

@@ -178,9 +178,11 @@ public class ZkTest extends SolrShellTestCase {
     // before falling back to the default port.
     unset("SOLR_PORT_LISTEN");
 
-    run("solr zk ls / --recursive")
-        .assertContains("assuming solr url is http://localhost:8983")
-        .assertNotContains("aliases.json");
+    // Only the fallback message is asserted, not that the listing came back empty. The BATS
+    // original also refuted "aliases.json", which assumes nothing is listening on 8983 — a port no
+    // test class owns, and the single most likely thing to be running on a Solr developer's own
+    // machine. That made the test fail for a reason having nothing to do with ZK_HOST.
+    run("solr zk ls / --recursive").assertContains("assuming solr url is http://localhost:8983");
 
     env("ZK_HOST", "localhost:" + ports().zk());
     run("solr zk ls / --recursive").assertContains("aliases.json");

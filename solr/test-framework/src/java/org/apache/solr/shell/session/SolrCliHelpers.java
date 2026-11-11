@@ -41,6 +41,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.ShellAssertionError;
+import org.apache.solr.shell.exec.Variables;
 
 /**
  * The Solr-aware conveniences a shell test reaches for, ported from {@code bats_helper.bash}.
@@ -73,11 +74,21 @@ public final class SolrCliHelpers {
    * <p>{@code curl} appears seventy times across the BATS suites, almost always followed by an
    * assertion on the body, so this is what those lines port to.
    */
-  public record HttpResult(int status, String body, HttpHeaders headers) {
+  public record HttpResult(int status, String body, HttpHeaders headers, Map<String, String> vars) {
 
     /** A result with no response headers, for a request that never completed. */
-    public HttpResult(int status, String body) {
-      this(status, body, HttpHeaders.of(Map.of(), (name, value) -> true));
+    public HttpResult(int status, String body, Map<String, String> vars) {
+      this(status, body, HttpHeaders.of(Map.of(), (name, value) -> true), vars);
+    }
+
+    /**
+     * Resolves {@code ${NAME}} in an assertion's expected text, exactly as {@link CommandResult}
+     * does. The two assertion families have to behave the same way: a ported BATS line asserting on
+     * {@code ${SOLR_PORT}} must either work or fail loudly, never pass by comparing against the
+     * unresolved text.
+     */
+    private String resolve(String expected) {
+      return Variables.resolve(expected, Variables.ANY, vars, "an HTTP assertion");
     }
 
     public HttpResult assertStatus(int expected) {
@@ -88,15 +99,17 @@ public final class SolrCliHelpers {
     }
 
     public HttpResult assertContains(String substring) {
-      if (!body.contains(substring)) {
-        throw fail("body did not contain: " + substring);
+      String expected = resolve(substring);
+      if (!body.contains(expected)) {
+        throw fail("body did not contain: " + expected);
       }
       return this;
     }
 
     public HttpResult assertNotContains(String substring) {
-      if (body.contains(substring)) {
-        throw fail("body contained what it should not: " + substring);
+      String expected = resolve(substring);
+      if (body.contains(expected)) {
+        throw fail("body contained what it should not: " + expected);
       }
       return this;
     }
@@ -105,16 +118,16 @@ public final class SolrCliHelpers {
      * Port of {@code assert_output --regexp}, with the same semantics {@link CommandResult} has.
      */
     public HttpResult assertMatches(String regex) {
-      if (!Pattern.compile(regex, Pattern.DOTALL).matcher(body).find()) {
-        throw fail("body did not match: " + regex);
+      if (!Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(body).find()) {
+        throw fail("body did not match: " + resolve(regex));
       }
       return this;
     }
 
     /** Port of {@code refute_output --regexp}. */
     public HttpResult assertNotMatches(String regex) {
-      if (Pattern.compile(regex, Pattern.DOTALL).matcher(body).find()) {
-        throw fail("body matched what it should not: " + regex);
+      if (Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(body).find()) {
+        throw fail("body matched what it should not: " + resolve(regex));
       }
       return this;
     }
@@ -142,7 +155,7 @@ public final class SolrCliHelpers {
      * written against curl's HTTP/1.1 {@code Cache-Control: no-cache} spelling.
      */
     public HttpResult assertHeaderContains(String substring) {
-      if (!headerTextLower().contains(substring.toLowerCase(Locale.ROOT))) {
+      if (!headerTextLower().contains(resolve(substring).toLowerCase(Locale.ROOT))) {
         throw failHeaders("no response header contained: " + substring);
       }
       return this;
@@ -150,7 +163,7 @@ public final class SolrCliHelpers {
 
     /** Port of {@code curl -s -I ...} followed by {@code refute_output --partial}. */
     public HttpResult assertHeaderNotContains(String substring) {
-      if (headerTextLower().contains(substring.toLowerCase(Locale.ROOT))) {
+      if (headerTextLower().contains(resolve(substring).toLowerCase(Locale.ROOT))) {
         throw failHeaders("a response header contained what it should not: " + substring);
       }
       return this;
@@ -340,9 +353,10 @@ public final class SolrCliHelpers {
       requestHeaders.forEach(request::header);
       HttpResponse<byte[]> response =
           client.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());
-      return new HttpResult(response.statusCode(), decodeBody(response), response.headers());
+      return new HttpResult(
+          response.statusCode(), decodeBody(response), response.headers(), cli.varsForAssertions());
     } catch (IOException e) {
-      return new HttpResult(-1, e.toString());
+      return new HttpResult(-1, e.toString(), cli.varsForAssertions());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted requesting " + url, e);
@@ -386,7 +400,7 @@ public final class SolrCliHelpers {
 
   /** As {@link #https(String)} but against an explicit port. */
   public HttpsRequest https(int port, String pathAndQuery) {
-    return new HttpsRequest(port, pathAndQuery);
+    return new HttpsRequest(port, pathAndQuery, cli.varsForAssertions());
   }
 
   /** Whether the named collection is in ZooKeeper. Port of {@code collection_exists}. */
