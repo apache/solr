@@ -20,11 +20,6 @@ package org.apache.solr.shell.session;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -42,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
@@ -51,6 +45,7 @@ import org.apache.solr.shell.exec.PidFile;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.exec.ShellExecutor;
+import org.apache.solr.shell.exec.Variables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,34 +65,6 @@ import org.slf4j.LoggerFactory;
 public class CliSession implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
-   * {@code {{NAME}}} alone — the only form substituted inside a shell-specific {@code script}.
-   *
-   * <p>Double braces are inert in both bash, which only expands braces containing a comma or {@code
-   * ..}, and cmd.exe — unlike {@code $NAME} and {@code %NAME%}.
-   */
-  private static final Pattern TEMPLATE = Pattern.compile("\\{\\{([A-Za-z_][A-Za-z0-9_]*)}}");
-
-  /**
-   * Every variable spelling a cross-shell command line may use: {@code {{NAME}}}, {@code ${NAME}}
-   * and {@code $NAME}. A {@code run} line has no shell state of its own — one process per command,
-   * no locals, no positional parameters — so a {@code $NAME} in one can only ever mean an
-   * environment variable, which is why reading it as one is safe.
-   *
-   * <p>{@code $'..'}, {@code $1} and a bare {@code $} do not match and are left for the shell.
-   */
-  private static final Pattern VARIABLE =
-      Pattern.compile(
-          "\\{\\{([A-Za-z_][A-Za-z0-9_]*)}}"
-              + "|\\$\\{([A-Za-z_][A-Za-z0-9_]*)}"
-              + "|\\$([A-Za-z_][A-Za-z0-9_]*)");
-
-  /**
-   * The cmd.exe spelling. Not substituted, because {@code %} collides with {@link String#format},
-   * but rejected so that a line written this way cannot pass on Windows and fail on bash.
-   */
-  private static final Pattern CMD_VARIABLE = Pattern.compile("%([A-Za-z_][A-Za-z0-9_]*)%");
 
   /** Default per-command timeout. */
   public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
@@ -123,6 +90,7 @@ public class CliSession implements AutoCloseable {
   private final String name;
   private final Path workDir;
   private final Transcript transcript;
+  private final SolrCliHelpers helpers = new SolrCliHelpers(this);
   private final Map<String, String> vars;
   private final Shell shell;
 
@@ -234,6 +202,11 @@ public class CliSession implements AutoCloseable {
     return transcript;
   }
 
+  /** The Solr-aware conveniences for this session: collections, configs, HTTP, log dumps. */
+  public SolrCliHelpers helpers() {
+    return helpers;
+  }
+
   /** Overrides the default per-command timeout for this session. */
   public CliSession timeout(Duration newTimeout) {
     this.timeout = newTimeout;
@@ -325,7 +298,8 @@ public class CliSession implements AutoCloseable {
       throw new org.junit.AssumptionViolatedException(
           "No " + shell + " script supplied for this test");
     }
-    return execute(interpolate(chosen, TEMPLATE), timeout, false);
+    return execute(
+        Variables.resolve(chosen, Variables.BRACES_ONLY, vars, "a script"), timeout, false);
   }
 
   private static String format(String line, Object... fmtArgs) {
@@ -341,8 +315,8 @@ public class CliSession implements AutoCloseable {
   /** Resolves every variable spelling a cross-shell line may use, then rejects the cmd.exe one. */
   private String resolveForRun(String line) {
     requireOpen();
-    String resolved = interpolate(line, VARIABLE);
-    Matcher cmdForm = CMD_VARIABLE.matcher(resolved);
+    String resolved = Variables.resolve(line, Variables.ANY, vars, "a command line");
+    Matcher cmdForm = Variables.CMD_FORM.matcher(resolved);
     if (cmdForm.find()) {
       throw new AssertionError(
           "cmd.exe-only variable "
@@ -355,35 +329,6 @@ public class CliSession implements AutoCloseable {
               + "script(bash, cmd) if it really is shell-specific.");
     }
     return resolved;
-  }
-
-  /**
-   * Replaces each variable reference {@code pattern} matches with the session environment variable
-   * it names. An unknown name is a test failure, not the empty string a shell would give you.
-   */
-  private String interpolate(String line, Pattern pattern) {
-    Matcher m = pattern.matcher(line);
-    StringBuilder resolved = new StringBuilder();
-    while (m.find()) {
-      String key = null;
-      for (int group = 1; group <= m.groupCount() && key == null; group++) {
-        key = m.group(group);
-      }
-      String value = vars.get(key);
-      if (value == null) {
-        throw new AssertionError(
-            "Unknown variable "
-                + m.group()
-                + " in command line: "
-                + line
-                + "\nHarness variables available: "
-                + harnessEnv.vars().keySet()
-                + " (plus the inherited process environment and anything env(..) set)");
-      }
-      m.appendReplacement(resolved, Matcher.quoteReplacement(value));
-    }
-    m.appendTail(resolved);
-    return resolved.toString();
   }
 
   private Duration timeoutFor(String line) {
@@ -407,8 +352,7 @@ public class CliSession implements AutoCloseable {
             workDir,
             "cmd-" + SEQ.incrementAndGet(),
             commandTimeout,
-            separateStreams,
-            harnessEnv.picocli());
+            separateStreams);
     CommandResult result = ShellExecutor.execute(spec, startedProcesses::add);
     lastResult = result;
     transcript.record(result, envDiff);
@@ -508,85 +452,6 @@ public class CliSession implements AutoCloseable {
     if (!waitFor(waitTimeout, interval, condition)) {
       throw new AssertionError(
           "Timed out after " + waitTimeout.toSeconds() + "s waiting for: " + what);
-    }
-  }
-
-  /** The response to a harness HTTP request. */
-  public record HttpResult(int status, String body) {}
-
-  /**
-   * A GET against {@code http://localhost:<SOLR_PORT><pathAndQuery>}. Replaces the {@code curl}
-   * calls in the BATS suites, which is what makes readiness checks work on Windows.
-   */
-  public HttpResult http(String pathAndQuery) {
-    return http(ports().solr(), pathAndQuery);
-  }
-
-  /** A GET against an explicit port on localhost. */
-  public HttpResult http(int port, String pathAndQuery) {
-    String url = "http://localhost:" + port + pathAndQuery;
-    try (HttpClient client =
-        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
-      HttpRequest request =
-          HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).GET().build();
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      return new HttpResult(response.statusCode(), response.body());
-    } catch (IOException e) {
-      return new HttpResult(-1, e.toString());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted requesting " + url, e);
-    }
-  }
-
-  /** Whether the named collection is in ZooKeeper. Port of {@code collection_exists}. */
-  public boolean collectionExists(String collection) {
-    return zkChildren("/collections").contains(collection);
-  }
-
-  /** Whether the named config set is in ZooKeeper. Port of {@code config_exists}. */
-  public boolean configExists(String configName) {
-    return zkChildren("/configs").contains(configName);
-  }
-
-  private List<String> zkChildren(String zkPath) {
-    CommandResult result = run("solr zk ls %s -z localhost:%d", zkPath, ports().zk());
-    if (result.failed()) {
-      return List.of();
-    }
-    return result.lines().stream().map(String::trim).filter(s -> !s.isEmpty()).toList();
-  }
-
-  /** Port of {@code delete_all_collections}. */
-  public void deleteAllCollections() {
-    for (String collection : zkChildren("/collections")) {
-      run("solr delete -c %s --delete-config", collection);
-    }
-  }
-
-  /** Port of {@code shutdown_all}: {@code solr stop --all}, ignoring the outcome. */
-  public void shutdownAll() {
-    try {
-      run(Duration.ofSeconds(120), "solr stop --all");
-    } catch (RuntimeException | AssertionError e) {
-      log.warn("'solr stop --all' failed during cleanup", e);
-    }
-  }
-
-  /** Prints the tail of {@code solr.log} to stderr, for debugging a failing test. */
-  public void dumpSolrLog() {
-    Path logFile = harnessEnv.logsDir().resolve("solr.log");
-    if (!Files.isRegularFile(logFile)) {
-      System.err.println("No solr.log at " + logFile);
-      return;
-    }
-    try {
-      List<String> lines = Files.readAllLines(logFile, StandardCharsets.UTF_8);
-      List<String> tail = lines.subList(Math.max(0, lines.size() - 200), lines.size());
-      System.err.println("--- tail of " + logFile + " ---");
-      tail.forEach(System.err::println);
-    } catch (IOException e) {
-      System.err.println("Could not read " + logFile + ": " + e);
     }
   }
 

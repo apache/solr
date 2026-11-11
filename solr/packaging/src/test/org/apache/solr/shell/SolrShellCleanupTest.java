@@ -23,10 +23,10 @@ import org.junit.Test;
  * Exhaustive, negative assertions over {@code solr status} — the one command that reports Solr
  * nodes across the whole host rather than just this class's.
  *
- * <p>These hold without {@link GlobalProcessScope} because the harness gives each class its own
- * {@code solr.process.scan.marker}, so the CLI only discovers nodes this class started. That is
- * what makes them pass with sibling classes running in parallel forks, with a developer's own Solr
- * up on 8983, and with a second suite sharing a CI box.
+ * <p>They hold even so, because the harness gives each class its own {@code
+ * solr.process.scan.marker} and starts its nodes with it, so the CLI only ever discovers nodes this
+ * class started. That is what makes them pass with sibling classes running in parallel forks, with
+ * a developer's own Solr up on 8983, and with a second suite sharing a CI box.
  */
 public class SolrShellCleanupTest extends SolrShellTestCase {
 
@@ -40,7 +40,7 @@ public class SolrShellCleanupTest extends SolrShellTestCase {
     env("SOLR_HEAP", "512m");
     run("solr start").assertSuccess();
     run("solr create -c books --shards 2").assertSuccess().assertOutputContains("2 shard(s)");
-    run("solr status -p ${SOLR_PORT}").assertSuccess().assertOutputContains("running on port");
+    run("solr status").assertSuccess().assertOutputContains("running on port ${SOLR_PORT}");
 
     run("solr stop --all").assertSuccess();
     run("solr status").assertSuccess().assertOutputContains("No Solr nodes are running");

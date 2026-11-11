@@ -106,6 +106,25 @@ public class SolrShellSessionTest extends SolrTestCase {
   }
 
   @Test
+  public void assertionsResolveVariablesToo() {
+    // The same spelling means the same thing in an assertion as in a command line, so a BATS
+    // assert_output --partial "...${ZK_PORT}" ports over unchanged.
+    session.run("echo port-${ZK_PORT}").assertOutputContains("port-${ZK_PORT}");
+    session.run("echo port-${ZK_PORT}").assertOutputEquals("port-${ZK_PORT}");
+    session.run("echo nothing").assertOutputNotContains("port-${ZK_PORT}");
+  }
+
+  @Test
+  public void anUnknownVariableInAnAssertionFailsToo() {
+    AssertionError failure =
+        expectThrows(
+            AssertionError.class,
+            () -> session.run("echo hi").assertOutputContains("${NO_SUCH_VAR}"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("Unknown variable"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("an assertion"));
+  }
+
+  @Test
   public void runResolvesVariablesTheTestSetItself() {
     session.env("MARKER", "from-the-test");
     session.run("echo ${MARKER}").assertSuccess().assertOutputEquals("from-the-test");

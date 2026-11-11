@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -66,8 +67,7 @@ public final class ShellExecutor {
       Path workDir,
       String tag,
       Duration timeout,
-      boolean separateStreams,
-      boolean picocli) {}
+      boolean separateStreams) {}
 
   /**
    * Runs the command, killing it if it overruns {@link Spec#timeout()}.
@@ -121,7 +121,8 @@ public final class ShellExecutor {
           stderr,
           duration,
           timedOut,
-          spec.picocli());
+          // A view, not a copy: assertions resolve against it immediately after the command.
+          Collections.unmodifiableMap(spec.env()));
     } catch (IOException e) {
       throw new UncheckedIOException("Could not run: " + spec.line(), e);
     } catch (InterruptedException e) {

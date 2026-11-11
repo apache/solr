@@ -33,13 +33,12 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
-import org.apache.solr.shell.env.ProcessScopeLock;
 import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.PidFile;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
-import org.apache.solr.shell.exec.SolrProcesses;
 import org.apache.solr.shell.session.CliSession;
+import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -83,9 +82,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   /** The class-scoped session. Solr started here lives for the whole class. */
   protected static CliSession classCli;
 
-  /** Shared for an ordinary class, exclusive for a {@link GlobalProcessScope} one. */
-  private static ProcessScopeLock processScopeLock;
-
   /** The session for the running test. */
   protected CliSession cli;
 
@@ -101,13 +97,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     // Per class, not per JVM: directories and ports keyed to this class are what let classes run
     // concurrently in separate forks.
     harnessEnv = HarnessEnv.forClass(getTestClass().getSimpleName());
-    // Taken before anything starts, and released only after this class's nodes are stopped, so a
-    // @GlobalProcessScope class really does see an otherwise idle machine.
-    boolean wantsWholeMachine = getTestClass().getAnnotation(GlobalProcessScope.class) != null;
-    processScopeLock = ProcessScopeLock.acquire(harnessEnv.testOutputDir(), wantsWholeMachine);
-    if (wantsWholeMachine) {
-      requireNoForeignSolr();
-    }
     CliSession.resetKnownNodes();
     // Order matters: SOLR_PID_DIR lives inside SOLR_HOME, so wiping the home first would delete
     // the pid file that is the only record of a node an earlier, hard-killed run left behind.
@@ -124,8 +113,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   }
 
   /**
-   * Stops whatever the class started, checks nothing was left running, and only then releases the
-   * process-scope lock.
+   * Stops whatever the class started, then checks nothing was left running.
    *
    * <p>JUnit 4 runs {@code @AfterClass} even when {@code @BeforeClass} threw — an assumption
    * failure from {@link EnabledOnShell} included — so every step here tolerates a half-built or
@@ -153,11 +141,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     } catch (AssertionError e) {
       problems.add(e.toString());
     } finally {
-      // Last, so no other class can claim the machine until this one's nodes are gone.
-      if (processScopeLock != null) {
-        processScopeLock.close();
-        processScopeLock = null;
-      }
       harnessEnv = null;
     }
     if (!problems.isEmpty()) {
@@ -198,25 +181,6 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   /** The ports this run owns. */
   protected Ports ports() {
     return harnessEnv.ports();
-  }
-
-  /**
-   * Skips a {@link GlobalProcessScope} class when a Solr the harness did not start is running.
-   *
-   * <p>The process-scope lock only coordinates this run's own forks; it says nothing about the
-   * machine. A developer with Solr up on 8983 would otherwise see these tests fail for a reason
-   * that is not their change — and killing their node is not ours to do. So we skip, and say why.
-   *
-   * <p>Only {@code @GlobalProcessScope} classes care. An ordinary class has its own random port
-   * block and its own {@code SOLR_PID_DIR}, so a foreign node is invisible to it.
-   */
-  private static void requireNoForeignSolr() {
-    List<Integer> foreign = SolrProcesses.listeningPorts();
-    assumeTrue(
-        "Needs a machine with no other Solr running, but found Solr on port(s) "
-            + foreign
-            + ". Stop them, or run this class on its own.",
-        foreign.isEmpty());
   }
 
   /** Skips the test, or the class, when {@link EnabledOnShell} does not name the current shell. */
@@ -291,32 +255,32 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     cli.awaitOrFail(what, waitTimeout, interval, condition);
   }
 
-  protected CliSession.HttpResult http(String pathAndQuery) {
-    return cli.http(pathAndQuery);
+  protected SolrCliHelpers.HttpResult http(String pathAndQuery) {
+    return cli.helpers().http(pathAndQuery);
   }
 
-  protected CliSession.HttpResult http(int port, String pathAndQuery) {
-    return cli.http(port, pathAndQuery);
+  protected SolrCliHelpers.HttpResult http(int port, String pathAndQuery) {
+    return cli.helpers().http(port, pathAndQuery);
   }
 
   protected boolean collectionExists(String collection) {
-    return cli.collectionExists(collection);
+    return cli.helpers().collectionExists(collection);
   }
 
   protected boolean configExists(String configName) {
-    return cli.configExists(configName);
+    return cli.helpers().configExists(configName);
   }
 
   protected void deleteAllCollections() {
-    cli.deleteAllCollections();
+    cli.helpers().deleteAllCollections();
   }
 
   protected void shutdownAll() {
-    cli.shutdownAll();
+    cli.helpers().shutdownAll();
   }
 
   protected void dumpSolrLog() {
-    cli.dumpSolrLog();
+    cli.helpers().dumpSolrLog();
   }
 
   // ---------------------------------------------------------------- lifecycle internals

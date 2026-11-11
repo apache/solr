@@ -20,6 +20,7 @@ package org.apache.solr.shell.exec;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -34,7 +35,9 @@ import java.util.regex.Pattern;
  * @param stdout stdout alone; equal to {@code output} when the streams were merged
  * @param stderr stderr alone; empty when the streams were merged
  * @param timedOut whether the command was killed for exceeding its timeout
- * @param picocli whether this run targets the experimental picocli CLI
+ * @param vars an unmodifiable view of the session environment this ran with. Assertions resolve
+ *     {@code ${NAME}} in their expected text against it, so an assertion reads exactly like the
+ *     BATS one it was ported from.
  */
 public record CommandResult(
     String command,
@@ -46,7 +49,17 @@ public record CommandResult(
     String stderr,
     Duration duration,
     boolean timedOut,
-    boolean picocli) {
+    Map<String, String> vars) {
+
+  /** Whether this run targets the experimental picocli CLI. */
+  public boolean picocli() {
+    return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "false"));
+  }
+
+  /** Resolves {@code ${NAME}} and friends in an assertion's expected text. */
+  private String resolve(String expected) {
+    return Variables.resolve(expected, Variables.ANY, vars, "an assertion");
+  }
 
   /** How much of the output an assertion message shows. */
   private static final int MESSAGE_OUTPUT_LIMIT = 20_000;
@@ -87,23 +100,25 @@ public record CommandResult(
 
   /** Port of {@code assert_output --partial}. */
   public CommandResult assertOutputContains(String substring) {
-    if (!output.contains(substring)) {
-      throw fail("expected output to contain: " + substring);
+    String expected = resolve(substring);
+    if (!output.contains(expected)) {
+      throw fail("expected output to contain: " + expected);
     }
     return this;
   }
 
   /** Port of {@code refute_output --partial}. */
   public CommandResult assertOutputNotContains(String substring) {
-    if (output.contains(substring)) {
-      throw fail("expected output NOT to contain: " + substring);
+    String expected = resolve(substring);
+    if (output.contains(expected)) {
+      throw fail("expected output NOT to contain: " + expected);
     }
     return this;
   }
 
   /** Port of {@code assert_output --regexp}. The pattern may match anywhere in the output. */
   public CommandResult assertOutputMatches(String regex) {
-    if (!Pattern.compile(regex, Pattern.DOTALL).matcher(output).find()) {
+    if (!Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output).find()) {
       throw fail("expected output to match regex: " + regex);
     }
     return this;
@@ -111,14 +126,15 @@ public record CommandResult(
 
   /** Port of {@code refute_output --regexp}. */
   public CommandResult assertOutputNotMatches(String regex) {
-    if (Pattern.compile(regex, Pattern.DOTALL).matcher(output).find()) {
+    if (Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output).find()) {
       throw fail("expected output NOT to match regex: " + regex);
     }
     return this;
   }
 
   /** Port of {@code assert_output} with no flag: the whole output must equal {@code expected}. */
-  public CommandResult assertOutputEquals(String expected) {
+  public CommandResult assertOutputEquals(String expectedText) {
+    String expected = resolve(expectedText);
     if (!output.equals(expected)) {
       throw fail("expected output to equal: " + expected);
     }
@@ -131,8 +147,8 @@ public record CommandResult(
     if (index < 0 || index >= lines.size()) {
       throw fail("expected at least " + (index + 1) + " output line(s)");
     }
-    if (!lines.get(index).equals(expected)) {
-      throw fail("expected line " + index + " to equal: " + expected);
+    if (!lines.get(index).equals(resolve(expected))) {
+      throw fail("expected line " + index + " to equal: " + resolve(expected));
     }
     return this;
   }
@@ -143,7 +159,7 @@ public record CommandResult(
    */
   // TODO: Remove this once the commons-cli cleanup happens.
   public CommandResult assertOutputForCli(String commonsCliText, String picocliText) {
-    return assertOutputContains(picocli ? picocliText : commonsCliText);
+    return assertOutputContains(picocli() ? picocliText : commonsCliText);
   }
 
   private AssertionError fail(String what) {
