@@ -31,12 +31,13 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
 import org.apache.solr.shell.exec.CommandResult;
-import org.apache.solr.shell.exec.PidFile;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
+import org.apache.solr.shell.exec.SolrNodes;
 import org.apache.solr.shell.session.CliSession;
 import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.AfterClass;
@@ -99,8 +100,8 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     harnessEnv = HarnessEnv.forClass(getTestClass().getSimpleName());
     requireCli(getTestClass().getAnnotation(EnabledOnCli.class));
     CliSession.resetKnownNodes();
-    // Order matters: SOLR_PID_DIR lives inside SOLR_HOME, so wiping the home first would delete
-    // the pid file that is the only record of a node an earlier, hard-killed run left behind.
+    // Order-independent: node discovery goes through the running process list, not through files
+    // that the SOLR_HOME wipe could destroy.
     preFlightLeakCheck();
     cleanSolrHome();
     classCli = CliSession.forScope(harnessEnv, getTestClass().getSimpleName());
@@ -316,14 +317,21 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   }
 
   /**
-   * Fails fast if our port block is in use, and clears away any {@code solr-*.pid} file a killed
-   * earlier run left behind.
+   * Fails fast if our port block is in use, killing any node of ours that is somehow already on it.
+   *
+   * <p>A port block is claimed once per run, so finding one of our own nodes here means a node from
+   * an earlier run outlived it — possible when a run was killed outright and the shutdown hook
+   * never got to run.
    */
-  private static void preFlightLeakCheck() throws IOException {
-    for (PidFile pidFile : PidFile.listIn(harnessEnv.pidDir())) {
-      log.warn("Stale Solr pid file from an earlier run: {}; killing and removing", pidFile);
-      pidFile.pid().ifPresent(pid -> ProcessKill.killTree(pid, Duration.ofSeconds(10)));
-      Files.deleteIfExists(pidFile.path());
+  private static void preFlightLeakCheck() {
+    for (SolrProcess node : SolrNodes.running(SolrNodes.MARKER_PREFIX)) {
+      if (harnessEnv.ports().contains(node.port())) {
+        log.warn(
+            "A harness Solr node from an earlier run holds port {} (pid {}); killing it",
+            node.port(),
+            node.pid());
+        ProcessKill.killTree(node.pid(), Duration.ofSeconds(10));
+      }
     }
 
     List<Integer> busy = new ArrayList<>();
@@ -342,21 +350,13 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   private static void postFlightLeakCheck() {
     List<String> leaks = new ArrayList<>();
 
-    try {
-      for (PidFile pidFile : PidFile.listIn(harnessEnv.pidDir())) {
-        // A file whose process is already gone is litter, not a leak: Solr removes its own pid
-        // file on a clean shutdown, but a node killed outright never gets the chance. Only a live
-        // process means this class failed to clean up after itself.
-        if (pidFile.isProcessAlive()) {
-          leaks.add("Solr still running: " + pidFile + " (pid " + pidFile.pid().orElse(-1) + ")");
-          pidFile.pid().ifPresent(pid -> ProcessKill.killTree(pid, Duration.ofSeconds(10)));
-        } else {
-          log.warn("Removing pid file for a node that is already gone: {}", pidFile);
-        }
-        Files.deleteIfExists(pidFile.path());
+    // Only a running node is a leak. A pid file left behind by a node that is already gone is
+    // litter, and not this check's business — the process list is what matters.
+    for (SolrProcess node : SolrNodes.running(harnessEnv.marker())) {
+      if (harnessEnv.ports().contains(node.port())) {
+        leaks.add("Solr still running on port " + node.port() + " (pid " + node.pid() + ")");
+        ProcessKill.killTree(node.pid(), Duration.ofSeconds(10));
       }
-    } catch (IOException e) {
-      log.warn("Could not scan {}", harnessEnv.pidDir(), e);
     }
 
     long deadline = System.nanoTime() + LEAK_CHECK_TIMEOUT.toNanos();

@@ -31,12 +31,14 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 import org.apache.solr.cli.SolrProcessManager;
 import org.apache.solr.shell.Cli;
+import org.apache.solr.shell.exec.SolrNodes;
 
 /**
  * The environment a shell test run operates in: where the Solr distribution lives, which {@code
  * SOLR_HOME} to use, which ports are ours, and the base environment handed to every spawned shell.
  *
- * <p>Resolved once per JVM. Each value is looked up in this order:
+ * <p>Resolved per test class, so classes running concurrently in separate forks do not share a
+ * {@code SOLR_HOME} or a port block. Each value is looked up in this order:
  *
  * <ol>
  *   <li>the process environment variable (how the Gradle task supplies it),
@@ -182,7 +184,9 @@ public final class HarnessEnv {
    */
   private static String marker(Ports ports) {
     String explicit = lookup("SOLR_PROCESS_SCAN_MARKER");
-    return (explicit == null || explicit.isBlank()) ? "solr-shell-test-" + ports.solr() : explicit;
+    return (explicit == null || explicit.isBlank())
+        ? SolrNodes.MARKER_PREFIX + ports.solr()
+        : explicit;
   }
 
   private static Path requireDistribution(Path tip) {
@@ -316,6 +320,11 @@ public final class HarnessEnv {
    * false. When that flips to picocli, this flips with it — it is the one place the harness encodes
    * the default.
    */
+  /** The command-line marker this scope's nodes carry, and that node discovery is scoped to. */
+  public String marker() {
+    return vars.get("SOLR_PROCESS_SCAN_MARKER");
+  }
+
   public Cli cli() {
     return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "false"))
         ? Cli.PICOCLI

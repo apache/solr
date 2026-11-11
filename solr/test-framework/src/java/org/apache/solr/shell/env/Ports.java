@@ -34,4 +34,15 @@ public record Ports(int solr, int solr2, int solr3, int zk) {
   public int[] all() {
     return new int[] {solr, solr2, solr3, zk};
   }
+
+  /**
+   * Whether a port belongs to this block.
+   *
+   * <p>Used to tell the harness' own nodes apart from everyone else's where the record of them is
+   * shared: {@code bin/solr.cmd} keeps it in {@code %SOLR_TIP%\bin} for every class and every
+   * concurrent suite alike.
+   */
+  public boolean contains(int port) {
+    return port == solr || port == solr2 || port == solr3 || port == zk;
+  }
 }

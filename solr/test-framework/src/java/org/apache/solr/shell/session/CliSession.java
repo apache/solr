@@ -29,7 +29,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,13 +37,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
+import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.env.Ports;
 import org.apache.solr.shell.exec.CommandResult;
-import org.apache.solr.shell.exec.PidFile;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.exec.ShellExecutor;
+import org.apache.solr.shell.exec.SolrNodes;
 import org.apache.solr.shell.exec.Variables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,8 +75,8 @@ public class CliSession implements AutoCloseable {
   /** Every PID the harness has ever seen, so the shutdown hook can finish the job. */
   private static final Set<Long> ALL_RECORDED_PIDS = ConcurrentHashMap.newKeySet();
 
-  /** PID files already accounted for, so a node is owned by the scope that actually started it. */
-  private static final Map<Integer, Long> KNOWN_PID_FILES = new ConcurrentHashMap<>();
+  /** Nodes already accounted for, so one is owned by the scope that actually started it. */
+  private static final Map<Integer, Long> KNOWN_NODES = new ConcurrentHashMap<>();
 
   private static final AtomicInteger SEQ = new AtomicInteger();
 
@@ -390,30 +390,29 @@ public class CliSession implements AutoCloseable {
   // ------------------------------------------------------- node ownership
 
   /**
-   * Records any {@code solr-<port>.pid} file that appeared since the last check as belonging to
-   * this session. The PID file, not the process tree, is the source of truth: a detached Solr node
-   * is re-parented as soon as its launching shell exits.
+   * Records any node of this class's that has appeared since the last check as belonging to this
+   * session, so cleanup stops exactly the ones this scope started.
+   *
+   * <p>Asked of the running process list rather than of pid files, so it behaves the same on both
+   * platforms and sees a node started in the foreground. Filtered to this class's port block,
+   * because on the cmd side the underlying record is shared with every other class.
    */
   private void claimNewNodes() {
-    try {
-      for (PidFile pidFile : PidFile.listIn(harnessEnv.pidDir())) {
-        OptionalLong read = pidFile.pid();
-        if (read.isEmpty()) {
-          continue;
-        }
-        long pid = read.getAsLong();
-        int port = pidFile.port();
-        Long known = KNOWN_PID_FILES.get(port);
-        if (known != null && known == pid) {
-          continue;
-        }
-        KNOWN_PID_FILES.put(port, pid);
-        ALL_RECORDED_PIDS.add(pid);
-        ownedNodes.put(port, pid);
-        log.info("Session '{}' now owns Solr node on port {} (pid {})", name, port, pid);
+    for (SolrProcess node : SolrNodes.running(harnessEnv.marker())) {
+      if (!harnessEnv.ports().contains(node.port())) {
+        continue;
       }
-    } catch (IOException e) {
-      log.warn("Could not scan {} for Solr pid files", harnessEnv.pidDir(), e);
+      Long known = KNOWN_NODES.get(node.port());
+      if (known != null && known == node.pid()) {
+        continue;
+      }
+      KNOWN_NODES.put(node.port(), node.pid());
+      ALL_RECORDED_PIDS.add(node.pid());
+      ownedNodes.put(node.port(), node.pid());
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Session '{}' now owns Solr node on port {} (pid {})", name, node.port(), node.pid());
+      }
     }
   }
 
@@ -492,7 +491,7 @@ public class CliSession implements AutoCloseable {
         }
       }
       ALL_RECORDED_PIDS.remove(pid);
-      KNOWN_PID_FILES.remove(node.getKey(), pid);
+      KNOWN_NODES.remove(node.getKey(), pid);
       Path pidFile = harnessEnv.pidDir().resolve("solr-" + node.getKey() + ".pid");
       try {
         Files.deleteIfExists(pidFile);
@@ -552,7 +551,7 @@ public class CliSession implements AutoCloseable {
 
   /** Forgets the PID files seen so far, so a fresh class starts with a clean slate. */
   public static void resetKnownNodes() {
-    KNOWN_PID_FILES.clear();
+    KNOWN_NODES.clear();
   }
 
   private static Map<String, String> newEnvMap() {
