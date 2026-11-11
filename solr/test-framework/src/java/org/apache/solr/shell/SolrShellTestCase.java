@@ -245,6 +245,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     return cli.unset(key);
   }
 
+  protected CliSession bind(String name, Object value) {
+    return cli.bind(name, value);
+  }
+
   protected String env(String key) {
     return cli.env(key);
   }

@@ -94,6 +94,7 @@ public class CliSession implements AutoCloseable {
   private final Map<String, String> vars;
   private final Shell shell;
 
+  private final Map<String, String> bindings = new LinkedHashMap<>();
   private final List<Process> startedProcesses = new ArrayList<>();
   private final Map<Integer, Long> ownedNodes = new LinkedHashMap<>();
 
@@ -119,6 +120,9 @@ public class CliSession implements AutoCloseable {
     this.cwd = cwd;
     this.shell = shell;
     this.transcript = new Transcript(workDir.resolve("transcript.log"));
+    // Exposed as a variable so a test can name its own scratch space inside a command line or an
+    // assertion — ${WORK_DIR}/something — instead of formatting a Java path into the string.
+    this.vars.put("WORK_DIR", workDir.toString());
   }
 
   /**
@@ -130,8 +134,9 @@ public class CliSession implements AutoCloseable {
     createDir(workDir);
     Map<String, String> vars = newEnvMap();
     vars.putAll(env.baseEnv());
-    return new CliSession(
-        env, null, name, workDir, vars, env.testOutputDir(), Shell.defaultShell());
+    // Starts in its own work directory, so a relative path in a command means something per
+    // scope and a test needs no cd() to create or name a scratch file.
+    return new CliSession(env, null, name, workDir, vars, workDir, Shell.defaultShell());
   }
 
   /**
@@ -143,8 +148,11 @@ public class CliSession implements AutoCloseable {
     createDir(childWorkDir);
     Map<String, String> childVars = newEnvMap();
     childVars.putAll(vars);
+    // The child gets its own work directory as its cwd, unless the parent had cd'd elsewhere.
+    Path childCwd = cwd.equals(workDir) ? childWorkDir : cwd;
     CliSession child =
-        new CliSession(harnessEnv, this, childName, childWorkDir, childVars, cwd, shell);
+        new CliSession(harnessEnv, this, childName, childWorkDir, childVars, childCwd, shell);
+    child.bindings.putAll(bindings);
     child.timeout = timeout;
     child.startTimeout = startTimeout;
     return child;
@@ -156,6 +164,42 @@ public class CliSession implements AutoCloseable {
   public CliSession env(String key, String value) {
     vars.put(key, value);
     return this;
+  }
+
+  /**
+   * Binds a value for {@code {{name}}} in a command line or an assertion.
+   *
+   * <p>For a value that comes from the test rather than from the environment — a path under {@link
+   * #workDir()}, a collection name, a port worked out in Java. It keeps the command readable:
+   *
+   * <pre>
+   *   bind("download", workDir().resolve("recursive_download"));
+   *   run("""
+   *       solr zk cp zk:/ -r "{{download}}/" """);
+   * </pre>
+   *
+   * <p>Unlike {@link #env(String, String)} a binding is <em>not</em> exported to the command's
+   * environment; it exists only for the harness to substitute. That is also why the double-brace
+   * spelling is right for it: {@code ${NAME}} reads as "the environment variable", {@code {{NAME}}}
+   * as "the value the harness puts here".
+   *
+   * <p>Inherited by {@linkplain #child child} sessions and discarded with them, as the environment
+   * is.
+   */
+  public CliSession bind(String name, Object value) {
+    bindings.put(name, String.valueOf(value));
+    return this;
+  }
+
+  /** The environment plus this session's bindings, which win. What {@code {{NAME}}} resolves in. */
+  private Map<String, String> resolutionVars() {
+    if (bindings.isEmpty()) {
+      return vars;
+    }
+    Map<String, String> merged = newEnvMap();
+    merged.putAll(vars);
+    merged.putAll(bindings);
+    return merged;
   }
 
   /**
@@ -333,7 +377,9 @@ public class CliSession implements AutoCloseable {
           "No " + shell + " script supplied for this test");
     }
     return execute(
-        Variables.resolve(chosen, Variables.BRACES_ONLY, vars, "a script"), timeout, false);
+        Variables.resolve(chosen, Variables.BRACES_ONLY, resolutionVars(), "a script"),
+        timeout,
+        false);
   }
 
   private static String format(String line, Object... fmtArgs) {
@@ -349,7 +395,15 @@ public class CliSession implements AutoCloseable {
   /** Resolves every variable spelling a cross-shell line may use, then rejects the cmd.exe one. */
   private String resolveForRun(String line) {
     requireOpen();
-    String resolved = Variables.resolve(line, Variables.ANY, vars, "a command line");
+    // A run is one command. Allowing a newline here would change what cmd.exe does without saying
+    // so: Shell.CMD drops the 'call' for a multi-line body, and without 'call' a batch file that
+    // invokes solr.cmd never gets control back. Easy to write by accident in a text block.
+    if (line.strip().contains("\n")) {
+      throw new AssertionError(
+          "A run() line must be a single command; use script(bashBody, cmdBody) for several: "
+              + line);
+    }
+    String resolved = Variables.resolve(line, Variables.ANY, resolutionVars(), "a command line");
     Matcher cmdForm = Variables.CMD_FORM.matcher(resolved);
     if (cmdForm.find()) {
       throw new AssertionError(
@@ -386,7 +440,8 @@ public class CliSession implements AutoCloseable {
             workDir,
             "cmd-" + SEQ.incrementAndGet(),
             commandTimeout,
-            separateStreams);
+            separateStreams,
+            resolutionVars());
     CommandResult result = ShellExecutor.execute(spec, startedProcesses::add);
     lastResult = result;
     transcript.record(result, envDiff);

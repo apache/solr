@@ -52,9 +52,9 @@ public class SolrShellTwoNodeTest extends SolrShellTestCase {
     // (StatusTool -> SolrProcessManager -> ProcessHandle.allProcesses), so under parallel forks it
     // also lists other classes' nodes. Only a "contains our port" assertion is safe here; an
     // exhaustive or negative one would be a race. Use 'status -p' when the scope matters.
-    run("solr status").assertSuccess().assertOutputContains(String.valueOf(ports().solr()));
+    run("solr status").assertSuccess().assertOutputContains("${SOLR_PORT}");
     run("solr status -p ${SOLR_PORT}")
         .assertSuccess()
-        .assertOutputContains("running on port " + ports().solr());
+        .assertOutputContains("running on port ${SOLR_PORT}");
   }
 }

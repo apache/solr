@@ -59,6 +59,8 @@ public final class ShellExecutor {
    * @param tag a name unique within {@code workDir}, used for those files
    * @param separateStreams keep stdout and stderr apart instead of merging them like BATS' {@code
    *     run} does
+   * @param vars what an assertion resolves {@code ${NAME}} and {@code {{NAME}}} against: the
+   *     command's environment plus the session's bindings, which are not in the environment
    */
   public record Spec(
       String line,
@@ -68,7 +70,8 @@ public final class ShellExecutor {
       Path workDir,
       String tag,
       Duration timeout,
-      boolean separateStreams) {}
+      boolean separateStreams,
+      Map<String, String> vars) {}
 
   /**
    * Runs the command, killing it if it overruns {@link Spec#timeout()}.
@@ -123,7 +126,7 @@ public final class ShellExecutor {
           duration,
           timedOut,
           // A view, not a copy: assertions resolve against it immediately after the command.
-          Collections.unmodifiableMap(spec.env()));
+          Collections.unmodifiableMap(spec.vars()));
     } catch (IOException e) {
       throw new UncheckedIOException("Could not run: " + spec.line(), e);
     } catch (InterruptedException e) {

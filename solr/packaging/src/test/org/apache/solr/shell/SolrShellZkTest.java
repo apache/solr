@@ -79,9 +79,8 @@ public class SolrShellZkTest extends SolrShellTestCase {
 
   @Test
   public void copyingFilesAround() {
-    // touch() rather than the shell's, which cmd.exe does not have, and in the session's own work
-    // directory so concurrent classes do not trip over each other.
-    cd(workDir());
+    // touch() rather than the shell's, which cmd.exe does not have. No cd() needed: a session
+    // starts in its own work directory, so these land there and so does the download below.
     touch("myfile.txt");
     touch("myfile2.txt");
     touch("myfile3.txt");
@@ -99,8 +98,11 @@ public class SolrShellZkTest extends SolrShellTestCase {
             "Copying from 'myfile3.txt' to 'zk:/myfile3.txt'. ZooKeeper at localhost:${ZK_PORT}");
     run("solr zk ls / -z localhost:${ZK_PORT}").assertOutputContains("myfile3.txt");
 
+    run(
+        """
+        solr zk cp zk:/ -r "recursive_download/"
+        """);
     Path download = workDir().resolve("recursive_download");
-    run("solr zk cp zk:/ -r \"%s/\"", download);
     assertTrue(Files.exists(download.resolve("myfile.txt")));
     assertTrue(Files.exists(download.resolve("myfile2.txt")));
     assertTrue(Files.exists(download.resolve("myfile3.txt")));
@@ -108,8 +110,10 @@ public class SolrShellZkTest extends SolrShellTestCase {
 
   @Test
   public void upconfig() {
-    run("solr zk upconfig -d \"${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs\""
-            + " -n techproducts2 -z localhost:${ZK_PORT}")
+    run("""
+        solr zk upconfig -d "${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs" \
+            -n techproducts2 -z localhost:${ZK_PORT}
+        """)
         .assertOutputContains("Uploading")
         .assertOutputNotContains("ERROR");
 
@@ -135,6 +139,7 @@ public class SolrShellZkTest extends SolrShellTestCase {
     copyDirectory(
         harnessEnv.solrTip().resolve("server/solr/configsets/sample_techproducts_configs"),
         configSet);
+
     Path conf = configSet.resolve("conf");
     Files.createSymbolicLink(
         conf.resolve("symlinked_stopwords.txt"), conf.resolve("stopwords.txt"));
@@ -142,25 +147,24 @@ public class SolrShellZkTest extends SolrShellTestCase {
     assertTrue(Files.isSymbolicLink(conf.resolve("symlinked_stopwords.txt")));
     assertTrue(Files.isSymbolicLink(conf.resolve("language")));
 
-    run(
-            "solr zk upconfig -d \"%s\" -n techproducts_with_symlinks -z localhost:${ZK_PORT}",
-            configSet)
+    run("""
+        solr zk upconfig -d "configset" -n techproducts_with_symlinks -z localhost:${ZK_PORT}
+        """)
         .assertOutputContains("Uploading")
         .assertOutputContains("ERROR: Not uploading symbolic link");
   }
 
   @Test
   public void downconfig() {
-    run(
-            "solr zk downconfig -z localhost:${ZK_PORT} -n _default -d \"%s\"",
-            workDir().resolve("downconfig"))
+    run("""
+        solr zk downconfig -z localhost:${ZK_PORT} -n _default -d "downconfig"
+        """)
         .assertOutputContains("Downloading")
         .assertOutputNotContains("ERROR");
   }
 
   @Test
   public void zkCpGetsSolrHomeFromTheCommandLineOption() {
-    cd(workDir());
     touch("afile.txt");
 
     run("solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} --verbose"

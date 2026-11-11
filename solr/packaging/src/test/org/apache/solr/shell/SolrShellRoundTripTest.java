@@ -35,12 +35,15 @@ public class SolrShellRoundTripTest extends SolrShellTestCase {
     run("solr start").assertSuccess();
     run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
 
-    run("solr create -c %s", COLLECTION)
+    bind("collection", COLLECTION);
+    run("solr create -c {{collection}}")
         .assertSuccess()
-        .assertOutputContains("Created collection '" + COLLECTION + "'");
+        .assertOutputContains("Created collection '{{collection}}'");
     assertTrue("collection should exist in ZooKeeper", collectionExists(COLLECTION));
 
-    run("solr post -c %s \"${SOLR_TIP}/example/exampledocs/books.json\"", COLLECTION)
+    run("""
+        solr post -c {{collection}} "${SOLR_TIP}/example/exampledocs/books.json"
+        """)
         .assertSuccess();
 
     // Searching twice over, once through the CLI and once through the harness' own HTTP helper,
