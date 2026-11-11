@@ -42,6 +42,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -178,7 +179,13 @@ public class CoreContainerProvider implements ServletContextListener {
                 }
               });
 
-      coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
+      Boolean previousServerThreadFlag = ExecutorUtil.isSolrServerThread() ? Boolean.TRUE : null;
+      ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
+      try {
+        coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
+      } finally {
+        ExecutorUtil.setServerThreadFlag(previousServerThreadFlag);
+      }
 
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
