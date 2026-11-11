@@ -41,6 +41,7 @@ Pick the cheapest harness that can catch the bug. Conventions, `@Rule` practice,
 - `SolrCloudTestCase` — only when the test genuinely needs a cluster; it costs seconds to minutes, not milliseconds
 - `SolrShellTestCase` — `bin/solr` and `bin\solr.cmd` behaviour, as real subprocesses; suites in `solr/packaging/src/test/`
 - `AdminUiTestBase` — Admin UI in a browser; see `dev-docs/admin-ui-tests.md`
+- A Testcontainers `@ClassRule` — when the test needs a real external service (Tika, Kafka, an S3 mock); copy `TikaServerContainerRule`. Never `docker run` from a test
 - `SolrTestCaseJ4` — deprecated, never in a new test
 - BATS (`solr/packaging/test/*.bats`) — deprecated and bash-only, so it never ran on Windows. Do not add or extend one; write a `SolrShellTestCase` instead
 

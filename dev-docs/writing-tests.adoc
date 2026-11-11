@@ -32,6 +32,11 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | cluster + a browser
 | Current, opt-in with `-Ptests.selenium=true`. See link:admin-ui-tests.md[admin-ui-tests.md].
 
+| A Testcontainers `@ClassRule`
+| An external service the test needs a real instance of — Tika Server, Kafka, an S3 mock. Any base class; the container comes from a rule, not from inheritance.
+| cluster + a container pull
+| Current. Skips itself when Docker is absent.
+
 | `SolrTestCaseJ4`
 | Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. Directly extended by ~600 test classes and transitively the base of ~1250 — four in five Solr tests, mostly via `SolrCloudTestCase`.
 | as `SolrTestCase`
@@ -53,6 +58,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 * Needs a live Solr, one node — `SolrTestCase` + `SolrJettyTestRule`, or `EmbeddedSolrServerTestRule` if the HTTP layer is not part of the test.
 * Only reproduces across nodes, or involves ZooKeeper, routing, replication, recovery or the Collections API — `SolrCloudTestCase`, with the lowest node count that still shows the bug.
 * In `bin/solr`, `bin/solr.cmd`, `solr.in.sh`/`solr.in.cmd`, CLI parsing, output or exit codes — `SolrShellTestCase`. The only harness that catches a Windows-only script bug.
+* Needs a real external service, not a mock — a Testcontainers `@ClassRule`; see below.
 * In the Admin UI's JavaScript or templates — `AdminUiTestBase`. Test the APIs it calls separately; keep the browser test to what the browser renders.
 * Tempted to add a `.bats` file — don't. Write it as a `SolrShellTestCase`. Touch the `.bats` files only to keep them working until they are ported.
 
@@ -105,6 +111,21 @@ These are Lucene annotations wired up as randomizedtesting *test groups*, disabl
 * `@LuceneTestCase.Monster(value)` — needs unusual disk or RAM.
 
 There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@AwaitsFix`. Read solr-source-code.adoc's guidance on frequently-failing tests before disabling anything.
+
+== Containers for external services
+
+When a test needs a real instance of something Solr talks to, start it with Testcontainers from a JUnit rule rather than by hand. Three examples in tree, all the same shape: `TikaServerContainerRule` (extraction), `KafkaContainerRule` (cross-dc-manager), `S3MockContainerRule` (s3-repository).
+
+The shape is an `ExternalResource` declared as `@ClassRule`:
+
+* `@ClassRule`, not `@Rule` — a container pull and start is far too expensive per method.
+* `Assume.assumeTrue(.., DockerClientFactory.instance().isDockerAvailable())` in `before()`, so the test skips where Docker is absent instead of failing.
+* `.waitingFor(Wait.forListeningPort())`, so there is no polling loop and no sleep.
+* `getMappedPort(n)` for the address. Never publish a fixed host port: it collides with whatever else the machine is running, and with another test class in a parallel build.
+
+`TikaServerExtractionBackendTest` is the one to copy.
+
+This is also the right home for the handful of BATS tests that run `docker run` by hand — the rule gives them the Docker check, the readiness wait and a free port for nothing.
 
 == Waiting, not sleeping
 
