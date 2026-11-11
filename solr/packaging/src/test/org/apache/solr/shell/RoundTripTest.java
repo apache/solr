@@ -26,7 +26,7 @@ import org.junit.Test;
  * The first end-to-end exercise of the shell harness: start Solr, create a collection, index a
  * handful of documents, search them back, and stop again — all through {@code bin/solr}.
  */
-public class SolrShellRoundTripTest extends SolrShellTestCase {
+public class RoundTripTest extends SolrShellTestCase {
 
   private static final String COLLECTION = "books";
 

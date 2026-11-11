@@ -27,7 +27,7 @@ import org.junit.Test;
  * which would otherwise start a node and leak one.
  */
 @EnabledOnShell(Shell.CMD)
-public class SolrShellCmdOnlyTest extends SolrShellTestCase {
+public class CmdOnlyTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startNodeForTheClass() {

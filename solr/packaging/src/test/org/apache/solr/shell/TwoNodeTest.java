@@ -22,11 +22,11 @@ import org.junit.Test;
 /**
  * Two nodes in one class, which exercises {@code SOLR2_PORT} and the harness' per-class port block.
  *
- * <p>Running alongside {@link SolrShellRoundTripTest} in another fork is also the check that the
- * per-class {@code SOLR_HOME} and port block really do isolate classes: both classes start Solr,
- * and either would fail if they shared a port, a PID directory or a home.
+ * <p>Running alongside {@link RoundTripTest} in another fork is also the check that the per-class
+ * {@code SOLR_HOME} and port block really do isolate classes: both classes start Solr, and either
+ * would fail if they shared a port, a PID directory or a home.
  */
-public class SolrShellTwoNodeTest extends SolrShellTestCase {
+public class TwoNodeTest extends SolrShellTestCase {
 
   @Test
   public void twoNodesGetSeparatePortsAndStopIndependently() {

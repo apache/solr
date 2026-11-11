@@ -41,7 +41,7 @@ import org.junit.Test;
  * shell's carry {@link EnabledOnShell}. The suites that actually drive {@code bin/solr} live in
  * {@code solr/packaging} and extend {@link SolrShellTestCase}.
  */
-public class SolrShellSessionTest extends SolrTestCase {
+public class CliSessionTest extends SolrTestCase {
 
   /** Makes {@link EnabledOnShell} effective without needing a Solr distribution. */
   @Rule public final ShellGate shellGate = new ShellGate();

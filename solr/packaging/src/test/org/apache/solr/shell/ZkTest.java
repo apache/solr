@@ -35,7 +35,7 @@ import org.junit.Test;
  * curl} becomes {@link #http}, and the symlink test works on a copy of the config set instead of
  * mutating the shared distribution.
  */
-public class SolrShellZkTest extends SolrShellTestCase {
+public class ZkTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {

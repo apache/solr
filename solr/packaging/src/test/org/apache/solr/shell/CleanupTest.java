@@ -28,7 +28,7 @@ import org.junit.Test;
  * class started. That is what makes them pass with sibling classes running in parallel forks, with
  * a developer's own Solr up on 8983, and with a second suite sharing a CI box.
  */
-public class SolrShellCleanupTest extends SolrShellTestCase {
+public class CleanupTest extends SolrShellTestCase {
 
   @Test
   public void statusSaysSoWhenNothingIsRunning() {

@@ -30,7 +30,7 @@ import org.junit.Test;
  * assertions a command result does, and the two tests that need a pipe or an embedded newline say
  * so explicitly rather than relying on bash syntax inside a shared command line.
  */
-public class SolrShellPostTest extends SolrShellTestCase {
+public class PostTest extends SolrShellTestCase {
 
   private static final String DOCS = "${SOLR_TIP}/example/exampledocs";
 
