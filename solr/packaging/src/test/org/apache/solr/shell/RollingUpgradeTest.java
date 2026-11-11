@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,6 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.images.PullPolicy;
-import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.utility.DockerImageName;
 
@@ -53,9 +53,9 @@ import org.testcontainers.utility.DockerImageName;
  * Port of {@code test_rolling_upgrade.bats}.
  *
  * <p>Upgrades from the latest release of the previous major version to the image of the Solr
- * version under test, which must already exist locally ({@code ./gradlew dockerTag}); the test is
- * skipped otherwise. Either image can be overridden, e.g. {@code export
- * SOLR_BEGIN_IMAGE=solr:9.11-slim}.
+ * version under test, which must already exist locally — build it with {@code ./gradlew dockerTag},
+ * or the test fails when the first container wants it. Either image can be overridden, e.g. {@code
+ * export SOLR_BEGIN_IMAGE=solr:9.11-slim}.
  *
  * <p>Kept close to the original, including the order of the steps and the text each asserts on. The
  * original's {@code docker} command lines become Testcontainers calls, so nothing here is
@@ -79,9 +79,11 @@ import org.testcontainers.utility.DockerImageName;
  *       aliases instead, so a leftover container from an earlier run cannot make this one fail to
  *       create one; the volume names are the original's, and are removed before use as well as
  *       after, so stale data from a killed run cannot poison the upgrade;
- *   <li>{@code docker pull} / {@code docker image inspect} become {@link RemoteDockerImage} with
- *       the original's policies — always pull the begin image, prefer the local end image — and a
- *       failure becomes an assumption, which is the original's {@code skip};
+ *   <li>{@code docker pull} and {@code docker image inspect} are gone. The pull policy sits on the
+ *       container instead, keeping the original's behaviour of always re-pulling the begin image
+ *       and preferring a local end image. An image that cannot be resolved now fails the test,
+ *       where the original skipped: a nightly test that skips itself because nobody built an image
+ *       has quietly stopped testing anything;
  *   <li>the teardown's {@code docker logs} / {@code inspect} / {@code ps aux} artifacts are written
  *       from Java; {@code date -Iseconds} is gone with the {@code --since} it scoped, since every
  *       container here was created by this test;
@@ -125,7 +127,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   }
 
   /** The original's {@code -m 200m} heap in a {@code --memory=400m} container. */
-  private static final long MEMORY_LIMIT_BYTES = 24L * 1024 * 1024; // TEMP
+  private static final long MEMORY_LIMIT_BYTES = 400L * 1024 * 1024;
 
   private static final String HEAP = "200m";
 
@@ -139,7 +141,10 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   @Test
   @Nightly
   public void dockerSolrCloudRollingUpgrade() throws IOException {
-    requireDockerAndImages();
+    // The other container suites get this from their @ClassRule; this one has no rule to put it in,
+    // because swapping a running node for one on the new image is the thing under test.
+    assumeTrue("Docker is not available", DockerClientFactory.instance().isDockerAvailable());
+    resolveImages();
 
     boolean failed = true;
     // Networking & volumes
@@ -154,15 +159,15 @@ public class RollingUpgradeTest extends SolrShellTestCase {
         nodes.forEach(Node::removeVolume);
 
         // Starting solr-node1 with embedded ZooKeeper
-        node1.create(beginImage, null);
+        node1.create(beginImage, null, pullPolicyFor(beginImage));
         node1.start();
         node1.assertStarted(10_000);
 
         // start next 2 in parallel
         // Starting solr-node2 connected to first node's ZooKeeper
-        node2.create(beginImage, "solr-node1:9983");
+        node2.create(beginImage, node1.zkAddress(), pullPolicyFor(beginImage));
         // Started solr-node3 connected to first node's ZooKeeper
-        node3.create(beginImage, "solr-node1:9983");
+        node3.create(beginImage, node1.zkAddress(), pullPolicyFor(beginImage));
         Startables.deepStart(node2.container, node3.container).join();
 
         node2.assertStarted(30_000);
@@ -188,15 +193,15 @@ public class RollingUpgradeTest extends SolrShellTestCase {
                 "http://localhost:8983/solr/test-collection/update?commit=true"));
 
         // Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
-        node3.upgradeTo(endImage, "solr-node1:9983");
+        node3.upgradeTo(endImage, node1.zkAddress(), pullPolicyFor(endImage));
         node3.assertStarted(30_000);
 
         // Upgrade node 2 second
-        node2.upgradeTo(endImage, "solr-node1:9983");
+        node2.upgradeTo(endImage, node1.zkAddress(), pullPolicyFor(endImage));
         node2.assertStarted(30_000);
 
         // Upgrading node 1 (ZK node)
-        node1.upgradeTo(endImage, null);
+        node1.upgradeTo(endImage, null, pullPolicyFor(endImage));
         node1.assertStarted(30_000);
 
         // Final collection health check
@@ -215,7 +220,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
         // checking cluster has exactly 3 live nodes
         ExecResult clusterStatus =
             node1.exec(
-                "curl", "-s", "http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS");
+                "curl", "-s", node1.httpAddress() + "/solr/admin/collections?action=CLUSTERSTATUS");
         assertExec(clusterStatus);
         assertEquals(3, liveNodeCount(clusterStatus.getStdout()));
 
@@ -227,44 +232,49 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   }
 
   /** The original's pre-checks: Docker itself, then each end of the upgrade. */
-  private void requireDockerAndImages() throws IOException {
-    assumeTrue("Docker is not available", DockerClientFactory.instance().isDockerAvailable());
+  /**
+   * Skips where Docker cannot run, and works out which two images to upgrade between.
+   *
+   * <p>The Docker check has to be here rather than in a {@code @ClassRule}, which is where the
+   * other container suites put theirs, because this test manages its containers itself.
+   *
+   * <p>It deliberately does not check that either image is available. The original skipped in that
+   * case; a missing image should fail instead, loudly, at the point a container needs it — a
+   * nightly test that quietly skips because nobody ran {@code ./gradlew dockerTag} is a test that
+   * has stopped testing anything without saying so.
+   */
+  /**
+   * Works out which two images to upgrade between.
+   *
+   * <p>The two versions come from different places on purpose. The previous major is a property of
+   * the code, so it comes from {@link SolrVersion#LATEST}. The version to upgrade <em>to</em> has
+   * to be the tag {@code ./gradlew dockerTag} applied, which is {@code project.version} and so
+   * carries the {@code -SNAPSHOT} qualifier that {@code SolrVersion} does not; the unpacked
+   * distribution under test is named for exactly that version, so its directory name is the honest
+   * source.
+   */
+  private void resolveImages() throws IOException {
+    int previousMajor = SolrVersion.LATEST.getMajorVersion() - 1;
+    beginImage = imageOverride("SOLR_BEGIN_IMAGE", "solr:" + previousMajor + "-slim");
 
-    String solrVersion = harnessEnv.solrTip().getFileName().toString().replaceFirst("^solr-", "");
-    int major = Integer.parseInt(solrVersion.substring(0, solrVersion.indexOf('.')));
-
-    beginImage = imageOverride("SOLR_BEGIN_IMAGE", "solr:" + (major - 1) + "-slim");
-    // The original always pulls this one, so that it tracks the latest release of that major.
-    assumeTrue(
-        "Docker image " + beginImage + " is not available",
-        imageResolves(beginImage, PullPolicy.alwaysPull()));
-
-    // Default matches the tag applied by the Gradle dockerTag task
-    endImage = imageOverride("SOLR_END_IMAGE", "apache/solr:" + solrVersion);
-    assumeTrue(
-        "Docker image " + endImage + " is not available; build it with: ./gradlew dockerTag",
-        imageResolves(endImage, PullPolicy.defaultPolicy()));
+    String builtVersion = harnessEnv.solrTip().getFileName().toString().replaceFirst("^solr-", "");
+    endImage = imageOverride("SOLR_END_IMAGE", "apache/solr:" + builtVersion);
 
     // Persist artifacts under Gradle's test-output
     artifactDir = Files.createDirectories(harnessEnv.testOutputDir().resolve("docker"));
   }
 
+  /**
+   * The begin image is always re-pulled, so the test tracks the latest release of the previous
+   * major as the original did; the end image is the locally built one, so it is not.
+   */
+  private ImagePullPolicy pullPolicyFor(String image) {
+    return image.equals(beginImage) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy();
+  }
+
   private String imageOverride(String variable, String fallback) {
     String override = env(variable);
     return (override == null || override.isBlank()) ? fallback : override;
-  }
-
-  /**
-   * Port of {@code docker pull || skip} and {@code docker image inspect || docker pull || skip}.
-   */
-  private static boolean imageResolves(String image, ImagePullPolicy policy) {
-    try {
-      new RemoteDockerImage(DockerImageName.parse(image)).withImagePullPolicy(policy).get();
-      return true;
-    } catch (RuntimeException e) {
-      log.warn("Docker image {} could not be resolved", image, e);
-      return false;
-    }
   }
 
   /** Port of {@code wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection}. */
@@ -357,9 +367,26 @@ public class RollingUpgradeTest extends SolrShellTestCase {
       this.network = network;
     }
 
+    /**
+     * Where another node reaches this one's embedded ZooKeeper, as {@code <alias>:<port>}.
+     *
+     * <p>The host part is this container's network alias, resolved by Docker's DNS inside the
+     * private network, and the port is Solr's embedded-ZooKeeper convention of the Solr port plus
+     * 1000. Derived rather than written out, so it cannot drift from {@link #name} — the alias the
+     * container is actually created with.
+     */
+    String zkAddress() {
+      return name + ":" + (port + 1000);
+    }
+
+    /** Where this node is reached over HTTP from inside the network. */
+    String httpAddress() {
+      return "http://" + name + ":" + port;
+    }
+
     /** Port of one {@code docker run}, up to but not including starting it. */
     @SuppressWarnings("resource")
-    void create(String image, String zkHost) {
+    void create(String image, String zkHost, ImagePullPolicy pullPolicy) {
       List<String> command =
           new ArrayList<>(
               List.of(
@@ -370,6 +397,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
       }
       container =
           new GenericContainer<>(DockerImageName.parse(image))
+              .withImagePullPolicy(pullPolicy)
               .withNetwork(network)
               .withNetworkAliases(name)
               .withEnv("SOLR_MODE", "solrcloud")
@@ -389,9 +417,9 @@ public class RollingUpgradeTest extends SolrShellTestCase {
     }
 
     /** Port of {@code docker stop}, {@code docker rm} and a {@code docker run} on the new image. */
-    void upgradeTo(String image, String zkHost) {
+    void upgradeTo(String image, String zkHost, ImagePullPolicy pullPolicy) {
       stop();
-      create(image, zkHost);
+      create(image, zkHost, pullPolicy);
       start();
     }
 
