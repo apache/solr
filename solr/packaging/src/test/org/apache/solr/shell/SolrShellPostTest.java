@@ -245,9 +245,9 @@ public class SolrShellPostTest extends SolrShellTestCase {
     // A pipe is the shell's own syntax, so this is one of the few places that needs a body per
     // shell. BATS needed a helper function here for the same reason.
     script(
-            "echo \"{'commit': {}}\" | solr post --solr-url http://localhost:${SOLR_PORT}"
+            "echo \"{'commit': {}}\" | solr post --solr-url http://localhost:{{SOLR_PORT}}"
                 + " -c test_stdin --mode stdin --type application/json --verbose",
-            "echo {'commit': {}} | solr post --solr-url http://localhost:${SOLR_PORT}"
+            "echo {'commit': {}} | solr post --solr-url http://localhost:{{SOLR_PORT}}"
                 + " -c test_stdin --mode stdin --type application/json --verbose")
         .assertContains("\"status\":0");
   }

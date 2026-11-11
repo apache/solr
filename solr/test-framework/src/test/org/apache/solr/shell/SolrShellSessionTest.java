@@ -426,6 +426,18 @@ public class SolrShellSessionTest extends SolrTestCase {
 
   @Test
   @EnabledOnShell(Shell.CMD)
+  public void aCmdScriptRejectsADollarVariable() {
+    // cmd.exe does not expand $NAME, so it would reach the command as text. Caught because the
+    // bash body of the same script() call does expand it, which makes the mistake look fine until
+    // it runs on Windows.
+    AssertionError failure =
+        expectThrows(
+            AssertionError.class, () -> session.script("echo ${ZK_PORT}", "echo ${ZK_PORT}"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("{{ZK_PORT}}"));
+  }
+
+  @Test
+  @EnabledOnShell(Shell.CMD)
   public void cmdEnvironmentIsCaseInsensitive() {
     // Windows environment names are case-insensitive, so the harness keeps its env map that way.
     session.env("MiXeD_Case_Var", "value");

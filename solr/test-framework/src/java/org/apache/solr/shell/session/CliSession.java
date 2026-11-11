@@ -347,6 +347,24 @@ public class CliSession implements AutoCloseable {
       throw new org.junit.AssumptionViolatedException(
           "No " + shell + " script supplied for this test");
     }
+    if (shell == Shell.CMD) {
+      // cmd.exe has no $NAME syntax at all, so one in a cmd body is dead text that will reach the
+      // command verbatim. Worth catching, because the bash body of the same script() call expands
+      // it from the environment and therefore appears to work — exactly how the stdin test in the
+      // test_post.bats port came to pass on bash and fail on Windows.
+      Matcher stray = Variables.ANY.matcher(chosen);
+      while (stray.find()) {
+        if (stray.group().startsWith("$")) {
+          throw new AssertionError(
+              "cmd.exe does not expand "
+                  + stray.group()
+                  + ", so it would reach the command as text. Write {{"
+                  + stray.group().replaceAll("[${}]", "")
+                  + "}} to have the harness resolve it, or %NAME% if the shell really should.\n"
+                  + chosen);
+        }
+      }
+    }
     return execute(
         Variables.resolve(chosen, Variables.BRACES_ONLY, vars, "a script"), timeout, false);
   }
