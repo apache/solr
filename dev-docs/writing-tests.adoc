@@ -2,7 +2,7 @@
 :toc: left
 :toclevels: 2
 
-Which kind of test to write, and the lifecycle conventions they all share. Building and running the suite is covered in xref:solr-source-code.adoc[Working With Solr Source Code]; `./gradlew helpTests` is the full property reference.
+Which kind of test to write, and the lifecycle conventions they all share. Building and running the suite is covered in xref:solr-source-code.adoc[Working With Solr Source Code]; `./gradlew helpTests` covers running them.
 
 The rule: *write the cheapest kind of test that can actually catch the bug.*
 
@@ -124,25 +124,25 @@ There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@Aw
 `solr/packaging/src/test/org/apache/solr/shell/PostTest.java` — same, plus `assertContainsForCli(commonsCliText, picocliText)` to cover both CLI implementations in one test.
 
 `AdminUiTestBase`::
-`solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — 61 lines, one screen, every displayed value compared against live admin-API JSON rather than a constant.
+`solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — 61 lines, one screen; the version and JVM values are compared against live `/admin/info/system` JSON rather than against constants.
 +
-`solr/webapp/src/test/org/apache/solr/webapp/AdminUiSmokeTest.java` — walks every screen, asserting it renders with no severe console errors.
+`solr/webapp/src/test/org/apache/solr/webapp/AdminUiSmokeTest.java` — walks the node-, cloud-, collection- and core-level screens, asserting each renders with no severe console errors.
 
 == Running what you just wrote
 
 `./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the parts specific to a module's own test task are here:
 
-* `./gradlew -p solr/packaging shellTests` builds the distribution first, then runs the shell suites; classes run in parallel, each with its own `SOLR_HOME` and port block (`-Pshell.tests.jvms=N` to cap). `shellTestsPicocli` and `shellTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
+* `./gradlew -p solr/packaging shellTests` builds the distribution first, then runs the shell suites; classes run in parallel, each with its own `SOLR_HOME` and port block (`-Pshell.tests.jvms=N` sets the fork count, which defaults to `min(4, tests.jvms)`). `shellTestsPicocli` and `shellTestsCommonsCli` pin the CLI implementation. On Windows the same suites run under `cmd.exe`.
 * `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
 * Neither `solr/packaging` test task is part of `check` — both need an unpacked distribution. The harness' own unit tests, under the same task name in `solr/test-framework`, are. The browser tests are in `check` but stay skipped until their test group is enabled.
 
-When one fails, start with the artifacts rather than the stack trace: `SolrShellTestCase` prints the path to a `SOLR_HOME` snapshot and a transcript of every command with its output, and `AdminUiTestBase` saves a screenshot, the page source and the browser console log.
+When one fails, start with the artifacts rather than the stack trace: `SolrShellTestCase` prints the path to a `SOLR_HOME` snapshot holding `transcript.log`, every command it ran with its output; `AdminUiTestBase` saves `screenshot.png`, `page.html` and `console.log`.
 
 == See also
 
 * `solr/test-framework/README.md` — what the framework provides and how to depend on it.
 * `solr/packaging/README.md` — the distribution, the shell harness and the BATS suites it is replacing.
 * link:admin-ui-tests.md[admin-ui-tests.md] — how the browser suite works and what it skips.
-* `dev-docs/gradle-help/tests.txt`, i.e. `./gradlew helpTests` — full test-property reference.
+* `./gradlew helpTests` (`dev-docs/gradle-help/tests.txt`) — the guide to running tests. `./gradlew -p solr/core testOpts` lists every test property with its default and current value.
 * xref:solr-source-code.adoc[solr-source-code.adoc] — building, and what to do about a test that only fails for you.
