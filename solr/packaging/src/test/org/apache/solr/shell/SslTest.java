@@ -1,0 +1,829 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.shell;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.shell.exec.Shell;
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * Port of {@code test_ssl.bats}.
+ *
+ * <p>Kept close to the original, including the order of the tests and the text each asserts on.
+ * Where it differs:
+ *
+ * <ul>
+ *   <li>{@code curl --cacert} becomes {@link #https}, which trusts the keystore directly — so the
+ *       {@code openssl} step that converted it to a PEM for curl is gone, and with it the only
+ *       reason most of this suite could not run on Windows.
+ *   <li>{@code keytool} is invoked by absolute path from the test JVM's {@code java.home}: the
+ *       Gradle test environment does not guarantee it on {@code PATH}.
+ *   <li>The {@code keytool ... | keytool -gencert > file} pipes of the mTLS tests use keytool's own
+ *       {@code -file}/{@code -infile}/{@code -outfile} options instead, a pipe being bash-only.
+ *   <li>The original wipes {@code SOLR_HOME} before every test; the harness does it once per class,
+ *       so {@link #wipeSolrHomeBeforeEachTest} does the rest. Without it the collection named
+ *       {@code test} would survive from one test into the next.
+ *   <li>The two {@code curl --resolve} lines of the peer-name test have no cross-shell equivalent —
+ *       no HTTP client in the JDK can send a {@code Host} header for a name it has not resolved —
+ *       so they live in a bash-only companion test, {@link #useDifferentHostnameWithCurlResolve}.
+ *   <li>{@code solr auth enable} appends to the include file, which by default belongs to the
+ *       distribution every test class shares, so the auth test points {@code SOLR_INCLUDE} at a
+ *       private copy.
+ *   <li>The original's subshells, which restore an environment variable on exit, become explicit
+ *       re-assignments at the same points.
+ * </ul>
+ */
+public class SslTest extends SolrShellTestCase {
+
+  private static final String SECRET = "secret";
+
+  /** The JDK's keytool, which both platforms have, by absolute path rather than via PATH. */
+  private static final String KEYTOOL =
+      "\"" + Path.of(System.getProperty("java.home"), "bin", "keytool") + "\"";
+
+  @Before
+  public void wipeSolrHomeBeforeEachTest() throws IOException {
+    // BATS' common_setup: every test in this file starts its own Solr, from a clean SOLR_HOME.
+    IOUtils.rm(harnessEnv.solrHome());
+    Files.createDirectories(harnessEnv.logsDir());
+  }
+
+  @Test
+  public void startSolrWithSsl() {
+    Path keystore = createKeystore("solr-ssl", "solr-ssl", "localhost", "127.0.0.1");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", keystore.toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE", keystore.toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "false");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "false");
+    env("SOLR_HOST_ADVERTISE", "localhost");
+
+    run("solr start").assertSuccess();
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+
+    https("/solr/test/select?q=*:*")
+        .trustStore(keystore, SECRET)
+        .get()
+        .assertContains("\"numFound\":0");
+
+    // The certificate is self-signed, so a client that does not trust it cannot connect.
+    https("/solr/test/select?q=*:*").get().assertConnectionFailed();
+  }
+
+  @Test
+  public void useDifferentHostnameWhenNotCheckingPeerName() {
+    // Using a CN that is not localhost, as we will not be checking peer-name
+    Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", keystore.toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE", keystore.toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "false");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "false");
+    env("SOLR_SSL_CHECK_PEER_NAME", "false");
+    env("SOLR_HOST_ADVERTISE", "127.0.0.1");
+
+    run("solr start").assertSuccess();
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+
+    // Trusting the certificate is not enough: its names do not cover localhost. The original
+    // asserted curl's wording for this; here it is the TLS stack's own, the same text the
+    // --check-peer-name assertion below looks for.
+    https("/solr/test/select?q=*:*")
+        .trustStore(keystore, SECRET)
+        .get()
+        .assertConnectionFailed()
+        .assertContains("No subject alternative DNS name matching localhost found");
+
+    // The original's 'curl -k'. java.net.http has no per-request way to turn hostname
+    // verification off, so the request addresses the node by the IP address the certificate
+    // does cover, which makes the same point: the connection itself is fine.
+    https("/solr/test/select?q=*:*")
+        .host("127.0.0.1")
+        .trustStore(keystore, SECRET)
+        .get()
+        .assertContains("\"numFound\":0");
+
+    // This is a client setting, so we don't need to restart Solr to make sure that it fails
+    env("SOLR_SSL_CHECK_PEER_NAME", "true");
+
+    // This should fail the peername check
+    run("solr api --verbose --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertFailure()
+        .assertMatches(
+            "(No subject alternative DNS name matching localhost found|Server refused connection)");
+
+    // Restart the server enabling the SNI hostcheck
+    env("SOLR_SSL_CHECK_PEER_NAME", "false");
+    env("SOLR_OPTS", solrOpts() + " -Dsolr.jetty.ssl.sni.host.check.enabled=true");
+    run("solr restart").assertSuccess();
+
+    // This should fail the SNI Hostname check
+    run("solr api --verbose --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS\"")
+        .assertFailure()
+        .assertContains("Invalid SNI");
+  }
+
+  @Test
+  @EnabledOnShell(
+      Shell.BASH) // curl --resolve has no cross-shell equivalent; see the class javadoc.
+  public void useDifferentHostnameWithCurlResolve() {
+    Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
+    Path pem = path("ssl/solr-ssl.pem");
+    run("openssl pkcs12 -in \""
+            + keystore
+            + "\" -out \""
+            + pem
+            + "\""
+            + " -passin pass:secret -passout pass:secret")
+        .assertSuccess();
+
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", keystore.toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE", keystore.toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "false");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "false");
+    env("SOLR_SSL_CHECK_PEER_NAME", "false");
+    env("SOLR_HOST_ADVERTISE", "127.0.0.1");
+
+    run("solr start").assertSuccess();
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    run("curl --http2 --cacert \""
+            + pem
+            + "\""
+            + " --resolve \"test.solr.apache.org:${SOLR_PORT}:127.0.0.1\""
+            + " \"https://test.solr.apache.org:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+
+    // Restart the server enabling the SNI hostcheck; using the right hostname should not fail it.
+    env("SOLR_OPTS", solrOpts() + " -Dsolr.jetty.ssl.sni.host.check.enabled=true");
+    run("solr restart").assertSuccess();
+
+    run("curl --http2 --cacert \""
+            + pem
+            + "\""
+            + " --resolve \"test.solr.apache.org:${SOLR_PORT}:127.0.0.1\""
+            + " \"https://test.solr.apache.org:${SOLR_PORT}"
+            + "/solr/admin/collections?action=CLUSTERSTATUS\"")
+        .assertContains("\"urlScheme\":\"https\"");
+  }
+
+  @Test
+  public void startSolrWithSslAndAuth() {
+    Path keystore = createKeystore("solr-ssl", "solr-ssl", "localhost", "127.0.0.1");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", keystore.toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE", keystore.toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "false");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "false");
+    env("SOLR_SSL_CHECK_PEER_NAME", "true");
+    env("SOLR_HOST_ADVERTISE", "localhost");
+
+    // 'solr auth enable' writes into the include file, which by default is the one in the
+    // distribution that every test class shares. A private copy keeps this test to itself.
+    // The name has to keep its extension: bin\solr.cmd CALLs the include file.
+    String includeFile = cli.shell() == Shell.BASH ? "solr.in.sh" : "solr.in.cmd";
+    env(
+        "SOLR_INCLUDE",
+        copy(harnessEnv.solrTip().resolve("bin").resolve(includeFile).toString(), includeFile)
+            .toString());
+
+    run("solr start").assertSuccess();
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr auth enable --type basicAuth --credentials name:password").assertSuccess();
+
+    https(
+            "/solr/admin/collections?action=CREATE&collection.configName=_default&name=test"
+                + "&numShards=2&replicationFactor=1&router.name=compositeId&wt=json")
+        .trustStore(keystore, SECRET)
+        .basicAuth("name", "password")
+        .get()
+        .assertContains("\"status\":0");
+
+    https("/solr/test/select?q=*:*")
+        .trustStore(keystore, SECRET)
+        .basicAuth("name", "password")
+        .get()
+        .assertContains("\"numFound\":0");
+
+    // Unauthenticated, so this one is refused rather than failing to connect.
+    https("/solr/test/select?q=*:*")
+        .trustStore(keystore, SECRET)
+        .get()
+        .assertContains("Error 401 Authentication");
+
+    // BATS' teardown ran this for every test; only this one has anything to disable.
+    run("solr auth disable");
+  }
+
+  @Test
+  public void startSolrWithClientTruststoreAndSecurityManager() {
+    // Make a test tmp dir, as the security policy includes TMP, so that might already contain the
+    // work directory the keystores live in.
+    Path testTmpDir = mkdirs("tmp");
+
+    env("SOLR_SECURITY_MANAGER_ENABLED", "true");
+    env("SOLR_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
+    env("SOLR_TOOL_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
+
+    // Create a keystore
+    Path keystore = createKeystore("solr-ssl", "solr-ssl", "localhost", "127.0.0.1");
+
+    // Create a truststore holding just the exported certificate
+    mkdirs("ssl-client");
+    Path certificate = path("ssl-client/solr-ssl.crt");
+    Path clientTruststore = path("ssl-client/solr-ssl.truststore.p12");
+    run(KEYTOOL
+            + " -export -alias solr-ssl -file \""
+            + certificate
+            + "\" -keystore \""
+            + keystore
+            + "\" -keypass secret -storepass secret")
+        .assertSuccess();
+    run(KEYTOOL
+            + " -import -v -trustcacerts -alias solr-ssl -file \""
+            + certificate
+            + "\" -storetype PKCS12 -keystore \""
+            + clientTruststore
+            + "\" -keypass secret -storepass secret -noprompt")
+        .assertSuccess();
+    copy("ssl", "ssl-client/ssl");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", keystore.toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE", keystore.toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_CLIENT_TRUST_STORE", clientTruststore.toString());
+    env("SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "false");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "true");
+    env("SOLR_SSL_CHECK_PEER_NAME", "true");
+    env("SOLR_HOST_ADVERTISE", "localhost");
+
+    run("solr start");
+
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+
+    env("SOLR_SSL_KEY_STORE", "");
+    env("SOLR_SSL_KEY_STORE_PASSWORD", "");
+    env("SOLR_SSL_TRUST_STORE", "");
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", "");
+
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS\"")
+        .assertContains("\"urlScheme\":\"https\"");
+  }
+
+  @Test
+  public void startSolrWithMtlsNeeded() {
+    Path testTmpDir = mkdirs("tmp");
+
+    env("SOLR_SECURITY_MANAGER_ENABLED", "true");
+    env("SOLR_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
+    env("SOLR_LOG_LEVEL", "DEBUG");
+    // To debug further use: -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake
+    env("SOLR_TOOL_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
+
+    createCertificateAuthority();
+    createSignedStores("server", "localhost", "DNS:localhost,IP:127.0.0.1", "serverAuth");
+    // The client cert has a bogus DNS name and IP address, as we want the
+    // clientHostnameVerification to fail
+    createSignedStores(
+        "client", "test.solr.apache.org", "DNS:test.solr.apache.org,IP:127.0.0.2", "clientAuth");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", path("ssl/server/solr-server.keystore.p12").toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", "server-key");
+    env("SOLR_SSL_KEY_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_TRUST_STORE", path("ssl/server/solr-server.truststore.p12").toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", "server-trust");
+    env("SOLR_SSL_TRUST_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_CLIENT_KEY_STORE", path("ssl/client/solr-client.keystore.p12").toString());
+    env("SOLR_SSL_CLIENT_KEY_STORE_PASSWORD", "client-key");
+    env("SOLR_SSL_CLIENT_KEY_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_CLIENT_TRUST_STORE", path("ssl/client/solr-client.truststore.p12").toString());
+    env("SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD", "client-trust");
+    env("SOLR_SSL_CLIENT_TRUST_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "true");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "false");
+    env("SOLR_SSL_CHECK_PEER_NAME", "true");
+    // Cannot set this to true, because the client certificate does not have the right hostname
+    // ("localhost") or IP
+    env("SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION", "false");
+    env("SOLR_HOST_ADVERTISE", "localhost");
+
+    run("solr start").assertSuccess();
+    run("solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}").assertSuccess();
+
+    // Test Client connections, which do not need the server keystore/truststore
+    env("SOLR_SSL_KEY_STORE", "");
+    env("SOLR_SSL_KEY_STORE_PASSWORD", "");
+    env("SOLR_SSL_TRUST_STORE", "");
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", "");
+
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
+
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS\"")
+        .assertContains("\"urlScheme\":\"https\"");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0\"")
+        .assertContains("\"numFound\":0");
+
+    // Try connecting with just the client truststore, which should fail because mTLS requires a
+    // keystore and mTLS is needed
+    env("SOLR_SSL_CLIENT_KEY_STORE", "");
+    env("SOLR_SSL_CLIENT_KEY_STORE_PASSWORD", "");
+
+    run("solr api --verbose --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0\"")
+        .assertFailure()
+        .assertMatches(
+            "(bad_certificate|java.nio.channels.ClosedChannelException"
+                + "|Server refused connection)");
+
+    // The original's subshells end here, restoring the four server variables and the client
+    // keystore for what follows.
+    env("SOLR_SSL_CLIENT_KEY_STORE", path("ssl/client/solr-client.keystore.p12").toString());
+    env("SOLR_SSL_CLIENT_KEY_STORE_PASSWORD", "client-key");
+    env("SOLR_SSL_KEY_STORE", path("ssl/server/solr-server.keystore.p12").toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", "server-key");
+    env("SOLR_SSL_TRUST_STORE", path("ssl/server/solr-server.truststore.p12").toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", "server-trust");
+
+    // Turn on client hostname verification, and start a new Solr node since the property is a
+    // server setting. Test that it fails because the client cert does not use "localhost"
+    env("SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION", "true");
+    run("solr start -z localhost:${ZK_PORT} -p ${SOLR3_PORT}").assertSuccess();
+
+    // The original slept here, because it cannot connect to the node to check it is up. Its
+    // registration in ZooKeeper is visible from a node we can talk to, so that is what we wait
+    // for instead.
+    awaitOrFail(
+        "the third node to register in ZooKeeper",
+        Duration.ofSeconds(60),
+        Duration.ofSeconds(2),
+        () ->
+            run("solr api --solr-url \"https://localhost:${SOLR_PORT}"
+                    + "/solr/admin/collections?action=CLUSTERSTATUS\"")
+                .output()
+                .contains("localhost:" + ports().solr3() + "_solr"));
+
+    run("solr api --verbose --solr-url"
+            + " \"https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0\"")
+        .assertFailure()
+        .assertMatches(
+            "(certificate_unknown|java.nio.channels.ClosedChannelException"
+                + "|Server refused connection)");
+  }
+
+  @Test
+  public void startSolrWithMtlsWanted() {
+    Path testTmpDir = mkdirs("tmp");
+
+    env("SOLR_SECURITY_MANAGER_ENABLED", "true");
+    env("SOLR_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
+    env("SOLR_TOOL_OPTS", "-Djava.io.tmpdir=" + testTmpDir);
+
+    createCertificateAuthority();
+    createSignedStores("server", "localhost", "DNS:localhost,IP:127.0.0.1", "serverAuth");
+    createSignedStores("client", "localhost", "DNS:localhost,IP:127.0.0.1", "clientAuth");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE", path("ssl/server/solr-server.keystore.p12").toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", "server-key");
+    env("SOLR_SSL_KEY_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_TRUST_STORE", path("ssl/server/solr-server.truststore.p12").toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", "server-trust");
+    env("SOLR_SSL_TRUST_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_CLIENT_KEY_STORE", path("ssl/client/solr-client.keystore.p12").toString());
+    env("SOLR_SSL_CLIENT_KEY_STORE_PASSWORD", "client-key");
+    env("SOLR_SSL_CLIENT_KEY_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_CLIENT_TRUST_STORE", path("ssl/client/solr-client.truststore.p12").toString());
+    env("SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD", "client-trust");
+    env("SOLR_SSL_CLIENT_TRUST_STORE_TYPE", "PKCS12");
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "false");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "true");
+    env("SOLR_SSL_CHECK_PEER_NAME", "true");
+    env("SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION", "true");
+    env("SOLR_HOST_ADVERTISE", "localhost");
+
+    run("solr start").assertSuccess();
+    run("solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}").assertSuccess();
+
+    env("SOLR_SSL_KEY_STORE", "");
+    env("SOLR_SSL_KEY_STORE_PASSWORD", "");
+    env("SOLR_SSL_TRUST_STORE", "");
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", "");
+
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
+
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS\"")
+        .assertContains("\"urlScheme\":\"https\"");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0\"")
+        .assertContains("\"numFound\":0");
+
+    env("SOLR_SSL_CLIENT_KEY_STORE", "");
+    env("SOLR_SSL_CLIENT_KEY_STORE_PASSWORD", "");
+
+    // mTLS requires a keyStore, so just using the truststore would fail if mTLS was "NEED"ed,
+    // however it is only "WANT"ed, so its ok
+    run("solr api --solr-url" + " \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0\"")
+        .assertContains("\"numFound\":0");
+
+    env("SOLR_SSL_CLIENT_TRUST_STORE", "");
+    env("SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD", "");
+
+    // TLS cannot work if a truststore and keystore are not provided (either Server or Client)
+    run("solr api --verbose --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0\"")
+        .assertMatches(
+            "(unable to find valid certification path to requested target"
+                + "|Server refused connection)");
+  }
+
+  @Test
+  public void testKeystoreReload() {
+    // cert and keystore 1, cert and keystore 2. The original also exported each as a PEM with
+    // openssl; nothing in the test used them.
+    createKeystore("cert1", "cert1", "localhost", "127.0.0.1");
+    Path cert2 = createKeystore("cert2", "cert2", "localhost", "127.0.0.1");
+
+    copy("ssl/cert1.keystore.p12", "ssl/server1.keystore.p12");
+    copy("ssl/cert1.keystore.p12", "ssl/server2.keystore.p12");
+    Path server1 = path("ssl/server1.keystore.p12");
+    Path server2 = path("ssl/server2.keystore.p12");
+
+    // Set ENV_VARs so that Solr uses this keystore
+    env("SOLR_SSL_ENABLED", "true");
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_NEED_CLIENT_AUTH", "true");
+    env("SOLR_SSL_WANT_CLIENT_AUTH", "false");
+    env("SOLR_HOST_ADVERTISE", "localhost");
+
+    // server1 will run on $SOLR_PORT and will use server1.keystore
+    env("SOLR_SSL_KEY_STORE", server1.toString());
+    env("SOLR_SSL_TRUST_STORE", server1.toString());
+    run("solr start --jvm-opts"
+            + " \"-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000\"")
+        .assertSuccess();
+    run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+
+    // server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same
+    // as server1.keystore
+    env("SOLR_SSL_KEY_STORE", server2.toString());
+    env("SOLR_SSL_TRUST_STORE", server2.toString());
+
+    run("solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts"
+            + " \"-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000\"")
+        .assertSuccess();
+    run("solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
+
+    // "test" collection is two shards, meaning there must be communication between shards for
+    // queries (handled by http shard handler factory)
+    run("solr create -c test --shards 2").assertContains("Created collection 'test'");
+
+    // "test-single-shard" is one shard and one replica, this means that one of the nodes will
+    // have to forward requests to the other
+    run("solr create -c test-single-shard --shards 1")
+        .assertContains("Created collection 'test-single-shard'");
+
+    run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+    run("solr api --solr-url \"https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*\"")
+        .assertContains("\"numFound\":0");
+
+    https("/solr/test/select?q=*:*").get().assertConnectionFailed();
+    https(ports().solr2(), "/solr/test/select?q=*:*").get().assertConnectionFailed();
+
+    https("/solr/test-single-shard/select?q=*:*").get().assertConnectionFailed();
+    https(ports().solr2(), "/solr/test-single-shard/select?q=*:*").get().assertConnectionFailed();
+
+    env("SOLR_SSL_KEY_STORE", cert2.toString());
+    env("SOLR_SSL_KEY_STORE_PASSWORD", SECRET);
+    env("SOLR_SSL_TRUST_STORE", cert2.toString());
+    env("SOLR_SSL_TRUST_STORE_PASSWORD", SECRET);
+
+    run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertFailure();
+
+    // Replace server1 keystore with client's
+    copy("ssl/cert2.keystore.p12", "ssl/server1.keystore.p12");
+
+    // Wait for Jetty keystore-reload scan to pick up the new certificate
+    awaitOrFail(
+        "the first node to serve the new certificate",
+        Duration.ofSeconds(30),
+        Duration.ofSeconds(1),
+        () ->
+            run("solr api --solr-url"
+                    + " \"https://localhost:${SOLR_PORT}/solr/admin/info/system\"")
+                .succeeded());
+
+    run("solr healthcheck -c test --solr-url https://localhost:${SOLR_PORT}");
+
+    // Server 2 still uses the cert1, so this request should fail
+    run("solr api --solr-url \"https://localhost:${SOLR2_PORT}/solr/test/select?q=query2\"")
+        .assertFailure();
+
+    run("solr healthcheck -c test --solr-url https://localhost:${SOLR2_PORT}").assertFailure();
+
+    // Replace server2 keystore with client's
+    copy("ssl/cert2.keystore.p12", "ssl/server2.keystore.p12");
+
+    // Wait for Jetty keystore-reload scan to pick up the new certificate
+    awaitOrFail(
+        "the second node to serve the new certificate",
+        Duration.ofSeconds(30),
+        Duration.ofSeconds(1),
+        () ->
+            run("solr api --solr-url"
+                    + " \"https://localhost:${SOLR2_PORT}/solr/admin/info/system\"")
+                .succeeded());
+
+    run("solr healthcheck -c test --solr-url https://localhost:${SOLR_PORT}");
+    run("solr healthcheck -c test --solr-url https://localhost:${SOLR2_PORT}");
+
+    run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=query3\"")
+        .assertContains("\"numFound\":0");
+
+    run("solr api --solr-url \"https://localhost:${SOLR2_PORT}/solr/test/select?q=query3\"")
+        .assertContains("\"numFound\":0");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=query4\"")
+        .assertContains("\"numFound\":0");
+
+    run("solr api --solr-url"
+            + " \"https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=query4\"")
+        .assertContains("\"numFound\":0");
+
+    run(
+        "solr post --solr-url https://localhost:${SOLR_PORT} -c test"
+            + " \"${SOLR_TIP}/example/exampledocs/books.csv\"");
+
+    run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
+        .assertContains("\"numFound\":10");
+  }
+
+  // --------------------------------------------------------------- keystore generation
+
+  /**
+   * Port of the {@code keytool -genkeypair} block the original opens each test with, writing into
+   * an {@code ssl} directory of the session's own work directory.
+   */
+  private Path createKeystore(String name, String alias, String dnsName, String ip) {
+    mkdirs("ssl");
+    Path keystore = path("ssl/" + name + ".keystore.p12");
+    run(KEYTOOL
+            + " -genkeypair -alias "
+            + alias
+            + " -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999"
+            + " -keystore \""
+            + keystore
+            + "\" -storetype PKCS12 -ext \"SAN=DNS:"
+            + dnsName
+            + ",IP:"
+            + ip
+            + "\" -dname \""
+            + dname(dnsName)
+            + "\"")
+        .assertSuccess();
+    return keystore;
+  }
+
+  /** Port of the root and intermediate CA the two mTLS tests sign their certificates with. */
+  private void createCertificateAuthority() {
+    mkdirs("ssl");
+    Path root = path("ssl/root.p12");
+    Path ca = path("ssl/ca.p12");
+    Path rootPem = path("ssl/root.pem");
+    Path caPem = path("ssl/ca.pem");
+    Path caCsr = path("ssl/ca.csr");
+
+    run(KEYTOOL
+            + " -genkeypair -keystore \""
+            + root
+            + "\" -storetype PKCS12 -keypass secret -storepass secret -alias root -ext bc:c"
+            + " -ext \"SAN=DNS:localhost,IP:127.0.0.1\" -dname \""
+            + dname("localhost")
+            + "\" -keyalg rsa")
+        .assertSuccess();
+    run(KEYTOOL
+            + " -genkeypair -keystore \""
+            + ca
+            + "\" -storetype PKCS12 -keypass secret -storepass secret -alias ca -ext bc:c"
+            + " -ext \"SAN=DNS:localhost,IP:127.0.0.1\" -dname \""
+            + dname("localhost")
+            + "\" -keyalg rsa")
+        .assertSuccess();
+
+    run(KEYTOOL
+            + " -keystore \""
+            + root
+            + "\" -storetype PKCS12 -storepass secret -alias root -exportcert -rfc -file \""
+            + rootPem
+            + "\"")
+        .assertSuccess();
+
+    run(KEYTOOL
+            + " -storepass secret -storetype PKCS12 -keystore \""
+            + ca
+            + "\" -certreq -alias ca -file \""
+            + caCsr
+            + "\"")
+        .assertSuccess();
+    run(KEYTOOL
+            + " -storepass secret -keystore \""
+            + root
+            + "\" -storetype PKCS12 -gencert -alias root -ext BC=0 -rfc -infile \""
+            + caCsr
+            + "\" -outfile \""
+            + caPem
+            + "\"")
+        .assertSuccess();
+    run(KEYTOOL
+            + " -keystore \""
+            + ca
+            + "\" -importcert -storetype PKCS12 -storepass secret -alias root -file \""
+            + rootPem
+            + "\" -noprompt")
+        .assertSuccess();
+    run(KEYTOOL
+            + " -keystore \""
+            + ca
+            + "\" -importcert -storetype PKCS12 -storepass secret -alias ca -file \""
+            + caPem
+            + "\"")
+        .assertSuccess();
+  }
+
+  /**
+   * Port of the server and client store generation in the two mTLS tests: a keypair, a certificate
+   * the CA signs, the CA chain imported alongside it, and a truststore holding just the CA chain.
+   */
+  private void createSignedStores(
+      String role, String commonName, String san, String extendedKeyUsage) {
+    String dir = "ssl/" + role;
+    mkdirs(dir);
+    Path keystore = path(dir + "/solr-" + role + ".keystore.p12");
+    Path truststore = path(dir + "/solr-" + role + ".truststore.p12");
+    Path pem = path(dir + "/" + role + ".pem");
+    Path csr = path(dir + "/" + role + ".csr");
+    Path rootPem = path("ssl/root.pem");
+    Path caPem = path("ssl/ca.pem");
+    String keyPassword = role + "-key";
+    String trustPassword = role + "-trust";
+
+    // Create a keystore and certificate
+    run(KEYTOOL
+            + " -genkeypair -keystore \""
+            + keystore
+            + "\" -storetype PKCS12 -keypass "
+            + keyPassword
+            + " -storepass "
+            + keyPassword
+            + " -alias "
+            + role
+            + " -ext \"SAN="
+            + san
+            + "\" -dname \""
+            + dname(commonName)
+            + "\" -keyalg rsa")
+        .assertSuccess();
+
+    // Trust the keystore cert with the CA
+    run(KEYTOOL
+            + " -storepass "
+            + keyPassword
+            + " -keystore \""
+            + keystore
+            + "\" -storetype PKCS12 -certreq -alias "
+            + role
+            + " -file \""
+            + csr
+            + "\"")
+        .assertSuccess();
+    run(KEYTOOL
+            + " -storepass secret -keystore \""
+            + path("ssl/ca.p12")
+            + "\" -storetype PKCS12 -gencert -alias ca -ext \"SAN="
+            + san
+            + "\" -ext \"ku:c=nonRepudiation,digitalSignature,keyEncipherment\""
+            + " -ext \"eku:c="
+            + extendedKeyUsage
+            + "\" -rfc -infile \""
+            + csr
+            + "\" -outfile \""
+            + pem
+            + "\"")
+        .assertSuccess();
+    importCert(keystore, keyPassword, "root", rootPem, true);
+    importCert(keystore, keyPassword, "ca", caPem, true);
+    importCert(keystore, keyPassword, role, pem, false);
+
+    // Create a truststore with just the Root CA
+    importCert(truststore, trustPassword, "root", rootPem, true);
+    importCert(truststore, trustPassword, "ca", caPem, true);
+  }
+
+  private void importCert(
+      Path store, String password, String alias, Path certificate, boolean noPrompt) {
+    run(KEYTOOL
+            + " -keystore \""
+            + store
+            + "\" -storetype PKCS12 -keypass "
+            + password
+            + " -storepass "
+            + password
+            + " -importcert -alias "
+            + alias
+            + " -file \""
+            + certificate
+            + "\""
+            + (noPrompt ? " -noprompt" : ""))
+        .assertSuccess();
+  }
+
+  private static String dname(String commonName) {
+    return "CN="
+        + commonName
+        + ", OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country";
+  }
+
+  /** The session's {@code SOLR_OPTS}, which the original appends to and which may be unset. */
+  private String solrOpts() {
+    String value = env("SOLR_OPTS");
+    return value == null ? "" : value;
+  }
+}

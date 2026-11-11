@@ -39,6 +39,7 @@ import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.ProcessKill;
 import org.apache.solr.shell.exec.SolrNodes;
 import org.apache.solr.shell.session.CliSession;
+import org.apache.solr.shell.session.HttpsRequest;
 import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -341,6 +342,14 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   protected SolrCliHelpers.HttpResult http(int port, String pathAndQuery) {
     return cli.helpers().http(port, pathAndQuery);
+  }
+
+  protected HttpsRequest https(String pathAndQuery) {
+    return cli.helpers().https(pathAndQuery);
+  }
+
+  protected HttpsRequest https(int port, String pathAndQuery) {
+    return cli.helpers().https(port, pathAndQuery);
   }
 
   protected boolean collectionExists(String collection) {

@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.session.CliSession;
+import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -544,5 +545,15 @@ public class CliSessionTest extends SolrTestCase {
   @Test
   public void relativePathsResolveAgainstTheSessionDirectory() {
     assertEquals(session.cwd().resolve("x").toString(), session.path("x").toString());
+  }
+
+  @Test
+  public void anHttpsRequestThatCannotConnectIsReportedAsAFailureNotAStatus() {
+    // Nothing is listening on the block this session claimed, which is the shape of the BATS
+    // 'run ! curl https://...' line: no status, and the reason readable in the body.
+    SolrCliHelpers.HttpResult result =
+        session.helpers().https(session.ports().solr(), "/solr/admin/info/system").get();
+    result.assertConnectionFailed();
+    assertTrue(result.body(), result.body().contains("Connect"));
   }
 }
