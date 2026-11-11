@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /** The shells a command line can be handed to. One process per command; no interactive session. */
 public enum Shell {
@@ -62,12 +63,30 @@ public enum Shell {
       return List.of("cmd.exe", "/d", "/c", script.toString());
     }
 
+    /**
+     * Double quotes protect {@code & | < > ^ ( )} from cmd's parser, and {@code !} is literal
+     * because these scripts never enable delayed expansion. {@code %} is the exception: it is
+     * expanded even inside double quotes, and in a batch file a literal one is written {@code %%}.
+     *
+     * <p>An embedded double quote is refused rather than mangled. cmd has no escape for one that
+     * survives both its own quote counting and the target program's parser, and guessing would
+     * produce a command that runs but means something else.
+     */
     @Override
     public String quote(String arg) {
-      // TODO: cmd.exe quoting needs the full ^-escaping treatment for & ^ % ! | < >.
-      return '"' + arg.replace("\"", "\"\"") + '"';
+      if (arg.indexOf('"') >= 0) {
+        throw new UnsupportedOperationException(
+            "Cannot quote an argument containing a double quote for cmd.exe. "
+                + "Use script(bashBody, cmdBody) for this one: "
+                + arg);
+      }
+      String escaped = arg.replace("%", "%%");
+      return NEEDS_CMD_QUOTING.matcher(arg).find() ? '"' + escaped + '"' : escaped;
     }
   };
+
+  /** Characters that make cmd.exe need an argument wrapped in double quotes. */
+  private static final Pattern NEEDS_CMD_QUOTING = Pattern.compile("[\\s&|<>^()]");
 
   /** System property that overrides the shell choice. */
   public static final String SHELL_SYSPROP = "solr.cli.shell";
