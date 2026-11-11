@@ -24,6 +24,8 @@ import org.apache.tools.ant.util.TeeOutputStream
 plugins {
   id 'base'
   id 'distribution'
+  // Only for the shell test harness suites under src/test; this project ships no Java of its own.
+  id 'java'
 }
 
 description = 'Solr distribution packaging'
@@ -62,6 +64,11 @@ dependencies {
   server project(path: ":solr:server", configuration: "packaging")
 
   docker project(path: ':solr:docker', configuration: 'packaging')
+
+  // The shell test harness lives in solr/test-framework; the suites that use it live here, next to
+  // the BATS tests they are ported from.
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
 
   solrFullTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
     builtBy ":solr:distribution:signFullBinaryTgz"
@@ -340,6 +347,47 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   task.environment BATS_LIB_PREFIX: batsLibsDir
   if (usePicocli) {
     task.environment SOLR_PICOCLI: 'true'
+  }
+}
+
+// Cross-platform CLI suites built on the org.apache.solr.shell harness in solr/test-framework.
+// Like the BATS suites these need the unpacked distribution, so they are not part of 'check' and
+// the stock 'test' task is turned off.
+tasks.named('test') {
+  enabled = false
+}
+
+tasks.register('shellTests', Test) {
+  group = 'verification'
+  description = 'Runs the bin/solr shell test harness suites against the unpacked distribution.'
+  dependsOn installFullDist
+
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = sourceSets.test.runtimeClasspath
+
+  // Unlike BATS, which runs every file sequentially against one shared SOLR_HOME and port block,
+  // each class here gets its own of both (see HarnessEnv.forClass), so classes can run in parallel.
+  // Defaults to the build's own tests.jvms, capped because the ceiling here is memory rather than
+  // CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pshell.tests.jvms.
+  // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
+  maxParallelForks = (project.findProperty('shell.tests.jvms')
+      ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer
+  timeout.set(java.time.Duration.ofMinutes(60))
+
+  def shellTestOutput = file("$buildDir/shell-test-output")
+  inputs.dir(distDir)
+  environment SOLR_TIP: distDir.toString()
+  environment TEST_OUTPUT_DIR: shellTestOutput.toString()
+
+  doFirst {
+    // Wiped per run, not per fork, so the port-block counter starts at zero and last run's
+    // failure snapshots do not pile up. Matches what configureBatsTask does for the BATS output.
+    delete shellTestOutput
+    shellTestOutput.mkdirs()
+    // The harness spawns bin/solr and writes outside the test sandbox, neither of which the test
+    // security policy allows. Dropping the property is enough; nothing installs an SM later.
+    systemProperties.remove('java.security.manager')
+    logger.lifecycle("Running shell tests with ${maxParallelForks} parallel fork(s)")
   }
 }
 

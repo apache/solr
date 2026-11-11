@@ -54,6 +54,24 @@ public class SolrProcessManager {
   // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
   // processes
   public static boolean enableTestingMode = false;
+
+  /**
+   * System property ({@code solr.process.scan.marker}, or the {@code SOLR_PROCESS_SCAN_MARKER}
+   * environment variable) restricting process discovery to Solr nodes whose command line contains
+   * the given string. Unset, which is the default, every Solr node on the host is discovered as
+   * before.
+   *
+   * <p>This exists so that automated tests can treat the host as if it were theirs alone. Node
+   * discovery is host-wide by nature, so without it a test asserting on the set of running nodes
+   * also sees a developer's own Solr, or a second test suite sharing a CI machine. A test harness
+   * sets this to a value unique to itself and starts its nodes with the same marker on their
+   * command lines, via {@code SOLR_OPTS_INTERNAL}.
+   *
+   * <p>Note that while this is set, a PID file belonging to a node without the marker counts as
+   * stale and is removed by {@link #scanSolrPidFiles()}.
+   */
+  public static final String PROCESS_SCAN_MARKER = "solr.process.scan.marker";
+
   private static final Map<Long, String> pidToWindowsCommandLineMap = new HashMap<>();
 
   public SolrProcessManager() {
@@ -61,12 +79,14 @@ public class SolrProcessManager {
       pidToWindowsCommandLineMap.putAll(commandLinesWindows());
     }
 
+    String scanMarker = EnvUtils.getProperty(PROCESS_SCAN_MARKER);
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
             .filter(p -> commandLine(p).orElse("").contains("-Dsolr.port.listen="))
             .filter(
                 p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
+            .filter(p -> scanMarker == null || commandLine(p).orElse("").contains(scanMarker))
             .collect(
                 Collectors.toUnmodifiableMap(
                     ProcessHandle::pid,

@@ -92,3 +92,26 @@ dependencies {
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
 }
+
+// The org.apache.solr.shell harness spawns real shell processes, which the test security policy
+// forbids (it grants 'execute' only for java itself). So its own unit tests run from a task with
+// the manager turned off, and are kept out of 'test'. Same task name as the CLI suites in
+// solr/packaging, so './gradlew shellTests' from the root runs both.
+def shellTestPattern = 'org/apache/solr/shell/**'
+
+tasks.named('test') {
+  exclude shellTestPattern
+}
+
+tasks.register('shellTests', Test) {
+  group = 'verification'
+  description = 'Unit tests for the bin/solr shell test harness. Needs no Solr distribution.'
+
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = sourceSets.test.runtimeClasspath
+  include shellTestPattern
+
+  doFirst {
+    systemProperties.remove('java.security.manager')
+  }
+}
