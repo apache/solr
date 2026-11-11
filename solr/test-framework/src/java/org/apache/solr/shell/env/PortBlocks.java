@@ -63,8 +63,12 @@ public final class PortBlocks {
   /** Lowest base port a run may start from, leaving room for the {@code P-1000} stop ports. */
   private static final int MIN_BASE = 20_000;
 
-  /** Highest base, leaving room for {@code MAX_BLOCKS} strides plus the {@code +1000} ZK window. */
-  private static final int MAX_BASE = 50_000;
+  /**
+   * Highest base. Room for {@code MAX_BLOCKS} strides plus the {@code +1000} ZK window, and the
+   * whole range stays under every platform's ephemeral floor - Linux 32768, macOS and Windows 49152
+   * - or the OS hands a block's port to an outgoing connection and the pre-flight check fails.
+   */
+  private static final int MAX_BASE = 30_000;
 
   private static final String COUNTER_FILE = ".port-blocks";
   private static final String BASE_KEY = "base";
