@@ -110,7 +110,7 @@ public final class HttpsRequest {
       }
       HttpResponse<String> response =
           client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-      return new HttpResult(response.statusCode(), response.body());
+      return new HttpResult(response.statusCode(), response.body(), response.headers());
     } catch (IOException e) {
       return new HttpResult(-1, describe(e));
     } catch (InterruptedException e) {

@@ -18,10 +18,12 @@
 package org.apache.solr.shell;
 
 import java.io.IOException;
+import java.net.http.HttpHeaders;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.shell.env.HarnessEnv;
 import org.apache.solr.shell.exec.Shell;
@@ -545,6 +547,35 @@ public class CliSessionTest extends SolrTestCase {
   @Test
   public void relativePathsResolveAgainstTheSessionDirectory() {
     assertEquals(session.cwd().resolve("x").toString(), session.path("x").toString());
+  }
+
+  @Test
+  public void headerAndRegexpAssertionsCoverTheCurlDashICasesOfTheBatsSuites() {
+    SolrCliHelpers.HttpResult result =
+        new SolrCliHelpers.HttpResult(
+            200,
+            "<html><script src=\"libs/solr/index.js\"></script></html>",
+            HttpHeaders.of(
+                Map.of("Content-Type", List.of("text/html;charset=utf-8")), (name, value) -> true));
+    result
+        .assertHeaderContains("Content-Type: text/html")
+        .assertHeaderNotContains("Cache-Control")
+        .assertMatches("<html")
+        // The versioned-asset shape the admin UI must not emit: a digest before the extension.
+        .assertNotMatches("(src|href)=\"[^\"]+\\.[0-9a-f]{8}\\.(js|css)\"");
+    expectThrows(AssertionError.class, () -> result.assertHeaderContains("X-Frame-Options"));
+    expectThrows(
+        AssertionError.class, () -> result.assertNotMatches("(src|href)=\"[^\"]+\\.(js|css)\""));
+  }
+
+  @Test
+  public void anHttpRequestCarryingHeadersReportsAConnectionFailureTheSameWay() {
+    // The overload that ports 'curl -H "Name: value"'; nothing is listening on this session's
+    // block, so it exercises the request path without needing a node.
+    session
+        .helpers()
+        .http(session.ports().solr(), "/solr/films/select", Map.of("Accept-Encoding", "gzip"))
+        .assertConnectionFailed();
   }
 
   @Test
