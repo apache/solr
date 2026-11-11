@@ -417,7 +417,7 @@ tasks.register('shellTestsPicocli', Test) {
 // Deprecated: delete along with commons-cli itself, once picocli is the only CLI in Solr 11. Until
 // then the two differ in some usage and error wording, so it is worth being able to run the suites
 // against whichever bin/solr is not defaulting to. A test that genuinely cannot hold for both
-// carries @EnabledOnCli; where only the wording differs, one test uses assertOutputForCli.
+// carries @EnabledOnCli; where only the wording differs, a test uses assertContainsForCli.
 tasks.register('shellTestsCommonsCli', Test) {
   group = 'verification'
   description = 'Deprecated. Runs the shell harness suites against the commons-cli implementation.'

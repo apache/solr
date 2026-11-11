@@ -15,15 +15,25 @@
   limitations under the License.
 -->
 
-# `bin/solr.cmd` bugs and bash/cmd divergences found while porting the BATS suites
+# Findings from porting the BATS suites — DELETE THIS FILE BEFORE COMMITTING
+
+> **This file is scratch, checked in only so reviewers of the POC PR can see what the port turned
+> up. Remove it before the PR is committed**, once each entry has become a JIRA issue or has been
+> judged not worth one. Nothing in the build or the docs references it.
 
 Found by porting the BATS CLI suites to the `org.apache.solr.shell` JUnit harness, which runs one
-test source against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe. Each entry is left
-unfixed on purpose: the port marks the affected test `@EnabledOnShell` and the fix belongs in its
-own JIRA.
+test source against `bin/solr` under bash and `bin\solr.cmd` under cmd.exe.
 
-Nothing here is a regression — these are long-standing differences that only became visible once
-the same assertions ran on both shells.
+Everything here is left **unfixed on purpose**. This PR fixes only `bin/solr.cmd` issues that the
+harness itself cannot work around (so far: honouring `SOLR_PID_DIR`, which is what scopes
+`solr stop --all` and therefore what lets Windows run test classes in parallel). Real Solr bugs and
+pre-existing weaknesses in unrelated tests are recorded here instead — fixing them would make an
+already large PR unreviewable, and each deserves its own issue and its own regression test.
+
+Nothing here is a regression. These are long-standing issues that only became visible once the same
+assertions ran on both shells, or that reading the old tests closely exposed.
+
+Where a finding blocks a test, the port marks it `@EnabledOnShell` and says why at the site.
 
 ## 1. `solr.cmd` does not forward `--solr-home` to `run_example`
 
@@ -81,3 +91,43 @@ what the test is for, so this is a wording divergence rather than a functional b
 common substring, which is why the test is a `BASH`/`CMD` pair.
 
 Affects: `StartSolrTest.checkStopCommandDoesntHang` (split into two annotated tests).
+
+## 4. `bin/solr start` returns once the port is listening, not once Solr answers
+
+The start script polls for the port to accept a connection and then reports success; it never makes
+an HTTP request. So `solr start` can succeed against a node no client can actually talk to — which
+is why `test_ssl.bats` needed a `sleep 5` after starting a node whose TLS configuration made it
+unreachable.
+
+The `SslTest` port replaces that sleep with a real wait (`awaitOrFail` on the node appearing in
+`live_nodes`), so the test no longer depends on the timing. The script behaviour is unchanged and
+still papers over a node that starts but cannot serve.
+
+Found while porting `test_ssl.bats`. Not blocking any test.
+
+## 5. The mTLS negative assertions prove less than they appear to
+
+`test_ssl.bats` asserts a client without a certificate is rejected by matching
+`(bad_certificate|ClosedChannelException|Server refused connection)`. In practice Jetty surfaces a
+server-side TLS rejection as `SolrServerException: Server refused connection`, which is also what a
+plain connection failure produces — so the assertion would pass if the node were simply down.
+
+`SslTest` keeps the assertion as the original had it, and both affected tests do make a successful
+request first, which at least proves the node is up and reachable before the negative case runs.
+Tightening it to assert *why* the handshake failed needs the TLS cause chain, which
+`HttpsRequest` now exposes — worth doing, as its own change.
+
+Found while porting `test_ssl.bats`.
+
+## 6. Pre-existing staleness in the test build, unrelated to the CLI
+
+Noticed while fact-checking `dev-docs/writing-tests.adoc`. All three are harmless, but misleading.
+
+- `gradle/testing/randomization.gradle:111` still registers a `tests.badapples` property,
+  "Enables or disables @BadApple tests." The `@BadApple` annotation no longer exists in Lucene or
+  Solr — the only remaining references in the tree are commented-out lines citing SOLR-12028.
+- The build's failure summary hardcodes `:test` when it composes its reproduce line
+  (`gradle/testing/failed-tests-at-end.gradle:33`), so a failure in `shellTests`, `integrationTests`
+  or a `beast` run prints a command that names a task the test does not belong to.
+- `dev-docs/solr-source-code.adoc` is written in Markdown heading syntax (`#`, `##`, `###`) despite
+  its `.adoc` extension, so it does not render as AsciiDoc intends.
