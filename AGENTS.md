@@ -35,21 +35,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Writing Tests
 
-Pick the cheapest harness that can catch the bug. Conventions, `@Rule` practice, randomization guidance and a worked example for each kind: `dev-docs/writing-tests.adoc`.
-
-- `SolrTestCase` — the default. For an embedded Solr add `SolrJettyTestRule` (when HTTP matters) or `EmbeddedSolrServerTestRule` (when it does not)
-- `SolrCloudTestCase` — only when the test genuinely needs a cluster; it costs seconds to minutes, not milliseconds
-- `SolrShellTestCase` — `bin/solr` and `bin\solr.cmd` behaviour, as real subprocesses; suites in `solr/packaging/src/test/`
-- `AdminUiTestBase` — Admin UI in a browser; see `dev-docs/admin-ui-tests.md`
-- A Testcontainers `@ClassRule` — when the test needs a real external service (Tika, Kafka, an S3 mock); copy `TikaServerContainerRule`. Never `docker run` from a test
-- `SolrTestCaseJ4` — deprecated, never in a new test
-- BATS (`solr/packaging/test/*.bats`) — deprecated and bash-only, so it never ran on Windows. Do not add or extend one; write a `SolrShellTestCase` instead
-
-Beyond that:
-
-- When adding a test to an existing suite/file, keep the same style / design choices
-- System properties set in a test are restored after each test by the base classes (`SystemPropertiesRestoreRule`); do not add `try/finally` + `System.clearProperty` cleanup
-- Never use `Thread.sleep` to wait for something; wait for the condition. See `dev-docs/writing-tests.adoc`
+**Read `dev-docs/writing-tests.adoc` before writing any test.** It is short, and it is the authority on which harness to use: `SolrTestCase` by default, `SolrCloudTestCase` only when a cluster is genuinely needed, `SolrShellTestCase` for `bin/solr` and `bin\solr.cmd`, `AdminUiTestBase` for the browser, a Testcontainers `@ClassRule` for a real external service — and never `SolrTestCaseJ4`, a new `.bats` file, or `docker run` from a test. It also covers the lifecycle and `@Rule` conventions, when to randomize, how to wait for something instead of sleeping, and a worked example to copy for each kind. When adding a test to a suite that already exists, match the design choices of the file you are editing rather than starting afresh.
 
 ## Documentation
 
