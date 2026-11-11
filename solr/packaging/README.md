@@ -44,6 +44,7 @@ The test tasks use `build/solr-<version>`, so a `dev` directory you are poking a
 | --- | --- | --- |
 | CATS (JUnit, cross-platform) | `catsTests`, `catsTestsPicocli`, `catsTestsCommonsCli` | preferred |
 | Rolling upgrade (Docker) | `catsTestsDockerBuild` | builds the image first, so it has its own task |
+| Everything, in parallel | `catsTestsAll` | the above in one fork pool; builds the image too |
 | BATS suites (bash) | `integrationTests`, `integrationTestsPicocli` | deprecated, being ported to CATS |
 | Stock `test` | — | disabled here |
 
@@ -55,7 +56,7 @@ The real layers all start Solr nodes and take minutes, so none of them is in `ch
 ./gradlew -p solr/packaging catsTests --tests "*ZkTest"
 ```
 
-`RollingUpgradeTest` upgrades a three-node cluster from the previous major's released image to one built from your working tree, so it needs that image and runs only from `catsTestsDockerBuild`. Nothing else triggers a Docker build — not `catsTests`, not `check` — and the task tags the image under a local-only name, so an `apache/solr:<version>` you pulled from Docker Hub is never overwritten.
+`RollingUpgradeTest` upgrades a three-node cluster from the previous major's released image to one built from your working tree, so it needs that image and runs only from `catsTestsDockerBuild` or `catsTestsAll`. Prefer `catsTestsAll` when you want the whole suite: tasks within a project run sequentially, so asking for both of the others runs the upgrade after everything else instead of alongside it. Nothing else triggers a Docker build — not `catsTests`, not `check` — and the task tags the image under a local-only name, so an `apache/solr:<version>` you pulled from Docker Hub is never overwritten.
 
 **BATS** — `test/*.bats`. Deprecated in favour of CATS: bash-only, so they have never run on Windows. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`. Touch these only to keep them working, or to delete one once its port is in place.
 
