@@ -1,5 +1,6 @@
 # CATS — Cross-platform Automated Testing System: the JUnit-based harness that drives bin/solr and
 # bin\solr.cmd. Named after BATS, which it replaces.
+
 name: Solr CATS Tests
 
 on:
@@ -8,8 +9,9 @@ on:
       - '*'
     paths:
       - '.github/workflows/cats-test.yml'
-      - 'solr/bin/**'
-      - 'solr/packaging/**'
+      - 'solr/bin/solr*'
+      - 'solr/packaging/src/**'
+      - 'solr/packaging/build.gradle'
       - 'solr/core/src/java/org/apache/solr/cli/**'
       - 'solr/test-framework/src/java/org/apache/solr/shell/**'
       - 'solr/test-framework/src/test/org/apache/solr/shell/**'
@@ -20,10 +22,31 @@ concurrency:
 
 jobs:
   test:
-    name: Run Solr CATS Tests
+    name: CATS (${{ matrix.name }})
 
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
+    strategy:
+      # Both platforms always report. Without this, a failure on one cancels the other, and "did it
+      # break on Windows or everywhere?" is the first question a reviewer asks.
+      fail-fast: false
+      matrix:
+        include:
+          - name: bash
+            os: ubuntu-latest
+            timeout: 40
+          - name: cmd.exe
+            os: windows-latest
+            # Windows runners are slower, and the suites start real Solr JVMs rather than mocking
+            # them, so the same work takes appreciably longer there.
+            timeout: 70
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.timeout }}
+
+    defaults:
+      run:
+        # Windows runners default to pwsh, which has no ./gradlew and treats anything on stderr as
+        # failure. The runners ship git-bash, so one shell works for both jobs.
+        shell: bash
 
     steps:
     - name: Checkout code
@@ -32,22 +55,28 @@ jobs:
     - uses: ./.github/actions/prepare-for-build
 
     # The harness' own unit tests. No distribution needed, so this fails fast if the library
-    # itself is broken, before spending minutes on the suites that drive bin/solr.
+    # itself is broken, before spending minutes on the suites that drive bin/solr. Worth running on
+    # both platforms: a good third of these cases exercise the cmd.exe half of the harness.
     - name: Test the CATS harness library
       run: ./gradlew -p solr/test-framework catsTests
 
     - name: Test bin/solr with CATS
       run: ./gradlew -p solr/packaging catsTests
 
-    # Reuses the distribution built above, so this only costs the suite run.
+    # Linux only. The two CLI implementations differ in Java-side wording, which is identical on
+    # both platforms, so running this twice would buy nothing. Reuses the distribution built above,
+    # so it only costs the suite run.
     - name: Test bin/solr with CATS using the experimental picocli CLI
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: ./gradlew -p solr/packaging catsTestsPicocli
 
     - name: Archive logs
       if: ${{ failure() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: logs
+        # Per platform: upload-artifact refuses two uploads under one name, so without the suffix
+        # the second job to fail would error on the upload instead of reporting its tests.
+        name: logs-${{ matrix.name }}
         path: |
           solr/packaging/build/cats-test-output
           solr/packaging/build/cats-test-output-picocli
