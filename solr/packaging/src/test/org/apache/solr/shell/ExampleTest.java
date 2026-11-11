@@ -29,6 +29,16 @@ import org.junit.Test;
  * ${SOLR_HOME}} so that it writes its node directories into this class's own {@code SOLR_HOME}
  * instead of {@code ${SOLR_TIP}/example/cloud}, which is shared with every class running
  * concurrently ({@code test_stream.bats} passes {@code --solr-home} for the same reason).
+ *
+ * <p><b>Please keep the {@code solr start -e} invocation below.</b> Several other ports replaced
+ * theirs with {@code solr start} plus {@code create} and {@code post} — {@code CompressionTest},
+ * {@code SnapshotsTest} and {@code StreamTest} all say so in their own javadoc — because the
+ * example was only a convenient way to get a populated collection, and using it cost them their
+ * Windows coverage for no benefit. That reasoning does not apply here: driving {@code
+ * RunExampleTool} from the command line is what this suite is for, and it is the only place in the
+ * shell suites that still does it. {@code ExportTest} has the one other {@code -e} invocation.
+ * {@code RunExampleTool} is covered by ordinary unit tests as well, so this does not need to be
+ * exhaustive — but it should not reach zero.
  */
 @EnabledOnShell(Shell.BASH)
 // RunExampleTool#startSolr drops every SOLR_* variable from the environment of the nodes it spawns
