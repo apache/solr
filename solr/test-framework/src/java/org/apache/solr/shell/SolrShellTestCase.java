@@ -27,6 +27,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import org.apache.lucene.util.IOUtils;
@@ -342,6 +343,25 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   protected SolrCliHelpers.HttpResult http(int port, String pathAndQuery) {
     return cli.helpers().http(port, pathAndQuery);
+  }
+
+  protected SolrCliHelpers.HttpResult http(
+      String pathAndQuery, Map<String, String> requestHeaders) {
+    return cli.helpers().http(pathAndQuery, requestHeaders);
+  }
+
+  protected SolrCliHelpers.HttpResult http(
+      int port, String pathAndQuery, Map<String, String> requestHeaders) {
+    return cli.helpers().http(port, pathAndQuery, requestHeaders);
+  }
+
+  protected SolrCliHelpers.HttpResult http(String pathAndQuery, String user, String password) {
+    return cli.helpers().http(pathAndQuery, user, password);
+  }
+
+  protected SolrCliHelpers.HttpResult http(
+      int port, String pathAndQuery, String user, String password) {
+    return cli.helpers().http(port, pathAndQuery, user, password);
   }
 
   protected HttpsRequest https(String pathAndQuery) {

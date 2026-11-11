@@ -17,16 +17,25 @@
 
 package org.apache.solr.shell.session;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.ShellAssertionError;
 
@@ -55,7 +64,12 @@ public final class SolrCliHelpers {
    * <p>{@code curl} appears seventy times across the BATS suites, almost always followed by an
    * assertion on the body, so this is what those lines port to.
    */
-  public record HttpResult(int status, String body) {
+  public record HttpResult(int status, String body, HttpHeaders headers) {
+
+    /** A result with no response headers, for a request that never completed. */
+    public HttpResult(int status, String body) {
+      this(status, body, HttpHeaders.of(Map.of(), (name, value) -> true));
+    }
 
     public HttpResult assertStatus(int expected) {
       if (status != expected) {
@@ -79,6 +93,65 @@ public final class SolrCliHelpers {
     }
 
     /**
+     * Port of {@code assert_output --regexp}, with the same semantics {@link CommandResult} has.
+     */
+    public HttpResult assertMatches(String regex) {
+      if (!Pattern.compile(regex, Pattern.DOTALL).matcher(body).find()) {
+        throw fail("body did not match: " + regex);
+      }
+      return this;
+    }
+
+    /** Port of {@code refute_output --regexp}. */
+    public HttpResult assertNotMatches(String regex) {
+      if (Pattern.compile(regex, Pattern.DOTALL).matcher(body).find()) {
+        throw fail("body matched what it should not: " + regex);
+      }
+      return this;
+    }
+
+    /**
+     * The response headers as {@code Name: value} lines, which is what {@code curl -I} prints and
+     * so what a BATS assertion on a header was written against.
+     */
+    public String headerText() {
+      StringBuilder text = new StringBuilder();
+      headers
+          .map()
+          .forEach(
+              (name, values) ->
+                  values.forEach(
+                      value -> text.append(name).append(": ").append(value).append('\n')));
+      return text.toString();
+    }
+
+    /**
+     * Port of {@code curl -s -I ...} followed by {@code assert_output --partial}.
+     *
+     * <p>Matched without regard to case, because header names are case-insensitive by RFC and the
+     * client here speaks HTTP/2 where they arrive lowercased, while the BATS lines this ports were
+     * written against curl's HTTP/1.1 {@code Cache-Control: no-cache} spelling.
+     */
+    public HttpResult assertHeaderContains(String substring) {
+      if (!headerTextLower().contains(substring.toLowerCase(Locale.ROOT))) {
+        throw failHeaders("no response header contained: " + substring);
+      }
+      return this;
+    }
+
+    /** Port of {@code curl -s -I ...} followed by {@code refute_output --partial}. */
+    public HttpResult assertHeaderNotContains(String substring) {
+      if (headerTextLower().contains(substring.toLowerCase(Locale.ROOT))) {
+        throw failHeaders("a response header contained what it should not: " + substring);
+      }
+      return this;
+    }
+
+    private String headerTextLower() {
+      return headerText().toLowerCase(Locale.ROOT);
+    }
+
+    /**
      * Port of {@code run ! curl ...}: the request must not have completed at all — a TLS handshake
      * failure or a refused connection rather than an HTTP error status.
      */
@@ -91,6 +164,11 @@ public final class SolrCliHelpers {
 
     private AssertionError fail(String reason) {
       return new ShellAssertionError("\nHTTP " + status + "\n| " + body + "\n\nFAILED: " + reason);
+    }
+
+    private AssertionError failHeaders(String reason) {
+      return new ShellAssertionError(
+          "\nHTTP " + status + "\n| " + headerText() + "\nFAILED: " + reason);
     }
   }
 
@@ -106,19 +184,83 @@ public final class SolrCliHelpers {
 
   /** A GET against an explicit port on localhost. */
   public HttpResult http(int port, String pathAndQuery) {
+    return get(port, pathAndQuery, Map.of());
+  }
+
+  /**
+   * A GET carrying explicit request headers, which is what {@code curl -H "Name: value"} ports to.
+   */
+  public HttpResult http(String pathAndQuery, Map<String, String> requestHeaders) {
+    return get(cli.ports().solr(), pathAndQuery, requestHeaders);
+  }
+
+  /** As {@link #http(String, Map)} but against an explicit port. */
+  public HttpResult http(int port, String pathAndQuery, Map<String, String> requestHeaders) {
+    return get(port, pathAndQuery, requestHeaders);
+  }
+
+  /**
+   * A GET carrying basic credentials: the plain-HTTP port of {@code curl -u user:password --basic},
+   * as {@link HttpsRequest#basicAuth} is the TLS one.
+   */
+  public HttpResult http(String pathAndQuery, String user, String password) {
+    return http(cli.ports().solr(), pathAndQuery, user, password);
+  }
+
+  /** As {@link #http(String, String, String)} but against an explicit port. */
+  public HttpResult http(int port, String pathAndQuery, String user, String password) {
+    return get(
+        port,
+        pathAndQuery,
+        Map.of(
+            "Authorization",
+            "Basic "
+                + Base64.getEncoder()
+                    .encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8))));
+  }
+
+  private HttpResult get(int port, String pathAndQuery, Map<String, String> requestHeaders) {
     String url = "http://localhost:" + port + pathAndQuery;
     try (HttpClient client =
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
-      HttpRequest request =
-          HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).GET().build();
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-      return new HttpResult(response.statusCode(), response.body());
+      HttpRequest.Builder request =
+          HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).GET();
+      requestHeaders.forEach(request::header);
+      HttpResponse<byte[]> response =
+          client.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());
+      return new HttpResult(response.statusCode(), decodeBody(response), response.headers());
     } catch (IOException e) {
       return new HttpResult(-1, e.toString());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted requesting " + url, e);
     }
+  }
+
+  /**
+   * The response body as text, decompressing it first when the server compressed it — what {@code
+   * curl --compressed} does, and the reason a request may ask for {@code Accept-Encoding} at all.
+   * UTF-8 throughout, which is what Solr answers in.
+   */
+  private static String decodeBody(HttpResponse<byte[]> response) throws IOException {
+    String encoding =
+        response
+            .headers()
+            .firstValue("Content-Encoding")
+            .orElse("")
+            .trim()
+            .toLowerCase(Locale.ROOT);
+    byte[] bytes = response.body();
+    if ("gzip".equals(encoding)) {
+      try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(bytes))) {
+        bytes = in.readAllBytes();
+      }
+    } else if ("deflate".equals(encoding)) {
+      try (InputStream in = new InflaterInputStream(new ByteArrayInputStream(bytes))) {
+        bytes = in.readAllBytes();
+      }
+    }
+    return new String(bytes, StandardCharsets.UTF_8);
   }
 
   /**
