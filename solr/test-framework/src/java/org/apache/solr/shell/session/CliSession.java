@@ -158,6 +158,18 @@ public class CliSession implements AutoCloseable {
     return this;
   }
 
+  /**
+   * Removes an environment variable for subsequent commands, as BATS' {@code unset} does.
+   *
+   * <p>Needed because several CLI behaviours are only reachable with a variable absent rather than
+   * empty — {@code bin/solr} checks whether {@code SOLR_PORT} is set at all before falling back to
+   * its default.
+   */
+  public CliSession unset(String key) {
+    vars.remove(key);
+    return this;
+  }
+
   /** The current value of an environment variable, or null. */
   public String env(String key) {
     return vars.get(key);
@@ -175,6 +187,28 @@ public class CliSession implements AutoCloseable {
 
   public CliSession cd(Path dir) {
     return cd(dir.toString());
+  }
+
+  /**
+   * Creates an empty file, as BATS' {@code touch} does, resolving a relative path against {@link
+   * #cwd()} and creating any missing parent directories.
+   *
+   * <p>In Java rather than by running {@code touch}, which cmd.exe does not have. An existing file
+   * is left as it is — tests use this to make a file exist, not to bump a timestamp.
+   *
+   * @return the absolute path, so a test can assert on it or pass it to a command
+   */
+  public Path touch(String path) {
+    Path file = cwd.resolve(path).normalize();
+    try {
+      Files.createDirectories(file.getParent());
+      if (!Files.exists(file)) {
+        Files.createFile(file);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not create " + file, e);
+    }
+    return file;
   }
 
   public Path cwd() {

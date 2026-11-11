@@ -241,6 +241,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     return cli.env(key, value);
   }
 
+  protected CliSession unset(String key) {
+    return cli.unset(key);
+  }
+
   protected String env(String key) {
     return cli.env(key);
   }
@@ -251,6 +255,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
   protected CliSession cd(Path dir) {
     return cli.cd(dir);
+  }
+
+  protected Path touch(String path) {
+    return cli.touch(path);
   }
 
   protected Path cwd() {

@@ -68,20 +68,35 @@ public enum Shell {
     }
 
     /**
-     * Double quotes protect {@code & | < > ^ ( )} from cmd's parser, and {@code !} is literal
-     * because these scripts never enable delayed expansion. {@code %} is the exception: it is
-     * expanded even inside double quotes, and in a batch file a literal one is written {@code %%}.
+     * Double quotes protect {@code & | < > ( )} from cmd's parser, and {@code !} is literal because
+     * these scripts never enable delayed expansion. {@code %} is expanded even inside double
+     * quotes, so a literal one is written {@code %%} as any batch file must.
      *
-     * <p>An embedded double quote is refused rather than mangled. cmd has no escape for one that
-     * survives both its own quote counting and the target program's parser, and guessing would
-     * produce a command that runs but means something else.
+     * <p>Two characters are refused outright rather than mangled, because cmd offers no escape for
+     * them that is both correct and predictable here:
+     *
+     * <ul>
+     *   <li>A double quote has no escape that survives cmd's own quote counting and the target
+     *       program's parser at once.
+     *   <li>A caret is doubled by the {@code call} these scripts use for a single command: {@code
+     *       call} re-parses its line, so {@code "a^b"} arrives as {@code "a^^b"}. Observed on
+     *       Windows, which is what prompted refusing it.
+     * </ul>
+     *
+     * <p>{@code script(bashBody, cmdBody)} is the way to pass either.
      */
     @Override
     public String quote(String arg) {
       if (arg.indexOf('"') >= 0) {
         throw new UnsupportedOperationException(
-            "Cannot quote an argument containing a double quote for cmd.exe. "
-                + "Use script(bashBody, cmdBody) for this one: "
+            "cmd.exe has no escape for a double quote that survives both its own quote counting "
+                + "and the target program's parser. Use script(bashBody, cmdBody) for: "
+                + arg);
+      }
+      if (arg.indexOf('^') >= 0) {
+        throw new UnsupportedOperationException(
+            "cmd.exe doubles a caret when 'call' re-parses the line, so it cannot be passed as an "
+                + "argument. Use script(bashBody, cmdBody) for: "
                 + arg);
       }
       String escaped = arg.replace("%", "%%");
@@ -90,7 +105,7 @@ public enum Shell {
   };
 
   /** Characters that make cmd.exe need an argument wrapped in double quotes. */
-  private static final Pattern NEEDS_CMD_QUOTING = Pattern.compile("[\\s&|<>^()]");
+  private static final Pattern NEEDS_CMD_QUOTING = Pattern.compile("[\\s&|<>()]");
 
   /** System property that overrides the shell choice. */
   public static final String SHELL_SYSPROP = "solr.cli.shell";

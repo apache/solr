@@ -359,9 +359,20 @@ public class SolrShellSessionTest extends SolrTestCase {
     // has to add. Note also why this does not go through a batch variable: cmd expands %VAR% and
     // then re-parses the result, so "echo %ARG%" with ARG=a&b runs 'b' as a second command. That
     // re-parse is exactly the trap the harness avoids by resolving ${NAME} itself.
-    for (String nasty : List.of("a&b", "a|b", "a>b", "a<b", "a^b", "a b")) {
+    for (String nasty : List.of("a&b", "a|b", "a>b", "a<b", "a b")) {
       session.run(List.of("echo", nasty)).assertSuccess().assertOutputContains(nasty);
     }
+  }
+
+  @Test
+  @EnabledOnShell(Shell.CMD)
+  public void cmdQuotingRefusesACaret() {
+    // 'call' re-parses its line, which doubles a caret: "a^b" arrives as "a^^b". Refused rather
+    // than silently mangled, the same treatment an embedded double quote gets.
+    UnsupportedOperationException e =
+        expectThrows(
+            UnsupportedOperationException.class, () -> session.run(List.of("echo", "a^b")));
+    assertTrue(e.getMessage(), e.getMessage().contains("script(bashBody, cmdBody)"));
   }
 
   @Test

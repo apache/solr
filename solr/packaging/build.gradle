@@ -16,7 +16,6 @@
  */
 
 import org.apache.tools.ant.filters.ReplaceTokens
-import org.apache.tools.ant.taskdefs.condition.Os
 import org.apache.tools.ant.util.TeeOutputStream
 
 // This project puts together a "distribution", assembling dependencies from
@@ -373,14 +372,8 @@ def configureShellTestTask(Test task, String outputName, String picocli) {
   // CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pshell.tests.jvms.
   // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
   //
-  // Not on Windows, though. Node discovery is per class there as well, because it goes through the
-  // process list and the scan marker, but 'solr stop --all' is not: bin/solr.cmd implements it by
-  // walking %SOLR_TIP%\bin, which it shares across classes since it ignores SOLR_PID_DIR. A test
-  // calling 'stop --all' would reach a sibling class's nodes, so cmd runs one class at a time.
   task.maxParallelForks = (project.findProperty('shell.tests.jvms')
-      ?: (Os.isFamily(Os.FAMILY_WINDOWS)
-          ? 1
-          : Math.min(4, resolvedTestOption('tests.jvms') as Integer))) as Integer
+      ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer
   task.timeout.set(java.time.Duration.ofMinutes(60))
 
   def shellTestOutput = file("$buildDir/$outputName")
