@@ -32,9 +32,13 @@ jobs:
         include:
           - name: bash
             os: ubuntu-latest
+            shell: bash
+            gradlew: ./gradlew
             timeout: 40
           - name: cmd.exe
             os: windows-latest
+            shell: cmd
+            gradlew: .\gradlew.bat
             # Windows runners are slower, and the suites start real Solr JVMs rather than mocking
             # them, so the same work takes appreciably longer there.
             timeout: 70
@@ -44,9 +48,12 @@ jobs:
 
     defaults:
       run:
-        # Windows runners default to pwsh, which has no ./gradlew and treats anything on stderr as
-        # failure. The runners ship git-bash, so one shell works for both jobs.
-        shell: bash
+        # Each leg launches Gradle with its own shell and wrapper script. The bash gradlew cannot
+        # start Gradle under the Windows bash: it hands the already Windows-style wrapper jar path
+        # to cygpath a second time, which splits it at the drive letter's colon into two entries,
+        # neither of them the jar. The launching shell does not reach the tests - the harness picks
+        # cmd.exe from os.name - so the Windows job still drives bin\solr.cmd under cmd.exe.
+        shell: ${{ matrix.shell }}
 
     steps:
     - name: Checkout code
@@ -57,16 +64,16 @@ jobs:
     # The harness' own unit tests. No distribution needed, so this fails fast if the library itself
     # is broken. Run on both platforms: many of these cases exercise the cmd.exe half of it.
     - name: Test the CATS harness library
-      run: ./gradlew -p solr/test-framework catsTests
+      run: ${{ matrix.gradlew }} -p solr/test-framework catsTests
 
     - name: Test bin/solr with CATS
-      run: ./gradlew -p solr/packaging catsTests
+      run: ${{ matrix.gradlew }} -p solr/packaging catsTests
 
     # Linux only: the two CLI implementations differ in Java-side wording, which is the same on both
     # platforms. Reuses the distribution built above, so it costs only the suite run.
     - name: Test bin/solr with CATS using the experimental picocli CLI
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: ./gradlew -p solr/packaging catsTestsPicocli
+      run: ${{ matrix.gradlew }} -p solr/packaging catsTestsPicocli
 
     - name: Archive logs
       if: ${{ failure() }}
