@@ -167,6 +167,8 @@ grant {
 
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
+  // Netty uses network interface information to generate channel identifiers.
+  permission java.net.NetPermission "getNetworkInformation";
   permission java.net.NetPermission "requestPasswordAuthentication";
 };
 
@@ -180,6 +182,11 @@ grant {
   permission java.io.FilePermission "${javax.net.ssl.keyStore}", "read,readlink";
 
   permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,readlink";
+
+  permission java.io.FilePermission "${zookeeper.ssl.keyStore.location}", "read,readlink";
+  permission java.io.FilePermission "${zookeeper.ssl.keyStore.passwordPath}", "read,readlink";
+  permission java.io.FilePermission "${zookeeper.ssl.trustStore.location}", "read,readlink";
+  permission java.io.FilePermission "${zookeeper.ssl.trustStore.passwordPath}", "read,readlink";
 
   permission java.io.FilePermission "${solr.jetty.keystoreParentPath}", "read,readlink";
   permission java.io.FilePermission "${javax.net.ssl.keyStoreParentPath}", "read,readlink";
@@ -230,4 +237,7 @@ grant {
 // Permissions for OTEL Runtime Java 17 telemetry and metrics
 grant {
   permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+  permission jdk.jfr.FlightRecorderPermission "registerEvent";
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
 };

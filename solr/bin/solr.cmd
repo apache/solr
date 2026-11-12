@@ -976,6 +976,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
     )
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.zookeeper.server.enabled=true"
+
+    IF "%SOLR_SSL_ENABLED%"=="true" (
+      echo WARNING: The embedded ZooKeeper's transport cannot be secured with TLS on Windows; it remains plaintext even with HTTPS enabled. This is supported on Unix/macOS only.
+    )
   )
 
   IF NOT "%ZK_CREATE_CHROOT%"=="" (

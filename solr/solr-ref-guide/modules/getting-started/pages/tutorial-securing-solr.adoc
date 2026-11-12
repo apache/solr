@@ -26,8 +26,6 @@ Do not run these commands against an existing cluster.
 
 IMPORTANT: This exact setup is not ready or appropriate for production use.
 It is a local learning exercise with demonstration passwords and a shared self-signed certificate.
-Keep the cluster on loopback.
-ZooKeeper authentication and ACLs do not encrypt its connection; this exercise leaves ZooKeeper transport on loopback without TLS.
 For deployment guidance, see xref:deployment-guide:securing-solr.adoc[], xref:deployment-guide:enabling-ssl.adoc[], and xref:deployment-guide:zookeeper-access-control.adoc[].
 
 == Start Two Nodes
@@ -188,6 +186,33 @@ curl --fail 'http://localhost:8984/api/node/health'
 
 Do not use `curl -k` to bypass verification.
 
+Because `SOLR_SSL_ENABLED=true` and node 1 started its own embedded ZooKeeper (no `-z`), `bin/solr` automatically also secured that ZooKeeper's transport, reusing the same keystore and truststore, and printed a note that it updated the include file.
+Inspect what it did:
+
+[source,bash]
+----
+tail -12 "$TUTORIAL_HOME/node1/solr/zoo.cfg"
+tail -3 "$SOLR_INCLUDE"
+----
+
+`secureClientPort` replaces the plain `clientPort` ZooKeeper would otherwise default to, and `client.portUnification=false` makes the port reject plaintext connections outright.
+The matching `zookeeper.client.secure`/`zookeeper.ssl.*` flags were added to the include file as `SOLR_ZK_TLS_OPTS`, so node 2 (which joins node 1's ZooKeeper with `-z` below) and later `bin/solr zk`/`auth` commands all inherit them automatically, without repeating them by hand.
+
+IMPORTANT: This only applies to the ZooKeeper that `bin/solr` itself starts and manages.
+Pointing Solr at an external ensemble with `-z`/`--zk-host` never triggers this: Solr has no way to know whether an external, independently-administered ensemble uses TLS, so nothing is assumed there.
+Securing an external ensemble's transport is configured on that ensemble directly, by whoever administers it.
+
+Confirm the embedded ZooKeeper is reachable over TLS, and that a client that never attempts TLS at all cannot even reach it:
+
+[source,bash]
+----
+bin/solr zk ls / -z localhost:9983
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= bin/solr zk ls / -z localhost:9983
+----
+
+The first command succeeds, using the TLS settings `$SOLR_INCLUDE` already carries.
+The second, which bypasses the include file entirely, times out instead of getting a clean rejection: the port no longer speaks plaintext at all.
+
 == Authenticate Users and Assign Roles
 
 Enable Basic Authentication with the existing control-script command.
@@ -248,6 +273,8 @@ For permission details, see xref:deployment-guide:rule-based-authorization-plugi
 == Protect ZooKeeper Data
 
 Solr user accounts do not protect direct ZooKeeper access.
+ZooKeeper's transport is already TLS-only, from the previous section; this section adds digest credentials for ZooKeeper administration and read-only inspection, and migrates existing znodes to restricted ACLs.
+
 Create separate digest credentials for ZooKeeper administration and read-only inspection:
 
 [source,bash]
@@ -272,19 +299,22 @@ SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
   bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
 bin/solr zk updateacls / -z localhost:9983
+TLS_ZK_OPTS=$(grep '^SOLR_ZK_TLS_OPTS=' "$SOLR_INCLUDE" | sed -E 's/^SOLR_ZK_TLS_OPTS="(.*)"$/\1/')
 ADMIN_ZK_OPTS='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider -DzkDigestUsername=zk-admin -DzkDigestPassword=SolrRocks'
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$ADMIN_ZK_OPTS" \
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$ADMIN_ZK_OPTS" SOLR_ZK_TLS_OPTS="$TLS_ZK_OPTS" \
   bin/solr zk updateacls /security.json -z localhost:9983
 ----
 
 The `tail` command displays the two settings just appended to the include file.
 `SOLR_ZK_CREDS_AND_ACLS` configures command-line ZooKeeper clients; adding the same settings to `SOLR_OPTS` also configures each server.
+It carries only the digest credentials here; the separate `SOLR_ZK_TLS_OPTS` already in the include file (from the previous section) keeps providing the transport encryption, since `bin/solr` always looks for both.
 The servers authenticate as `zk-admin` and create znodes with administrator access plus read-only access for `zk-readonly`.
 The `zk-readonly` account is for direct inspection of ordinary cluster metadata; Solr nodes do not use it.
 The first `updateacls` command migrates existing znodes: changing the provider alone would leave their previous ACLs in place.
 When using ZooKeeper's root namespace, explicitly restrict `/security.json` to the administrator with the second command, which omits the read-only credentials.
 This protects the Solr passwords stored there.
 Repeat that command after any future ACL migration of the entire tree.
+The admin command's `SOLR_INCLUDE=/dev/null` bypasses the include file entirely (to avoid also picking up the read-only credentials it carries), so it captures and re-supplies `SOLR_ZK_TLS_OPTS` explicitly rather than inheriting it.
 
 Check administrator access:
 
@@ -293,26 +323,29 @@ Check administrator access:
 bin/solr zk ls / -z localhost:9983
 ----
 
-For a read-only CLI session, pass only the read-only user's credentials, using the injector's primary username/password fields.
+For a read-only CLI session, pass only the read-only user's credentials, using the injector's primary username/password fields, plus `SOLR_ZK_TLS_OPTS` captured above.
 This authenticates the client as that user without supplying the administrator secret:
 
 [source,bash]
 ----
 READONLY_ZK_OPTS='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=SolrRocks'
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" SOLR_ZK_TLS_OPTS="$TLS_ZK_OPTS" \
   bin/solr zk ls /collections -z localhost:9983
 printf 'read-only probe\n' > "$TUTORIAL_HOME/readonly-probe.txt"
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" SOLR_ZK_TLS_OPTS="$TLS_ZK_OPTS" \
   bin/solr zk cp "$TUTORIAL_HOME/readonly-probe.txt" zk:/readonly-probe -z localhost:9983
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" SOLR_ZK_TLS_OPTS="$TLS_ZK_OPTS" \
   bin/solr zk cp zk:/security.json "$TUTORIAL_HOME/forbidden-security.json" -z localhost:9983
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= \
+SOLR_INCLUDE=/dev/null SOLR_ZK_TLS_OPTS="$TLS_ZK_OPTS" \
+  bin/solr zk ls / -z localhost:9983
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= SOLR_ZK_TLS_OPTS= \
   bin/solr zk ls / -z localhost:9983
 ----
 
 The directory listing as `zk-readonly` succeeds.
-The attempted write, the read of `security.json`, and the anonymous listing must fail with authorization errors.
-These ACLs control access but do not provide transport encryption.
+The attempted write, the read of `security.json`, and the anonymous-but-TLS listing (no `SOLR_ZK_CREDS_AND_ACLS` at all, but still TLS) must fail with authorization errors.
+The final command, which also omits `SOLR_ZK_TLS_OPTS`, must instead fail with a connection timeout: the embedded ZooKeeper's port no longer accepts plaintext connections at all, so a client that never attempts TLS cannot even reach the point of being rejected by ACLs.
+These ACLs control access; the TLS settings from the previous section provide the transport encryption.
 
 == Index and Verify Distributed HTTPS Queries
 

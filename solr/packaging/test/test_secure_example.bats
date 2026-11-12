@@ -111,11 +111,25 @@ teardown() {
   assert_success
   assert_output --partial 'collections'
 
+  # bin/solr writes SOLR_ZK_TLS_OPTS into the include file automatically (because
+  # SOLR_SSL_ENABLED=true and node 1 started its own embedded ZooKeeper); read it back
+  # rather than hardcoding its keystore/password-file paths here.
+  local tls_opts
+  tls_opts=$(grep '^SOLR_ZK_TLS_OPTS=' "$SOLR_HOME/tls/solr.in.sh" | sed -E 's/^SOLR_ZK_TLS_OPTS="(.*)"$/\1/')
+  [ -n "$tls_opts" ]
+
+  # Embedded ZooKeeper's clientPort is TLS-only; a client that doesn't speak TLS at all can't
+  # even reach the ACL check, so it times out instead of getting a clean rejection.
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:$ZK_PORT"
+  assert_failure
+  assert_output --partial 'Timeout while waiting for Zookeeper Client to connect'
+
+  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$tls_opts" \
+    solr zk ls / --zk-host "localhost:$ZK_PORT"
   assert_failure
   assert_output --partial 'NoAuth'
 
-  local readonly_opts="-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=$password"
+  local readonly_opts="$tls_opts -DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=$password"
   run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
     solr zk ls /collections --zk-host "localhost:$ZK_PORT"
   assert_success
