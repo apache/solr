@@ -24,7 +24,10 @@ Used to validate new release candidates (RC). The script downloads an RC from a 
 or local folder, then runs a number of sanity checks on the artifacts, and then runs
 the full tests.
 
-    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--download-only] [--dev-mode] url ...
+    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--reuse-tmp-dir] [--not-signed] [--local-keys PATH]
+                               [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--download-only]
+                               [--dev-mode] [--skip-changelog]
+                               url ...
 
     Utility to test a release.
 
@@ -35,13 +38,18 @@ the full tests.
     options:
       -h, --help            show this help message and exit
       --tmp-dir PATH        Temporary directory to test inside, defaults to /tmp/smoke_solr_$version_$revision
+      --reuse-tmp-dir       Allows --tmp-dir to already exist and reuses whatever it already downloaded, instead
+                            of re-downloading everything from scratch
       --not-signed          Indicates the release is not signed
-      --local-keys PATH     Uses local KEYS file instead of fetching from https://archive.apache.org/dist/solr/KEYS
+      --local-keys PATH     Uses local KEYS file instead of fetching from
+                            https://archive.apache.org/dist/solr/KEYS
       --revision REVISION   GIT revision number that release was built with, defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
                             Version of the release, defaults to that in URL
       --download-only       Only perform download and sha hash check steps
       --dev-mode            Enable dev mode, will not check branch compatibility
+      --skip-changelog      Skip checks that require the changelog to be prepared for this release (logchange.py
+                            prepare), e.g. when smoke testing a build made before the RM ran it
 
     Example usage:
     python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
