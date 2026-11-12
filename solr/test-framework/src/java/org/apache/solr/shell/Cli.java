@@ -17,6 +17,8 @@
 
 package org.apache.solr.shell;
 
+import java.util.Map;
+
 /**
  * Which command-line implementation {@code bin/solr} dispatches to, selected by {@code
  * SOLR_PICOCLI} / {@code solr.picocli}.
@@ -44,7 +46,7 @@ public enum Cli {
    * against the other's output. Resolved here rather than at each call site so there is one place
    * to change when commons-cli goes.
    */
-  public static Cli of(java.util.Map<String, String> vars) {
+  public static Cli of(Map<String, String> vars) {
     return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "true")) ? PICOCLI : COMMONS_CLI;
   }
 }
