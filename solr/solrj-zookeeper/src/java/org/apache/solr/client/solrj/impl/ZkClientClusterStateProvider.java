@@ -93,8 +93,6 @@ public class ZkClientClusterStateProvider
     }
 
     try {
-      // Curator sync is asynchronous; wait for it before reading a missing collection.
-      reader.getZkClient().sync(ZkStateReader.COLLECTIONS_ZKNODE);
       reader.forceUpdateCollection(collection);
       return reader.getClusterState().getCollectionRef(collection);
     } catch (InterruptedException e) {

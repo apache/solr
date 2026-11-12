@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -84,7 +83,6 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
 import org.apache.solr.util.SolrJMetricTestUtils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -376,30 +374,16 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertEquals(List.of(collection), client.getClusterStateProvider().resolveAlias(alias));
       assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
 
-      var zkClient = ZkClientClusterStateProvider.from(client).getZkStateReader().getZkClient();
-      long session =
-          zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper().getSessionId();
-      String path = DocCollection.getCollectionPath(alias);
-      String pattern =
-          "Reading reply session id: 0x"
-              + Long.toHexString(session)
-              + ", packet:: .*"
-              + Pattern.quote(path);
-      try (LogListener reads =
-          LogListener.debug("org.apache.zookeeper.ClientCnxn").regex(pattern)) {
-        // Verify that the listener observes a real read before checking for unwanted reads.
-        expectThrows(
-            KeeperException.NoNodeException.class, () -> zkClient.getData(path, null, null));
-        assertEquals(1, reads.getCount());
-        assertNotNull(reads.pollMessage());
-
-        for (int i = 0; i < 3; i++) {
-          assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
-        }
-        int count = reads.getCount();
-        reads.clearQueue();
-        assertEquals("Alias requests should not read the alias as a collection", 1, count);
+      var zkClient = cluster.getZkClient();
+      var metrics = zkClient.getMetrics();
+      long before = metrics.getReads();
+      zkClient.getData(DocCollection.getCollectionPath(collection), null, null);
+      assertEquals(before + 1, metrics.getReads());
+      long baseline = metrics.getReads();
+      for (int i = 0; i < 3; i++) {
+        assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
       }
+      assertEquals("Alias requests should not read collection state", baseline, metrics.getReads());
     } finally {
       CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());

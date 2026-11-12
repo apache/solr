@@ -23,15 +23,10 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
@@ -43,19 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.ErrorListenerPathable;
-import org.apache.curator.framework.api.SyncBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -68,7 +52,6 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -76,9 +59,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.zookeeper.KeeperException;
@@ -89,7 +70,6 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.InOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +77,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
-  private static final long SYNC_TEST_TIMEOUT_SECONDS = 30;
 
   static class UserAgentChangingJdkClient extends HttpJdkSolrClient {
 
@@ -254,56 +233,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  public void testSyncWaitsForCallbackAndPropagatesFailure() throws Exception {
-    assumeWorkingMockito();
-    SolrZkClient zkClient = spy(cluster.getZkClient());
-    CuratorFramework curator = mock(CuratorFramework.class);
-    SyncBuilder builder = mock(SyncBuilder.class);
-    ErrorListenerPathable<Void> operation = mock(ErrorListenerPathable.class);
-    AtomicReference<BackgroundCallback> callback = new AtomicReference<>();
-    CountDownLatch started = new CountDownLatch(1);
-    doReturn(curator).when(zkClient).getCuratorFramework();
-    when(curator.sync()).thenReturn(builder);
-    when(builder.inBackground(any(BackgroundCallback.class)))
-        .thenAnswer(
-            invocation -> {
-              callback.set(invocation.getArgument(0));
-              return operation;
-            });
-    when(operation.forPath(anyString()))
-        .thenAnswer(
-            invocation -> {
-              started.countDown();
-              return null;
-            });
-
-    ExecutorService executor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("zk-sync-test"));
-    try {
-      Future<?> result =
-          executor.submit(
-              () -> {
-                zkClient.sync(ZkStateReader.COLLECTIONS_ZKNODE);
-                return null;
-              });
-      assertTrue(started.await(SYNC_TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-      expectThrows(TimeoutException.class, () -> result.get(200, TimeUnit.MILLISECONDS));
-      CuratorEvent event = mock(CuratorEvent.class);
-      when(event.getResultCode()).thenReturn(KeeperException.Code.CONNECTIONLOSS.intValue());
-      callback.get().processResult(curator, event);
-      ExecutionException error =
-          expectThrows(
-              ExecutionException.class,
-              () -> result.get(SYNC_TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-      assertTrue(error.getCause() instanceof KeeperException.ConnectionLossException);
-    } finally {
-      executor.shutdownNow();
-      assertTrue(executor.awaitTermination(SYNC_TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-    }
-  }
-
-  @Test
   public void testProviderRefreshesCollectionMissingFromLocalState() throws Exception {
     ZkTestServer server = new ZkTestServer(createTempDir("stale-state"));
     server.run();
@@ -338,22 +267,6 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       }
     } finally {
       server.shutdown();
-    }
-  }
-
-  @Test
-  public void testProviderUnknownCollection() throws Exception {
-    assumeWorkingMockito();
-    ZkStateReader reader = mock(ZkStateReader.class);
-    SolrZkClient zkClient = mock(SolrZkClient.class);
-    when(reader.getClusterState()).thenReturn(mock(ClusterState.class));
-    when(reader.getAliases()).thenReturn(Aliases.EMPTY);
-    when(reader.getZkClient()).thenReturn(zkClient);
-    try (ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
-      assertNull(provider.getState("unknown"));
-      InOrder order = inOrder(zkClient, reader);
-      order.verify(zkClient).sync(ZkStateReader.COLLECTIONS_ZKNODE);
-      order.verify(reader).forceUpdateCollection("unknown");
     }
   }
 

@@ -26,12 +26,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -323,30 +321,6 @@ public class SolrZkClient implements Closeable {
       throws InterruptedException, KeeperException {
     runWithCorrectThrows(
         "deleting znode", () -> client.delete().withVersion(version).forPath(path));
-  }
-
-  /** Wait up to the client timeout for ZooKeeper to synchronize before a subsequent read. */
-  public void sync(String path) throws KeeperException, InterruptedException {
-    CountDownLatch completed = new CountDownLatch(1);
-    AtomicInteger result = new AtomicInteger();
-    runWithCorrectThrows(
-        "syncing znode",
-        () ->
-            getCuratorFramework()
-                .sync()
-                .inBackground(
-                    (ignored, event) -> {
-                      result.set(event.getResultCode());
-                      completed.countDown();
-                    })
-                .forPath(path));
-    if (!completed.await(zkClientTimeout, TimeUnit.MILLISECONDS)) {
-      throw new KeeperException.OperationTimeoutException();
-    }
-    KeeperException.Code code = KeeperException.Code.get(result.get());
-    if (code != KeeperException.Code.OK) {
-      throw KeeperException.create(code, path);
-    }
   }
 
   /**
