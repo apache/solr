@@ -421,7 +421,7 @@ public class SslTest extends SolrShellTestCase {
     // for instead.
     awaitOrFail(
         "the third node to register in ZooKeeper",
-        Duration.ofSeconds(60),
+        Duration.ofMinutes(1),
         Duration.ofSeconds(2),
         () ->
             run("solr api --solr-url \"https://localhost:${SOLR_PORT}"

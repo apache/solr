@@ -38,8 +38,8 @@ import org.apache.solr.shell.exec.Shell;
  *   public void solrInCmdIsSourced() { ... }
  * </pre>
  *
- * <p>On a class it skips the whole class before any Solr is started, so a class-scoped {@code
- * &#64;BeforeClass} that starts a node costs nothing on the wrong shell.
+ * <p>On a class it skips the whole class before any Solr is started, so a {@code @BeforeClass} that
+ * starts a node costs nothing on the wrong shell.
  *
  * @see Shell
  */

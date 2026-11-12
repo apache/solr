@@ -31,6 +31,7 @@ import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.session.CliSession;
 import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -209,7 +210,7 @@ public class CliSessionTest extends SolrTestCase {
   public void scriptSkipsWhenTheCurrentShellHasNoBody() {
     boolean bash = session.shell() == Shell.BASH;
     expectThrows(
-        org.junit.AssumptionViolatedException.class,
+        AssumptionViolatedException.class,
         () -> {
           if (bash) {
             session.script(null, "echo cmd-only");

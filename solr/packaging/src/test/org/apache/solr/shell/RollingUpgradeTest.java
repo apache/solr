@@ -130,7 +130,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   private static final String HEAP = "200m";
 
   /** How long Testcontainers waits for a node's port to listen before giving up. */
-  private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(120);
+  private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
 
   private String beginImage;
   private String endImage;

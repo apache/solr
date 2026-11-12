@@ -449,7 +449,7 @@ public final class SolrCliHelpers {
    */
   public void shutdownAll() {
     try {
-      cli.run(Duration.ofSeconds(120), "solr stop --all");
+      cli.run(Duration.ofMinutes(2), "solr stop --all");
     } catch (RuntimeException | AssertionError e) {
       // Cleanup helper: the caller is usually already handling a failure.
     }

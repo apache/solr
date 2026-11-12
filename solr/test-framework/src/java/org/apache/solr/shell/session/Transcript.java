@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.shell.exec.CommandHistory;
 import org.apache.solr.shell.exec.CommandResult;
@@ -68,7 +69,7 @@ public final class Transcript implements CommandHistory {
         .append("exit ")
         .append(result.timedOut() ? "TIMED OUT" : result.status())
         .append(" in ")
-        .append(String.format(java.util.Locale.ROOT, "%.1fs", result.duration().toMillis() / 1000d))
+        .append(String.format(Locale.ROOT, "%.1fs", result.duration().toMillis() / 1000d))
         .append('\n');
     appendOutput(entry, result.output());
     entry.append('\n');

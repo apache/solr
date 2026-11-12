@@ -18,6 +18,7 @@
 package org.apache.solr.shell.env;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -170,8 +171,7 @@ public final class PortBlocks {
       // keep reading
     }
     state.load(
-        new java.io.StringReader(
-            new String(buffer.array(), 0, buffer.position(), StandardCharsets.UTF_8)));
+        new StringReader(new String(buffer.array(), 0, buffer.position(), StandardCharsets.UTF_8)));
     return state;
   }
 

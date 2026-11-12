@@ -36,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -62,6 +63,7 @@ import org.apache.solr.shell.exec.ShellAssertionError;
 import org.apache.solr.shell.exec.ShellExecutor;
 import org.apache.solr.shell.exec.SolrNodes;
 import org.apache.solr.shell.exec.Variables;
+import org.junit.AssumptionViolatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,10 +86,10 @@ public class CliSession implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Default per-command timeout. */
-  public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
+  public static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(2);
 
   /** Timeout for lines that start or restart a Solr node, which is much slower. */
-  public static final Duration DEFAULT_START_TIMEOUT = Duration.ofSeconds(300);
+  public static final Duration DEFAULT_START_TIMEOUT = Duration.ofMinutes(5);
 
   /** Timeout for {@link #download}, which fetches from the network rather than from a node. */
   private static final Duration DOWNLOAD_TIMEOUT = Duration.ofMinutes(10);
@@ -209,7 +211,7 @@ public class CliSession implements AutoCloseable {
    * {@code ${NAME}} in their expected text.
    */
   public Map<String, String> varsForAssertions() {
-    return java.util.Collections.unmodifiableMap(vars);
+    return Collections.unmodifiableMap(vars);
   }
 
   /** Changes the working directory. A relative path resolves against the current one. */
@@ -373,7 +375,7 @@ public class CliSession implements AutoCloseable {
    * Port of {@code ls <glob>} and of {@code find <dir> -name <glob>}: the matching paths, sorted.
    *
    * <p>{@code glob} is a {@link java.nio.file.FileSystem#getPathMatcher glob} pattern relative to
-   * {@code dir}, so {@code "*.txt"} lists one level and {@code "**&#47;*.xml"} walks the tree.
+   * {@code dir}, so {@code "*.txt"} lists one level and <code>"**&#47;*.xml"</code> walks the tree.
    */
   public List<Path> list(String dir, String glob) {
     Path base = path(dir);
@@ -447,9 +449,8 @@ public class CliSession implements AutoCloseable {
   /**
    * Port of {@code curl -o <path> <url>}: fetches a URL into a file, creating parent directories.
    *
-   * <p>In Java because neither {@code curl} nor {@code wget} is on a stock Windows runner. A
-   * non-2xx response, or a transport failure, fails the test rather than leaving a truncated file
-   * behind.
+   * <p>In Java because neither curl nor wget is on a stock Windows runner. A non-2xx response, or a
+   * transport failure, fails the test rather than leaving a truncated file behind.
    *
    * @return the absolute path of the downloaded file
    */
@@ -675,14 +676,13 @@ public class CliSession implements AutoCloseable {
    * locals, loop variables and positional parameters. {@code {{NAME}}} is the one form the harness
    * still resolves, for a harness value the shell should not see as a variable at all.
    *
-   * @throws org.junit.AssumptionViolatedException if the current shell has no script
+   * @throws AssumptionViolatedException if the current shell has no script
    */
   public CommandResult script(String bashScript, String cmdScript) {
     requireOpen();
     String chosen = shell == Shell.BASH ? bashScript : cmdScript;
     if (chosen == null) {
-      throw new org.junit.AssumptionViolatedException(
-          "No " + shell + " script supplied for this test");
+      throw new AssumptionViolatedException("No " + shell + " script supplied for this test");
     }
     if (shell == Shell.CMD) {
       // cmd.exe has no $NAME syntax at all, so one in a cmd body is dead text that will reach the
@@ -994,6 +994,8 @@ public class CliSession implements AutoCloseable {
    * platforms and sees a node started in the foreground. Filtered to this class's port block,
    * because on the cmd side the underlying record is shared with every other class.
    */
+  // owner != this compares session identity on purpose, so equals() would be wrong here.
+  @SuppressWarnings("ReferenceEquality")
   private void claimNewNodes() {
     for (SolrProcess node : SolrNodes.running(harnessEnv.marker())) {
       if (!harnessEnv.ports().contains(node.port())) {
@@ -1172,7 +1174,7 @@ public class CliSession implements AutoCloseable {
    */
   private CommandResult runForCleanup(String line) {
     try {
-      return execute(line, Duration.ofSeconds(60), false);
+      return execute(line, Duration.ofMinutes(1), false);
     } catch (AssertionError e) {
       log.warn("Cleanup command failed: {}", line, e);
       return null;

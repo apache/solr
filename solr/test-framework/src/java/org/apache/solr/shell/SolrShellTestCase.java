@@ -46,6 +46,7 @@ import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -558,7 +559,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   }
 
   private void saveHomeOnFailure(Description description, Throwable failure) {
-    if (failure instanceof org.junit.internal.AssumptionViolatedException) {
+    if (failure instanceof AssumptionViolatedException) {
       return;
     }
     Path target =
