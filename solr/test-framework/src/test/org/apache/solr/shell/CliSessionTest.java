@@ -221,6 +221,16 @@ public class CliSessionTest extends SolrTestCase {
   }
 
   @Test
+  public void aScriptBodyMayOpenWithTheShellsOwnSyntax() {
+    // cmd.exe cannot 'call' its own batch syntax, so Shell.CMD has to hand such a line over as-is.
+    session
+        .script("for i in 1 2; do echo n$i; done", "for /l %%i in (1,1,2) do @echo n%%i")
+        .assertLineCount(2)
+        .assertContains("n2");
+    session.script("if true; then echo yes; fi", "if 1==1 echo yes").assertExact("yes");
+  }
+
+  @Test
   @EnabledOnShell(Shell.BASH) // About bash's brace expansion specifically.
   public void bashLeavesDoubleBracesAlone() {
     // Guards the choice of delimiter. 'not-a-var' is not a legal placeholder name, so the harness

@@ -46,15 +46,16 @@ public enum Shell {
    *
    * <p>The line goes into a temp {@code .cmd} script rather than onto the {@code cmd /c} command
    * line, because {@code ProcessBuilder}'s quoting rules for {@code cmd /c} and {@code .cmd}
-   * arguments are special and fragile. {@code call} is prepended to a single-command line — without
-   * it a batch file invoking {@code solr.cmd} never gets control back — while a multi-line body is
-   * written verbatim and is responsible for its own. {@code /d} disables AutoRun registry hooks.
+   * arguments are special and fragile. {@code call} is prepended to a line that invokes a command —
+   * without it a batch file invoking {@code solr.cmd} never gets control back — while a multi-line
+   * body, or one that opens with cmd's own syntax, is written verbatim and is responsible for its
+   * own. {@code /d} disables AutoRun registry hooks.
    */
   CMD {
     @Override
     public List<String> processArgs(String line, Path scriptDir, String scriptName)
         throws IOException {
-      String command = line.contains("\n") ? line : "call " + line;
+      String command = takesCallPrefix(line) ? "call " + line : line;
       String body =
           String.join("\r\n", "@echo off", "chcp 65001 >nul", command, "exit /b %ERRORLEVEL%")
               + "\r\n";
@@ -96,6 +97,22 @@ public enum Shell {
 
   /** Characters that make cmd.exe need an argument wrapped in double quotes. */
   private static final Pattern NEEDS_CMD_QUOTING = Pattern.compile("[\\s&|<>()]");
+
+  /**
+   * Lines cmd.exe parses as batch syntax rather than as a command to run. {@code call} only ever
+   * prefixes a command name: {@code call (echo a&echo b)} sends cmd looking for a program named
+   * {@code (echo} and loses the rest of the group, and {@code call if}/{@code call for} fail
+   * outright. Chaining and redirection operators later in the line are fine, so they are not
+   * listed; cmd runs each side of those in its own context anyway.
+   */
+  private static final Pattern CMD_SYNTAX_LINE =
+      Pattern.compile(
+          "^\\s*(?:[(@]|(?:if|else|for|rem|goto|setlocal|endlocal)\\b)", Pattern.CASE_INSENSITIVE);
+
+  /** Whether {@code call} may be prepended to a whole cmd line; see {@link #CMD_SYNTAX_LINE}. */
+  private static boolean takesCallPrefix(String line) {
+    return !line.contains("\n") && !CMD_SYNTAX_LINE.matcher(line).find();
+  }
 
   /** System property that overrides the shell choice. */
   public static final String SHELL_SYSPROP = "solr.cli.shell";
