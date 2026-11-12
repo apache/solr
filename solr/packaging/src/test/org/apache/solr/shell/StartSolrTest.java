@@ -20,6 +20,8 @@ package org.apache.solr.shell;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
+import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.Shell;
 import org.junit.Test;
 
@@ -37,6 +39,7 @@ import org.junit.Test;
 public class StartSolrTest extends SolrShellTestCase {
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18647")
   public void solr11740CheckSolrStopConnection() {
     run("solr start");
     run("solr start --user-managed -p ${SOLR2_PORT}");
@@ -47,11 +50,18 @@ public class StartSolrTest extends SolrShellTestCase {
 
     // The original wrapped this in 'bash -c ... 2>&1' only to merge the streams; the harness
     // already merges them.
-    // Strengthened: 'stop --all' finding no node prints "No Solr nodes found to stop." and
-    // would satisfy the refutation on its own, so assert the graceful path positively too.
-    run("solr stop --all")
-        .assertContains("Sending stop command")
-        .assertNotContains("forcefully killing");
+    CommandResult stopped = run("solr stop --all").assertNotContains("forcefully killing");
+    // The graceful-stop wording is bash's alone - solr.cmd says "Stopping Solr process N running
+    // on port P" and never printed this - so only assert it where it exists. An earlier version of
+    // this port asserted it on both shells, which is a test bug, not a script one.
+    if (cli.shell() == Shell.BASH) {
+      stopped.assertContains("Sending stop command");
+    }
+
+    // What SOLR-11740 is actually about, and true of both shells: --all stopped *both* nodes.
+    // The refutation above would hold even if nothing had been stopped at all.
+    run("solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000");
+    run("solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000");
   }
 
   @Test

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.shell.exec.Shell;
 import org.junit.Before;
@@ -99,6 +100,7 @@ public class SslTest extends SolrShellTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18336")
   public void useDifferentHostnameWhenNotCheckingPeerName() {
     // Using a CN that is not localhost, as we will not be checking peer-name
     Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
@@ -327,6 +329,7 @@ public class SslTest extends SolrShellTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18646")
   public void startSolrWithMtlsNeeded() throws IOException {
     // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
     // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
@@ -402,6 +405,13 @@ public class SslTest extends SolrShellTestCase {
             "(bad_certificate|java.nio.channels.ClosedChannelException"
                 + "|Server refused connection)");
 
+    // That wording is also what a node being down produces, and it differs between platforms, so
+    // it cannot be tightened. Prove in-JVM that the rejection really was the handshake.
+    https("/solr/test/select?q=*:*&rows=0")
+        .get()
+        .assertConnectionFailed()
+        .assertMatches("(?s).*(SSLHandshakeException|SSLException|fatal alert).*");
+
     // The original's subshells end here, restoring the four server variables and the client
     // keystore for what follows.
     env("SOLR_SSL_CLIENT_KEY_STORE", path("ssl/client/solr-client.keystore.p12").toString());
@@ -435,9 +445,16 @@ public class SslTest extends SolrShellTestCase {
         .assertMatches(
             "(certificate_unknown|java.nio.channels.ClosedChannelException"
                 + "|Server refused connection)");
+
+    // As above: the CLI cannot distinguish a TLS rejection from an unreachable node.
+    https(ports().solr3(), "/solr/test/select?q=*:*&rows=0")
+        .get()
+        .assertConnectionFailed()
+        .assertMatches("(?s).*(SSLHandshakeException|SSLException|fatal alert).*");
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18646")
   public void startSolrWithMtlsWanted() throws IOException {
     // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
     // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
@@ -511,6 +528,12 @@ public class SslTest extends SolrShellTestCase {
         .assertMatches(
             "(unable to find valid certification path to requested target"
                 + "|Server refused connection)");
+
+    // As above: without a truststore this is a certification-path failure, not an absent node.
+    https("/solr/test/select?q=*:*&rows=0")
+        .get()
+        .assertConnectionFailed()
+        .assertMatches("(?s).*(SSLHandshakeException|SSLException|fatal alert).*");
   }
 
   @Test

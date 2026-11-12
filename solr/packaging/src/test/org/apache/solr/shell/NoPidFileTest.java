@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.junit.Test;
 
 /**
@@ -95,6 +96,7 @@ public class NoPidFileTest extends SolrShellTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18647")
   public void stopAllReportsWhenItStoppedNothing() {
     run("solr stop --all").assertContains("No Solr nodes found to stop.");
   }

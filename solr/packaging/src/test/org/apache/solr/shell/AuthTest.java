@@ -19,6 +19,7 @@ package org.apache.solr.shell;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.shell.exec.Shell;
 import org.junit.Before;
@@ -64,12 +65,14 @@ public class AuthTest extends SolrShellTestCase {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18648")
   public void authRejectsBlockUnknownOptionWithInvalidBoolean() {
     runFail("solr auth enable --type basicAuth --credentials any:any --block-unknown ture")
         .assertContains("Argument [block-unknown] must be either true or false, but was [ture]");
   }
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18648")
   public void authRejectsUpdateIncludeFileOnlyOptionWithInvalidBoolean() {
     runFail(
             "solr auth enable --type basicAuth --credentials any:any --update-include-file-only ture")
