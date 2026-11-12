@@ -536,6 +536,9 @@ public class SslTest extends SolrShellTestCase {
         .assertMatches("(?s).*(SSLHandshakeException|SSLException|fatal alert).*");
   }
 
+  private static final String RELOAD_JVM_OPTS =
+      "-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=20000";
+
   @Test
   public void testKeystoreReload() {
     // cert and keystore 1, cert and keystore 2. The original also exported each as a PEM with
@@ -559,9 +562,10 @@ public class SslTest extends SolrShellTestCase {
     // server1 will run on $SOLR_PORT and will use server1.keystore
     env("SOLR_SSL_KEY_STORE", server1.toString());
     env("SOLR_SSL_TRUST_STORE", server1.toString());
-    run(
-        "solr start --jvm-opts"
-            + " \"-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000\"");
+    // The original used socketTimeout=5000. It only has to be short enough that a request to a node
+    // serving the wrong certificate gives up quickly, and 5s is not enough to create a collection
+    // across two nodes while the other suites have the machine busy.
+    run("solr start --jvm-opts \"" + RELOAD_JVM_OPTS + "\"");
     run("solr assert --started https://localhost:${SOLR_PORT} --timeout 5000");
 
     // server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same
@@ -570,8 +574,9 @@ public class SslTest extends SolrShellTestCase {
     env("SOLR_SSL_TRUST_STORE", server2.toString());
 
     run(
-        "solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts"
-            + " \"-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000\"");
+        "solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts \""
+            + RELOAD_JVM_OPTS
+            + "\"");
     run("solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000");
 
     // "test" collection is two shards, meaning there must be communication between shards for
