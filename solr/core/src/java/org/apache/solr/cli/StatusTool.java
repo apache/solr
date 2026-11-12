@@ -37,7 +37,9 @@ import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.URLUtil;
+import org.apache.solr.util.TimeOut;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -79,7 +81,7 @@ public class StatusTool extends ToolBase {
   static class TargetOptions {
     @picocli.CommandLine.Option(
         names = {"-p", "--port"},
-        description = "Port on localhost to check status for")
+        description = "Port of a local Solr process to check status for")
     private Integer port;
 
     @picocli.CommandLine.Option(
@@ -147,7 +149,7 @@ public class StatusTool extends ToolBase {
           .hasArg()
           .argName("PORT")
           .type(Integer.class)
-          .desc("Port on localhost to check status for")
+          .desc("Port of a local Solr process to check status for")
           .get();
 
   /**
@@ -212,7 +214,6 @@ public class StatusTool extends ToolBase {
 
       // URL provided, do not consult local processes, as the URL may be remote
       if (maxWaitSecs > 0) {
-        // Used by Windows start script when starting Solr
         try {
           waitForSolrUpAndPrintStatus(solrUrl);
           runtime.exit(0);
@@ -227,11 +228,21 @@ public class StatusTool extends ToolBase {
     }
 
     if (port != null) {
-      Optional<SolrProcess> proc = processMgr.processForPort(port);
+      // When asked to wait, this also waits for a newly started process to become visible. One
+      // budget covers both that and the HTTP wait below, so that the time spent finding the
+      // process does not extend --max-wait-secs.
+      TimeOut timeout = new TimeOut(maxWaitSecs, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      Optional<SolrProcess> proc = processMgr.waitForProcessOnPort(port, maxWaitSecs);
+      long secsLeft = maxWaitSecs > 0 ? timeout.timeLeft(TimeUnit.SECONDS) : 0;
       if (proc.isEmpty()) {
         CLIO.err("Could not find a running Solr on port " + port);
         runtime.exit(1);
+      } else if (maxWaitSecs > 0 && secsLeft <= 0) {
+        CLIO.err(
+            "Solr on port " + port + " did not come online within " + maxWaitSecs + " seconds!");
+        runtime.exit(1);
       } else {
+        maxWaitSecs = (int) secsLeft;
         solrUrl = proc.get().getLocalUrl();
         if (shortFormat) {
           CLIO.out(solrUrl);
@@ -273,6 +284,7 @@ public class StatusTool extends ToolBase {
       CLIO.out(pidUrl);
     } else {
       if (maxWaitSecs > 0) {
+        // Used by Windows start script, which passes the port of the newly started instance
         waitForSolrUpAndPrintStatus(pidUrl);
       } else {
         CLIO.out(
