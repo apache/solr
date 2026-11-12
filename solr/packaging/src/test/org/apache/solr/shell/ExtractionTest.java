@@ -168,7 +168,21 @@ public class ExtractionTest extends SolrShellTestCase {
         return false;
       }
       String name = t.getName();
-      return name.startsWith("testcontainers-") || name.startsWith("HttpClient-");
+      if (name.startsWith("testcontainers-") || name.startsWith("HttpClient-")) {
+        return true;
+      }
+      // On Windows the Docker probe talks to a named pipe, and the asynchronous channel group it
+      // opens leaves two threads parked in the completion port. They outlive the probe even when
+      // it finds no Docker, and are named only Thread-N, so the stack is the only thing that
+      // identifies them. Without this the class cannot skip: the leak and the "no Docker"
+      // assumption arrive together and JUnit reports TestCouldNotBeSkippedException instead.
+      for (StackTraceElement frame : t.getStackTrace()) {
+        if (frame.getClassName().startsWith("sun.nio.ch.Iocp")
+            || frame.getClassName().startsWith("sun.nio.ch.AsynchronousChannelGroupImpl")) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }
