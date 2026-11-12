@@ -81,7 +81,7 @@ public class StatusTool extends ToolBase {
   static class TargetOptions {
     @picocli.CommandLine.Option(
         names = {"-p", "--port"},
-        description = "Port on localhost to check status for")
+        description = "Port of a local Solr process to check status for")
     private Integer port;
 
     @picocli.CommandLine.Option(
