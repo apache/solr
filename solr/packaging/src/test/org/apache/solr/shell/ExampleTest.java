@@ -40,7 +40,8 @@ import org.junit.Test;
 @EnabledOnShell(Shell.BASH)
 // Bash-only: on Windows RunExampleTool#startSolr drops every SOLR_* variable from the spawned
 // nodes' environment, so they get neither the process-scan marker nor SOLR_PID_DIR and cannot be
-// discovered or stopped. Both tests depend on the cluster the example starts, hence a class gate.
+// discovered or stopped (SOLR-18650). Both tests depend on the cluster the example starts, hence a
+// class gate rather than @AwaitsFix, which would skip the bash run too.
 public class ExampleTest extends SolrShellTestCase {
 
   @BeforeClass
