@@ -99,6 +99,9 @@ public class {{classname}} {
         {{/vendorExtensions.x-rawOutput}}
             {{#bodyParam}}
             private final {{{dataType}}} requestBody;
+            {{#vendorExtensions.x-genericEntity}}
+            private final String contentType;
+            {{/vendorExtensions.x-genericEntity}}
             {{/bodyParam}}
             {{#requiredParams}}
             {{^isBodyParam}}
@@ -116,8 +119,14 @@ public class {{classname}} {
              *
              {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} Path param - {{description}}{{/isBodyParam}}
              {{/requiredParams}}
+             {{#bodyParam}}{{#vendorExtensions.x-genericEntity}}
+             * @param requestBody The request content, in the format given by {@code contentType}.
+             * @param contentType The MIME type of {@code requestBody} -- must be one of this
+             *     operation's supported content types (e.g. "application/json"). The server
+             *     selects how to interpret the body by this header, so it must be set accurately.
+             {{/vendorExtensions.x-genericEntity}}{{/bodyParam}}
              */
-            public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
+            public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody, String contentType{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
                 // TODO Hardcode request type for now, but in reality we'll want to parse this out of the Operation data somehow
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
@@ -130,6 +139,7 @@ public class {{classname}} {
                 {{#isBodyParam}}
                 {{#vendorExtensions.x-genericEntity}}
                     this.requestBody = requestBody;
+                    this.contentType = contentType;
                 {{/vendorExtensions.x-genericEntity}}
                 {{/isBodyParam}}
                 {{^isBodyParam}}
@@ -216,7 +226,7 @@ public class {{classname}} {
 
                   @Override
                   public String getContentType() {
-                    return "application/octet-stream";
+                    return contentType;
                   }
                 };
                 {{/vendorExtensions.x-genericEntity}}

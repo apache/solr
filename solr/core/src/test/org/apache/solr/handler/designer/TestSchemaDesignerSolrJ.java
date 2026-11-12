@@ -149,7 +149,8 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
 
     byte[] invalidXml = "<config/>".getBytes(StandardCharsets.UTF_8);
     var req =
-        new SchemaDesignerApi.UpdateFileContents(configSet, new ByteArrayInputStream(invalidXml));
+        new SchemaDesignerApi.UpdateFileContents(
+            configSet, new ByteArrayInputStream(invalidXml), "application/xml");
     req.setFile("solrconfig.xml");
     SchemaDesignerFileContentsResponse resp = req.process(cluster.getSolrClient());
 

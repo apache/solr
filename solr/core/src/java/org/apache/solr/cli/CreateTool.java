@@ -346,7 +346,7 @@ public class CreateTool extends ToolBase {
               + " using the Configsets V2 API");
       var uploadReq =
           new ConfigsetsApi.UploadConfigSet(
-              confName, new ByteArrayInputStream(Utils.zipDirectory(confPath)));
+              confName, new ByteArrayInputStream(Utils.zipDirectory(confPath)), "application/zip");
       uploadReq.process(cloudSolrClient);
     }
 

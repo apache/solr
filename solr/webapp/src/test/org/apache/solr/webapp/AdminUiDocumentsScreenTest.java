@@ -44,6 +44,9 @@ public class AdminUiDocumentsScreenTest extends AdminUiTestBase {
     assertTrue("Doc type dropdown should offer JSON, got " + types, types.contains("JSON"));
     assertTrue("Doc type dropdown should offer XML, got " + types, types.contains("XML"));
     assertTrue("Doc type dropdown should offer CSV, got " + types, types.contains("CSV"));
+    assertTrue(
+        "Doc type dropdown should offer raw JSON commands, got " + types,
+        types.contains("Solr Command (raw JSON)"));
     waitFor(By.id("submit"));
     assertNoSevereConsoleErrors();
   }

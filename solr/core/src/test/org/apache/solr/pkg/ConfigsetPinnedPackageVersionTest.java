@@ -129,7 +129,9 @@ public class ConfigsetPinnedPackageVersionTest extends SolrCloudTestCase {
   private void uploadPluginJar(String version, Path jarPath) throws Exception {
     var pluginRequest =
         new FileStoreApi.UploadFile(
-            "/my-plugin/plugin-" + version + ".jar", Files.newInputStream(jarPath));
+            "/my-plugin/plugin-" + version + ".jar",
+            Files.newInputStream(jarPath),
+            "application/octet-stream");
     pluginRequest.setSig(List.of(signature(Files.readAllBytes(jarPath))));
     pluginRequest.process(client);
   }

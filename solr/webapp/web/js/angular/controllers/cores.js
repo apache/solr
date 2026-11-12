@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CoreAdminController',
-    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Update, Constants, ApiErrorHandler, NodeTarget){
+    function($scope, $routeParams, $location, $timeout, $route, CoresV2, Constants, ApiErrorHandler, NodeTarget){
       $scope.resetMenu("cores", Constants.IS_ROOT_PAGE);
       $scope.selectedCore = $routeParams.corename; // use 'corename' not 'core' to distinguish from /solr/:core/
       $scope.refresh = function() {

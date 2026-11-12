@@ -36,9 +36,8 @@ There are other ways to load data, see also these sections:
 ====
 
 == Common Fields
-* Request-Handler: The first step is to define the RequestHandler.
-By default `/update` will be defined.
-Change the request handler to `/update/extract` to use Solr Cell, if you are running a Tika Server.
+* Endpoint: The Documents screen submits updates to the v2 `/api/cores/\{core\}/update` or
+`/api/collections/\{collection\}/update` endpoint, depending on whether Solr is running in standalone or SolrCloud mode.
 * Document Type: Select the Document Type to define the format of the document to load.
 The remaining parameters may change depending on the document type selected.
 * Document(s): Enter a properly formatted Solr document corresponding to the `Document Type` selected.
@@ -69,16 +68,16 @@ The Document Builder provides a wizard-like interface to enter fields of a docum
 == File Upload
 
 The File Upload option allows choosing a prepared file and uploading it.
-If using `/update` for the Request-Handler option, you will be limited to XML, CSV, and JSON.
+The File Upload option currently uses the v1 `/update` handler and supports XML, CSV, and JSON files.
 
 Other document types (e.g., Word, PDF, etc.) can be indexed using the ExtractingRequestHandler (aka, Solr Cell).
-You must modify the RequestHandler to `/update/extract`, which must be defined in your `solrconfig.xml` file with your desired defaults.
+Solr Cell uploads through `/update/extract` must be sent directly to that configured request handler.
 You should also add `&literal.id` shown in the "Extracting Request Handler Params" field so the file chosen is given a unique id.
 More information can be found in xref:indexing-with-tika.adoc[].
 
 == Solr Command
 
-The Solr Command option allows you to use the `/update` request handler with XML or JSON formatted commands to perform specific actions.
+The Solr Command option allows you to use the v2 `/update` endpoint with JSON formatted commands to perform specific actions.
 A few examples are:
 
 * Deleting documents

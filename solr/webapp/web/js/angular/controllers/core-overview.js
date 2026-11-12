@@ -23,7 +23,7 @@ var isTruthy = function(value) {
 };
 
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, ReplicationV2, Ping, Constants, ApiErrorHandler) {
+function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, ReplicationV2, Ping, Constants, ApiErrorHandler) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},

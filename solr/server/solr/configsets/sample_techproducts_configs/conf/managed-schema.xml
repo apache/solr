@@ -121,6 +121,12 @@
    -->
    <field name="_root_" type="string" indexed="true" stored="false" />
 
+   <!-- records the path to each nested document and enables nested-document reconstruction -->
+   <field name="_nest_path_" type="_nest_path_" />
+
+   <!-- stores the ID of each nested document's immediate parent -->
+   <field name="_nest_parent_" type="string" indexed="true" stored="true" />
+
    <!-- Only remove the "id" field if you have a very good reason to. While not strictly
      required, it is highly recommended. A <uniqueKey> is present in almost all Solr
      installations. See the <uniqueKey> declaration below where <uniqueKey> is set to "id".
@@ -140,8 +146,8 @@
    <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" uninvertible="true" />
 
    <field name="weight" type="pfloat" indexed="true" stored="true"/>
-   <field name="price"  type="pfloat" indexed="true" stored="true"/>
-   <field name="popularity" type="pint" indexed="true" stored="true" />
+   <field name="price"  type="pfloat" indexed="false" stored="false" docValues="true"/>
+   <field name="popularity" type="pint" indexed="false" stored="false" docValues="true" />
    <field name="inStock" type="boolean" indexed="true" stored="true" />
 
    <field name="store" type="location" indexed="true" stored="true"/>
@@ -249,9 +255,6 @@
    <copyField source="manu" dest="manu_exact"/>
    <copyField source="name" dest="name_exact"/>
 
-   <!-- Copy the price into a currency enabled field (default USD) -->
-   <copyField source="price" dest="price_c"/>
-
    <!-- Text fields from SolrCell to search by default in our catch-all field -->
    <copyField source="title" dest="text"/>
    <copyField source="author" dest="text"/>
@@ -286,6 +289,7 @@
 
     <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+    <fieldType name="_nest_path_" class="solr.NestPathField" />
     <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" />
 
 
