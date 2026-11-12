@@ -19,7 +19,6 @@ package org.apache.solr.shell;
 
 import java.nio.file.Path;
 import java.util.List;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.junit.Test;
 
 /**
