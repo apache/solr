@@ -37,7 +37,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -372,6 +371,30 @@ public class TimeRoutedAlias extends RoutedAlias {
     return nextCollTimestamp;
   }
 
+  /**
+   * Returns aliases with the router.start of an alias set to a fixed start, but only if it is still
+   * the date math the fixed start was computed from: nodes whose cached aliases are stale may
+   * compute it again after it was fixed. Builds on the given aliases, which are refreshed on a
+   * version conflict, so that other changes to aliases are kept.
+   *
+   * @return the aliases with the fixed start, or the given aliases if there is nothing to change
+   */
+  static Aliases fixStart(
+      Aliases aliases, String aliasName, String dateMathStart, String fixedStart) {
+    String currentStart = aliases.getCollectionAliasProperties(aliasName).get(ROUTER_START);
+    if (!dateMathStart.equals(currentStart)) {
+      if (currentStart == null) {
+        log.warn(
+            "Not fixing {} of alias [{}]: the alias no longer exists or has no {}",
+            ROUTER_START,
+            aliasName,
+            ROUTER_START);
+      }
+      return aliases;
+    }
+    return aliases.cloneWithCollectionAliasProperties(aliasName, ROUTER_START, fixedStart);
+  }
+
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
 
@@ -406,19 +429,19 @@ public class TimeRoutedAlias extends RoutedAlias {
       startTime = DateMathParser.parseMath(new Date(), start).toInstant();
       SolrCore core = cmd.getReq().getCore();
       ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
-      Aliases aliases = zkStateReader.getAliases();
-      Map<String, String> props = new HashMap<>(aliases.getCollectionAliasProperties(aliasName));
+      final String dateMathStart = start;
       start = DateTimeFormatter.ISO_INSTANT.format(startTime);
-      props.put(ROUTER_START, start);
+      final String fixedStart = start;
 
-      // This could race, but it only occurs when the alias is first used and the values produced
-      // should all be identical and who wins won't matter (baring cases of Date Math involving
-      // seconds, which is pretty far fetched). Putting this in a separate thread to ensure that any
-      // failed races don't cause documents to get rejected.
-      core.runAsync(
-          () ->
-              zkStateReader.aliasesManager.applyModificationAndExportToZk(
-                  (a) -> aliases.cloneWithCollectionAliasProperties(aliasName, props)));
+      // Putting this in a separate thread to ensure that any failed races don't cause documents to
+      // get rejected. A time dimension of a dimensional routed alias has no alias name of its own
+      // (see DimensionalRoutedAlias), so its start can't be fixed here.
+      if (!aliasName.isEmpty()) {
+        core.runAsync(
+            () ->
+                zkStateReader.aliasesManager.applyModificationAndExportToZk(
+                    a -> fixStart(a, aliasName, dateMathStart, fixedStart)));
+      }
     }
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(
