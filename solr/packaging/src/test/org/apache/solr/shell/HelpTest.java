@@ -17,7 +17,6 @@
 
 package org.apache.solr.shell;
 
-import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.junit.Test;
 
 /**

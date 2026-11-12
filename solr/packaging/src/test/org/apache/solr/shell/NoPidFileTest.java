@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.junit.Test;
 
 /**

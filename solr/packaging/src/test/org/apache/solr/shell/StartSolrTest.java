@@ -20,7 +20,6 @@ package org.apache.solr.shell;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.shell.exec.CommandResult;
 import org.apache.solr.shell.exec.Shell;
 import org.junit.Test;
