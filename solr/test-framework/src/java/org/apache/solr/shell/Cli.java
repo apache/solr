@@ -33,5 +33,18 @@ public enum Cli {
   COMMONS_CLI,
 
   /** The picocli implementation. */
-  PICOCLI
+  PICOCLI;
+
+  /**
+   * Which implementation a run with these environment variables reaches.
+   *
+   * <p>The default tracks {@code SolrCLI.main}, which reads {@code solr.picocli} and defaulted to
+   * picocli in SOLR-18561. Keep the two in step: a run that pins neither takes whichever CLI {@code
+   * bin/solr} dispatches to, and a mismatch here has the suites assert one implementation's wording
+   * against the other's output. Resolved here rather than at each call site so there is one place
+   * to change when commons-cli goes.
+   */
+  public static Cli of(java.util.Map<String, String> vars) {
+    return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "true")) ? PICOCLI : COMMONS_CLI;
+  }
 }

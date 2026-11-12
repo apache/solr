@@ -71,9 +71,11 @@ jobs:
 
     # Linux only: the two CLI implementations differ in Java-side wording, which is the same on both
     # platforms. Reuses the distribution built above, so it costs only the suite run.
-    - name: Test bin/solr with CATS using the experimental picocli CLI
+    # The step above already covers picocli, which SOLR-18561 made the default, so this one pins the
+    # deprecated implementation. Delete it along with commons-cli itself.
+    - name: Test bin/solr with CATS using the deprecated commons-cli
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: ${{ matrix.gradlew }} -p solr/packaging catsTestsPicocli
+      run: ${{ matrix.gradlew }} -p solr/packaging catsTestsCommonsCli
 
     - name: Archive logs
       if: ${{ failure() }}

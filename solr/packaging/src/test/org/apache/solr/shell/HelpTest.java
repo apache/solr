@@ -68,7 +68,6 @@ public class HelpTest extends SolrShellTestCase {
   }
 
   @Test
-  @EnabledOnCli(Cli.COMMONS_CLI) // restart is not migrated to picocli yet.
   public void restartHelpFlagPrintsHelp() {
     run("solr restart --help")
         .assertContainsForCli("Usage: solr restart", "usage: bin/solr restart")

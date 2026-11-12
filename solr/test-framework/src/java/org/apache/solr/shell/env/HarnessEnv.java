@@ -334,12 +334,10 @@ public final class HarnessEnv {
   /**
    * Which command-line implementation {@code bin/solr} will dispatch to for this run.
    *
-   * <p>The default tracks {@code SolrCLI.main}, which reads {@code solr.picocli} with a default of
-   * false. When that flips to picocli, this flips with it.
+   * <p>Defaulting lives in {@link Cli#of}, so this and {@code CommandResult.picocli()} cannot drift
+   * apart.
    */
   public Cli cli() {
-    return Boolean.parseBoolean(vars.getOrDefault("SOLR_PICOCLI", "false"))
-        ? Cli.PICOCLI
-        : Cli.COMMONS_CLI;
+    return Cli.of(vars);
   }
 }

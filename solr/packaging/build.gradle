@@ -428,7 +428,7 @@ tasks.register('catsTests', Test) {
 
 tasks.register('catsTestsPicocli', Test) {
   group = 'verification'
-  description = 'Runs the CATS suites against the experimental picocli CLI.'
+  description = 'Runs the CATS suites against picocli, pinned rather than taken as the default.'
   configureCatsTestTask(it, 'cats-test-output-picocli', 'true')
 }
 
