@@ -252,4 +252,22 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     map.add("two", 2);
     map.add("three", 3);
   }
+
+  @Test
+  public void testGetImmutableCopyKeepsType() {
+    map.put("one", 1);
+    map.put("two", 2);
+
+    NamedList<Integer> copy = map.getImmutableCopy();
+
+    assertTrue("immutable copy should stay a SimpleOrderedMap", copy instanceof SimpleOrderedMap);
+    assertEquals(map, copy);
+    assertEquals(List.of("one", 1, "two", 2), copy.nvPairs);
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("three", 3));
+    assertThrows(UnsupportedOperationException.class, () -> copy.remove("one"));
+    assertThrows(UnsupportedOperationException.class, () -> copy.setVal(0, 11));
+
+    map.put("three", 3);
+    assertEquals("copy must not see later changes to the original", 2, copy.size());
+  }
 }
