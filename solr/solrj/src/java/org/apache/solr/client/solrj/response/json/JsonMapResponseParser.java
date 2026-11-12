@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -52,7 +53,7 @@ public class JsonMapResponseParser extends ResponseParser {
     } catch (JSONParser.ParseException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JSON parsing error", e);
     }
-    NamedList<Object> list = new NamedList<>();
+    NamedList<Object> list = new SimpleOrderedMap<>();
     list.addAll(map);
     return list;
   }

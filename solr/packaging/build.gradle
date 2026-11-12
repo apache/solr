@@ -348,8 +348,8 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   task.environment TEST_OUTPUT_DIR: integrationTestOutput
   task.environment TEST_FAILURE_DIR: solrTestFailuresDir
   task.environment BATS_LIB_PREFIX: batsLibsDir
-  if (usePicocli) {
-    task.environment SOLR_PICOCLI: 'true'
+  if (!usePicocli) {
+    task.environment SOLR_PICOCLI: 'false'
   }
 }
 
@@ -514,12 +514,15 @@ tasks.register('catsTestsAll', Test) {
   configureCatsDockerImage(it)
 }
 
+// TODO: Remove this when cleaning up commons-cli
 task integrationTests(type: BatsTask) {
+  description = 'Runs the BATS suites for the CLI powered by commons-cli.'
   configureBatsTask(it, 'test-output', false)
 }
 
+// The same suites run against the picocli CLI.
 task integrationTestsPicocli(type: BatsTask) {
-  description = 'Runs the BATS suites for the migrated commands against the experimental picocli CLI.'
+  description = 'Runs the BATS suites for the CLI powered by PicoCLI.'
   configureBatsTask(it, 'test-output-picocli', true)
 }
 
@@ -536,6 +539,15 @@ abstract class BatsTask extends Exec {
   @Optional
   String filterTags = null
 
+  // Whether testFiles was populated via the --tests CLI option, as opposed to being
+  // preconfigured by the build script (e.g. integrationTestsPicocli's curated list).
+  // Explicitly requesting tests by name means the nightly tag filter should not apply.
+  // TODO: once the commons-cli/picocli split goes away (integrationTestsPicocli and its
+  // hardcoded testFiles list are removed), this field is redundant with `!testFiles.empty`
+  // and can be deleted in favor of that simpler check.
+  @Input
+  boolean testsSelectedViaCli = false
+
   /** Where to write the junit report. Defaults to the project's test-output directory. */
   @Internal
   String reportDir = null
@@ -543,6 +555,7 @@ abstract class BatsTask extends Exec {
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
     // TODO: bats --filter <regex>
+    testsSelectedViaCli = true
     tests.each {testFiles << "$testDir/$it"}
   }
 
@@ -555,7 +568,7 @@ abstract class BatsTask extends Exec {
     if (logger.isInfoEnabled()) {
       batsArgs << '--verbose-run'
     }
-    if (filterTags) {
+    if (filterTags && !testsSelectedViaCli) {
       batsArgs += ['--filter-tags', filterTags]
     }
     batsArgs += ['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', reportDir ?: "$project.buildDir/test-output"]
