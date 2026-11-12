@@ -51,7 +51,10 @@ public class ZkTest extends SolrShellTestCase {
 
   @Test
   public void shortHelpIsInferred() {
-    runFail("solr zk ls").assertContains("usage: bin/solr zk");
+    // tryRun, not runFail: the two CLIs disagree about the status. commons-cli rewrites a bare zk
+    // subcommand into a help request and exits 0; picocli reports the missing path as a usage
+    // error and exits 2. Printing the usage is what both do, and what this test is about.
+    tryRun("solr zk ls").assertContains("usage: bin/solr zk");
   }
 
   @Test
