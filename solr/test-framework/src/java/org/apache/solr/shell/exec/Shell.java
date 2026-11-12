@@ -91,6 +91,11 @@ public enum Shell {
                 + arg);
       }
       String escaped = arg.replace("%", "%%");
+      // An empty argument matches nothing in NEEDS_CMD_QUOTING, and bare emptiness is not an
+      // argument at all to cmd.exe - it would vanish, where bash keeps it.
+      if (arg.isEmpty()) {
+        return "\"\"";
+      }
       return NEEDS_CMD_QUOTING.matcher(arg).find() ? '"' + escaped + '"' : escaped;
     }
   };

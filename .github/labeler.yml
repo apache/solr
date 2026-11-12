@@ -32,14 +32,6 @@ bats-tests:
       - any-glob-to-any-file:
           - solr/packaging/tests/**
 
-# Add 'cats-tests' label
-cats-tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/packaging/src/test/org/apache/solr/shell/**
-          - solr/test-framework/src/java/org/apache/solr/shell/**
-          - solr/test-framework/src/test/org/apache/solr/shell/**
-
 # Add 'docker' label for changes to docker
 docker:
   - changed-files:
@@ -184,6 +176,8 @@ tests:
       - any-glob-to-any-file:
           - '**/src/test/**'
           - '**/src/test-files/**'
+          # The CATS harness library is test infrastructure, but ships in src/java.
+          - solr/test-framework/src/java/org/apache/solr/shell/**
 
 # Add category labels loosely based on java packages
 # Add 'api' label

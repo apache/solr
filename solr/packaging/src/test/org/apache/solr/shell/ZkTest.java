@@ -172,7 +172,7 @@ public class ZkTest extends SolrShellTestCase {
     touch("afile.txt");
 
     run("solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} --verbose"
-            + " --solr-home ${SOLR_TIP}/server/solr")
+            + " --solr-home \"${SOLR_TIP}/server/solr\"")
         .assertContains("Using SolrHome: ${SOLR_TIP}/server/solr")
         .assertNotContains("Failed to load solr.xml from ZK or SolrHome");
   }
@@ -187,8 +187,7 @@ public class ZkTest extends SolrShellTestCase {
     // original also refuted "aliases.json", which assumes nothing is listening on 8983 — a port no
     // test class owns, and the single most likely thing to be running on a Solr developer's own
     // machine. That made the test fail for a reason having nothing to do with ZK_HOST.
-    runFail("solr zk ls / --recursive")
-        .assertContains("assuming solr url is http://localhost:8983");
+    tryRun("solr zk ls / --recursive").assertContains("assuming solr url is http://localhost:8983");
 
     env("ZK_HOST", "localhost:" + ports().zk());
     run("solr zk ls / --recursive").assertContains("aliases.json");

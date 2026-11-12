@@ -120,12 +120,12 @@ public class BasicAuthTest extends SolrShellTestCase {
     // prints "1 files indexed." even when the collection does not exist (recorded separately).
     run("solr post -u name:password -t application/xml --solr-url"
             + " http://localhost:${SOLR_PORT} --name COLL_NAME"
-            + " ${SOLR_TIP}/example/exampledocs/monitor.xml")
+            + " \"${SOLR_TIP}/example/exampledocs/monitor.xml\"")
         .assertContains("1 files indexed.");
 
     // Test postlogs
     run("solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT}"
-            + " --name COLL_NAME --rootdir ${SOLR_LOGS_DIR}/solr.log")
+            + " --name COLL_NAME --rootdir \"${SOLR_LOGS_DIR}/solr.log\"")
         .assertContains("Committed");
 
     // Test export (commented out in the original too)

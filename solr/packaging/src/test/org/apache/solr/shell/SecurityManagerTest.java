@@ -19,6 +19,7 @@ package org.apache.solr.shell;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.Test;
 
 /**
@@ -54,10 +55,15 @@ public class SecurityManagerTest extends SolrShellTestCase {
     Path backupDir = mkdirs("backup-dir").toRealPath();
 
     env("SOLR_SECURITY_MANAGER_ENABLED", "true");
-    env(
-        "SOLR_OPTS",
-        "-Dsolr.security.allow.paths=" + backupDir + " -Djava.io.tmpdir=" + testTmpDir);
-    run("solr start");
+    // As argv rather than SOLR_OPTS: the harness quotes each argument for the shell in use, where
+    // a space in either path would otherwise split one -D into two JVM arguments. Quoting inside
+    // SOLR_OPTS does not help, since bin/solr expands it unquoted.
+    run(
+        List.of(
+            "solr",
+            "start",
+            "-Dsolr.security.allow.paths=" + backupDir,
+            "-Djava.io.tmpdir=" + testTmpDir));
     run("solr create -c COLL_NAME");
     run("solr api --solr-url \"http://localhost:${SOLR_PORT}/solr/admin/collections"
             + "?action=BACKUP&name=test&collection=COLL_NAME&location="
