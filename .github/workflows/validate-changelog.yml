@@ -34,7 +34,6 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
     steps:
     - name: Check for changelog entry
@@ -44,11 +43,14 @@ jobs:
         files="$RUNNER_TEMP/pr-files.tsv"
         entries="$RUNNER_TEMP/entry-paths.txt"
 
+        # contents_url comes back URL-encoded and pinned to the head commit, so an
+        # entry whose name contains '#' is fetched as written rather than truncated.
         gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-          --jq '.[] | [.status, .filename] | @tsv' > "$files"
+          --jq '.[] | [.status, .filename, .contents_url] | @tsv' > "$files"
 
         # Entries that are still there to validate; a deleted one has nothing to read.
-        awk -F'\t' '$1 != "removed" && $2 ~ /^changelog\/unreleased\/.+\.ya?ml$/ { print $2 }' \
+        awk -F'\t' -v OFS='\t' \
+          '$1 != "removed" && $2 ~ /^changelog\/unreleased\/.+\.ya?ml$/ { print $2, $3 }' \
           "$files" > "$entries"
 
         if [ -s "$entries" ]; then
@@ -77,10 +79,13 @@ jobs:
         mkdir -p "$yamls"
 
         # PR-authored data: fetched outside the workspace and only ever parsed.
-        while IFS= read -r file; do
+        while IFS=$'\t' read -r file url; do
           echo "Fetching $file"
-          gh api -H "Accept: application/vnd.github.raw" \
-            "repos/${REPO}/contents/${file}?ref=${HEAD_SHA}" > "${yamls}/$(basename "$file")"
+          case "$url" in
+            "https://api.github.com/repos/${REPO}/contents/"*) ;;
+            *) echo "Refusing to fetch $file from unexpected URL: $url"; exit 1 ;;
+          esac
+          gh api -H "Accept: application/vnd.github.raw" "$url" > "${yamls}/$(basename "$file")"
         done < "$entries"
 
         python3 dev-tools/scripts/validate-changelog-yaml.py "$yamls" \

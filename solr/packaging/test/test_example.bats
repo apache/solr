@@ -50,3 +50,17 @@ teardown() {
   run curl "http://localhost:${SOLR2_PORT}/solr/admin/info/properties"
   assert_output --partial 'helloworld'
 }
+
+@test "examples suppress resource limit warnings while ordinary starts retain them" {
+  run env SOLR_INCLUDE=/dev/null SOLR_ULIMIT_CHECKS=true SOLR_RECOMMENDED_OPEN_FILES=2147483647 \
+    solr start --server-dir "$BATS_TEST_TMPDIR/missing-server"
+  assert_failure
+  assert_output --partial 'Your open file limit'
+  assert_output --partial 'not found'
+
+  run env SOLR_INCLUDE=/dev/null SOLR_ULIMIT_CHECKS=true SOLR_RECOMMENDED_OPEN_FILES=2147483647 \
+    solr start "-e" "films" --server-dir "$BATS_TEST_TMPDIR/missing-server"
+  assert_failure
+  assert_output --partial 'not found'
+  refute_output --partial 'set SOLR_ULIMIT_CHECKS to false'
+}

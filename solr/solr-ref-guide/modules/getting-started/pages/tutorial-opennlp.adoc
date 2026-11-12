@@ -1,4 +1,4 @@
-= Exercise 7: Sentiment Analysis with OpenNLP
+= Exercise 8: Sentiment Analysis with OpenNLP
 :experimental:
 :tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one

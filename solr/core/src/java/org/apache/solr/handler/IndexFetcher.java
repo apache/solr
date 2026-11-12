@@ -1331,12 +1331,16 @@ public class IndexFetcher {
   }
 
   /**
-   * Returns true if the file exists (can be opened), false if it cannot be opened, and (unlike
-   * Java's File.exists) throws IOException if there's some unexpected error.
+   * Returns true if the file exists (as judged by a length check not throwing an error) and false
+   * otherwise.
+   *
+   * @throws IOException in the case of any unexpected (non "not found") I/O error
    */
   private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
+      // We don't care about the length, just the existence check that will occur implicitly when
+      // checking length.
+      dir.fileLength(fileName);
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;

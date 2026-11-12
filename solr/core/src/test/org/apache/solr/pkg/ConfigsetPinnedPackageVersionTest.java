@@ -27,11 +27,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.FileStoreApi;
+import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.filestore.FileStoreAPI;
@@ -39,7 +39,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
+/**
+ * Verifies that a configset which pins a specific package version (via {@code params.json})
+ * resolves classes from that exact version's jar — even when other versions of the same package are
+ * also registered.
+ */
+public class ConfigsetPinnedPackageVersionTest extends SolrCloudTestCase {
 
   private static final KeyPair KEY_PAIR;
 
@@ -123,32 +128,17 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
 
   private void uploadPluginJar(String version, Path jarPath) throws Exception {
     var pluginRequest =
-        new V2Request.Builder("/cluster/filestore/files/my-plugin/plugin-" + version + ".jar")
-            .PUT()
-            .withParams(params("sig", signature(Files.readAllBytes(jarPath))))
-            .withPayload(Files.newInputStream(jarPath))
-            .forceV2(true)
-            .build();
-    processRequest(client, pluginRequest);
+        new FileStoreApi.UploadFile(
+            "/my-plugin/plugin-" + version + ".jar", Files.newInputStream(jarPath));
+    pluginRequest.setSig(List.of(signature(Files.readAllBytes(jarPath))));
+    pluginRequest.process(client);
   }
 
   private void registerPackage(String version) throws Exception {
-    var packageRequest =
-        new V2Request.Builder("/cluster/package")
-            .POST()
-            .forceV2(true)
-            .withPayload(
-                Map.of(
-                    "add",
-                    Map.of(
-                        "package",
-                        "mypkg",
-                        "version",
-                        version,
-                        "files",
-                        List.of("/my-plugin/plugin-" + version + ".jar"))))
-            .build();
-    processRequest(client, packageRequest);
+    var addRequest = new PackageApi.AddPackageVersion("mypkg");
+    addRequest.setVersion(version);
+    addRequest.setFiles(List.of("/my-plugin/plugin-" + version + ".jar"));
+    addRequest.process(client);
   }
 
   private void createCollection() throws Exception {

@@ -20,6 +20,7 @@
 Solr can encrypt communications to and from clients and between nodes in SolrCloud mode with Secure Sockets Layer encryption (SSL).
 
 This section describes enabling SSL using a self-signed certificate.
+For a complete local exercise with two nodes, verified inter-node HTTPS, authentication, and ZooKeeper ACLs, see xref:getting-started:tutorial-securing-solr.adoc[].
 
 For background on SSL certificates and keys, see http://www.tldp.org/HOWTO/SSL-Certificates-HOWTO/.
 

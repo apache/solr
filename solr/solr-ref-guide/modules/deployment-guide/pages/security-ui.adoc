@@ -29,7 +29,7 @@ The Security screen warns you if security is not enabled for Solr. You are stron
 
 image::security-ui/security-not-enabled-warn.png[image,width=500]
 
-When first getting started with Solr, use the `bin/solr auth` command-line utility to enable security for your Solr installation (cloud mode only), see xref:solr-control-script-reference.adoc#authentication[`bin/solr auth`] for usage instructions.
+When first getting started with Solr, use the `bin/solr auth` command-line utility to enable security for your Solr installation (cloud mode only), see xref:cli/solr-auth.adoc[`bin/solr auth`] for usage instructions.
 For example, the following command will enable *basic authentication* and prompt you for the username and password for the initial user with administrative access:
 [source,bash]
 ----
