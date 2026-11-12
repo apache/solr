@@ -35,18 +35,18 @@ public class ConfigTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically.
-    classCli.run("solr start").assertSuccess();
+    classCli.run("solr start");
   }
 
   @Test
   public void settingProperty() {
-    run("solr create -c config_set_property").assertSuccess();
+    run("solr create -c config_set_property");
 
     // Strengthened: a required-option complaint also means the command refused to run.
-    run("solr config -c config_set_property --action set-property"
-            + " --property updateHandler.autoCommit.maxDocs"
-            + " --solr-url http://localhost:${SOLR_PORT}")
-        .assertFailure()
+    runFail(
+            "solr config -c config_set_property --action set-property"
+                + " --property updateHandler.autoCommit.maxDocs"
+                + " --solr-url http://localhost:${SOLR_PORT}")
         .assertContains("'value' is a required option.");
 
     run("solr config -c config_set_property --action set-property"
@@ -62,7 +62,7 @@ public class ConfigTest extends SolrShellTestCase {
 
   @Test
   public void shortFormOfSettingProperty() {
-    run("solr create -c config_short_form").assertSuccess();
+    run("solr create -c config_short_form");
 
     run("solr config -c config_short_form --property updateHandler.autoCommit.maxDocs --value 100")
         .assertContains("Successfully set-property updateHandler.autoCommit.maxDocs to 100")
@@ -71,7 +71,7 @@ public class ConfigTest extends SolrShellTestCase {
 
   @Test
   public void connectingToSolrViaVariousConnectionTypes() {
-    run("solr create -c config_connection_types").assertSuccess();
+    run("solr create -c config_connection_types");
 
     run("solr config -c config_connection_types --property updateHandler.autoCommit.maxDocs"
             + " --value 100 -s http://localhost:${SOLR_PORT}")

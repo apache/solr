@@ -38,7 +38,7 @@ public class CreateTest extends SolrShellTestCase {
 
     // Not in the original: SOLR_HOME is class-scoped here, so the core has to go again, or the
     // cloud-mode test's node would discover a user-managed core directory it cannot load.
-    run("solr delete -c core_non_cloud").assertSuccess();
+    run("solr delete -c core_non_cloud");
   }
 
   @Test
@@ -49,8 +49,9 @@ public class CreateTest extends SolrShellTestCase {
 
   @Test
   public void multipleConnectionOptionsArePrevented() {
-    run("solr create -c COLL_NAME2 --solr-url http://localhost:${SOLR_PORT}"
-            + " -z localhost:${ZK_PORT}")
+    runFail(
+            "solr create -c COLL_NAME2 --solr-url http://localhost:${SOLR_PORT}"
+                + " -z localhost:${ZK_PORT}")
         .assertMatches("(mutually exclusive|already been selected).*(--solr-url|--zk-host|-z|-s)");
   }
 }

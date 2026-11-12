@@ -50,7 +50,7 @@ public class ModulesTest extends SolrShellTestCase {
 
     // BATS' per-test teardown. Without it the collection is still in this class's SOLR_HOME when
     // the next test's node starts, which runs with a different set of modules.
-    run("solr delete -c sql_coll --delete-config").assertSuccess();
+    run("solr delete -c sql_coll --delete-config");
   }
 
   @Test
@@ -68,7 +68,7 @@ public class ModulesTest extends SolrShellTestCase {
     run("solr create -c COLL_NAME -d \"" + analysisExtrasConf() + "\"")
         .assertContains("Created collection 'COLL_NAME'");
 
-    run("solr delete -c COLL_NAME --delete-config").assertSuccess();
+    run("solr delete -c COLL_NAME --delete-config");
   }
 
   /**

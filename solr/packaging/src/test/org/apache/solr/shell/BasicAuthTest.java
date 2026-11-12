@@ -56,7 +56,7 @@ public class BasicAuthTest extends SolrShellTestCase {
     IOUtils.rm(harnessEnv.solrHome());
     Files.createDirectories(harnessEnv.logsDir());
 
-    run("solr start -Dsolr.packages.enabled=true").assertSuccess();
+    run("solr start -Dsolr.packages.enabled=true");
 
     // The auth command exports some system variables that are injected as basic auth username and
     // password, however that defeats our test so fake that out by pointing SOLR_INCLUDE at a path
@@ -64,11 +64,11 @@ public class BasicAuthTest extends SolrShellTestCase {
     // SOLR_HOME/basicAuth.conf, and every command below has to supply the credentials itself.
     Path bogusInclude = workDir().resolve("force-credentials-to-be-supplied").resolve("solr.in.sh");
     env("SOLR_INCLUDE", bogusInclude.toString());
-    run("solr auth enable --type basicAuth --credentials name:password").assertSuccess();
+    run("solr auth enable --type basicAuth --credentials name:password");
 
-    run("solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT}"
-            + " --timeout 5000")
-        .assertSuccess();
+    run(
+        "solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT}"
+            + " --timeout 5000");
   }
 
   @After
@@ -110,13 +110,16 @@ public class BasicAuthTest extends SolrShellTestCase {
   public void postPostlogsAndExportWithBasicAuth() {
     // Strengthened: the original ignores this line's outcome, but without credentials the create
     // has to be refused.
-    run("solr create -c COLL_NAME").assertFailure();
+    runFail("solr create -c COLL_NAME");
     run("solr create -u name:password -c COLL_NAME")
         .assertContains("Created collection 'COLL_NAME'");
 
     // Test post
+    // --name COLL_NAME, not the BATS original's 'monitors': no test ever created that collection,
+    // so every document 404'd. It passed anyway because the status was ignored and `solr post`
+    // prints "1 files indexed." even when the collection does not exist (recorded separately).
     run("solr post -u name:password -t application/xml --solr-url"
-            + " http://localhost:${SOLR_PORT} --name monitors"
+            + " http://localhost:${SOLR_PORT} --name COLL_NAME"
             + " ${SOLR_TIP}/example/exampledocs/monitor.xml")
         .assertContains("1 files indexed.");
 
@@ -133,7 +136,7 @@ public class BasicAuthTest extends SolrShellTestCase {
 
   @Test
   public void packageWithBasicAuth() {
-    run("solr package deploy PACKAGE_NAME --credentials name:password --collections foo-1.2")
+    runFail("solr package deploy PACKAGE_NAME --credentials name:password --collections foo-1.2")
         // verify that package tool is communicating with Solr via basic auth
         .assertContains("Collection(s) doesn't exist: [foo-1.2]");
   }

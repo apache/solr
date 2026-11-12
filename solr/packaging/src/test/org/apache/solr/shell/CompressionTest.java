@@ -51,8 +51,8 @@ public class CompressionTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file, which started the films example purely to have documents to query.
-    classCli.run("solr start").assertSuccess();
-    classCli.run("solr create -c " + COLLECTION + " -d _default").assertSuccess();
+    classCli.run("solr start");
+    classCli.run("solr create -c " + COLLECTION + " -d _default");
     // Filtered to xml, json and csv so the Extract handler is not invoked. 45 documents, whose
     // response is well over the 2048 bytes Jetty wants before it will compress one at all.
     classCli

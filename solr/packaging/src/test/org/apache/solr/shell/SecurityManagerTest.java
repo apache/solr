@@ -57,8 +57,8 @@ public class SecurityManagerTest extends SolrShellTestCase {
     env(
         "SOLR_OPTS",
         "-Dsolr.security.allow.paths=" + backupDir + " -Djava.io.tmpdir=" + testTmpDir);
-    run("solr start").assertSuccess();
-    run("solr create -c COLL_NAME").assertSuccess();
+    run("solr start");
+    run("solr create -c COLL_NAME");
     run("solr api --solr-url \"http://localhost:${SOLR_PORT}/solr/admin/collections"
             + "?action=BACKUP&name=test&collection=COLL_NAME&location="
             + fileUrl(backupDir)
@@ -67,11 +67,12 @@ public class SecurityManagerTest extends SolrShellTestCase {
 
     // Solr is not permissioned for this directory, so it should fail
     Path backupDirOther = mkdirs(backupDir.getFileName() + "-other").toRealPath();
-    run("solr api --solr-url \"http://localhost:${SOLR_PORT}/solr/admin/collections"
-            + "?action=BACKUP&name=test-fail&collection=COLL_NAME&location="
-            + fileUrl(backupDirOther)
-            + "\"")
-        .assertFailure()
+    runFail(
+            "solr api --solr-url \"http://localhost:${SOLR_PORT}/solr/admin/collections"
+                + "?action=BACKUP&name=test-fail&collection=COLL_NAME&location="
+                + fileUrl(backupDirOther)
+                + "\"")
+
         // Java 24+ has no security manager; Solr's allowPaths check rejects it instead
         .assertMatches("access denied|Could not backup all shards");
   }

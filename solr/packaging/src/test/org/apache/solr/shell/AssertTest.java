@@ -31,35 +31,33 @@ public class AssertTest extends SolrShellTestCase {
 
   @Test
   public void assertForNonCloudMode() {
-    run("solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000");
     run("solr start --user-managed");
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     run("solr assert --not-cloud http://localhost:${SOLR_PORT}/solr")
         .assertContains("needn't include Solr's context-root")
         .assertNotContains("ERROR");
 
-    run("solr assert --cloud http://localhost:${SOLR_PORT}")
+    runFail("solr assert --cloud http://localhost:${SOLR_PORT}")
         .assertContains("ERROR: Solr is not running in cloud mode");
 
-    run("solr assert --cloud http://localhost:${SOLR_PORT} --exitcode").assertFailure();
+    runFail("solr assert --cloud http://localhost:${SOLR_PORT} --exitcode");
   }
 
   @Test
   public void assertForCloudMode() {
     run("solr start");
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     // Strengthened: the original only refuted "ERROR", which an empty output satisfies without
     // the assert having done anything.
-    run("solr assert --cloud http://localhost:${SOLR_PORT}")
-        .assertSuccess()
-        .assertNotContains("ERROR");
+    run("solr assert --cloud http://localhost:${SOLR_PORT}").assertNotContains("ERROR");
 
-    run("solr assert --not-cloud http://localhost:${SOLR_PORT}/solr")
+    runFail("solr assert --not-cloud http://localhost:${SOLR_PORT}/solr")
         .assertContains("needn't include Solr's context-root")
         .assertContains("ERROR: Solr is not running in standalone mode");
 
-    run("solr assert --not-cloud http://localhost:${SOLR_PORT} --exitcode").assertFailure();
+    runFail("solr assert --not-cloud http://localhost:${SOLR_PORT} --exitcode");
   }
 }

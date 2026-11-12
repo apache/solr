@@ -46,15 +46,14 @@ public class SnapshotsTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically.
-    classCli.run("solr start").assertSuccess();
-    classCli.run("solr create -c films -d _default").assertSuccess();
+    classCli.run("solr start");
+    classCli.run("solr create -c films -d _default");
     // Documents, so a snapshot references real segment files rather than an empty commit. The
     // original got them from 'solr start -e films'; these are the same ones PostTest indexes.
     classCli
         .run(
             "solr post --filetypes xml,json,csv --solr-url http://localhost:${SOLR_PORT}"
                 + " -c films \"${SOLR_TIP}/example/exampledocs\"")
-        .assertSuccess()
         .assertNotContains("ERROR");
     classCli.helpers().http("/solr/films/select?q=*:*").assertContains("\"numFound\":45");
   }
@@ -79,8 +78,8 @@ public class SnapshotsTest extends SolrShellTestCase {
 
   @Test
   public void snapshotList() {
-    run("solr snapshot-create -c films --snapshot-name snapshot3 --solr-url http://localhost:${SOLR_PORT}")
-        .assertSuccess();
+    run(
+        "solr snapshot-create -c films --snapshot-name snapshot3 --solr-url http://localhost:${SOLR_PORT}");
 
     // Confirm that we continue to normalize away the /solr ending.
     run("solr snapshot-list -c films -s http://localhost:${SOLR_PORT}/solr")
@@ -92,8 +91,8 @@ public class SnapshotsTest extends SolrShellTestCase {
 
   @Test
   public void snapshotListViaSolrConnection() {
-    run("solr snapshot-create -c films --snapshot-name snapshot3_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertSuccess();
+    run(
+        "solr snapshot-create -c films --snapshot-name snapshot3_conn --solr-connection http://localhost:${SOLR_PORT}/solr");
 
     // Confirm that we continue to normalize away the /solr ending.
     run("solr snapshot-list -c films --solr-connection http://localhost:${SOLR_PORT}/solr")
@@ -106,8 +105,7 @@ public class SnapshotsTest extends SolrShellTestCase {
 
   @Test
   public void snapshotDescribe() {
-    run("solr snapshot-create -c films --snapshot-name snapshot4 -s http://localhost:${SOLR_PORT}")
-        .assertSuccess();
+    run("solr snapshot-create -c films --snapshot-name snapshot4 -s http://localhost:${SOLR_PORT}");
 
     run("solr snapshot-describe -c films --snapshot-name snapshot4")
         .assertContains("Name: snapshot4");
@@ -118,8 +116,8 @@ public class SnapshotsTest extends SolrShellTestCase {
 
   @Test
   public void snapshotDescribeViaSolrConnection() {
-    run("solr snapshot-create -c films --snapshot-name snapshot4_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertSuccess();
+    run(
+        "solr snapshot-create -c films --snapshot-name snapshot4_conn --solr-connection http://localhost:${SOLR_PORT}/solr");
 
     run("solr snapshot-describe -c films --snapshot-name snapshot4_conn --solr-connection http://localhost:${SOLR_PORT}/solr")
         .assertContains("Name: snapshot4_conn");

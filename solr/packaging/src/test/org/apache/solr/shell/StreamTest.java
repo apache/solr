@@ -63,8 +63,8 @@ public class StreamTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically.
-    classCli.run("solr start").assertSuccess();
-    classCli.run("solr create -c techproducts -d sample_techproducts_configs").assertSuccess();
+    classCli.run("solr start");
+    classCli.run("solr create -c techproducts -d sample_techproducts_configs");
     classCli
         .run(
             "solr post --solr-url http://localhost:${SOLR_PORT} --name techproducts"
@@ -79,7 +79,7 @@ public class StreamTest extends SolrShellTestCase {
     Path bogusInclude =
         classCli.workDir().resolve("force-credentials-to-be-supplied").resolve("solr.in.sh");
     classCli.env("SOLR_INCLUDE", bogusInclude.toString());
-    classCli.run("solr auth enable --type basicAuth --credentials name:password").assertSuccess();
+    classCli.run("solr auth enable --type basicAuth --credentials name:password");
   }
 
   @Test
@@ -87,7 +87,6 @@ public class StreamTest extends SolrShellTestCase {
     write(EXPR_FILE, SEARCH_MEMORY);
 
     run("solr stream --execution local --header --credentials name:password " + EXPR_FILE)
-        .assertSuccess()
         .assertContains("name   price")
         .assertContains("CORSAIR  XMS")
         .assertNotContains("ERROR");
@@ -100,7 +99,6 @@ public class StreamTest extends SolrShellTestCase {
     run("solr stream --name techproducts --solr-url http://localhost:${SOLR_PORT} --header"
             + " --credentials name:password "
             + EXPR_FILE)
-        .assertSuccess()
         .assertContains("name   price")
         .assertContains("CORSAIR  XMS")
         .assertNotContains("ERROR");
@@ -113,7 +111,6 @@ public class StreamTest extends SolrShellTestCase {
     run("solr stream --name techproducts --solr-connection http://localhost:${SOLR_PORT}/solr"
             + " --header --credentials name:password "
             + EXPR_FILE)
-        .assertSuccess()
         .assertContains("name   price")
         .assertContains("CORSAIR  XMS")
         .assertNotContains("ERROR");
@@ -135,7 +132,6 @@ public class StreamTest extends SolrShellTestCase {
     run("solr stream --execution local --header --credentials name:password "
             + EXPR_FILE
             + " apple asc")
-        .assertSuccess()
         .assertContains("name   price")
         .assertContains("Apple 60 GB iPod")
         .assertNotContains("ERROR");
@@ -145,8 +141,6 @@ public class StreamTest extends SolrShellTestCase {
   public void searchingSolrWithoutCredentialsFailsWithError() {
     write(EXPR_FILE, SEARCH_MEMORY);
 
-    run("solr stream --execution local --header " + EXPR_FILE)
-        .assertFailure()
-        .assertContains("ERROR");
+    runFail("solr stream --execution local --header " + EXPR_FILE).assertContains("ERROR");
   }
 }

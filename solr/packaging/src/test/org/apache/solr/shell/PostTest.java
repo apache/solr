@@ -36,12 +36,12 @@ public class PostTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    classCli.run("solr start -Dsolr.modules=extraction").assertSuccess();
+    classCli.run("solr start -Dsolr.modules=extraction");
   }
 
   @Test
   public void checkHelpCommand() {
-    run("solr post")
+    runFail("solr post")
         .assertContainsForCli(
             "Missing required option: c", "Missing required option: '--name=name'");
 
@@ -99,7 +99,7 @@ public class PostTest extends SolrShellTestCase {
 
   @Test
   public void basicPostWithoutATypeSpecified() {
-    run("solr create -c monitors_no_type -d _default").assertSuccess();
+    run("solr create -c monitors_no_type -d _default");
     run("solr post --solr-url http://localhost:${SOLR_PORT} -c monitors_no_type"
             + " \""
             + DOCS
@@ -108,7 +108,7 @@ public class PostTest extends SolrShellTestCase {
         .assertNotContains("ERROR");
     http("/solr/monitors_no_type/select?q=*:*").assertContains("\"numFound\":1");
 
-    run("solr create -c books_no_type -d _default").assertSuccess();
+    run("solr create -c books_no_type -d _default");
     run("solr post --solr-url http://localhost:${SOLR_PORT} -c books_no_type"
             + " \""
             + DOCS
@@ -117,7 +117,7 @@ public class PostTest extends SolrShellTestCase {
         .assertNotContains("ERROR");
     http("/solr/books_no_type/select?q=*:*").assertContains("\"numFound\":4");
 
-    run("solr create -c books_csv_no_type -d _default").assertSuccess();
+    run("solr create -c books_csv_no_type -d _default");
     run("solr post --solr-url http://localhost:${SOLR_PORT} -c books_csv_no_type"
             + " \""
             + DOCS
@@ -141,7 +141,7 @@ public class PostTest extends SolrShellTestCase {
 
   @Test
   public void crawlingADirectory() {
-    run("solr create -c mixed_content -d _default").assertSuccess();
+    run("solr create -c mixed_content -d _default");
 
     run("solr post --filetypes xml,json,csv --solr-url http://localhost:${SOLR_PORT}"
             + " -c mixed_content \""
@@ -214,7 +214,7 @@ public class PostTest extends SolrShellTestCase {
             "{'delete': {'query': '*:*'}}"))
         // Strengthened: without the status, a post that failed and printed nothing recognisable
         // would satisfy the refutation.
-        .assertSuccess()
+
         .assertNotContains("\"status\":0");
   }
 
@@ -237,7 +237,7 @@ public class PostTest extends SolrShellTestCase {
   public void argsModeWithACsvBodyContainingANewline() {
     // The BATS original used bash's $'id,value\nROW1,0.47' quoting. In the argv form the newline is
     // simply part of the Java string and the harness quotes it for the shell.
-    run("solr create -c test_args_csv -d _default").assertSuccess();
+    run("solr create -c test_args_csv -d _default");
     run(List.of(
             "solr",
             "post",

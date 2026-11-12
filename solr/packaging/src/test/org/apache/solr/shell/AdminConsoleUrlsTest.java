@@ -33,7 +33,7 @@ public class AdminConsoleUrlsTest extends SolrShellTestCase {
 
   @Test
   public void assertAbleToLaunchSolrAdminConsole() {
-    run("solr start").assertSuccess();
+    run("solr start");
 
     http("/solr/").assertStatus(200).assertHeaderContains("text/html").assertContains("<html");
 
@@ -45,7 +45,7 @@ public class AdminConsoleUrlsTest extends SolrShellTestCase {
 
   @Test
   public void assertAdminConsoleStaticAssetsAreRevalidatedAndVersioned() {
-    run("solr start").assertSuccess();
+    run("solr start");
 
     http("/solr/libs/solr/index.js")
         .assertStatus(200)
@@ -58,9 +58,9 @@ public class AdminConsoleUrlsTest extends SolrShellTestCase {
   public void assertCspHeaderContainsCustomConnectSrcUrls() {
     // The original quotes the comma-separated value for the shell; unquoted it is one token on bash
     // and solr.cmd rejoins the pieces cmd splits on commas, so no quoting is needed either way.
-    run("solr start -Dsolr.ui.headers.csp.connect-src.urls="
-            + "http://example1.com/token,https://example2.com/path/uri1,http://example3.com/oauth2/uri2")
-        .assertSuccess();
+    run(
+        "solr start -Dsolr.ui.headers.csp.connect-src.urls="
+            + "http://example1.com/token,https://example2.com/path/uri1,http://example3.com/oauth2/uri2");
 
     http("/solr/")
         .assertStatus(200)

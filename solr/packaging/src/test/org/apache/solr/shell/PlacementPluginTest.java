@@ -34,8 +34,8 @@ public class PlacementPluginTest extends SolrShellTestCase {
   @Test
   public void affinityPlacementPluginUsingSysprop() {
     run("solr start -Dsolr.placementplugin.default=affinity");
-    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 3000").assertSuccess();
-    run("solr create -c COLL_NAME").assertSuccess();
+    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 3000");
+    run("solr create -c COLL_NAME");
     assertTrue(collectionExists("COLL_NAME"));
     assertFalse(
         "solr.log has no record of the affinity plugin being set",
@@ -50,10 +50,10 @@ public class PlacementPluginTest extends SolrShellTestCase {
   public void randomPlacementPluginUsingEnv() {
     env("SOLR_PLACEMENTPLUGIN_DEFAULT", "random");
     run("solr start");
-    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 3000").assertSuccess();
+    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 3000");
     // COLL_NAME2, not the original's COLL_NAME: the collection the other test created is still in
     // ZooKeeper, which BATS avoided by wiping SOLR_HOME before every test.
-    run("solr create -c COLL_NAME2").assertSuccess();
+    run("solr create -c COLL_NAME2");
     assertTrue(collectionExists("COLL_NAME2"));
     assertFalse(
         "solr.log has no record of the random plugin being set",

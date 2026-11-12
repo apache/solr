@@ -141,21 +141,11 @@ public record CommandResult(
     return count;
   }
 
-  public CommandResult assertSuccess() {
-    if (failed()) {
-      throw fail("command exited " + status + ", expected 0");
-    }
-    return this;
-  }
-
-  public CommandResult assertFailure() {
-    if (succeeded()) {
-      throw fail("command exited 0, expected a non-zero status");
-    }
-    return this;
-  }
-
-  public CommandResult assertStatus(int expected) {
+  /**
+   * Asserts an exact exit code. {@code run} and {@code runFail} already assert zero and non-zero
+   * respectively, so this is for a command whose particular code carries meaning.
+   */
+  public CommandResult assertExitCode(int expected) {
     if (status != expected) {
       throw fail("command exited " + status + ", expected " + expected);
     }
@@ -262,7 +252,7 @@ public record CommandResult(
    * <p>A {@link ShellAssertionError}, so no Java stack trace is printed over it. The frames would
    * all be harness internals, while the commands and their output are the diagnosis.
    */
-  private AssertionError fail(String reason) {
+  public AssertionError fail(String reason) {
     String ran = history.text();
     StringBuilder report = new StringBuilder("\n");
     if (ran.isBlank()) {

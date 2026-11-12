@@ -65,24 +65,23 @@ public class AuthTest extends SolrShellTestCase {
 
   @Test
   public void authRejectsBlockUnknownOptionWithInvalidBoolean() {
-    run("solr auth enable --type basicAuth --credentials any:any --block-unknown ture")
-        .assertFailure()
+    runFail("solr auth enable --type basicAuth --credentials any:any --block-unknown ture")
         .assertContains("Argument [block-unknown] must be either true or false, but was [ture]");
   }
 
   @Test
   public void authRejectsUpdateIncludeFileOnlyOptionWithInvalidBoolean() {
-    run("solr auth enable --type basicAuth --credentials any:any --update-include-file-only ture")
-        .assertFailure()
+    runFail(
+            "solr auth enable --type basicAuth --credentials any:any --update-include-file-only ture")
         .assertContains(
             "Argument [update-include-file-only] must be either true or false, but was [ture]");
   }
 
   @Test
   public void authEnableDisableLifecycle() {
-    run("solr start").assertSuccess();
-    run("solr auth enable --type basicAuth --credentials name:password").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr start");
+    run("solr auth enable --type basicAuth --credentials name:password");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     http(
             "/solr/admin/collections?action=CREATE&collection.configName=_default&name=test"
@@ -91,21 +90,20 @@ public class AuthTest extends SolrShellTestCase {
             "password")
         .assertContains("\"status\":0");
 
-    run("solr auth disable").assertSuccess();
+    run("solr auth disable");
     http("/solr/test/select?q=*:*").assertContains("\"numFound\":0");
-    run("solr stop --all").assertSuccess();
+    run("solr stop --all");
   }
 
   @Test
   public void enableAuthConnectsViaZookeeper() {
-    run("solr start").assertSuccess();
+    run("solr start");
     run("solr auth enable --type basicAuth --credentials name:password -z localhost:${ZK_PORT}")
-        .assertSuccess()
         .assertContains("Successfully enabled basic auth");
     http("/api/collections", "name", "password").assertContains("\"status\":0");
 
-    run("solr auth disable -z localhost:${ZK_PORT}").assertSuccess();
+    run("solr auth disable -z localhost:${ZK_PORT}");
     http("/api/collections").assertContains("\"status\":0");
-    run("solr stop --all").assertSuccess();
+    run("solr stop --all");
   }
 }

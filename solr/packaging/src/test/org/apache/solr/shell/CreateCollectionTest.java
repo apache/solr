@@ -37,7 +37,7 @@ public class CreateCollectionTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically.
-    classCli.run("solr start").assertSuccess();
+    classCli.run("solr start");
   }
 
   @Test
@@ -70,9 +70,9 @@ public class CreateCollectionTest extends SolrShellTestCase {
 
   @Test
   public void rejectDOptionWithInvalidConfigDir() {
-    run("solr create -c coll_invalid_config_dir -d /asdf"
-            + "  --solr-url http://localhost:${SOLR_PORT}")
-        .assertFailure()
+    runFail(
+            "solr create -c coll_invalid_config_dir -d /asdf"
+                + "  --solr-url http://localhost:${SOLR_PORT}")
         .assertMatches("Specified configuration directory [/\\\\]asdf not found!");
   }
 
@@ -108,13 +108,11 @@ public class CreateCollectionTest extends SolrShellTestCase {
   public void allowConfigReuseWhenNOptionSpecifiesSameConfig() {
     run("solr create -c coll_shared_config_1 -n shared_config"
             + " --solr-url http://localhost:${SOLR_PORT}")
-        .assertSuccess()
         .assertContains("Created collection 'coll_shared_config_1'")
         .assertContains("config-set 'shared_config'");
 
     run("solr create -c coll_shared_config_2 -n shared_config"
             + " --solr-url http://localhost:${SOLR_PORT}")
-        .assertSuccess()
         .assertContains("Created collection 'coll_shared_config_2'")
         .assertContains("config-set 'shared_config'");
   }
@@ -122,7 +120,6 @@ public class CreateCollectionTest extends SolrShellTestCase {
   @Test
   public void createMultishardedCollectionsWhenSProvided() {
     run("solr create -c coll_multishard --shards 2 --solr-url http://localhost:${SOLR_PORT}")
-        .assertSuccess()
         .assertContains("Created collection 'coll_multishard'")
         .assertContains("2 shard(s)");
   }
@@ -130,7 +127,6 @@ public class CreateCollectionTest extends SolrShellTestCase {
   @Test
   public void createReplicatedCollectionsWhenRfProvided() {
     run("solr create -c coll_replicated -rf 2 --solr-url http://localhost:${SOLR_PORT}")
-        .assertSuccess()
         .assertContains("Created collection 'coll_replicated'")
         .assertContains("2 replica(s)");
   }

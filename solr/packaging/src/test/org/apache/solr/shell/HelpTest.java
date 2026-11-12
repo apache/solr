@@ -31,16 +31,16 @@ public class HelpTest extends SolrShellTestCase {
 
   @Test
   public void solrHelpFlagPrintsHelp() {
-    run("solr --help")
-        .assertStatus(1)
+    runFail("solr --help")
+        .assertExitCode(1)
         .assertContainsForCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr")
         .assertNotContains("ERROR");
   }
 
   @Test
   public void solrWithNoFlagsPrintsHelp() {
-    run("solr")
-        .assertStatus(1)
+    runFail("solr")
+        .assertExitCode(1)
         .assertContainsForCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr")
         .assertNotContains("ERROR");
   }

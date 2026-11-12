@@ -576,7 +576,45 @@ public class CliSession implements AutoCloseable {
       requirePortableLine(line);
     }
     String resolved = resolveForRun(line);
+    return requireExit(execute(resolved, timeoutFor(resolved), false), true);
+  }
+
+  /**
+   * Like {@link #run(String)} but for a command that is expected to fail, so that the test can
+   * assert on what it printed. Fails if the command unexpectedly succeeds.
+   */
+  public CommandResult runFail(String line) {
+    requireSingleCommand(line);
+    if (!shellSpecific) {
+      requirePortableLine(line);
+    }
+    String resolved = resolveForRun(line);
+    return requireExit(execute(resolved, timeoutFor(resolved), false), false);
+  }
+
+  /**
+   * Runs a command without asserting anything about its status, for a predicate that inspects the
+   * result itself - a poll that expects failure until some state changes, say. Prefer {@link
+   * #run(String)} or {@link #runFail(String)}, which state the expectation.
+   */
+  public CommandResult tryRun(String line) {
+    requireSingleCommand(line);
+    if (!shellSpecific) {
+      requirePortableLine(line);
+    }
+    String resolved = resolveForRun(line);
     return execute(resolved, timeoutFor(resolved), false);
+  }
+
+  /** The status check behind {@code run} and {@code runFail}; neither lets one pass silently. */
+  private static CommandResult requireExit(CommandResult result, boolean expectSuccess) {
+    if (expectSuccess == result.failed()) {
+      throw result.fail(
+          expectSuccess
+              ? "command exited " + result.status() + ", expected 0"
+              : "command exited 0, expected a non-zero status");
+    }
+    return result;
   }
 
   /** Runs a command line with an explicit timeout. */
@@ -585,7 +623,16 @@ public class CliSession implements AutoCloseable {
     if (!shellSpecific) {
       requirePortableLine(line);
     }
-    return execute(resolveForRun(line), commandTimeout, false);
+    return requireExit(execute(resolveForRun(line), commandTimeout, false), true);
+  }
+
+  /** Like {@link #run(Duration, String)} but for a command that is expected to fail. */
+  public CommandResult runFail(Duration commandTimeout, String line) {
+    requireSingleCommand(line);
+    if (!shellSpecific) {
+      requirePortableLine(line);
+    }
+    return requireExit(execute(resolveForRun(line), commandTimeout, false), false);
   }
 
   /**
@@ -598,7 +645,16 @@ public class CliSession implements AutoCloseable {
       requirePortableTool(argv.isEmpty() ? "" : argv.get(0));
     }
     String line = shell.joinArgs(argv.stream().map(this::resolveForRun).toList());
-    return execute(line, timeoutFor(line), false);
+    return requireExit(execute(line, timeoutFor(line), false), true);
+  }
+
+  /** Like {@link #run(List)} but for a command that is expected to fail. */
+  public CommandResult runFail(List<String> argv) {
+    if (!shellSpecific) {
+      requirePortableTool(argv.isEmpty() ? "" : argv.get(0));
+    }
+    String line = shell.joinArgs(argv.stream().map(this::resolveForRun).toList());
+    return requireExit(execute(line, timeoutFor(line), false), false);
   }
 
   /** Like {@link #run(String)} but keeps {@code stdout()} and {@code stderr()} apart. */
@@ -608,7 +664,7 @@ public class CliSession implements AutoCloseable {
       requirePortableLine(line);
     }
     String resolved = resolveForRun(line);
-    return execute(resolved, timeoutFor(resolved), true);
+    return requireExit(execute(resolved, timeoutFor(resolved), true), true);
   }
 
   /**

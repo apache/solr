@@ -45,8 +45,8 @@ public class NoPidFileTest extends SolrShellTestCase {
 
   /** Port of {@code start_solr_without_pid_file}. */
   private void startSolrWithoutPidFile() {
-    run("solr start").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr start");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     Path pidFile = pidFile();
     assertTrue("the start script wrote no PID file at " + pidFile, Files.exists(pidFile));
@@ -73,14 +73,14 @@ public class NoPidFileTest extends SolrShellTestCase {
   public void statusFindsARunningNodeThatHasNoPidFile() {
     startSolrWithoutPidFile();
 
-    run("solr status").assertSuccess().assertContains("running on port ${SOLR_PORT}");
+    run("solr status").assertContains("running on port ${SOLR_PORT}");
   }
 
   @Test
   public void statusShortFindsARunningNodeThatHasNoPidFile() {
     startSolrWithoutPidFile();
 
-    run("solr status --short").assertSuccess().assertContains("http://localhost:${SOLR_PORT}/solr");
+    run("solr status --short").assertContains("http://localhost:${SOLR_PORT}/solr");
   }
 
   @Test
@@ -88,14 +88,14 @@ public class NoPidFileTest extends SolrShellTestCase {
     startSolrWithoutPidFile();
 
     run("solr stop -p ${SOLR_PORT}")
-        .assertSuccess()
+
         // bin/solr says "No process found ...", bin\solr.cmd "No Solr found running on port ...".
         .assertNotMatches("No (process|Solr) found");
-    run("solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000");
   }
 
   @Test
   public void stopAllReportsWhenItStoppedNothing() {
-    run("solr stop --all").assertSuccess().assertContains("No Solr nodes found to stop.");
+    run("solr stop --all").assertContains("No Solr nodes found to stop.");
   }
 }

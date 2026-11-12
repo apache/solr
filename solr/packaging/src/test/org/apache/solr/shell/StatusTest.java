@@ -33,7 +33,7 @@ public class StatusTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically.
-    classCli.run("solr start").assertSuccess();
+    classCli.run("solr start");
   }
 
   @Test
@@ -54,14 +54,13 @@ public class StatusTest extends SolrShellTestCase {
   @Test
   public void multipleConnectionOptionsArePrevented() {
     // Strengthened: "prevented" means the command refuses, so the status is part of the claim.
-    run("solr status --port ${SOLR_PORT} --solr-url http://localhost:${SOLR_PORT}")
-        .assertFailure()
+    runFail("solr status --port ${SOLR_PORT} --solr-url http://localhost:${SOLR_PORT}")
         .assertMatches("(-s|solr-url).*(mutually exclusive|already been selected)");
   }
 
   @Test
   public void statusWithInvalidSolrUrlFromUser() {
-    run("solr status --solr-url http://invalidhost:${SOLR_PORT}")
+    runFail("solr status --solr-url http://invalidhost:${SOLR_PORT}")
         .assertContains("Solr at http://invalidhost:${SOLR_PORT} not online");
   }
 

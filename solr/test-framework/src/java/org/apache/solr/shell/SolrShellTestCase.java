@@ -226,6 +226,20 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     return cli.run(line);
   }
 
+  /** For a command expected to fail; {@link #run(String)} asserts success. */
+  protected CommandResult runFail(String line) {
+    return cli.runFail(line);
+  }
+
+  protected CommandResult runFail(Duration commandTimeout, String line) {
+    return cli.runFail(commandTimeout, line);
+  }
+
+  /** For a predicate that inspects the status itself; asserts nothing. */
+  protected CommandResult tryRun(String line) {
+    return cli.tryRun(line);
+  }
+
   protected CommandResult run(Duration commandTimeout, String line) {
     return cli.run(commandTimeout, line);
   }

@@ -75,9 +75,8 @@ public class OpenNlpTest extends SolrShellTestCase {
     // Can't figure out magic policy stuff to allow loading ONNX, so disable security manager.
     env("SOLR_SECURITY_MANAGER_ENABLED", "false");
 
-    run("solr start -m 4g -Dsolr.modules=analysis-extras -Dsolr.packages.enabled=true")
-        .assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000").assertSuccess();
+    run("solr start -m 4g -Dsolr.modules=analysis-extras -Dsolr.packages.enabled=true");
+    run("solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000");
 
     run("solr create -c COLL_NAME").assertContains("Created collection 'COLL_NAME'");
 

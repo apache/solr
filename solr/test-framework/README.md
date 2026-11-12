@@ -59,7 +59,7 @@ Test methods use the inherited shorthands (`run`, `http`, `env`, `read`, …), w
 ```java
 @BeforeClass
 public static void startSolr() {
-  classCli.run("solr start").assertSuccess();
+  classCli.run("solr start");
 }
 
 @Test
@@ -70,9 +70,11 @@ public void createsCollection() {
 
 ### Commands and assertions
 
-`run(String)` is one command with merged streams, as BATS' `run`. Also `run(Duration, String)`, `run(List<String>)` (harness quotes each argument for the shell in use), `runSeparated(String)`, `script(bash, cmd)` for shell-specific logic, and `lastResult()`. Timeouts default to 120 s, 300 s for `solr start`/`restart`.
+`run(String)` is one command with merged streams, as BATS' `run`, and **asserts that it succeeded** — so the happy path carries no status boilerplate. A command expected to fail uses `runFail(String)`, which asserts a non-zero status and hands back the result to assert on what it printed. Both fail at the call site, naming the command and its output, and both fail if the status is the opposite of the one implied. For an exact code there is `assertExitCode(int)`. A predicate that inspects the status itself - a poll that expects failure until some state changes - uses `tryRun(String)`, which asserts nothing.
 
-`CommandResult`'s assertions are fluent and chainable, named after their `bats-assert` originals: `assertSuccess`, `assertFailure`, `assertStatus`, `assertContains`, `assertNotContains`, `assertMatches`, `assertNotMatches`, `assertExact`, `assertLine`, `assertLineCount`, `assertContainsTimes`, and `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations. Accessors replace the pipelines a BATS line would use: `lines`, `linesMatching`, `firstMatch`, `firstLines`, `lastLines`, `fields`, `countOccurrences`.
+Also `run(Duration, String)`, `run(List<String>)` (harness quotes each argument for the shell in use), `runFail(List<String>)`, `tryRun(String)`, `runSeparated(String)`, `script(bash, cmd)` for shell-specific logic, and `lastResult()`. Timeouts default to 120 s, 300 s for `solr start`/`restart`.
+
+`CommandResult`'s assertions are fluent and chainable, named after their `bats-assert` originals: `assertExitCode`, `assertContains`, `assertNotContains`, `assertMatches`, `assertNotMatches`, `assertExact`, `assertLine`, `assertLineCount`, `assertContainsTimes`, and `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations. Accessors replace the pipelines a BATS line would use: `lines`, `linesMatching`, `firstMatch`, `firstLines`, `lastLines`, `fields`, `countOccurrences`.
 
 ### Variables
 

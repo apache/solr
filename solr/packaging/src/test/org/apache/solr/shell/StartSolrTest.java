@@ -38,36 +38,35 @@ public class StartSolrTest extends SolrShellTestCase {
 
   @Test
   public void solr11740CheckSolrStopConnection() {
-    run("solr start").assertSuccess();
-    run("solr start --user-managed -p ${SOLR2_PORT}").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --not-cloud http://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
+    run("solr start");
+    run("solr start --user-managed -p ${SOLR2_PORT}");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
+    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000");
+    run("solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000");
+    run("solr assert --not-cloud http://localhost:${SOLR2_PORT} --timeout 5000");
 
     // The original wrapped this in 'bash -c ... 2>&1' only to merge the streams; the harness
     // already merges them.
     // Strengthened: 'stop --all' finding no node prints "No Solr nodes found to stop." and
     // would satisfy the refutation on its own, so assert the graceful path positively too.
     run("solr stop --all")
-        .assertSuccess()
         .assertContains("Sending stop command")
         .assertNotContains("forcefully killing");
   }
 
   @Test
   public void stopCommandForSinglePort() {
-    run("solr start").assertSuccess();
-    run("solr start -p ${SOLR2_PORT}").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
+    run("solr start");
+    run("solr start -p ${SOLR2_PORT}");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
+    run("solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000");
 
-    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --cloud http://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000");
+    run("solr assert --cloud http://localhost:${SOLR2_PORT} --timeout 5000");
 
     run("solr stop -p ${SOLR2_PORT}");
-    run("solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
   }
 
   // For start/stop/restart we parse the args separate from picking the command, which means you
@@ -80,7 +79,7 @@ public class StartSolrTest extends SolrShellTestCase {
   @EnabledOnShell(
       Shell.BASH) // bin/solr parses the start args for stop too, so it names the option.
   public void checkStopCommandDoesntHang() {
-    run(Duration.ofSeconds(30), "solr stop --jvm-opts")
+    runFail(Duration.ofSeconds(30), "solr stop --jvm-opts")
         .assertContains("ERROR: JVM options are required when using the --jvm-opts option!");
   }
 
@@ -98,8 +97,8 @@ public class StartSolrTest extends SolrShellTestCase {
     // port range. A port this class owns does the same job and cannot collide with another class.
     env("RMI_PORT", Integer.toString(ports().solr3()));
 
-    run("solr start").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr start");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     String consoleLog =
         read(harnessEnv.logsDir().resolve("solr-" + ports().solr() + "-console.log").toString());
@@ -110,7 +109,7 @@ public class StartSolrTest extends SolrShellTestCase {
 
   @Test
   public void deprecatedSystemPropertiesConvertedToModernProperties() {
-    run("solr start -Ddisable.config.edit=true").assertSuccess();
+    run("solr start -Ddisable.config.edit=true");
     assertTrue(
         fileContains(
             harnessEnv.logsDir().resolve("solr.log").toString(),
@@ -123,8 +122,8 @@ public class StartSolrTest extends SolrShellTestCase {
     env("ENABLE_REMOTE_JMX_OPTS", "true");
     env("RMI_PORT", Integer.toString(ports().solr3()));
 
-    run("solr start --jettyconfig \"--module=server\"").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr start --jettyconfig \"--module=server\"");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
   }
 
   @Test
@@ -132,8 +131,8 @@ public class StartSolrTest extends SolrShellTestCase {
     // Jetty 12.1 removed the directory-scanning deployer; the Solr webapp is now added
     // directly to the context collection in server/etc/jetty.xml. Verify it deploys at
     // /solr and that the context is bound to that path only (an unmapped path 404s).
-    run("solr start").assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr start");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     http("/solr/admin/info/system").assertStatus(200);
     http("/not-solr/admin/info/system").assertStatus(404);
@@ -144,8 +143,8 @@ public class StartSolrTest extends SolrShellTestCase {
     run("solr start -c")
         .assertContains("WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.");
 
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
-    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
+    run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000");
   }
 
   @Test
@@ -157,10 +156,10 @@ public class StartSolrTest extends SolrShellTestCase {
     assertTrue("missing configset directory " + confdir, Files.isDirectory(confdir));
 
     // Start Solr with bootstrap_confdir pointing to techproducts configset
-    run("solr start -Dbootstrap_confdir=\"${SOLR_TIP}/server/solr/configsets/"
-            + "sample_techproducts_configs/conf\" -Dcollection.configName=techproducts")
-        .assertSuccess();
-    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000").assertSuccess();
+    run(
+        "solr start -Dbootstrap_confdir=\"${SOLR_TIP}/server/solr/configsets/"
+            + "sample_techproducts_configs/conf\" -Dcollection.configName=techproducts");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
     // Verify the techproducts configset was uploaded
     assertTrue(configExists("techproducts"));

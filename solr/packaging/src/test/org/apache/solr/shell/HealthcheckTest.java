@@ -34,29 +34,27 @@ public class HealthcheckTest extends SolrShellTestCase {
 
   @Test
   public void healthcheckOnCloudSolr() {
-    run("solr start").assertSuccess();
-    run("solr create -c healthcheck_test -d _default").assertSuccess();
+    run("solr start");
+    run("solr create -c healthcheck_test -d _default");
 
     // Local. Strengthened: the original only refuted "error", which an empty output satisfies
     // without the healthcheck having run.
-    run("solr healthcheck -c healthcheck_test").assertSuccess().assertNotContains("error");
+    run("solr healthcheck -c healthcheck_test").assertNotContains("error");
 
     // Remote
     run("solr healthcheck -c healthcheck_test --solr-connection http://localhost:${SOLR_PORT}/solr")
-        .assertSuccess()
         .assertNotContains("error");
 
     // Not in the original: SOLR_HOME is class-scoped here, so the collection has to go again
     // before the user-managed test starts a node over the same home.
-    run("solr delete -c healthcheck_test").assertSuccess();
+    run("solr delete -c healthcheck_test");
   }
 
   @Test
   public void healthcheckErrorsOnStandaloneSolr() {
-    run("solr start --user-managed").assertSuccess();
+    run("solr start --user-managed");
     // Strengthened: the test's claim is that it errors, so the status is part of it.
-    run("solr healthcheck -c healthcheck_test")
-        .assertFailure()
+    runFail("solr healthcheck -c healthcheck_test")
         .assertContains("Healthcheck tool only works in Solr Cloud mode");
   }
 }

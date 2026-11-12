@@ -41,7 +41,7 @@ public class ZkTest extends SolrShellTestCase {
   @BeforeClass
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically.
-    classCli.run("solr start -DminStateByteLenForCompression=0").assertSuccess();
+    classCli.run("solr start -DminStateByteLenForCompression=0");
   }
 
   @Test
@@ -51,7 +51,7 @@ public class ZkTest extends SolrShellTestCase {
 
   @Test
   public void shortHelpIsInferred() {
-    run("solr zk ls").assertContains("usage: bin/solr zk");
+    runFail("solr zk ls").assertContains("usage: bin/solr zk");
   }
 
   @Test
@@ -147,7 +147,8 @@ public class ZkTest extends SolrShellTestCase {
     assertTrue(Files.isSymbolicLink(conf.resolve("symlinked_stopwords.txt")));
     assertTrue(Files.isSymbolicLink(conf.resolve("language")));
 
-    run("""
+    runFail(
+            """
         solr zk upconfig -d "configset" -n techproducts_with_symlinks -z localhost:${ZK_PORT}
         """)
         .assertContains("Uploading")
@@ -183,7 +184,8 @@ public class ZkTest extends SolrShellTestCase {
     // original also refuted "aliases.json", which assumes nothing is listening on 8983 — a port no
     // test class owns, and the single most likely thing to be running on a Solr developer's own
     // machine. That made the test fail for a reason having nothing to do with ZK_HOST.
-    run("solr zk ls / --recursive").assertContains("assuming solr url is http://localhost:8983");
+    runFail("solr zk ls / --recursive")
+        .assertContains("assuming solr url is http://localhost:8983");
 
     env("ZK_HOST", "localhost:" + ports().zk());
     run("solr zk ls / --recursive").assertContains("aliases.json");

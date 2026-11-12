@@ -47,31 +47,25 @@ public class ExampleTest extends SolrShellTestCase {
   public static void startSolr() {
     // BATS' setup_file. The two nodes live for the whole class and are stopped automatically; the
     // example data lands under SOLR_HOME, which the next class wipes.
-    classCli
-        .run(
-            "solr start -e cloud --no-prompt --jvm-opts \"-Dcustom.prop=helloworld\""
-                + " --solr-home \"${SOLR_HOME}\"")
-        .assertSuccess();
-    classCli
-        .run(
-            "solr assert --started http://localhost:${SOLR_PORT}"
-                + " --cloud http://localhost:${SOLR_PORT} --timeout 60000")
-        .assertSuccess();
-    classCli
-        .run(
-            "solr assert --started http://localhost:${SOLR2_PORT}"
-                + " --cloud http://localhost:${SOLR2_PORT} --timeout 60000")
-        .assertSuccess();
+    classCli.run(
+        "solr start -e cloud --no-prompt --jvm-opts \"-Dcustom.prop=helloworld\""
+            + " --solr-home \"${SOLR_HOME}\"");
+    classCli.run(
+        "solr assert --started http://localhost:${SOLR_PORT}"
+            + " --cloud http://localhost:${SOLR_PORT} --timeout 60000");
+    classCli.run(
+        "solr assert --started http://localhost:${SOLR2_PORT}"
+            + " --cloud http://localhost:${SOLR2_PORT} --timeout 60000");
   }
 
   @Test
   public void startECloudWorksWithNoPrompt() {
-    run("solr assert --started http://localhost:${SOLR_PORT}"
-            + " --cloud http://localhost:${SOLR_PORT} --timeout 10000")
-        .assertSuccess();
-    run("solr assert --started http://localhost:${SOLR2_PORT}"
-            + " --cloud http://localhost:${SOLR2_PORT} --timeout 10000")
-        .assertSuccess();
+    run(
+        "solr assert --started http://localhost:${SOLR_PORT}"
+            + " --cloud http://localhost:${SOLR_PORT} --timeout 10000");
+    run(
+        "solr assert --started http://localhost:${SOLR2_PORT}"
+            + " --cloud http://localhost:${SOLR2_PORT} --timeout 10000");
   }
 
   @Test

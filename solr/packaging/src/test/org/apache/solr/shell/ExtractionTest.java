@@ -69,12 +69,12 @@ public class ExtractionTest extends SolrShellTestCase {
     // BATS' setup_file, minus the Tika container the class rule above has already started.
     // Disable security manager to allow extraction. This appears to be a bug.
     classCli.env("SOLR_SECURITY_MANAGER_ENABLED", "false");
-    classCli.run("solr start -Dsolr.modules=extraction").assertSuccess();
+    classCli.run("solr start -Dsolr.modules=extraction");
   }
 
   @Test
   public void usingCurlToExtractASinglePdfFile() {
-    run("solr create -c gettingstarted -d _default").assertSuccess();
+    run("solr create -c gettingstarted -d _default");
     awaitQueryable("gettingstarted");
     applyExtractHandler("gettingstarted");
 
@@ -89,7 +89,7 @@ public class ExtractionTest extends SolrShellTestCase {
 
   @Test
   public void usingTheBinSolrPostToolToExtractContentFromPdf() {
-    run("solr create -c content_extraction -d _default").assertSuccess();
+    run("solr create -c content_extraction -d _default");
     awaitQueryable("content_extraction");
     applyExtractHandler("content_extraction");
 
@@ -104,7 +104,7 @@ public class ExtractionTest extends SolrShellTestCase {
 
   @Test
   public void usingTheBinSolrPostToolToCrawlWebSite() {
-    run("solr create -c website_extraction -d _default").assertSuccess();
+    run("solr create -c website_extraction -d _default");
     awaitQueryable("website_extraction");
     applyExtractHandler("website_extraction");
 

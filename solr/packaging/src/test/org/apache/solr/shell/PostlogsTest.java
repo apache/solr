@@ -33,7 +33,7 @@ public class PostlogsTest extends SolrShellTestCase {
   public static void startSolr() {
     // BATS' setup_file. The node lives for the whole class and is stopped automatically, and its
     // own solr.log under ${SOLR_LOGS_DIR} is what the test indexes.
-    classCli.run("solr start").assertSuccess();
+    classCli.run("solr start");
   }
 
   @Test
