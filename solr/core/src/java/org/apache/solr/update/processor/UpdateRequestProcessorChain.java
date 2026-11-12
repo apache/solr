@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
@@ -150,7 +150,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
     if (0 <= runIndex && 0 == numDistrib) {
       // by default, add distrib processor immediately before run
       DistributedUpdateProcessorFactory distrib = new DistributedUpdateProcessorFactory();
-      distrib.init(new NamedList<>());
+      distrib.init(new SimpleOrderedMap<>());
       list.add(runIndex, distrib);
 
       log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);
