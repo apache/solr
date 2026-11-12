@@ -549,8 +549,8 @@ public abstract class HttpSolrClient extends SolrClient {
     }
 
     /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
+     * Set maxConnectionsPerHost for http1 connections. The number of http2 connections is set
+     * separately, with {@code HttpJettySolrClient.Builder#withMaxHttp2ConnectionsPerHost}.
      */
     @SuppressWarnings("unchecked")
     public B withMaxConnectionsPerHost(int max) {
