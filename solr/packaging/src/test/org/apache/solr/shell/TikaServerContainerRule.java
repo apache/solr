@@ -23,6 +23,7 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.ContainerFetchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -33,8 +34,10 @@ import org.testcontainers.containers.wait.strategy.Wait;
  * <p>Declare as a {@code @ClassRule}: starting the server is expensive, so it is shared across the
  * class rather than restarted per {@code @Test}.
  *
- * <p>Skips the calling class (via {@link Assume}) rather than failing where Docker is unavailable —
- * the {@code DOCKER_UNAVAILABLE} bypass of {@code test_extraction.bats}.
+ * <p>Skips the calling class (via {@link Assume}) rather than failing where Docker is unavailable,
+ * or where the daemon is running but the image cannot be fetched — offline, behind a firewall, or
+ * rate-limited by the registry. That is the {@code DOCKER_UNAVAILABLE} bypass of {@code
+ * test_extraction.bats}. Tika failing to come up is a real failure and is left to fail.
  *
  * <p>The host port is whatever Docker mapped, not a port derived from {@code SOLR_PORT}: a shell
  * test class owns four ports and no more, and a derived one would sit inside another class' block.
@@ -61,7 +64,19 @@ public class TikaServerContainerRule extends ExternalResource {
         new GenericContainer<>(TIKA_DOCKER_IMAGE)
             .withExposedPorts(9998)
             .waitingFor(Wait.forListeningPort());
-    tika.start();
+    try {
+      tika.start();
+    } catch (ContainerFetchException e) {
+      // Thrown only while obtaining the image, so it separates "this machine cannot get the
+      // image" from "Tika did not start", which arrives as a ContainerLaunchException and is a
+      // real failure. isDockerAvailable() above proves the daemon exists, nothing more.
+      tika = null;
+      Assume.assumeNoException(
+          "could not obtain "
+              + TIKA_DOCKER_IMAGE
+              + "; Docker is running, the image is not available",
+          e);
+    }
     baseUrl = "http://" + tika.getHost() + ":" + tika.getMappedPort(9998);
   }
 

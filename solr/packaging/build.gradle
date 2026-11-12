@@ -370,8 +370,9 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   task.classpath = sourceSets.test.runtimeClasspath
 
   // RollingUpgradeTest upgrades onto a Docker image built from this working tree, which only
-  // catsTestsDockerBuild arranges; no other suite run should need Docker or the network, so it is
-  // excluded here for all of them. catsTestsDockerBuild clears this again.
+  // catsTestsDockerBuild and catsTestsAll arrange, so it is excluded here for every other task.
+  // ExtractionTest is the one suite left that wants Docker: it pulls a Tika image rather than
+  // building one, and skips when the daemon or the image is missing, so it stays in.
   task.filter.excludeTestsMatching 'org.apache.solr.shell.RollingUpgradeTest'
 
   // Each class gets its own SOLR_HOME and port block (see HarnessEnv.forClass), so classes can run
@@ -443,8 +444,9 @@ tasks.register('catsTestsCommonsCli', Test) {
 // Builds a Solr Docker image from this working tree and points RollingUpgradeTest at it, for the
 // two tasks that run that suite. Upgrading onto an image from the tree, rather than whatever
 // apache/solr:<version> happens to be tagged on the machine, is the property a release candidate
-// needs. Every Docker dependency sits on these two tasks and not in configureCatsTestTask, so a
-// plain catsTests run neither needs Docker nor touches the network.
+// needs. Image *building* sits on these two tasks and not in configureCatsTestTask, so a plain
+// catsTests run never builds one. It may still pull one, for ExtractionTest's Tika server, which
+// skips where that is not possible.
 def configureCatsDockerImage = { Test task ->
   // dockerBuild rather than dockerTag, which would move apache/solr:<version> - a name a developer
   // may be deliberately keeping on the official image. The id dockerBuild writes is tagged in
