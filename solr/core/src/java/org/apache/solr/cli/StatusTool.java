@@ -147,7 +147,7 @@ public class StatusTool extends ToolBase {
           .hasArg()
           .argName("PORT")
           .type(Integer.class)
-          .desc("Port on localhost to check status for")
+          .desc("Port of a local Solr process to check status for")
           .get();
 
   /**
@@ -212,7 +212,6 @@ public class StatusTool extends ToolBase {
 
       // URL provided, do not consult local processes, as the URL may be remote
       if (maxWaitSecs > 0) {
-        // Used by Windows start script when starting Solr
         try {
           waitForSolrUpAndPrintStatus(solrUrl);
           runtime.exit(0);
@@ -227,7 +226,8 @@ public class StatusTool extends ToolBase {
     }
 
     if (port != null) {
-      Optional<SolrProcess> proc = processMgr.processForPort(port);
+      // When asked to wait, this also waits for a newly started process to become visible
+      Optional<SolrProcess> proc = processMgr.waitForProcessOnPort(port, maxWaitSecs);
       if (proc.isEmpty()) {
         CLIO.err("Could not find a running Solr on port " + port);
         runtime.exit(1);
@@ -273,6 +273,7 @@ public class StatusTool extends ToolBase {
       CLIO.out(pidUrl);
     } else {
       if (maxWaitSecs > 0) {
+        // Used by Windows start script, which passes the port of the newly started instance
         waitForSolrUpAndPrintStatus(pidUrl);
       } else {
         CLIO.out(
