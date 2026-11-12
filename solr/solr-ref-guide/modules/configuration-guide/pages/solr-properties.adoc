@@ -90,7 +90,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.responses.hidden.sys.props|solr.hiddenSysProps||Defines system properties that are hidden in responses.
 
-|solr.responses.stacktrace.enabled|!solr.hideStackTrace|false|Controls whether stack traces are included in responses. When set to `true`, stack traces are included in responses.
+|solr.responses.stacktrace.enabled|!solr.hideStackTrace|true|Controls whether stack traces are included in responses. When set to `false`, stack traces are omitted from responses.
 
 |solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
 
