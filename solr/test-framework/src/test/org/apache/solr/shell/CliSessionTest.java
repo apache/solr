@@ -72,7 +72,10 @@ public class CliSessionTest extends SolrTestCase {
   @Test
   public void envReachesTheShell() {
     session.env("MARKER", "hello world");
-    session.script("echo \"$MARKER\"", "echo %MARKER%").assertSuccess().assertExact("hello world");
+    session
+        .script("echo \"$MARKER\"", "echo %MARKER%")
+        .assertExitCode(0)
+        .assertExact("hello world");
   }
 
   @Test
@@ -94,7 +97,7 @@ public class CliSessionTest extends SolrTestCase {
   public void harnessVariablesArePresent() {
     session
         .script("echo \"$SOLR_HOME\"", "echo %SOLR_HOME%")
-        .assertSuccess()
+        .assertExitCode(0)
         .assertExact(env.solrHome().toString());
   }
 
@@ -103,9 +106,9 @@ public class CliSessionTest extends SolrTestCase {
     // All three mean "the environment variable", resolved by the harness before any shell sees it.
     // ${NAME} is the one BATS uses, so a ported line needs no edit.
     String zk = String.valueOf(env.ports().zk());
-    session.run("echo ${ZK_PORT}").assertSuccess().assertExact(zk);
-    session.run("echo $ZK_PORT").assertSuccess().assertExact(zk);
-    session.run("echo {{ZK_PORT}}").assertSuccess().assertExact(zk);
+    session.run("echo ${ZK_PORT}").assertExact(zk);
+    session.run("echo $ZK_PORT").assertExact(zk);
+    session.run("echo {{ZK_PORT}}").assertExact(zk);
   }
 
   @Test
@@ -129,15 +132,12 @@ public class CliSessionTest extends SolrTestCase {
   @Test
   public void runResolvesVariablesTheTestSetItself() {
     session.env("MARKER", "from-the-test");
-    session.run("echo ${MARKER}").assertSuccess().assertExact("from-the-test");
+    session.run("echo ${MARKER}").assertExact("from-the-test");
   }
 
   @Test
   public void runResolvesVariablesInTheArgvForm() {
-    session
-        .run(List.of("echo", "${ZK_PORT}"))
-        .assertSuccess()
-        .assertExact(String.valueOf(env.ports().zk()));
+    session.run(List.of("echo", "${ZK_PORT}")).assertExact(String.valueOf(env.ports().zk()));
   }
 
   @Test
@@ -149,7 +149,6 @@ public class CliSessionTest extends SolrTestCase {
     session
         .allowShellSpecific()
         .run("echo '${ZK_PORT}'")
-        .assertSuccess()
         .assertExact(String.valueOf(env.ports().zk()));
   }
 
@@ -177,10 +176,7 @@ public class CliSessionTest extends SolrTestCase {
   public void aJavaValueIsConcatenated() {
     // The recommended way to get a Java-side value into a command: no format placeholder, no
     // binding, and it reads as the command it is.
-    session
-        .run("echo prefix-" + env.ports().zk())
-        .assertSuccess()
-        .assertExact("prefix-" + env.ports().zk());
+    session.run("echo prefix-" + env.ports().zk()).assertExact("prefix-" + env.ports().zk());
   }
 
   @Test
@@ -199,7 +195,6 @@ public class CliSessionTest extends SolrTestCase {
     // Here bash expands ZK_PORT from the environment, and sets and reads a local of its own.
     session
         .script("mine=abc; echo \"$ZK_PORT-$mine\"", "set mine=abc\r\necho %ZK_PORT%-%mine%")
-        .assertSuccess()
         .assertExact(env.ports().zk() + "-abc");
   }
 
@@ -207,7 +202,6 @@ public class CliSessionTest extends SolrTestCase {
   public void scriptStillResolvesDoubleBraces() {
     session
         .script("echo {{ZK_PORT}}", "echo {{ZK_PORT}}")
-        .assertSuccess()
         .assertExact(String.valueOf(env.ports().zk()));
   }
 
@@ -231,10 +225,7 @@ public class CliSessionTest extends SolrTestCase {
     // Guards the choice of delimiter. 'not-a-var' is not a legal placeholder name, so the harness
     // passes it through untouched and bash gets to see it — unquoted, with brace expansion live.
     // Bash only expands braces containing a comma or '..', so it arrives verbatim.
-    session
-        .script("echo {{not-a-var}}", "echo {{not-a-var}}")
-        .assertSuccess()
-        .assertExact("{{not-a-var}}");
+    session.script("echo {{not-a-var}}", "echo {{not-a-var}}").assertExact("{{not-a-var}}");
   }
 
   @Test
@@ -244,7 +235,7 @@ public class CliSessionTest extends SolrTestCase {
     Path target = createTempDir("elsewhere").toRealPath();
     session.cd(target);
     assertEquals(target.toString(), session.cwd().toString());
-    session.script("pwd", "cd").assertSuccess().assertExact(target.toString());
+    session.script("pwd", "cd").assertExitCode(0).assertExact(target.toString());
   }
 
   @Test
@@ -254,19 +245,15 @@ public class CliSessionTest extends SolrTestCase {
 
   @Test
   public void exitStatusIsReported() {
-    session.script("exit 3", "exit /b 3").assertFailure().assertStatus(3);
-    session.script("exit 0", "exit /b 0").assertSuccess().assertStatus(0);
+    session.script("exit 3", "exit /b 3").assertExitCode(3);
+    session.script("exit 0", "exit /b 0").assertExitCode(0);
   }
 
   @Test
   public void stderrIsMergedByDefaultAndSeparableOnRequest() {
-    session
-        .script("echo out; echo err 1>&2", "echo out\r\necho err 1>&2")
-        .assertSuccess()
-        .assertContains("err");
+    session.script("echo out; echo err 1>&2", "echo out\r\necho err 1>&2").assertContains("err");
 
     var separated = session.runSeparated("echo ${ZK_PORT}");
-    separated.assertSuccess();
     assertEquals(String.valueOf(env.ports().zk()), separated.stdout());
     assertEquals("", separated.stderr());
   }
@@ -276,10 +263,7 @@ public class CliSessionTest extends SolrTestCase {
       Shell.BASH) // cmd.exe's echo prints the quotes that quoting adds, so the expected output
   // differs.
   public void argvFormQuotesArgumentsForTheShell() {
-    session
-        .run(List.of("echo", "a b", "c&d", "e|f", "g'h"))
-        .assertSuccess()
-        .assertExact("a b c&d e|f g'h");
+    session.run(List.of("echo", "a b", "c&d", "e|f", "g'h")).assertExact("a b c&d e|f g'h");
   }
 
   @Test
@@ -358,7 +342,7 @@ public class CliSessionTest extends SolrTestCase {
   public void aFailingExitStatusIsReportedPlainly() {
     AssertionError failure =
         expectThrows(
-            AssertionError.class, () -> session.script("exit 3", "exit /b 3").assertSuccess());
+            AssertionError.class, () -> session.script("exit 3", "exit /b 3").assertExitCode(0));
     assertTrue(
         failure.getMessage(),
         failure.getMessage().contains("FAILED: command exited 3, expected 0"));
@@ -370,7 +354,7 @@ public class CliSessionTest extends SolrTestCase {
     // Found on Windows, where bin/solr.cmd output comes back in the console code page: strict
     // decoding turned a passing command into a MalformedInputException. Nothing guarantees a
     // command's bytes are UTF-8, so decoding replaces rather than throws.
-    session.script("printf 'before\\xffafter\\n'", null).assertSuccess().assertContains("before");
+    session.script("printf 'before\\xffafter\\n'", null).assertExitCode(0).assertContains("before");
     session.lastResult().assertContains("after");
   }
 
@@ -385,7 +369,7 @@ public class CliSessionTest extends SolrTestCase {
     // "echo %ARG%" with ARG=a&b runs 'b' as a second command — the trap the harness avoids by
     // resolving ${NAME} itself.
     for (String nasty : List.of("a&b", "a|b", "a>b", "a<b", "a b")) {
-      session.run(List.of("echo", nasty)).assertSuccess().assertContains(nasty);
+      session.run(List.of("echo", nasty)).assertContains(nasty);
     }
   }
 
@@ -426,7 +410,7 @@ public class CliSessionTest extends SolrTestCase {
     // script(bash, cmd) exists for.
     session
         .script(null, "set first=one\r\nset second=two\r\necho %first%-%second%")
-        .assertSuccess()
+        .assertExitCode(0)
         .assertExact("one-two");
   }
 
@@ -448,7 +432,7 @@ public class CliSessionTest extends SolrTestCase {
     // Windows environment names are case-insensitive, so the harness keeps its env map that way.
     session.env("MiXeD_Case_Var", "value");
     assertEquals("value", session.env("mixed_case_var"));
-    session.script(null, "echo %MIXED_CASE_VAR%").assertSuccess().assertExact("value");
+    session.script(null, "echo %MIXED_CASE_VAR%").assertExitCode(0).assertExact("value");
   }
 
   // ------------------------------------------------------- portability rails
@@ -494,7 +478,6 @@ public class CliSessionTest extends SolrTestCase {
     // Both shells protect it, so a URL with a query string must not trip the rails.
     session
         .run("echo \"http://localhost:${SOLR_PORT}/solr/x?q=*:*&rows=10\"")
-        .assertSuccess()
         .assertContains("&rows=10");
   }
 
@@ -505,7 +488,7 @@ public class CliSessionTest extends SolrTestCase {
     var result =
         session.script(
             "printf 'alpha 1\\nbeta 2\\ngamma 3\\n'", "(echo alpha 1&echo beta 2&echo gamma 3)");
-    result.assertSuccess().assertLineCount(3);
+    result.assertLineCount(3);
     assertEquals(List.of("beta 2"), result.linesMatching("^beta"));
     assertEquals(List.of("alpha 1"), result.firstLines(1));
     assertEquals(List.of("gamma 3"), result.lastLines(1));
