@@ -186,7 +186,8 @@ var getFollowerVersions = function(data) {
 
 var parseDateToEpoch = function(date) {
     // ["Sat Mar 03 11:00:00 CET 2012", "Sat", "Mar", "03", "11:00:00", "CET", "2012"]
-    var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\w+)\s+(\d+)$/ );
+    // The zone may also be an offset such as "GMT+05:00", so it must not be restricted to \w+
+    var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\S+)\s+(\d+)$/ );
 
     // "Sat Mar 03 2012 10:37:33"
     var d = new Date( parts[1] + ' ' + parts[2] + ' ' + parts[3] + ' ' + parts[6] + ' ' + parts[4] );

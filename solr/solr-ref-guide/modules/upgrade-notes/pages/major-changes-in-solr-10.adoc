@@ -79,6 +79,18 @@ Javadocs published for earlier releases are unaffected, so existing links to tho
 
 Searching from any Javadoc page now covers the whole API rather than the one module.
 
+=== V2 API
+
+In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
+It does not include `live_nodes`, the alias map, or cluster properties.
+Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for those.
+
+There is no `includeAll` parameter.
+A request with no other parameters returns every collection.
+`collection`, `shard`, and `\_route_` narrow which part of the tree is returned.
+
+The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
+
 == Solr 10.1
 
 === Misc
@@ -140,18 +152,6 @@ Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer s
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
 
-=== V2 API
-
-In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
-It does not include `live_nodes`, the alias map, or cluster properties.
-Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for those.
-
-There is no `includeAll` parameter.
-A request with no other parameters returns every collection.
-`collection`, `shard`, and `_route_` narrow which part of the tree is returned.
-
-The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
-
 === JWT Authentication
 
 The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
@@ -192,6 +192,87 @@ To deploy an extra context, or to customize how the Solr webapp itself is deploy
 
 === Testing Framework
 Standard `solr.xml` configuration used by `MiniSolrCloudCluster` turns off metrics by default (`metricsEnabled=false`) unlike the previous versions of Solr where metrics were enabled by default. Tests that need to access metrics should enable them by setting `System.setProperty("metricsEnabled", "true")` in test suite initialization.
+
+=== OpenTelemetry
+
+The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
+
+==== OTLP protocols
+
+The `opentelemetry` module no longer includes some dependencies, dropping gRPC support out-of-the-box.
+The default export protocol for tracing has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
+The default for the separate OTLP metrics exporter's `solr.metrics.otlpExporterProtocol` has likewise changed from `grpc` to `http`.
+
+Use of gRPC can be restored by adding the required gRPC & Netty jars to the `opentelemetry` module's lib directory, and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` (tracing) and/or `solr.metrics.otlpExporterProtocol=grpc` (metrics) as needed.
+
+==== OTLP Metric Names Changed to Dot-Separated Format
+
+*Breaking change for OTLP consumers.*
+
+Solr's metric names exported via OTLP now follow the https://opentelemetry.io/docs/specs/semconv/general/naming/[OpenTelemetry semantic convention] of using dot-separated names instead of the underscore-separated names used in Solr 10.0.
+
+For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_executor` is now `solr.node.executor`.
+
+*Prometheus output is unaffected.* The OTel Prometheus exporter automatically converts dots to underscores, so the `/admin/metrics?wt=prometheus` endpoint continues to produce the same metric names as before (e.g., `solr_core_requests_total`).
+
+*Workaround for OTLP consumers depending on the old names:*
+Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
+
+==== Metrics that are Removed or Changed
+
+* The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`
+* The metric `solr.zk.cumulative.children_fetched` has been removed
+* The metric `solr.zk.child.fetches` is now `solr.zk.get_children.ops`
+* All CrossDC consumer metrics have been renamed: `crossdc.consumer.*` → `solr.crossdc.consumer.*`
+  (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
+* All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
+  (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
+* The Prometheus JVM CPU utilization metrics lost their `_ratio` suffix, as the updated OpenTelemetry
+  exporter no longer maps the OTel unit `1` to a `_ratio` suffix: `jvm_system_cpu_utilization_ratio` →
+  `jvm_system_cpu_utilization` and `jvm_cpu_recent_utilization_ratio` → `jvm_cpu_recent_utilization`.
+
+Update your dashboards or other metrics consumers accordingly.
+
+==== Overseer Status Metrics Removed
+
+The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
+
+=== Lucene Codec Change
+
+Solr 10.1 upgrades the underlying Lucene library from 10.3 to 10.4, which introduces a new index codec (`Lucene104`).
+New index segments will be written using the `Lucene104` codec format.
+Older segments will continue to be readable.
+
+WARNING: After upgrading to Solr 10.1, downgrading to an earlier Solr 10.0.x version may fail because the older version does not include the `Lucene104` codec needed to read the newly written segments.
+If you require the ability to roll back, back up your indexes before upgrading.
+
+=== API Changes
+
+Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
+Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
+Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
+However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
+
+=== Docker
+
+The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
+
+=== Max distributed requests now configurable
+
+The internal HTTP client used for distributed shard sub-requests previously had a hard-coded limit of 1000 concurrent async requests per node.
+In large clusters, a single query can fan out to hundreds of sub-requests, quickly exhausting this limit and causing requests to queue, potentially leading to stalls or timeouts.
+This limit is now configurable via the system property `solr.solrj.http.jetty.async_requests.max`.
+
+Current permit utilization can be monitored via the `solr_client_request_async_permits` metric (see xref:deployment-guide:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
+
+=== Language Detection
+
+The `langid` module's `LangDetectLanguageIdentifierUpdateProcessor` now uses `io.github.azagniotov:language-detection` instead of the abandoned `com.cybozu.labs:langdetect` (last released in 2012).
+The new library supports a broader set of languages and uses a different statistical model, so detection results may differ from previous versions — particularly for short texts, texts that mix Latin characters with other scripts, or documents containing CJK characters alongside Latin-script content.
+
+=== Query Changes
+
+* Combined Query Feature is now available, enabling the execution of multiple queries of multiple kinds across multiple shards (SOLR-17319). Introduced `CombinedQuerySearchHandler` for hybrid search, using reciprocal rank fusion (RRF) by default and supporting custom ranking algorithms via plugins.
 
 == Solr 10.0
 
@@ -470,86 +551,3 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
 === Learning To Rank (LTR)
 
 A new feature vector cache was added that is used not only for feature logging but also for the reranking phase (SOLR-16667).
-
-== Solr 10.1
-
-=== OpenTelemetry
-
-The new OTEL based metric system introduced in 10.0 is considered BETA, and some breaking changes are to be expected in this and coming minor releases.
-
-==== OTLP protocols
-
-The `opentelemetry` module no longer includes some dependencies, dropping gRPC support out-of-the-box.
-The default export protocol for tracing has changed from `grpc` to `http/protobuf` (OTLP port `4318` instead of `4317`).
-The default for the separate OTLP metrics exporter's `solr.metrics.otlpExporterProtocol` has likewise changed from `grpc` to `http`.
-
-Use of gRPC can be restored by adding the required gRPC & Netty jars to the `opentelemetry` module's lib directory, and setting `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` (tracing) and/or `solr.metrics.otlpExporterProtocol=grpc` (metrics) as needed.
-
-==== OTLP Metric Names Changed to Dot-Separated Format
-
-*Breaking change for OTLP consumers.*
-
-Solr's metric names exported via OTLP now follow the https://opentelemetry.io/docs/specs/semconv/general/naming/[OpenTelemetry semantic convention] of using dot-separated names instead of the underscore-separated names used in Solr 10.0.
-
-For example, `solr_core_requests` is now `solr.core.requests`, and `solr_node_executor` is now `solr.node.executor`.
-
-*Prometheus output is unaffected.* The OTel Prometheus exporter automatically converts dots to underscores, so the `/admin/metrics?wt=prometheus` endpoint continues to produce the same metric names as before (e.g., `solr_core_requests_total`).
-
-*Workaround for OTLP consumers depending on the old names:*
-Users who consume Solr metrics via OTLP and rely on the 10.0 underscore-format names can use metric renaming or transformation features in their OpenTelemetry Collector pipeline to convert the new dot-separated names back to the old format during the transition.
-
-==== Metric that are Removed or Changed
-
-* The metric `solr_core_indexsearcher_open_warmup_time` has been removed as it duplicated `solr_core_indexsearcher_warmup_time`
-* The metric `solr.zk.cumulative.children_fetched` has been removed
-* The metric `solr.zk.child.fetches` is now `solr.zk.get_children.ops`
-* All CrossDC consumer metrics have been renamed: `crossdc.consumer.*` → `solr.crossdc.consumer.*`
-  (e.g., `crossdc.consumer.output.total` → `solr.crossdc.consumer.output.total`)
-* All CrossDC producer metrics have been renamed: `solr.core.crossdc.producer.*` → `solr.crossdc.producer.*`
-  (e.g., `solr.core.crossdc.producer.submitted` → `solr.crossdc.producer.submitted`)
-* The Prometheus JVM CPU utilization metrics lost their `_ratio` suffix, as the updated OpenTelemetry
-  exporter no longer maps the OTel unit `1` to a `_ratio` suffix: `jvm_system_cpu_utilization_ratio` →
-  `jvm_system_cpu_utilization` and `jvm_cpu_recent_utilization_ratio` → `jvm_cpu_recent_utilization`.
-
-Update your dashboards or other metrics consumers accordingly.
-
-==== Overseer Status Metrics Removed
-
-The `OVERSEERSTATUS` Collection API response no longer includes per-operation timing metrics but per-operation `requests` and `errors` counts still exist. Users needing per-operation latency can use distributed tracing as a substitute via OpenTelemetry.
-
-=== Lucene Codec Change
-
-Solr 10.1 upgrades the underlying Lucene library from 10.3 to 10.4, which introduces a new index codec (`Lucene104`).
-New index segments will be written using the `Lucene104` codec format.
-Older segments will continue to be readable.
-
-WARNING: After upgrading to Solr 10.1, downgrading to an earlier Solr 10.0.x version may fail because the older version does not include the `Lucene104` codec needed to read the newly written segments.
-If you require the ability to roll back, back up your indexes before upgrading.
-
-=== API Changes
-
-Solr 10.1 changes the V1 API signature in the ConfigSets API for uploading a single file
-Previously the default for `over write` is false when using the v1 API, but true when using the v2 API.
-Overwrite makes sense when uploading a complete configset and you want to eliminate any remnants configset files from the previous one when you replaced it with a new one.
-However for a single file upload it has no bearing and only existed due to a bad V1 API design choice.
-
-=== Docker
-
-The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
-
-=== Max distributed requests now configurable
-
-The internal HTTP client used for distributed shard sub-requests previously had a hard-coded limit of 1000 concurrent async requests per node.
-In large clusters, a single query can fan out to hundreds of sub-requests, quickly exhausting this limit and causing requests to queue, potentially leading to stalls or timeouts.
-This limit is now configurable via the system property `solr.solrj.http.jetty.async_requests.max`.
-
-Current permit utilization can be monitored via the `solr_client_request_async_permits` metric (see xref:deployment-guide:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
-
-=== Language Detection
-
-The `langid` module's `LangDetectLanguageIdentifierUpdateProcessor` now uses `io.github.azagniotov:language-detection` instead of the abandoned `com.cybozu.labs:langdetect` (last released in 2012).
-The new library supports a broader set of languages and uses a different statistical model, so detection results may differ from previous versions — particularly for short texts, texts that mix Latin characters with other scripts, or documents containing CJK characters alongside Latin-script content.
-
-=== Query Changes
-
-* Combined Query Feature is now available, enabling the execution of multiple queries of multiple kinds across multiple shards (SOLR-17319). Introduced `CombinedQuerySearchHandler` for hybrid search, using reciprocal rank fusion (RRF) by default and supporting custom ranking algorithms via plugins.
