@@ -17,12 +17,10 @@
 
 package org.apache.solr.shell;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 import java.nio.file.Path;
 import java.time.Duration;
-import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -51,15 +49,13 @@ import org.junit.Test;
  *       the original ignored.
  * </ul>
  */
-// Testcontainers' own threads outlive the container, as the extraction module's integration tests
-// also have to declare. SolrTestCase's filters are not additive, so they are repeated here.
-@ThreadLeakFilters(
-    defaultFilters = true,
-    filters = {
-      SolrIgnoredThreadsFilter.class,
-      QuickPatchThreadsFilter.class,
-      ExtractionTest.TestcontainersThreadsFilter.class
-    })
+// Testcontainers' Docker client leaves threads behind, and when its probe finds no usable Docker -
+// as on a Windows runner offering only Windows containers - it leaves differently named ones each
+// run: completion-port threads one time, an idle pool worker the next. No name or stack filter
+// keeps up, and the leak then arrives together with the "no Docker" assumption, so the class
+// reports TestCouldNotBeSkippedException instead of skipping. Leak detection is off here rather
+// than chased: the suite drives bin/solr as subprocesses, so it has little of its own to leak.
+@ThreadLeakScope(Scope.NONE)
 public class ExtractionTest extends SolrShellTestCase {
 
   @ClassRule public static final TikaServerContainerRule tikaServer = new TikaServerContainerRule();
@@ -157,32 +153,5 @@ public class ExtractionTest extends SolrShellTestCase {
             http("/solr/" + collection + "/config/requestHandler?componentName=/update/extract")
                 .body()
                 .contains("ExtractingRequestHandler"));
-  }
-
-  /** Ignores the non-daemon threads Testcontainers and the Java HTTP client leave behind. */
-  @SuppressWarnings("NewClassNamingConvention")
-  public static class TestcontainersThreadsFilter implements ThreadFilter {
-    @Override
-    public boolean reject(Thread t) {
-      if (t == null || t.getName() == null) {
-        return false;
-      }
-      String name = t.getName();
-      if (name.startsWith("testcontainers-") || name.startsWith("HttpClient-")) {
-        return true;
-      }
-      // On Windows the Docker probe talks to a named pipe, and the asynchronous channel group it
-      // opens leaves two threads parked in the completion port. They outlive the probe even when
-      // it finds no Docker, and are named only Thread-N, so the stack is the only thing that
-      // identifies them. Without this the class cannot skip: the leak and the "no Docker"
-      // assumption arrive together and JUnit reports TestCouldNotBeSkippedException instead.
-      for (StackTraceElement frame : t.getStackTrace()) {
-        if (frame.getClassName().startsWith("sun.nio.ch.Iocp")
-            || frame.getClassName().startsWith("sun.nio.ch.AsynchronousChannelGroupImpl")) {
-          return true;
-        }
-      }
-      return false;
-    }
   }
 }
