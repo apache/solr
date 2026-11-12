@@ -242,7 +242,7 @@ IMPORTANT: After all of these changes have been made, Solr should be restarted o
 === Disabling Automatic Field Guessing
 
 Automatic field creation can be disabled with the `update.autoCreateFields` property.
-To do this, you can use xref:deployment-guide:solr-control-script-reference.adoc#set-or-unset-configuration-properties[`bin/solr config`] with a command such as:
+To do this, you can use xref:deployment-guide:cli/solr-config.adoc[`bin/solr config`] with a command such as:
 
 [source,bash]
 bin/solr config -c mycollection -p 8983 --action set-user-property --property update.autoCreateFields --value false

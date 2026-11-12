@@ -124,7 +124,7 @@ If you have started Solr with managed schema enabled and you would like to switc
 
 If you are using SolrCloud, you may need to modify the files via ZooKeeper.
 The `bin/solr` script provides an easy way to download the files from ZooKeeper and upload them back after edits.
-See the section xref:deployment-guide:solr-control-script-reference.adoc#zookeeper-operations[ZooKeeper Operations] for more information.
+See the section xref:deployment-guide:cli/solr-zk.adoc[ZooKeeper Operations] for more information.
 
 [TIP]
 ====

@@ -30,8 +30,7 @@ jobs:
     - name: Test the bin/solr script
       run: ./gradlew integrationTests
 
-    # Reuses the distribution built above, so this only costs the curated suite run.
-    - name: Test the bin/solr script with the experimental picocli CLI
+    - name: Test the bin/solr script with PicoCLI
       run: ./gradlew integrationTestsPicocli
 
     - name: Archive logs

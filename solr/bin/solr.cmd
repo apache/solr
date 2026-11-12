@@ -422,8 +422,8 @@ IF "%1"=="-h" goto check_picocli_help
 goto after_help_check
 
 :check_picocli_help
-IF "%SOLR_PICOCLI%"=="true" goto run_picocli_help
-goto usage
+IF "%SOLR_PICOCLI%"=="false" goto usage
+goto run_picocli_help
 
 :run_picocli_help
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
