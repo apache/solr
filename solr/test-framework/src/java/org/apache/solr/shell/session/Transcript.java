@@ -76,6 +76,19 @@ public final class Transcript implements CommandHistory {
     append(entry.toString());
   }
 
+  /**
+   * Appends one HTTP request as the {@code curl} that reproduces it, so a transcript reads as the
+   * whole session a test ran rather than only its {@code bin/solr} half.
+   */
+  public synchronized void recordHttp(String curlCommand, int status, String body) {
+    StringBuilder entry = new StringBuilder();
+    entry.append("$ ").append(curlCommand).append('\n');
+    entry.append(status < 0 ? "no response" : "HTTP " + status).append('\n');
+    appendOutput(entry, body);
+    entry.append('\n');
+    append(entry.toString());
+  }
+
   /** Appends a free-form note, for something the harness itself did. */
   public synchronized void note(String message) {
     append("# " + message + "\n\n");

@@ -98,6 +98,16 @@ public enum Shell {
       }
       return NEEDS_CMD_QUOTING.matcher(arg).find() ? '"' + escaped + '"' : escaped;
     }
+
+    /**
+     * Always double-quoted, with an inner {@code "} doubled the way cmd.exe itself reads one. An
+     * approximation where {@link #quote} refuses outright, which is the trade a readable transcript
+     * is worth.
+     */
+    @Override
+    public String quoteForDisplay(String arg) {
+      return '"' + arg.replace("\"", "\"\"") + '"';
+    }
   };
 
   /** Characters that make cmd.exe need an argument wrapped in double quotes. */
@@ -135,6 +145,20 @@ public enum Shell {
 
   /** Quotes a single argument so this shell passes it through verbatim. */
   public abstract String quote(String arg);
+
+  /**
+   * Quotes a single argument for a line a human will read and paste, rather than one the harness
+   * will run.
+   *
+   * <p>Separate from {@link #quote} because that one refuses what it cannot express exactly — a
+   * {@code "} under {@code cmd.exe}, which is most of what a JSON request body is made of. This
+   * never throws: a transcript must not be the thing that fails a test. The cost is that under
+   * {@code cmd.exe} a value containing a quote, a caret or a {@code %} is approximated, so treat
+   * such a line as a starting point.
+   */
+  public String quoteForDisplay(String arg) {
+    return quote(arg);
+  }
 
   /** Joins an argv into one command line for this shell. */
   public String joinArgs(List<String> argv) {

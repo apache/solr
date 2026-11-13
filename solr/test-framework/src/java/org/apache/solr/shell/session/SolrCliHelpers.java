@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.solr.shell.exec.CommandResult;
+import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.exec.ShellAssertionError;
 import org.apache.solr.shell.exec.Variables;
 
@@ -257,7 +258,8 @@ public final class SolrCliHelpers {
         pathAndQuery,
         Map.of("Content-Type", contentType),
         HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8),
-        REQUEST_TIMEOUT);
+        REQUEST_TIMEOUT,
+        "--data " + cli.shell().quoteForDisplay(body));
   }
 
   /**
@@ -279,7 +281,13 @@ public final class SolrCliHelpers {
       throw new UncheckedIOException("Could not read " + file + " to upload it", e);
     }
     return send(
-        "PUT", port, pathAndQuery, Map.of("Content-Type", contentType), body, UPLOAD_TIMEOUT);
+        "PUT",
+        port,
+        pathAndQuery,
+        Map.of("Content-Type", contentType),
+        body,
+        UPLOAD_TIMEOUT,
+        "--data-binary @" + cli.shell().quoteForDisplay(file.toString()));
   }
 
   /**
@@ -307,7 +315,8 @@ public final class SolrCliHelpers {
         pathAndQuery,
         Map.of("Content-Type", "multipart/form-data; boundary=" + boundary),
         HttpRequest.BodyPublishers.ofByteArray(body),
-        UPLOAD_TIMEOUT);
+        UPLOAD_TIMEOUT,
+        "-F " + cli.shell().quoteForDisplay(fieldName + "=@" + file));
   }
 
   /** One file part, named the way {@code curl -F} names it: the field, and the file's base name. */
@@ -334,7 +343,8 @@ public final class SolrCliHelpers {
         pathAndQuery,
         requestHeaders,
         HttpRequest.BodyPublishers.noBody(),
-        REQUEST_TIMEOUT);
+        REQUEST_TIMEOUT,
+        null);
   }
 
   private HttpResult send(
@@ -343,8 +353,10 @@ public final class SolrCliHelpers {
       String pathAndQuery,
       Map<String, String> requestHeaders,
       HttpRequest.BodyPublisher body,
-      Duration requestTimeout) {
+      Duration requestTimeout,
+      String curlBodyArg) {
     String url = "http://localhost:" + port + pathAndQuery;
+    String curl = curl(cli.shell(), method, url, requestHeaders, curlBodyArg);
     try (HttpClient client =
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
       HttpRequest.Builder request =
@@ -352,14 +364,46 @@ public final class SolrCliHelpers {
       requestHeaders.forEach(request::header);
       HttpResponse<byte[]> response =
           client.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());
+      String decoded = decodeBody(response);
+      cli.transcript().recordHttp(curl, response.statusCode(), decoded);
       return new HttpResult(
-          response.statusCode(), decodeBody(response), response.headers(), cli.varsForAssertions());
+          response.statusCode(), decoded, response.headers(), cli.varsForAssertions());
     } catch (IOException e) {
+      cli.transcript().recordHttp(curl, -1, e.toString());
       return new HttpResult(-1, e.toString(), cli.varsForAssertions());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted requesting " + url, e);
     }
+  }
+
+  /**
+   * The {@code curl} that reproduces a request, for the transcript. Quoted bash-style because it is
+   * there for a reader to paste, not for the harness to run — and every variable is already
+   * resolved by the time it is built, so what the transcript shows is the real request.
+   */
+  static String curl(
+      Shell shell,
+      String method,
+      String url,
+      Map<String, String> requestHeaders,
+      String curlBodyArg) {
+    StringBuilder curl = new StringBuilder("curl");
+    if (!"GET".equals(method)) {
+      curl.append(" -X ").append(method);
+    }
+    requestHeaders.forEach(
+        (name, value) -> {
+          // Not the multipart content type: curl derives the boundary from -F itself, and pasting
+          // ours back would send one the body no longer uses.
+          if (!value.startsWith("multipart/form-data")) {
+            curl.append(" -H ").append(shell.quoteForDisplay(name + ": " + value));
+          }
+        });
+    if (curlBodyArg != null) {
+      curl.append(' ').append(curlBodyArg);
+    }
+    return curl.append(' ').append(shell.quoteForDisplay(url)).toString();
   }
 
   /**
@@ -399,7 +443,8 @@ public final class SolrCliHelpers {
 
   /** As {@link #https(String)} but against an explicit port. */
   public HttpsRequest https(int port, String pathAndQuery) {
-    return new HttpsRequest(port, pathAndQuery, cli.varsForAssertions());
+    return new HttpsRequest(
+        port, pathAndQuery, cli.varsForAssertions(), cli.transcript(), cli.shell());
   }
 
   /** Whether the named collection is in ZooKeeper. Port of {@code collection_exists}. */

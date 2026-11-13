@@ -33,6 +33,7 @@ import java.util.Base64;
 import java.util.Map;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import org.apache.solr.shell.exec.Shell;
 import org.apache.solr.shell.session.SolrCliHelpers.HttpResult;
 
 /**
@@ -54,12 +55,18 @@ public final class HttpsRequest {
   private Path trustStore;
   private String trustStorePassword;
   private String authorization;
+  private String curlAuth;
   private final Map<String, String> vars;
+  private final Transcript transcript;
+  private final Shell shell;
 
-  HttpsRequest(int port, String pathAndQuery, Map<String, String> vars) {
+  HttpsRequest(
+      int port, String pathAndQuery, Map<String, String> vars, Transcript transcript, Shell shell) {
     this.port = port;
     this.pathAndQuery = pathAndQuery;
     this.vars = vars;
+    this.transcript = transcript;
+    this.shell = shell;
   }
 
   /**
@@ -88,6 +95,7 @@ public final class HttpsRequest {
         "Basic "
             + Base64.getEncoder()
                 .encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8));
+    this.curlAuth = user + ":" + password;
     return this;
   }
 
@@ -113,13 +121,33 @@ public final class HttpsRequest {
       }
       HttpResponse<String> response =
           client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+      transcript.recordHttp(curl(url), response.statusCode(), response.body());
       return new HttpResult(response.statusCode(), response.body(), response.headers(), vars);
     } catch (IOException e) {
+      transcript.recordHttp(curl(url), -1, describe(e));
       return new HttpResult(-1, describe(e), vars);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted requesting " + url, e);
     }
+  }
+
+  /**
+   * The {@code curl} this request ports back to, for the transcript: the {@code --cacert}, {@code
+   * -u} and {@code --resolve} the builder's options stand for.
+   */
+  private String curl(String url) {
+    StringBuilder curl = new StringBuilder("curl");
+    if (trustStore != null) {
+      curl.append(" --cacert ").append(shell.quoteForDisplay(trustStore.toString()));
+    }
+    if (curlAuth != null) {
+      curl.append(" -u ").append(shell.quoteForDisplay(curlAuth));
+    }
+    if (!"localhost".equals(host)) {
+      curl.append(" --resolve ").append(shell.quoteForDisplay(host + ":" + port + ":127.0.0.1"));
+    }
+    return curl.append(' ').append(shell.quoteForDisplay(url)).toString();
   }
 
   private static SSLContext trustingOnly(Path store, String password) {
