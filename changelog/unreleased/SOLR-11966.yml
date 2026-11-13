@@ -1,7 +1,7 @@
 title: >
   On Unix/macOS, bin/solr stop --all stops nodes hosting embedded ZooKeeper last.
   Embedded ZooKeeper hosts now report the zookeeper:on node role.
-type: fixed
+type: changed
 authors:
   - name: Eric Pugh
 links:
