@@ -59,7 +59,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
@@ -111,6 +113,10 @@ public class HttpJettySolrClient extends HttpSolrClient {
       "solr.solrj.http.jetty.async_requests.max";
 
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
+
+  /** Connections opened per destination over HTTP/2, unless the builder sets another limit. */
+  public static final int DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST = 4;
+
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
@@ -290,7 +296,23 @@ public class HttpJettySolrClient extends HttpSolrClient {
       HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport);
-      httpClient.setMaxConnectionsPerDestination(4);
+      httpClient.setMaxConnectionsPerDestination(
+          builder.maxHttp2ConnectionsPerHost != null
+              ? builder.maxHttp2ConnectionsPerHost
+              : DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST);
+    }
+
+    if (builder.connectionMaxDurationMillis != null && builder.connectionMaxDurationMillis > 0) {
+      long maxDurationMillis = builder.connectionMaxDurationMillis;
+      ConnectionPool.Factory poolFactory = transport.getConnectionPoolFactory();
+      transport.setConnectionPoolFactory(
+          destination -> {
+            ConnectionPool pool = poolFactory.newConnectionPool(destination);
+            if (pool instanceof AbstractConnectionPool abstractPool) {
+              abstractPool.setMaxDuration(maxDurationMillis);
+            }
+            return pool;
+          });
     }
 
     httpClient.setExecutor(this.executor);
@@ -301,8 +323,11 @@ public class HttpJettySolrClient extends HttpSolrClient {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
-    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
-    // note: idle & request timeouts are set per request
+    httpClient.setIdleTimeout(
+        builder.connectionIdleTimeoutMillis != null && builder.connectionIdleTimeoutMillis > 0
+            ? builder.connectionIdleTimeoutMillis
+            : -1);
+    // note: per-request idle & request timeouts are set on each request
 
     var cookieStore = builder.getCookieStore();
     if (cookieStore != null) {
@@ -1055,6 +1080,12 @@ public class HttpJettySolrClient extends HttpSolrClient {
 
     protected Long keyStoreReloadIntervalSecs;
 
+    protected Long connectionMaxDurationMillis;
+
+    protected Integer maxHttp2ConnectionsPerHost;
+
+    protected Long connectionIdleTimeoutMillis;
+
     private List<HttpListenerFactory> listenerFactories;
 
     private boolean abortableRequests;
@@ -1131,6 +1162,62 @@ public class HttpJettySolrClient extends HttpSolrClient {
       return this;
     }
 
+    /**
+     * Set the maximum time a pooled connection may be used for. Once a connection is older than
+     * this, it is closed instead of being reused, and a new connection is opened when needed. This
+     * applies to both HTTP/1.1 and HTTP/2 connections. If unset, 0 or less, connections are reused
+     * for as long as they stay open.
+     *
+     * @param duration Maximum connection lifetime
+     * @param unit The unit for the duration
+     * @return This builder
+     */
+    public HttpJettySolrClient.Builder withConnectionMaxDuration(long duration, TimeUnit unit) {
+      this.connectionMaxDurationMillis = unit.toMillis(duration);
+      if (this.connectionMaxDurationMillis == 0 && duration > 0) {
+        this.connectionMaxDurationMillis = 1L;
+      }
+      return this;
+    }
+
+    /**
+     * Set the maximum number of HTTP/2 connections opened per destination. Requests are multiplexed
+     * over these connections. Has no effect when using HTTP/1.1; see {@link
+     * #withMaxConnectionsPerHost(int)} for that. Defaults to {@value
+     * HttpJettySolrClient#DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST}.
+     *
+     * @param max Maximum HTTP/2 connections per destination, at least 1
+     * @return This builder
+     */
+    public HttpJettySolrClient.Builder withMaxHttp2ConnectionsPerHost(int max) {
+      if (max < 1) {
+        throw new IllegalArgumentException(
+            "maxHttp2ConnectionsPerHost must be at least 1, got " + max);
+      }
+      this.maxHttp2ConnectionsPerHost = max;
+      return this;
+    }
+
+    /**
+     * Set how long a connection may go without any traffic before it is closed. This applies to
+     * both HTTP/1.1 and HTTP/2 connections. It is separate from {@link #withIdleTimeout(long,
+     * TimeUnit)}, which limits how long a single request may wait for data. Set it above the
+     * longest expected wait for a response: an HTTP/2 connection that sees no traffic for this long
+     * is closed even while a request on it is waiting. If unset, 0 or less, idle connections are
+     * not closed by the client.
+     *
+     * @param timeout Idle timeout for connections
+     * @param unit The unit for the timeout
+     * @return This builder
+     */
+    public HttpJettySolrClient.Builder withConnectionIdleTimeout(long timeout, TimeUnit unit) {
+      this.connectionIdleTimeoutMillis = unit.toMillis(timeout);
+      if (this.connectionIdleTimeoutMillis == 0 && timeout > 0) {
+        this.connectionIdleTimeoutMillis = 1L;
+      }
+      return this;
+    }
+
     private HttpCookieStore getCookieStore() {
       if (cookieStore == null) {
         return cookieStore;
@@ -1203,7 +1290,10 @@ public class HttpJettySolrClient extends HttpSolrClient {
           || proxyHost != null
           || sslConfig != null
           || cookieStore != null
-          || keyStoreReloadIntervalSecs != null;
+          || keyStoreReloadIntervalSecs != null
+          || connectionMaxDurationMillis != null
+          || maxHttp2ConnectionsPerHost != null
+          || connectionIdleTimeoutMillis != null;
     }
   }
 
