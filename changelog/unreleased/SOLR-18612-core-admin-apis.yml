@@ -1,0 +1,14 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Some Collections API and replication response sections whose keys never repeat are now JSON
+  objects regardless of json.nl: the OVERSEERSTATUS operation statistics, LISTSNAPSHOTS entries,
+  the DELETEBACKUP purge summary, and the details of a replication deletebackup command. Clients
+  using json.nl=map, XML or SolrJ see no change.
+type: changed
+authors:
+  - name: Ivan Šarić
+    nick: isaric
+links:
+  - name: SOLR-18612
+    url: https://issues.apache.org/jira/browse/SOLR-18612

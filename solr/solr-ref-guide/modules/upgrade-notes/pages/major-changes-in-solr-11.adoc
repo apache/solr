@@ -62,3 +62,20 @@ Plugins that use them, for example custom request handlers or update processors,
 SolrJ clients write request content with `RequestWriter.ContentWriter` instead.
 
 The unused `ContentStreamBase.create(RequestWriter, SolrRequest)` and `ContentStreamBase.setSize(Long)` methods have been removed.
+
+== Response Format
+
+=== Some admin response sections are JSON objects regardless of json.nl
+
+Solr builds many response sections as a `NamedList`, which the JSON response writer renders according to the `json.nl` parameter (by default as a flat array of alternating names and values).
+Sections whose names never repeat are now built as a `SimpleOrderedMap` instead, which the JSON writer always renders as a JSON object, exactly as `json.nl=map` did before.
+Clients that read these sections with the default `json.nl=flat` (or with `arrarr` / `arrmap`) must now read a JSON object; clients using `json.nl=map`, XML, or SolrJ (javabin) see no change.
+The affected sections are:
+
+* `OVERSEERSTATUS`: `overseer_operations` and `collection_operations` are objects keyed by operation.
+* `LISTSNAPSHOTS` (v1 Collections API): `snapshots` is an object keyed by snapshot name, and each snapshot and its `replicas` entry are objects.
+* `DELETEBACKUP` with `purgeUnused`: the `deleted` summary (`numBackupIds`, `numShardBackupIds`, `numIndexFiles`) is an object.
+* `INSTALLSHARDDATA`: the entry reported for a replica that is recovering from its leader after a failed install (`explanation`, `failure`) is an object.
+* Replication handler `deletebackup` (named snapshot): the command's details (`startTime`, `snapshotName`, `status`, `endTime`) are an object.
+
+Sections designed around repeated or user-controlled keys, such as the `success` and `failure` lists of Collections API responses, classic facet counts, the terms component, spellcheck, term vectors and `sort_values`, are unchanged and still follow `json.nl`.

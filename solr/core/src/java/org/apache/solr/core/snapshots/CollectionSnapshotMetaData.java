@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.noggit.JSONWriter;
 
 /** This class defines the meta-data about a collection level snapshot */
@@ -101,7 +102,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     }
 
     public NamedList<Object> toNamedList() {
-      NamedList<Object> result = new NamedList<>();
+      NamedList<Object> result = new SimpleOrderedMap<>();
       result.add(CoreAdminParams.CORE, getCoreName());
       result.add(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
       result.add(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
@@ -237,12 +238,12 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
   }
 
   public NamedList<Object> toNamedList() {
-    NamedList<Object> result = new NamedList<>();
+    NamedList<Object> result = new SimpleOrderedMap<>();
     result.add(CoreAdminParams.NAME, this.name);
     result.add(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
     result.add(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
 
-    NamedList<NamedList<Object>> replicas = new NamedList<>();
+    NamedList<NamedList<Object>> replicas = new SimpleOrderedMap<>();
     for (CoreSnapshotMetaData x : replicaSnapshots) {
       replicas.add(x.getCoreName(), x.toNamedList());
     }
