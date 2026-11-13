@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix a race that could leave a node treating ZooKeeper as disconnected after it had reconnected, by ignoring out-of-order connection state events
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Houston Putman
+    nick: HoustonPutman
+  - name: Nick Shanin
+links:
+  - name: SOLR-18623
+    url: https://issues.apache.org/jira/browse/SOLR-18623
