@@ -179,10 +179,10 @@ For example:
 == API Endpoints
 
 * `GET /api/cluster/packages` Get the list of all packages
-* `GET /api/cluster/packages/{name}` Get the details of a specific package
-* `POST /api/cluster/packages/{name}/versions` Add a version of a package
-* `DELETE /api/cluster/packages/{name}/versions/{version}` Delete a specific version of a package
-* `POST /api/cluster/packages/{name}/refresh` Refresh a package on all nodes in the cluster
+* `GET /api/cluster/packages/\{name}` Get the details of a specific package
+* `POST /api/cluster/packages/\{name}/versions` Add a version of a package
+* `DELETE /api/cluster/packages/\{name}/versions/\{version}` Delete a specific version of a package
+* `POST /api/cluster/packages/\{name}/refresh` Refresh a package on all nodes in the cluster
 
 === How to Upgrade?
 
