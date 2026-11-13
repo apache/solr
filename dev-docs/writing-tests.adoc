@@ -38,7 +38,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | Current. Skips itself when Docker is absent.
 
 | `SolrTestCaseJ4`
-| Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. Directly extended by ~600 test classes and transitively the base of ~1250 — four in five Solr tests, mostly via `SolrCloudTestCase`.
+| Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. The base of most Solr tests, directly or via `SolrCloudTestCase`.
 | as `SolrTestCase`
 | Deprecated. Not in new tests.
 
@@ -114,7 +114,7 @@ There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@Aw
 
 == Containers for external services
 
-When a test needs a real instance of something Solr talks to, start it with Testcontainers from a JUnit rule rather than by hand. Three examples in tree, all an `ExternalResource` declared as `@ClassRule`: `TikaServerContainerRule` (extraction), `KafkaContainerRule` (cross-dc-manager), `S3MockContainerRule` (s3-repository). `TikaServerExtractionBackendTest` is the one to copy.
+When a test needs a real instance of something Solr talks to, start it with Testcontainers from a JUnit rule rather than by hand. Examples in tree, all an `ExternalResource` declared as `@ClassRule`: `TikaServerContainerRule` (extraction), `KafkaContainerRule` (cross-dc-manager), `S3MockContainerRule` (s3-repository). `TikaServerExtractionBackendTest` is the one to copy.
 
 * `@ClassRule`, not `@Rule` — a container pull and start is far too expensive per method.
 * `Assume.assumeTrue(.., DockerClientFactory.instance().isDockerAvailable())` in `before()`, so the test skips where Docker is absent instead of failing.
@@ -134,14 +134,14 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 == Worked examples
 
 `SolrTestCase`::
-`solr/core/src/test/org/apache/solr/core/backup/BackupIdTest.java` — 49 lines, no server, no rules.
+`solr/core/src/test/org/apache/solr/core/backup/BackupIdTest.java` — no server, no rules.
 +
-`solr/core/src/test/org/apache/solr/handler/admin/api/NodeThreadsAPITest.java` — 54 lines; the live-node shape without J4: `@ClassRule SolrJettyTestRule` + `startSolr(createTempDir())`, driven through the generated SolrJ client.
+`solr/core/src/test/org/apache/solr/handler/admin/api/NodeThreadsAPITest.java` — the live-node shape without J4: `@ClassRule SolrJettyTestRule` + `startSolr(createTempDir())`, driven through the generated SolrJ client.
 
 `SolrCloudTestCase`::
 `solr/core/src/test/org/apache/solr/HelloWorldSolrCloudTestCase.java` — written as a teaching template, instructions in its javadoc.
 +
-`solr/core/src/test/org/apache/solr/cloud/CollectionStateZnodeTest.java` — 74 lines; the real minimal shape, with `@After deleteAllCollections()` and both `waitForState` forms.
+`solr/core/src/test/org/apache/solr/cloud/CollectionStateZnodeTest.java` — the real minimal shape, with `@After deleteAllCollections()` and both `waitForState` forms.
 
 `SolrShellTestCase`::
 `solr/packaging/src/test/org/apache/solr/shell/ZkTest.java` — canonical BATS port: `classCli.run(...)` for a class-lifetime node, fluent `run(...).assertContains(...)`, `${SOLR_PORT}` expansion, portable stand-ins for `touch` and `curl`.
@@ -149,7 +149,7 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 `solr/packaging/src/test/org/apache/solr/shell/PostTest.java` — same, plus `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations.
 
 `AdminUiTestBase`::
-`solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — 61 lines, one screen; the version and JVM values are compared against live `/admin/info/system` JSON rather than against constants.
+`solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — one screen; the version and JVM values are compared against live `/admin/info/system` JSON rather than against constants.
 +
 `solr/webapp/src/test/org/apache/solr/webapp/AdminUiSmokeTest.java` — walks the node-, cloud-, collection- and core-level screens, asserting each renders with no severe console errors.
 
