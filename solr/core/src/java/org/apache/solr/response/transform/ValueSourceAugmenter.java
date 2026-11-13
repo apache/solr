@@ -35,9 +35,10 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Add values from a ValueSource (function query etc)
+ * Adds the value of a {@link ValueSource} (e.g. a function query in {@code fl}) to each document.
  *
- * <p>NOT really sure how or if this could work...
+ * <p>Values for up to {@code preFetchDocs} (default 1000) documents of the {@code DocList} are
+ * computed up front in docid order; any others are computed on demand.
  *
  * @since solr 4.0
  */
