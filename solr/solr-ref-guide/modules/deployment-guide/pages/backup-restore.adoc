@@ -784,6 +784,7 @@ Directory Markers::
 Backups can be copied between buckets or locations with standard S3 tools, such as `aws s3 sync`, and still be restored.
 This works because Solr treats a directory as nothing more than the common key prefix of the files stored under it, rather than writing a zero-byte "directory marker" object for it.
 Backups made by older Solr versions, which do contain marker objects, remain fully restorable and deletable.
+Encrypted backups can only be copied with tools that keep each object's user metadata; see <<Client-Side Encryption>>.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:
@@ -889,6 +890,116 @@ The supported proxy system properties are:
 |===
 +
 Disable retries for all S3 operations. This is not recommended.
+
+==== Client-Side Encryption
+
+S3BackupRepository can encrypt backup files on the Solr node before uploading them, and decrypt them after downloading them.
+This is _client-side_ encryption: S3 only ever receives encrypted data.
+It is separate from S3 _server-side_ encryption (such as SSE-S3 or SSE-KMS), where S3 encrypts data after receiving it; the two can be used together.
+
+Encryption is off by default, and is turned on by setting one of the two options below.
+They cannot both be set.
+Each file is encrypted with AES-256-GCM using its own data key, by the https://github.com/aws/amazon-s3-encryption-client-java[Amazon S3 Encryption Client].
+The data key is encrypted with the key you configure and stored in the object's S3 user metadata.
+
+`s3.encryption.kms.keyId`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The AWS KMS key used to encrypt each file's data key: a key ID, key ARN, alias name (`alias/my-key`) or alias ARN.
+The credentials Solr uses need both `kms:GenerateDataKey` and `kms:Decrypt` on this key: backups write new files and also read the previous backup's metadata, while restoring, listing and deleting backups read files.
+Writing a file costs one `GenerateDataKey` request and each read of a file costs one `Decrypt` request, so KMS must be reachable for every backup and restore.
++
+[source,xml]
+----
+<repository name="s3-encrypted" class="org.apache.solr.s3.S3BackupRepository">
+  <str name="s3.bucket.name">my-s3-bucket</str>
+  <str name="s3.region">us-west-2</str>
+  <str name="s3.encryption.kms.keyId">arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab</str>
+</repository>
+----
+
+`s3.encryption.kms.region`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: the value of `s3.region`
+|===
++
+The region of the KMS key. Only valid together with `s3.encryption.kms.keyId`.
+
+`s3.encryption.kms.endpoint`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Explicit KMS endpoint, for example a VPC endpoint. Only valid together with `s3.encryption.kms.keyId`.
+
+`s3.encryption.aes.keyFile`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Path to a file holding a base64-encoded 256-bit AES key, which encrypts each file's data key.
+The file must exist at this path on every Solr node; use an absolute path, and make the file readable only by the user Solr runs as.
+To generate a key:
++
+[source,bash]
+----
+openssl rand -base64 32 > /etc/solr/s3-backup.key
+chmod 400 /etc/solr/s3-backup.key
+----
++
+[source,xml]
+----
+<repository name="s3-encrypted" class="org.apache.solr.s3.S3BackupRepository">
+  <str name="s3.bucket.name">my-s3-bucket</str>
+  <str name="s3.region">us-west-2</str>
+  <str name="s3.encryption.aes.keyFile">/etc/solr/s3-backup.key</str>
+</repository>
+----
+
+The settings are read each time a request uses the repository.
+A missing or malformed key file, or an invalid combination of options, makes that request fail; Solr still starts.
+Like the other options, each can be overridden with a Java system property of the same name, such as `-Ds3.encryption.aes.keyFile=...`.
+Such a property applies to every S3 repository in `solr.xml`, including ones meant to stay unencrypted.
+
+Before turning encryption on, note the following:
+
+* *Use a new location.*
+A repository with encryption configured refuses to read unencrypted files, and a repository without it refuses to read encrypted ones.
+Incremental backups reuse files from earlier backups at the same location, so you cannot start encrypting at a location that already holds unencrypted backups.
+To keep restoring old backups, define a second `<repository>` with the old settings alongside the encrypted one.
+* *Keep the key, and keep it the same.*
+Every node must have the same key configuration.
+Backups can only be read with the key they were written with: changing `s3.encryption.kms.keyId` to a different KMS key, pointing an alias at a different key, or replacing the AES key makes earlier backups at that location unreadable.
+KMS automatic key rotation does not affect this.
+If the key is lost or deleted, the backups cannot be recovered.
+* *Copy backups only with tools that keep user metadata.*
+Each file's encrypted data key lives in the object's user metadata; a copy without it can never be decrypted.
+Downloading files and uploading them again loses the metadata.
+AWS CLI version 2 `aws s3 cp` and `aws s3 sync` keep it by default (`--copy-props default`), but not with `--copy-props none` or `--metadata-directive REPLACE`.
+AWS CLI version 1 drops user metadata from any object it copies in parts, which by default means objects of 8 MB or more.
+Check a copy with `aws s3api head-object` and compare its `Metadata` with the source.
+The same applies to _s3-compatible_ storage: it must store and return user metadata unchanged.
+* *Only file contents are protected.*
+Contents are encrypted and authenticated, so a modified or corrupted file is detected and the restore fails; this is detected when the end of each file is read.
+Object names (and so collection, shard and file names) and sizes are not hidden.
+* *Restores are slower.*
+Decrypting a file is single-threaded and noticeably slower than an unencrypted download.
+If a connection drops mid-download, the file is downloaded again from the start.
+* *Uploads are less tolerant of transient errors.*
+The parts of an encrypted file's upload are not retried individually, so a transient S3 error fails that file, and with it the backup.
+* *A single file is limited to about 64 GiB.*
+
+Client-side encryption has been tested against S3Mock only.
 
 ==== S3 Client Configuration
 

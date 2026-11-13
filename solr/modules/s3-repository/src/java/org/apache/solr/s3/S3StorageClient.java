@@ -19,24 +19,32 @@ package org.apache.solr.s3;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.crypto.AEADBadTagException;
 import org.apache.solr.common.util.ResumableInputStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.s3.S3BackupRepositoryConfig.EncryptionConfig;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
@@ -44,10 +52,16 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.http.Abortable;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.api.RetryStrategy;
+import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.kms.KmsClientBuilder;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
@@ -64,6 +78,12 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
+import software.amazon.encryption.s3.S3EncryptionClient;
+import software.amazon.encryption.s3.S3EncryptionClientSecurityException;
+import software.amazon.encryption.s3.internal.InstructionFileConfig;
+import software.amazon.encryption.s3.materials.AesKeyring;
+import software.amazon.encryption.s3.materials.Keyring;
+import software.amazon.encryption.s3.materials.KmsKeyring;
 
 /**
  * Creates a {@link S3Client} for communicating with AWS S3. Utilizes the default credential
@@ -71,6 +91,11 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  * href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html">AWS SDK
  * docs</a> for details on where this client will fetch credentials from, and the order of
  * precedence.
+ *
+ * <p>With client-side encryption configured, object content is read and written through an {@link
+ * S3EncryptionClient}, while listing, metadata and deletes still use the plain client. Such a
+ * client refuses to read objects that are not encrypted, and a client without encryption refuses to
+ * read objects that are.
  */
 public class S3StorageClient {
 
@@ -84,11 +109,32 @@ public class S3StorageClient {
   // Error messages returned by S3 for a key not found.
   private static final Set<String> NOT_FOUND_CODES = Set.of("NoSuchKey", "404 Not Found");
 
+  /** Bytes the AES-GCM authentication tag adds to the stored length of an encrypted object. */
+  static final int GCM_TAG_LENGTH = 16;
+
+  /**
+   * User metadata keys of which at least one is present on any object written by an S3 encryption
+   * client, whatever the format version.
+   */
+  private static final Set<String> ENCRYPTION_METADATA_KEYS =
+      Set.of("x-amz-key", "x-amz-key-v2", "x-amz-3", "x-amz-c");
+
+  /** Used for listing, object metadata and deletes. */
   private final S3Client s3Client;
+
+  /** Used for object content; the same as {@link #s3Client} unless encryption is configured. */
+  private final S3Client contentReadClient;
+
+  private final S3Client contentWriteClient;
+  private final boolean encrypted;
+  private final List<AutoCloseable> ownedClients;
 
   /** The S3 bucket where we read/write all data. */
   private final String bucketName;
 
+  /**
+   * @param encryption client-side encryption settings, or {@code null} for none
+   */
   S3StorageClient(
       String bucketName,
       String profile,
@@ -96,17 +142,139 @@ public class S3StorageClient {
       String proxyUrl,
       boolean proxyUseSystemSettings,
       String endpoint,
-      boolean disableRetries) {
+      boolean disableRetries,
+      EncryptionConfig encryption) {
     this(
-        createInternalClient(
-            profile, region, proxyUrl, proxyUseSystemSettings, endpoint, disableRetries),
+        createClients(
+            profile,
+            region,
+            proxyUrl,
+            proxyUseSystemSettings,
+            endpoint,
+            disableRetries,
+            encryption),
         bucketName);
   }
 
   @VisibleForTesting
   S3StorageClient(S3Client s3Client, String bucketName) {
-    this.s3Client = s3Client;
+    this(new Clients(s3Client, s3Client, s3Client, false, List.of(s3Client)), bucketName);
+  }
+
+  /**
+   * An encrypting client over the given clients and keyring. Closing it closes both clients, but
+   * not anything held by the keyring.
+   */
+  @VisibleForTesting
+  S3StorageClient(
+      S3Client s3Client, S3AsyncClient s3AsyncClient, Keyring keyring, String bucketName) {
+    this(
+        encryptedClients(s3Client, s3AsyncClient, keyring, List.of(s3Client, s3AsyncClient)),
+        bucketName);
+  }
+
+  private S3StorageClient(Clients clients, String bucketName) {
+    this.s3Client = clients.plain();
+    this.contentReadClient = clients.read();
+    this.contentWriteClient = clients.write();
+    this.encrypted = clients.encrypted();
+    this.ownedClients = clients.owned();
     this.bucketName = bucketName;
+  }
+
+  private record Clients(
+      S3Client plain,
+      S3Client read,
+      S3Client write,
+      boolean encrypted,
+      List<AutoCloseable> owned) {}
+
+  private static Clients createClients(
+      String profile,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint,
+      boolean disableRetries,
+      EncryptionConfig encryption) {
+    AwsCredentialsProvider credentialsProvider = createCredentialsProvider(profile);
+    S3Client s3Client =
+        createInternalClient(
+            profile,
+            region,
+            proxyUrl,
+            proxyUseSystemSettings,
+            endpoint,
+            disableRetries,
+            credentialsProvider);
+    if (encryption == null) {
+      return new Clients(s3Client, s3Client, s3Client, false, List.of(s3Client));
+    }
+
+    List<AutoCloseable> owned = new ArrayList<>();
+    owned.add(s3Client);
+    try {
+      S3AsyncClient s3AsyncClient =
+          createAsyncClient(
+              profile,
+              region,
+              proxyUrl,
+              proxyUseSystemSettings,
+              endpoint,
+              disableRetries,
+              credentialsProvider);
+      owned.add(s3AsyncClient);
+      Keyring keyring;
+      if (encryption.aesKey() != null) {
+        keyring = AesKeyring.builder().wrappingKey(encryption.aesKey()).build();
+      } else {
+        KmsClient kmsClient =
+            createKmsClient(
+                profile,
+                encryption.kmsRegion() != null ? encryption.kmsRegion() : region,
+                proxyUrl,
+                proxyUseSystemSettings,
+                encryption.kmsEndpoint(),
+                disableRetries,
+                credentialsProvider);
+        owned.add(kmsClient);
+        keyring =
+            KmsKeyring.builder().kmsClient(kmsClient).wrappingKeyId(encryption.kmsKeyId()).build();
+      }
+      return encryptedClients(s3Client, s3AsyncClient, keyring, owned);
+    } catch (RuntimeException e) {
+      closeAll(owned);
+      throw e;
+    }
+  }
+
+  /**
+   * Writes use the JDK's crypto provider, which is fast. Reads use BouncyCastle, because the JDK's
+   * AES-GCM releases no plaintext until the whole object has been decrypted, which would hold the
+   * object in memory; BouncyCastle releases it as it goes. Both clients wrap the same S3 clients,
+   * and are not closed themselves since that only closes the wrapped clients.
+   */
+  private static Clients encryptedClients(
+      S3Client s3Client, S3AsyncClient s3AsyncClient, Keyring keyring, List<AutoCloseable> owned) {
+    S3EncryptionClient writeClient =
+        encryptionClientBuilder(s3Client, s3AsyncClient, keyring).build();
+    S3EncryptionClient readClient =
+        encryptionClientBuilder(s3Client, s3AsyncClient, keyring)
+            .cryptoProvider(new BouncyCastleProvider())
+            // Releases plaintext before the tag is checked; required for objects over 64 MiB
+            .enableDelayedAuthenticationMode(true)
+            .build();
+    return new Clients(s3Client, readClient, writeClient, true, List.copyOf(owned));
+  }
+
+  private static S3EncryptionClient.Builder encryptionClientBuilder(
+      S3Client s3Client, S3AsyncClient s3AsyncClient, Keyring keyring) {
+    return S3EncryptionClient.builderV4()
+        .wrappedClient(s3Client)
+        .wrappedAsyncClient(s3AsyncClient)
+        .keyring(keyring)
+        .instructionFileConfig(
+            InstructionFileConfig.builder().disableInstructionFile(true).build());
   }
 
   private static S3Client createInternalClient(
@@ -115,12 +283,117 @@ public class S3StorageClient {
       String proxyUrl,
       boolean proxyUseSystemSettings,
       String endpoint,
-      boolean disableRetries) {
+      boolean disableRetries,
+      AwsCredentialsProvider credentialsProvider) {
+    /*
+     * Default s3 client builder loads credentials from disk and handles token refreshes
+     */
+    S3ClientBuilder clientBuilder =
+        S3Client.builder()
+            .credentialsProvider(credentialsProvider)
+            .overrideConfiguration(
+                builder -> builder.retryStrategy(createRetryStrategy(profile, disableRetries)))
+            .serviceConfiguration(createS3Configuration(profile))
+            .httpClient(createApacheHttpClientBuilder(proxyUrl, proxyUseSystemSettings).build());
+
+    if (StrUtils.isNotNullOrEmpty(endpoint)) {
+      clientBuilder.endpointOverride(URI.create(endpoint));
+    }
+    if (StrUtils.isNotNullOrEmpty(region)) {
+      clientBuilder.region(Region.of(region));
+    }
+
+    return clientBuilder.build();
+  }
+
+  /** The encryption client sends object content through an async client. */
+  private static S3AsyncClient createAsyncClient(
+      String profile,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint,
+      boolean disableRetries,
+      AwsCredentialsProvider credentialsProvider) {
+    S3AsyncClientBuilder clientBuilder =
+        S3AsyncClient.builder()
+            .credentialsProvider(credentialsProvider)
+            .overrideConfiguration(
+                builder -> builder.retryStrategy(createRetryStrategy(profile, disableRetries)))
+            .serviceConfiguration(createS3Configuration(profile))
+            // A builder rather than a client, so that closing the S3 client closes it
+            .httpClientBuilder(
+                NettyNioAsyncHttpClient.builder()
+                    .proxyConfiguration(
+                        createNettyProxyConfiguration(proxyUrl, proxyUseSystemSettings)));
+
+    if (StrUtils.isNotNullOrEmpty(endpoint)) {
+      clientBuilder.endpointOverride(URI.create(endpoint));
+    }
+    if (StrUtils.isNotNullOrEmpty(region)) {
+      clientBuilder.region(Region.of(region));
+    }
+
+    return clientBuilder.build();
+  }
+
+  /**
+   * Netty's proxy configuration has no {@code endpoint(URI)}, so the URL is split into scheme, host
+   * and port, defaulting the port from the scheme. It shares its name with Apache's.
+   */
+  @VisibleForTesting
+  static software.amazon.awssdk.http.nio.netty.ProxyConfiguration createNettyProxyConfiguration(
+      String proxyUrl, boolean proxyUseSystemSettings) {
+    software.amazon.awssdk.http.nio.netty.ProxyConfiguration.Builder proxyConfigurationBuilder =
+        software.amazon.awssdk.http.nio.netty.ProxyConfiguration.builder();
+    if (StrUtils.isNotNullOrEmpty(proxyUrl)) {
+      URI proxyUri = URI.create(proxyUrl);
+      int port = proxyUri.getPort();
+      if (port == -1) {
+        port = "https".equalsIgnoreCase(proxyUri.getScheme()) ? 443 : 80;
+      }
+      proxyConfigurationBuilder.scheme(proxyUri.getScheme()).host(proxyUri.getHost()).port(port);
+    } else {
+      proxyConfigurationBuilder.useSystemPropertyValues(proxyUseSystemSettings);
+    }
+    return proxyConfigurationBuilder.build();
+  }
+
+  private static KmsClient createKmsClient(
+      String profile,
+      String region,
+      String proxyUrl,
+      boolean proxyUseSystemSettings,
+      String endpoint,
+      boolean disableRetries,
+      AwsCredentialsProvider credentialsProvider) {
+    KmsClientBuilder clientBuilder =
+        KmsClient.builder()
+            .credentialsProvider(credentialsProvider)
+            .overrideConfiguration(
+                builder -> builder.retryStrategy(createRetryStrategy(profile, disableRetries)))
+            .httpClientBuilder(createApacheHttpClientBuilder(proxyUrl, proxyUseSystemSettings));
+
+    if (StrUtils.isNotNullOrEmpty(endpoint)) {
+      clientBuilder.endpointOverride(URI.create(endpoint));
+    }
+    if (StrUtils.isNotNullOrEmpty(region)) {
+      clientBuilder.region(Region.of(region));
+    }
+
+    return clientBuilder.build();
+  }
+
+  private static S3Configuration createS3Configuration(String profile) {
     S3Configuration.Builder configBuilder = S3Configuration.builder().pathStyleAccessEnabled(true);
     if (StrUtils.isNotNullOrEmpty(profile)) {
       configBuilder.profileName(profile);
     }
+    return configBuilder.build();
+  }
 
+  private static ApacheHttpClient.Builder createApacheHttpClientBuilder(
+      String proxyUrl, boolean proxyUseSystemSettings) {
     ApacheHttpClient.Builder sdkHttpClientBuilder = ApacheHttpClient.builder();
     // If configured, add proxy
     ProxyConfiguration.Builder proxyConfigurationBuilder = ProxyConfiguration.builder();
@@ -131,49 +404,28 @@ public class S3StorageClient {
     }
     sdkHttpClientBuilder.proxyConfiguration(proxyConfigurationBuilder.build());
     sdkHttpClientBuilder.useIdleConnectionReaper(false);
+    return sdkHttpClientBuilder;
+  }
 
-    /*
-     * Retry logic
-     */
-    RetryStrategy retryStrategy;
+  /** Each client gets its own instance, since a retry strategy keeps state. */
+  private static RetryStrategy createRetryStrategy(String profile, boolean disableRetries) {
     if (disableRetries) {
-      retryStrategy = AwsRetryStrategy.doNotRetry();
-    } else {
-      RetryMode.Resolver retryModeResolver = RetryMode.resolver();
-      if (StrUtils.isNotNullOrEmpty(profile)) {
-        retryModeResolver.profileName(profile);
-      }
-      RetryMode retryMode = retryModeResolver.resolve();
-      retryStrategy = AwsRetryStrategy.forRetryMode(retryMode);
+      return AwsRetryStrategy.doNotRetry();
     }
+    RetryMode.Resolver retryModeResolver = RetryMode.resolver();
+    if (StrUtils.isNotNullOrEmpty(profile)) {
+      retryModeResolver.profileName(profile);
+    }
+    return AwsRetryStrategy.forRetryMode(retryModeResolver.resolve());
+  }
 
-    /*
-     * Set the default credentials provider
-     */
+  private static AwsCredentialsProvider createCredentialsProvider(String profile) {
     DefaultCredentialsProvider.Builder credentialsProviderBuilder =
         DefaultCredentialsProvider.builder();
     if (StrUtils.isNotNullOrEmpty(profile)) {
       credentialsProviderBuilder.profileName(profile);
     }
-
-    /*
-     * Default s3 client builder loads credentials from disk and handles token refreshes
-     */
-    S3ClientBuilder clientBuilder =
-        S3Client.builder()
-            .credentialsProvider(credentialsProviderBuilder.build())
-            .overrideConfiguration(builder -> builder.retryStrategy(retryStrategy))
-            .serviceConfiguration(configBuilder.build())
-            .httpClient(sdkHttpClientBuilder.build());
-
-    if (StrUtils.isNotNullOrEmpty(endpoint)) {
-      clientBuilder.endpointOverride(URI.create(endpoint));
-    }
-    if (StrUtils.isNotNullOrEmpty(region)) {
-      clientBuilder.region(Region.of(region));
-    }
-
-    return clientBuilder.build();
+    return credentialsProviderBuilder.build();
   }
 
   /**
@@ -329,7 +581,13 @@ public class S3StorageClient {
       // directory marker object (whose key always ends in '/'); it's always a real file.
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
-      return objectMetadata.contentLength();
+      boolean objectEncrypted = isClientSideEncrypted(objectMetadata.metadata());
+      if (objectEncrypted != encrypted) {
+        throw new S3Exception(encryptionMismatchMessage(s3Path, objectEncrypted));
+      }
+      return objectEncrypted
+          ? objectMetadata.contentLength() - GCM_TAG_LENGTH
+          : objectMetadata.contentLength();
     } catch (NoSuchKeyException nske) {
       // Only pay for the extra listing when the file is missing
       if (isDirectory(s3Path)) {
@@ -349,6 +607,9 @@ public class S3StorageClient {
    */
   InputStream pullStream(String path) throws S3Exception {
     final String s3Path = sanitizedFilePath(path);
+    if (encrypted) {
+      return pullEncryptedStream(s3Path);
+    }
 
     try {
       GetObjectRequest.Builder getBuilder =
@@ -358,6 +619,10 @@ public class S3StorageClient {
       // thread leak (see https://github.com/aws/aws-sdk-java-v2/issues/6567)
       ResponseInputStream<GetObjectResponse> responseStream =
           s3Client.getObject(getBuilder.build(), ResponseTransformer.toInputStream(Duration.ZERO));
+      if (isClientSideEncrypted(responseStream.response().metadata())) {
+        responseStream.abort();
+        throw new S3Exception(encryptionMismatchMessage(s3Path, true));
+      }
       final long contentLength = responseStream.response().contentLength();
       return new ResumableInputStream(
           responseStream,
@@ -378,6 +643,115 @@ public class S3StorageClient {
   }
 
   /**
+   * Opens an object through the encryption client. A dropped connection is resumed by reading the
+   * object again from the start, since a ranged read cannot be authenticated.
+   */
+  private InputStream pullEncryptedStream(String s3Path) throws S3Exception {
+    GetObjectRequest request = GetObjectRequest.builder().bucket(bucketName).key(s3Path).build();
+    ResponseInputStream<GetObjectResponse> responseStream;
+    try {
+      // The outer stream needs no timeout; the one the encryption client creates inside it does
+      // have one, which only aborts the stream if it is not read within 60s of being opened.
+      responseStream =
+          contentReadClient.getObject(request, ResponseTransformer.toInputStream(Duration.ZERO));
+    } catch (SdkException sdke) {
+      throw handleEncryptedReadException(s3Path, sdke);
+    }
+    final long length = responseStream.response().contentLength() - GCM_TAG_LENGTH;
+    // Runtime exceptions from decryption must reach S3EncryptedInputStream without being retried.
+    // Even at the end of the object, a resumed read goes through it again, so that the end is
+    // still authenticated; skipping past the end fails.
+    InputStream resumable =
+        new ResumableInputStream(
+            responseStream,
+            bytesRead ->
+                skipOrAbort(
+                    contentReadClient.getObject(
+                        request, ResponseTransformer.toInputStream(Duration.ZERO)),
+                    bytesRead));
+    return new S3EncryptedInputStream(resumable, s3Path, length);
+  }
+
+  /** Skips {@code n} bytes of the stream, aborting it if that fails. */
+  @VisibleForTesting
+  static <T extends InputStream & Abortable> T skipOrAbort(T stream, long n) {
+    try {
+      stream.skipNBytes(n);
+    } catch (IOException e) {
+      stream.abort();
+      throw new UncheckedIOException(e);
+    } catch (RuntimeException e) {
+      stream.abort();
+      throw e;
+    }
+    return stream;
+  }
+
+  /**
+   * The encryption client wraps every failure of GetObject, including a missing key, and an object
+   * without encryption metadata fails like an object encrypted with a different key.
+   */
+  private S3Exception handleEncryptedReadException(String s3Path, SdkException sdke) {
+    if (findCause(sdke, AwsServiceException.class) != null) {
+      return handleAmazonException(sdke);
+    }
+    HeadObjectResponse objectMetadata;
+    try {
+      objectMetadata = s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
+    } catch (SdkException headException) {
+      S3Exception e = handleAmazonException(headException);
+      e.addSuppressed(sdke);
+      return e;
+    }
+    if (!isClientSideEncrypted(objectMetadata.metadata())) {
+      return new S3Exception(encryptionMismatchMessage(s3Path, false));
+    }
+    if (isAuthenticationFailure(sdke)) {
+      return new S3Exception(
+          "Unable to decrypt S3 object '"
+              + s3Path
+              + "'; it may have been written with a different key than the one configured",
+          sdke);
+    }
+    return new S3Exception("Failed to read encrypted S3 object '" + s3Path + "'", sdke);
+  }
+
+  /**
+   * Whether decryption failed a cryptographic check: a wrong key fails to unwrap the data key, and
+   * modified content fails its tag or key commitment check.
+   */
+  static boolean isAuthenticationFailure(Throwable t) {
+    return findCause(t, AEADBadTagException.class) != null
+        || findCause(t, S3EncryptionClientSecurityException.class) != null;
+  }
+
+  static boolean isClientSideEncrypted(Map<String, String> userMetadata) {
+    return userMetadata != null
+        && ENCRYPTION_METADATA_KEYS.stream().anyMatch(userMetadata::containsKey);
+  }
+
+  private static String encryptionMismatchMessage(String s3Path, boolean objectEncrypted) {
+    String keyOptions =
+        S3BackupRepositoryConfig.ENCRYPTION_KMS_KEY_ID
+            + " or "
+            + S3BackupRepositoryConfig.ENCRYPTION_AES_KEY_FILE;
+    if (objectEncrypted) {
+      return "S3 object '"
+          + s3Path
+          + "' is encrypted, but this repository has no client-side encryption configured."
+          + " Set "
+          + keyOptions
+          + " to the key it was written with.";
+    }
+    return "S3 object '"
+        + s3Path
+        + "' is not encrypted, but this repository is configured for client-side encryption"
+        + " and only reads encrypted objects. Read it with a repository that does not set "
+        + keyOptions
+        + ".";
+  }
+
+  /**
    * Open a new {@link OutputStream} to file for write. Caller needs to close the stream.
    *
    * @param path to file in S3.
@@ -387,7 +761,7 @@ public class S3StorageClient {
     path = sanitizedFilePath(path);
 
     try {
-      return new S3OutputStream(s3Client, path, bucketName);
+      return new S3OutputStream(contentWriteClient, path, bucketName);
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -395,7 +769,17 @@ public class S3StorageClient {
 
   /** Override {@link Closeable} since we throw no exception. */
   void close() {
-    s3Client.close();
+    closeAll(ownedClients);
+  }
+
+  private static void closeAll(List<AutoCloseable> clients) {
+    for (AutoCloseable client : clients) {
+      try {
+        client.close();
+      } catch (Exception e) {
+        log.warn("Failed to close {}", client, e);
+      }
+    }
   }
 
   /** Any file path that specifies a non-existent file will not be treated as an error. */
@@ -545,8 +929,9 @@ public class S3StorageClient {
    * subclasses of {@link RuntimeException} so some may still be uncaught and propagated.
    */
   static S3Exception handleAmazonException(SdkException sdke) {
-
-    if (sdke instanceof AwsServiceException ase) {
+    // Service exceptions may be wrapped, by the encryption client or the credentials provider
+    AwsServiceException ase = findCause(sdke, AwsServiceException.class);
+    if (ase != null) {
       String errMessage =
           String.format(
               Locale.ROOT,
@@ -560,16 +945,27 @@ public class S3StorageClient {
 
       log.error(errMessage);
 
-      if (sdke instanceof NoSuchKeyException
-          || sdke instanceof NoSuchBucketException
+      if (ase instanceof NoSuchKeyException
+          || ase instanceof NoSuchBucketException
           || (ase.statusCode() == 404
               && NOT_FOUND_CODES.contains(ase.awsErrorDetails().errorCode()))) {
-        return new S3NotFoundException(errMessage, ase);
+        return new S3NotFoundException(errMessage, sdke);
       } else {
-        return new S3Exception(errMessage, ase);
+        return new S3Exception(errMessage, sdke);
       }
     }
 
     return new S3Exception(sdke);
+  }
+
+  /** The first throwable of the given type in the cause chain, starting with {@code t} itself. */
+  static <T extends Throwable> T findCause(Throwable t, Class<T> type) {
+    // Bounded, in case of a cycle in the chain
+    for (int depth = 0; t != null && depth < 20; t = t.getCause(), depth++) {
+      if (type.isInstance(t)) {
+        return type.cast(t);
+      }
+    }
+    return null;
   }
 }
