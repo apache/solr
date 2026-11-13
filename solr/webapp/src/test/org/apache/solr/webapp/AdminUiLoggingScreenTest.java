@@ -79,8 +79,7 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
     driver.get(baseUrl + "/index.html#/~logging");
     waitFor(By.id("select-node-prompt"));
     waitUntil(
-        "the logging view is loaded",
-        () -> !driver.findElements(By.id("log-all-nodes")).isEmpty());
+        "the logging view is loaded", () -> !driver.findElements(By.id("log-all-nodes")).isEmpty());
     assertTrue(
         "All nodes must be available without selecting a node",
         driver.findElement(By.id("log-all-nodes")).isDisplayed());

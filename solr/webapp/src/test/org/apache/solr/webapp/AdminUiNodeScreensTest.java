@@ -152,7 +152,8 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
             () -> !capturedNodeRequests(page[2]).isEmpty());
         assertTrue(
             "The selected node must be pinned even when it served the UI at " + page[2],
-            capturedNodeRequests(page[2]).stream().allMatch(r -> localNode.equals(r.get("target"))));
+            capturedNodeRequests(page[2]).stream()
+                .allMatch(r -> localNode.equals(r.get("target"))));
       }
       waitUntil(
           "the selected-local core-menu request was sent",
