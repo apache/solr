@@ -33,35 +33,36 @@ import org.junit.Test;
  */
 public class CompressionTest extends SolrShellTestCase {
 
-  private static final String COLLECTION = "compression_docs";
-  private static final String QUERY = "/solr/" + COLLECTION + "/select?q=*:*&rows=100";
-
   @BeforeClass
   public static void startSolr() {
     // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
-    classCli.run("solr create -c " + COLLECTION + " -d _default");
+    classCli.run("solr create -c compression_docs -d _default");
     // Filtered to xml, json and csv so the Extract handler is not invoked. 45 documents, whose
     // response is well over the 2048 bytes Jetty wants before it will compress one at all.
     classCli
         .run(
             "solr post --filetypes xml,json,csv --solr-url http://localhost:${SOLR_PORT}"
-                + " -c "
-                + COLLECTION
-                + " \"${SOLR_TIP}/example/exampledocs\"")
+                + " -c compression_docs \"${SOLR_TIP}/example/exampledocs\"")
         .assertContains("15 files indexed.")
         .assertNotContains("ERROR");
-    classCli.helpers().http(QUERY).assertStatus(200).assertContains("\"numFound\":45");
+    classCli
+        .helpers()
+        .http("/solr/compression_docs/select?q=*:*&rows=100")
+        .assertStatus(200)
+        .assertContains("\"numFound\":45");
   }
 
   @Test
   public void serverDoesNotCompressResponseWithoutAcceptEncodingHeader() {
-    http(QUERY).assertStatus(200).assertHeaderNotContains("Content-Encoding:");
+    http("/solr/compression_docs/select?q=*:*&rows=100")
+        .assertStatus(200)
+        .assertHeaderNotContains("Content-Encoding:");
   }
 
   @Test
   public void serverCompressesResponseWhenAcceptEncodingGzipIsRequested() {
-    http(QUERY, Map.of("Accept-Encoding", "gzip"))
+    http("/solr/compression_docs/select?q=*:*&rows=100", Map.of("Accept-Encoding", "gzip"))
         .assertStatus(200)
         .assertHeaderContains("Content-Encoding: gzip");
   }
@@ -69,7 +70,7 @@ public class CompressionTest extends SolrShellTestCase {
   @Test
   public void compressedResponseCanBeDecompressedAndParsed() {
     // curl --compressed; the harness decompresses a gzip body the same way.
-    http(QUERY, Map.of("Accept-Encoding", "gzip, deflate"))
+    http("/solr/compression_docs/select?q=*:*&rows=100", Map.of("Accept-Encoding", "gzip, deflate"))
         .assertHeaderContains("Content-Encoding: gzip")
         .assertContains("\"status\":0");
   }
