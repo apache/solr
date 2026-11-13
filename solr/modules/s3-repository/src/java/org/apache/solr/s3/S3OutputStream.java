@@ -29,6 +29,7 @@ import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.SdkPartType;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
@@ -39,6 +40,10 @@ import software.amazon.awssdk.services.s3.model.UploadPartResponse;
  *
  * <p>More recent versions of the kafka-connect-storage-cloud implementation use the CCL license,
  * but this class was based off of the ASLv2 version.
+ *
+ * <p>Parts are laid out so that the stream also works with the S3 encryption client: the final
+ * bytes are always held back until {@link #close()}, which uploads them as the only part flagged
+ * {@link SdkPartType#LAST}, and every other part is a multiple of {@link #CIPHER_BLOCK_SIZE} bytes.
  */
 public class S3OutputStream extends OutputStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -47,6 +52,8 @@ public class S3OutputStream extends OutputStream {
   // https://docs.aws.amazon.com/AmazonS3/latest/dev/qfacts.html
   static final int PART_SIZE = 16777216;
   static final int MIN_PART_SIZE = 5242880;
+  // AES block size; non-final parts must be a multiple of it for client-side encryption.
+  static final int CIPHER_BLOCK_SIZE = 16;
 
   private final S3Client s3Client;
   private final String bucketName;
@@ -74,12 +81,11 @@ public class S3OutputStream extends OutputStream {
       throw new IOException("Stream closed");
     }
 
-    buffer.put((byte) b);
-
-    // If the buffer is now full, push it to remote S3.
+    // Upload a full buffer only once more data arrives, so close() always has a final part.
     if (!buffer.hasRemaining()) {
-      uploadPart();
+      uploadPart(buffer.position(), false);
     }
+    buffer.put((byte) b);
   }
 
   @Override
@@ -99,7 +105,7 @@ public class S3OutputStream extends OutputStream {
     while (buffer.remaining() < lenRemaining) {
       int firstPart = buffer.remaining();
       buffer.put(b, currentOffset, firstPart);
-      uploadPart();
+      uploadPart(buffer.position(), false);
 
       currentOffset += firstPart;
       lenRemaining -= firstPart;
@@ -113,23 +119,19 @@ public class S3OutputStream extends OutputStream {
     return off < 0 || off > len;
   }
 
-  private void uploadPart() throws IOException {
-    int size = buffer.position() - buffer.arrayOffset();
-
-    if (size == 0) {
-      // nothing to upload
-      return;
-    }
-
+  /**
+   * Uploads the first {@code size} bytes of the buffer as the next part and moves any remaining
+   * bytes to the start of the buffer.
+   */
+  private void uploadPart(int size, boolean last) throws IOException {
     if (multiPartUpload == null) {
       if (log.isDebugEnabled()) {
         log.debug("New multi-part upload for bucketName '{}' key '{}'", bucketName, key);
       }
       multiPartUpload = newMultipartUpload();
     }
-    try (ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), size)) {
-      multiPartUpload.uploadPart(inputStream, size);
+    try (ByteArrayInputStream inputStream = new ByteArrayInputStream(buffer.array(), 0, size)) {
+      multiPartUpload.uploadPart(inputStream, size, last);
     } catch (Exception e) {
       if (multiPartUpload != null) {
         multiPartUpload.abort();
@@ -140,8 +142,8 @@ public class S3OutputStream extends OutputStream {
       throw new S3Exception("Part upload failed: ", e);
     }
 
-    // reset the buffer for eventual next write operation
-    buffer.clear();
+    buffer.flip().position(size);
+    buffer.compact();
   }
 
   @Override
@@ -150,10 +152,11 @@ public class S3OutputStream extends OutputStream {
       throw new IOException("Stream closed");
     }
 
-    // Flush is possible only if we have more data than the required part size
-    // If buffer size is lower, then just skip
-    if (buffer.position() - buffer.arrayOffset() >= MIN_PART_SIZE) {
-      uploadPart();
+    // Upload a block-aligned prefix of at least MIN_PART_SIZE, keeping at least one byte back
+    // for the final part. If the buffer is smaller, then just skip.
+    int flushSize = (buffer.position() - 1) / CIPHER_BLOCK_SIZE * CIPHER_BLOCK_SIZE;
+    if (flushSize >= MIN_PART_SIZE) {
+      uploadPart(flushSize, false);
     }
   }
 
@@ -169,8 +172,9 @@ public class S3OutputStream extends OutputStream {
       return;
     }
 
-    // flush first
-    uploadPart();
+    if (buffer.position() > 0) {
+      uploadPart(buffer.position(), true);
+    }
 
     if (multiPartUpload != null) {
       multiPartUpload.complete();
@@ -205,7 +209,7 @@ public class S3OutputStream extends OutputStream {
       }
     }
 
-    void uploadPart(ByteArrayInputStream inputStream, long partSize) {
+    void uploadPart(ByteArrayInputStream inputStream, long partSize, boolean last) {
       if (aborted) {
         throw new IllegalStateException(
             "Can't upload new parts on a MultipartUpload that was aborted. id '" + uploadId + "'");
@@ -218,6 +222,7 @@ public class S3OutputStream extends OutputStream {
               .bucket(bucketName)
               .uploadId(uploadId)
               .partNumber(currentPartNumber)
+              .sdkPartType(last ? SdkPartType.LAST : SdkPartType.DEFAULT)
               .build();
 
       if (log.isDebugEnabled()) {
