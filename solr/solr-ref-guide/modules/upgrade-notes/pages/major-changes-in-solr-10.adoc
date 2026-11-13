@@ -63,6 +63,28 @@ picocli is now the default. Set `SOLR_PICOCLI=false` to fall back to Commons CLI
 * Usage and help output is laid out differently throughout, so anything parsing the output of `--help` will need adjusting.
 * Typing a `zk` sub-command without the `zk` prefix, for example `bin/solr ls`, reports an unmatched argument rather than the reminder the Commons CLI prints. That syntax was removed in Solr 9; use `bin/solr zk ls`.
 
+=== OpenTelemetry
+
+==== OTLP metrics now identify the node they came from
+
+*Breaking change for OTLP consumers.*
+
+Pushed metrics previously arrived with the SDK placeholder `service.name=unknown_service:java` and no `service.instance.id`, so every node looked alike.
+They now carry `service.name=solr` and `service.instance.id=<host>:<port>` by default, which Prometheus maps to the `job` and `instance` labels.
+
+Dashboards and alerts that match `job="unknown_service:java"`, or that assume one merged series per metric, need updating.
+`OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` configure these for metrics as they already did for tracing; see xref:deployment-guide:opentelemetry.adoc#resource-attributes[Resource Attributes].
+
+Traces are affected too: spans now carry `host.name` and `service.instance.id` unless configured otherwise.
+
+==== Standard OTLP exporter variables now apply to metrics
+
+Solr's OTLP metric exporter reads the standard `OTEL_*` exporter settings whenever the matching `solr.metrics.otlp*` property is not set.
+`OTEL_METRICS_EXPORTER=otlp` now enables the metrics push, where before it had no effect, and `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_PROTOCOL` now steer metrics as well as traces.
+
+If you set these for tracing only, set `solr.metrics.otlpExporterEnabled=false` to keep the metrics push off, or give it its own destination with `solr.metrics.otlpHttpExporterEndpoint`.
+See xref:deployment-guide:metrics-reporting.adoc#otlp[Metrics over OTLP].
+
 === Javadoc URLs Have Changed
 
 The Javadocs for every Solr module are now published as one combined set, rather than one tree per module.
