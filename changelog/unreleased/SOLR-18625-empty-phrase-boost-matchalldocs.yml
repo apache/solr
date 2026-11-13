@@ -3,7 +3,7 @@ title: Fix the eDisMax parser adding an empty phrase field (pf) boost clause whe
   the bq consists only of stopwords. The empty SHOULD clauses did not affect scoring but defeated the
   single-clause MatchAllDocsQuery optimization; they are now omitted, so q=*:* reduces to a
   MatchAllDocsQuery even when pf or bq is set.
-type: fixed
+type: changed
 authors:
   - name: Ian Springer
     nick: ianspringer
