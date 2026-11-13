@@ -23,6 +23,7 @@ import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
 import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN_OR_REMOTEPROXY;
 import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
 import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETRY;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
@@ -169,6 +170,7 @@ public class V2HttpCall extends HttpSolrCall {
               path = this.path;
               return;
             }
+            if (action == RETRY) return;
           }
         }
       } else if ("cores".equals(prefix) && pathSegments.size() > 1) {
