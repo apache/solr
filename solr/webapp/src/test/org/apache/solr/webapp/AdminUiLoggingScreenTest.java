@@ -63,6 +63,37 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
   }
 
   @Test
+  public void testAllNodeLogsWithoutNodeSelection() throws Exception {
+    ensureCloudCluster();
+    driver.get(baseUrl + "/index.html#/");
+    waitFor(By.id("node-selector-item"));
+    ((JavascriptExecutor) driver)
+        .executeScript("sessionStorage.removeItem('adminui.selectedNode');");
+    driver.navigate().refresh();
+    waitFor(By.id("nodes-table"));
+    driver.get(baseUrl + "/index.html#/~logging");
+    waitFor(By.id("log-all-nodes"));
+    startNodeRequestCapture();
+    try {
+      click(By.id("log-all-nodes"));
+      waitUntil(
+          "one log request was sent per live node without a selected node",
+          () -> capturedNodeRequests("/api/node/logging/messages").size() >= 2);
+      for (var jetty : cluster.getJettySolrRunners()) {
+        assertTrue(
+            capturedNodeRequests("/api/node/logging/messages").stream()
+                .anyMatch(r -> jetty.getNodeName().equals(r.get("target"))));
+      }
+      assertNull(
+          ((JavascriptExecutor) driver)
+              .executeScript("return sessionStorage.getItem('adminui.selectedNode');"));
+      assertNoSevereConsoleErrors();
+    } finally {
+      stopNodeRequestCapture();
+    }
+  }
+
+  @Test
   public void testAllNodeLogRequestsUseIndependentHeaders() throws Exception {
     openPage("~logging", By.id("viewer"));
     click(By.id("refresh-toggle"));

@@ -167,7 +167,7 @@ limitations under the License.
           <h2>Select a node</h2>
           <p>Choose a live node from the Node Selector.</p>
         </div>
-        <div ng-view id="content" ng-hide="needsNodeSelection && isNodeScopedPage && !allLogNodes">
+        <div ng-view id="content" ng-hide="needsNodeSelection && isNodeScopedPage && page !== 'logging' && !allLogNodes">
 
         </div>
       </div>

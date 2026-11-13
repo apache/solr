@@ -116,6 +116,8 @@ function isNumeric(n) {
 }
 
 var nodesSubController = function($scope, $location, $timeout, $q, ClusterV2, CollectionsV2, NodeRequests, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget) {
+  var systemRequestGeneration = 0;
+  $scope.$on('$destroy', function() { systemRequestGeneration++; });
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -290,6 +292,7 @@ var nodesSubController = function($scope, $location, $timeout, $q, ClusterV2, Co
     It is also called whenever a filter or paging action is executed
    */
   $scope.reload = function() {
+    var requestGeneration = ++systemRequestGeneration;
     var nodes = $scope.nodes;
     var node_keys = Object.keys(nodes);
     var hosts = $scope.hosts;
@@ -394,6 +397,7 @@ var nodesSubController = function($scope, $location, $timeout, $q, ClusterV2, Co
     liveNodesToShow.forEach(function(node) {
       delete nodes[node].systemError;
       NodeRequests.get('/api/node/system', node).then(function(response) {
+        if (requestGeneration !== systemRequestGeneration) return;
         var s = response.data;
         nodes[node]['system'] = s;
         var memTotal = s.system.totalPhysicalMemorySize;
@@ -427,6 +431,7 @@ var nodesSubController = function($scope, $location, $timeout, $q, ClusterV2, Co
         nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
         nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
       }, function(response) {
+        if (requestGeneration !== systemRequestGeneration) return;
         nodes[node].systemError = response.status || 'connection failed';
       });
     });

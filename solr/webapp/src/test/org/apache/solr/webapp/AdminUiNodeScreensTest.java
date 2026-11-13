@@ -168,6 +168,91 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
   }
 
   @Test
+  public void testCloudNodesIgnoreOutOfOrderSystemInfo() throws Exception {
+    openPage("~cloud?view=nodes", By.id("nodes-table"));
+    String node = cluster.getJettySolrRunner(0).getNodeName();
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    waitUntil(
+        "initial system information is available",
+        () ->
+            Boolean.TRUE.equals(
+                js.executeScript(
+                    "var s = angular.element(document.getElementById('nodes-content')).scope();"
+                        + " return !!(s.nodes[arguments[0]] && s.nodes[arguments[0]].system);",
+                    node)));
+    try {
+      js.executeScript(
+          """
+          var scope = angular.element(document.getElementById('nodes-content')).scope();
+          var injector = angular.element(document.body).injector();
+          var service = injector.get('NodeRequests');
+          var q = injector.get('$q');
+          var node = arguments[0];
+          var state = {service: service, original: service.get, scope: scope,
+                       node: node, data: angular.copy(scope.nodes[node].system)};
+          window.systemOrderTest = state;
+          service.get = function(url, target) {
+            if (url === '/api/node/system' && target === node) {
+              state.calls++;
+              if (state.calls === 1) return state.old.promise;
+              var data = angular.copy(state.data);
+              data.reviewMarker = 'new';
+              return q.when({data: data});
+            }
+            return state.original.apply(service, arguments);
+          };
+          state.start = function() {
+            state.calls = 0;
+            state.old = q.defer();
+            scope.$apply(function() { scope.reload(); scope.reload(); });
+          };
+          state.start();
+          """,
+          node);
+      waitUntil(
+          "newer system response is displayed",
+          () ->
+              Boolean.TRUE.equals(
+                  js.executeScript(
+                      "return window.systemOrderTest.scope.nodes[arguments[0]].system.reviewMarker"
+                          + " === 'new';",
+                      node)));
+      js.executeScript(
+          """
+          var state = window.systemOrderTest;
+          state.scope.$apply(function() { state.old.reject({status: 503}); });
+          """);
+      assertNull(
+          js.executeScript(
+              "return window.systemOrderTest.scope.nodes[arguments[0]].systemError || null;",
+              node));
+
+      js.executeScript(
+          """
+          var state = window.systemOrderTest;
+          state.start();
+          var oldData = angular.copy(state.data);
+          oldData.reviewMarker = 'old';
+          state.scope.$apply(function() { state.old.resolve({data: oldData}); });
+          """);
+      assertEquals(
+          "new",
+          js.executeScript(
+              "return window.systemOrderTest.scope.nodes[arguments[0]].system.reviewMarker;",
+              node));
+      assertNoSevereConsoleErrors();
+    } finally {
+      js.executeScript(
+          """
+          if (window.systemOrderTest) {
+            window.systemOrderTest.service.get = window.systemOrderTest.original;
+            delete window.systemOrderTest;
+          }
+          """);
+    }
+  }
+
+  @Test
   public void testCloudNodesRetainHealthyDataWhenSystemInfoFails() throws Exception {
     openPage("", By.id("index"));
     String localNode = cluster.getJettySolrRunner(0).getNodeName();
