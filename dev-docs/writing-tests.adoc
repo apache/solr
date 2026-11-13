@@ -23,7 +23,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | Current, but not a default.
 
 | `SolrShellTestCase`
-| CATS — Cross-platform Automated Testing System: `bin/solr` and `bin\solr.cmd` as real subprocesses through the platform's own shell. Harness in `solr/test-framework/src/java/org/apache/solr/shell/`, suites in `solr/packaging/src/test/`.
+| CATS — Cross-platform Automated Testing System: a real, unpacked Solr distribution driven through `bin/solr` and `bin\solr.cmd` as subprocesses under the platform's own shell. The only harness that runs an installation the way a user gets one, so a classpath, Jetty configuration or file layout problem reproduces here and nowhere else. Harness in `solr/test-framework/src/java/org/apache/solr/shell/`, suites in `solr/packaging/src/test/`.
 | seconds to minutes
 | Current. New CLI coverage goes here.
 
@@ -52,7 +52,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 * Plain class, parser, config object, response writer, utility — `SolrTestCase`, no server.
 * Needs a live Solr, one node — `SolrTestCase` + `SolrJettyTestRule`, or `EmbeddedSolrServerTestRule` if the HTTP layer is not part of the test.
 * Only reproduces across nodes, or involves ZooKeeper, routing, replication, recovery or the Collections API — `SolrCloudTestCase`, with the lowest node count that still shows the bug.
-* In `bin/solr`, `bin/solr.cmd`, `solr.in.sh`/`solr.in.cmd`, CLI parsing, output or exit codes — `SolrShellTestCase`. The only harness that catches a Windows-only script bug.
+* In `bin/solr`, `bin/solr.cmd`, `solr.in.sh`/`solr.in.cmd`, CLI parsing, output or exit codes — `SolrShellTestCase`. Also the only place a packaging problem reproduces: a jar missing from the classpath, a Jetty setting, a file in the wrong place, or a Windows-only script bug. The `SolrTestCase` hierarchy builds no installation, so none of those are visible to it.
 * Needs a real external service, not a mock — pick from the above as usual, then add a Testcontainers `@ClassRule`; see below.
 * In the Admin UI's JavaScript or templates — `AdminUiTestBase`. Test the APIs it calls separately; keep the browser test to what the browser renders.
 * Tempted to add a `.bats` file — don't. Write it as a `SolrShellTestCase`. Touch the `.bats` files only to keep them working until they are ported.
