@@ -75,6 +75,15 @@ When starting in SolrCloud mode, the interactive script session will prompt you 
 
 For more information about starting Solr in SolrCloud mode, see also the section xref:getting-started:tutorial-solrcloud.adoc[].
 
+== Stopping All Local Nodes
+
+`bin/solr stop --all` stops all local nodes found in the configured PID directory.
+Processes started with `-Dsolr.zookeeper.server.enabled=true` are stopped after other nodes.
+Solr also reports these nodes with the `zookeeper:on` xref:node-roles.adoc[node role].
+Each node is stopped before proceeding to the next; no ordering is guaranteed within either group.
+The Windows equivalent, `bin/solr.cmd stop --all`, applies the same ordering to nodes found through its port files.
+The Windows script uses Windows PowerShell to inspect local process arguments during shutdown.
+
 == User Managed Mode
 
 `bin/solr start --user-managed` starts Solr in User Managed mode (AKA Standalone mode).  This was the default mode up until Solr 10x.

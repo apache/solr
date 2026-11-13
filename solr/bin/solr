@@ -962,16 +962,20 @@ fi
 if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
-    # Read from a process substitution, not a pipeline, so none_stopped survives the loop
-    while read -r PIDF; do
-      NEXT_PID=$(cat "$PIDF")
-      port=$(solr_port_listen "$NEXT_PID")
-      if [ "$port" != "" ]; then
-        stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
-        none_stopped=false
-      fi
-      rm -f "$PIDF"
-    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+    for stop_zookeeper in false true; do
+      while IFS= read -r PIDF; do
+        NEXT_PID=$(cat "$PIDF")
+        if ! $stop_zookeeper && ps -ww -o args= -p "$NEXT_PID" | grep -q -- '-Dsolr.zookeeper.server.enabled=true'; then
+          continue
+        fi
+        port=$(solr_port_listen "$NEXT_PID")
+        if [ "$port" != "" ]; then
+          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
+          none_stopped=false
+        fi
+        rm -f "$PIDF"
+      done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+    done
     if $none_stopped; then
       echo -e "\nNo Solr nodes found to stop.\n"
     fi

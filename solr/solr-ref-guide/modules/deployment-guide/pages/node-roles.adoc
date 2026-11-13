@@ -61,6 +61,9 @@ If a node has been started with no `solr.node.roles` parameter, it will be assum
 
 |`coordinator`
 |on, off
+
+|`zookeeper`
+|on, off
 |===
 
 === `data` role
@@ -68,6 +71,20 @@ A node with this role (in mode "on") can host shards and replicas for collection
 
 === `overseer` role
 A node with this role can perform duties of an overseer node (unless mode is `disallowed`). When one or more nodes have the overseer role in `preferred` mode, the overseer leader will be elected from one of these nodes. In case no node is designated as a preferred overseer or no such node is live, the overseer leader will be elected from one of the nodes that have the overseer role in `allowed` mode. If all nodes that are designated with overseer role (allowed or preferred) are down, the cluster will be left without an overseer.
+
+=== `zookeeper` role
+
+The `zookeeper:on` role identifies a Solr node that hosts an embedded ZooKeeper server.
+Solr derives this role from `solr.zookeeper.server.enabled`, preserving the node's other roles.
+If no roles were configured, the node retains the defaults `data:on,overseer:allowed` alongside `zookeeper:on`.
+
+When stopping all local nodes with `bin/solr stop --all` or `bin/solr.cmd stop --all`, the scripts stop other nodes before processes started with `-Dsolr.zookeeper.server.enabled=true`.
+This keeps embedded ZooKeeper available while the other nodes shut down.
+The ordering uses the existing embedded ZooKeeper startup flag and does not require a connection to Solr or ZooKeeper.
+No ordering is guaranteed within either group.
+
+The role is `on` when embedded ZooKeeper is enabled and `off` otherwise.
+It cannot be overridden through `solr.node.roles`; configure embedded ZooKeeper using `solr.zookeeper.server.enabled` instead.
 
 === `coordinator` role
 

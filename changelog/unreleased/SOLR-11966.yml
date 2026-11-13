@@ -1,0 +1,7 @@
+title: Stop Solr nodes hosting embedded ZooKeeper after other local nodes when using stop --all, and identify embedded ZooKeeper hosts with the zookeeper node role
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-11966
+    url: https://issues.apache.org/jira/browse/SOLR-11966
