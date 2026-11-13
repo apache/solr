@@ -6,7 +6,7 @@ title: >
   tutorial, which also use it: an embedded ZooKeeper that was previously plaintext will
   come up TLS-only. This has no effect when pointing Solr at an external ZooKeeper
   ensemble, which must be secured independently. Unix/macOS (bin/solr) only; on Windows
-  (bin/solr.cmd) the embedded ZooKeeper remains plaintext and a warning is printed.
+  (bin/solr.cmd) the embedded ZooKeeper remains plaintext, unchanged.
 type: changed
 authors:
   - name: Eric Pugh
