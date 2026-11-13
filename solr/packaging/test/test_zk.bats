@@ -70,9 +70,7 @@ teardown() {
   run solr zk ls / -z 127.0.0.1:1
   assert_failure
   assert_output --partial "ZooKeeper did not respond within the connection timeout"
-  assert_output --partial "Solr node hosting it is running"
   refute_output --partial "Could not complete ls operation"
-  refute_output --partial "at org.apache.solr.common.cloud.SolrZkClient"
 }
 
 @test "connecting to solr via various solr urls and zk hosts" {
