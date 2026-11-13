@@ -1,4 +1,6 @@
-title: Stop Solr nodes hosting embedded ZooKeeper after other local nodes when using stop --all, and identify embedded ZooKeeper hosts with the zookeeper node role
+title: >
+  On Unix/macOS, bin/solr stop --all stops nodes hosting embedded ZooKeeper last.
+  Embedded ZooKeeper hosts now report the zookeeper:on node role.
 type: fixed
 authors:
   - name: Eric Pugh
