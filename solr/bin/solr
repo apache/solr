@@ -504,7 +504,7 @@ function solr_port_listen() {
 function run_tool() {
 
   # shellcheck disable=SC2086,SC2164
-  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
+  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_ZK_TLS_OPTS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" -Dsolr.pid.dir="$SOLR_PID_DIR" \
     -Djava.io.tmpdir="$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     -classpath "$SOLR_TIP/lib/*:$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
@@ -1134,6 +1134,57 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
     fi
 
     CLOUD_MODE_OPTS+=('-Dsolr.zookeeper.server.enabled=true')
+
+    if [ "$SOLR_SSL_ENABLED" == "true" ]; then
+      # There's no good reason to run a plaintext embedded ZooKeeper next to an HTTPS
+      # Solr, so secure it too, reusing Solr's own keystore/truststore. This branch only
+      # runs when ZK_HOST is unset, i.e. Solr is starting its own embedded ZooKeeper -
+      # an external ensemble (-z/--zk-host) is never touched by this: Solr has no way to
+      # know whether an external ensemble uses TLS, so nothing is assumed there.
+      ZK_SECURE_PORT=$((SOLR_PORT_LISTEN + 1000))
+      ZK_ZOO_CFG="$SOLR_HOME/zoo.cfg"
+      if [ ! -e "$ZK_ZOO_CFG" ]; then
+        cp "$DEFAULT_SERVER_DIR/solr/zoo.cfg" "$ZK_ZOO_CFG"
+      fi
+      # Passwords go in files, never inline in zoo.cfg or on the command line: unlike
+      # Solr's own SSLConfigurations/EnvSSLCredentialProvider, ZooKeeper has no env-var
+      # password source, and a -D flag would be visible in `ps`.
+      ZK_KEYSTORE_PASSWORD_FILE="$SOLR_HOME/.zk-tls-keystore-password"
+      ZK_TRUSTSTORE_PASSWORD_FILE="$SOLR_HOME/.zk-tls-truststore-password"
+      printf '%s' "$SOLR_SSL_KEY_STORE_PASSWORD" > "$ZK_KEYSTORE_PASSWORD_FILE"
+      printf '%s' "$SOLR_SSL_TRUST_STORE_PASSWORD" > "$ZK_TRUSTSTORE_PASSWORD_FILE"
+      chmod 600 "$ZK_KEYSTORE_PASSWORD_FILE" "$ZK_TRUSTSTORE_PASSWORD_FILE"
+      if ! grep -q '^secureClientPort=' "$ZK_ZOO_CFG" 2>/dev/null; then
+        cat >> "$ZK_ZOO_CFG" <<EOF
+
+secureClientPort=$ZK_SECURE_PORT
+serverCnxnFactory=org.apache.zookeeper.server.NettyServerCnxnFactory
+ssl.keyStore.location=$SOLR_SSL_KEY_STORE
+ssl.keyStore.type=$SOLR_SSL_KEY_STORE_TYPE
+ssl.keyStore.passwordPath=$ZK_KEYSTORE_PASSWORD_FILE
+ssl.trustStore.location=$SOLR_SSL_TRUST_STORE
+ssl.trustStore.type=$SOLR_SSL_TRUST_STORE_TYPE
+ssl.trustStore.passwordPath=$ZK_TRUSTSTORE_PASSWORD_FILE
+ssl.clientAuth=none
+client.portUnification=false
+EOF
+      fi
+      ZK_SSL_OPTS="-Dzookeeper.client.secure=true -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.ssl.trustStore.location=$SOLR_SSL_TRUST_STORE -Dzookeeper.ssl.trustStore.type=$SOLR_SSL_TRUST_STORE_TYPE -Dzookeeper.ssl.trustStore.passwordPath=$ZK_TRUSTSTORE_PASSWORD_FILE -Dzookeeper.ssl.hostnameVerification=true"
+      # shellcheck disable=SC2206
+      CLOUD_MODE_OPTS+=($ZK_SSL_OPTS)
+      # Persist the same flags into the include file (a distinct var from
+      # SOLR_ZK_CREDS_AND_ACLS, so a later digest-credentials block there can't clobber
+      # this one) so co-located nodes and bin/solr zk/auth calls that source this same
+      # file inherit TLS too, without any of them special-casing it.
+      if [ -f "${SOLR_INCLUDE:-}" ] && ! grep -q 'SOLR_ZK_TLS_OPTS=' "$SOLR_INCLUDE" 2>/dev/null; then
+        {
+          printf '\n'
+          echo "SOLR_ZK_TLS_OPTS=\"$ZK_SSL_OPTS\""
+          echo 'SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_TLS_OPTS"'
+        } >> "$SOLR_INCLUDE"
+        echo "Embedded ZooKeeper's transport is now TLS-only (reusing the SSL keystore/truststore); added SOLR_ZK_TLS_OPTS to $SOLR_INCLUDE."
+      fi
+    fi
   fi
 
   if [ -n "${ZK_CREATE_CHROOT:-}" ]; then

@@ -48,6 +48,9 @@ Protecting ZooKeeper itself could mean many different things.
 **This section is about protecting Solr content in ZooKeeper**.
 ZooKeeper content basically lives persisted on disk and (partly) in memory of the ZooKeeper processes.
 *This section is not about protecting ZooKeeper data at storage or ZooKeeper process levels* - that's for ZooKeeper to deal with.
+*This section is also not about encrypting the ZooKeeper connection itself* - ACLs control who can read or write content once connected, they do not encrypt the connection.
+For an embedded ZooKeeper, `bin/solr` automatically secures that connection with TLS whenever `SOLR_SSL_ENABLED=true`; see the walkthrough in xref:getting-started:tutorial-securing-solr.adoc[] for both the embedded behavior and how it interacts with the ACL settings described below.
+For an external ensemble, TLS must be configured on the ensemble independently.
 
 But this content is also available to "the outside" via the ZooKeeper API.
 Outside processes can connect to ZooKeeper and create/update/delete/read content.
@@ -238,6 +241,9 @@ authenticate with ZooKeeper via Kerberos.
 
 Below examples are for `digest` scheme.
 
+NOTE: These examples build `SOLR_ZK_CREDS_AND_ACLS` to control credentials and ACLs.
+On an embedded ZooKeeper with `SOLR_SSL_ENABLED=true`, `bin/solr` separately manages a `SOLR_ZK_TLS_OPTS` variable in the same include file to secure the connection itself; both are referenced together wherever ZooKeeper options are needed, so you do not need to (and should not) fold TLS settings into `SOLR_ZK_CREDS_AND_ACLS` yourself.
+
 * xref:#through-system-properties[System Properties]
 * xref:#through-a-file[Through a File]
 * xref:#through-a-custom-credentials-injector[Custom Credentials Injector]
@@ -424,6 +430,9 @@ Changing the configured `zkACLProvider` in `solr.xml` will ensure that newly cre
 
 To modify all existing ACLs, you can use the `bin/solr zk updateacls` command with Solr's CLI.
 First uncomment the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.*` and fill in the passwords for the admin-user and the readonly-user as described above in <<ZooKeeper ACLs in Solr CLI>>.
+
+If the target ZooKeeper requires TLS (an embedded ZooKeeper with `SOLR_SSL_ENABLED=true` already does, automatically; an external ensemble might), `bin/solr zk updateacls` needs the matching `zookeeper.ssl.*` flags alongside the credentials above or it will fail to connect.
+If you sourced the node's own include file, these are already set for you; if you are running the command standalone (for example with `SOLR_INCLUDE=/dev/null`), pass them explicitly, as shown for `/security.json` in xref:getting-started:tutorial-securing-solr.adoc[].
 
 Then run the command below appropriate for your operating system:
 

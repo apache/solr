@@ -79,7 +79,7 @@ public class SolrZkServer {
       return null;
     }
 
-    InetSocketAddress addr = zkProps.getClientPortAddress();
+    InetSocketAddress addr = getClientAddress();
     String hostName;
     // We cannot advertise 0.0.0.0, so choose the best host to advertise
     // (the same that the Solr Node defaults to)
@@ -89,6 +89,12 @@ public class SolrZkServer {
       hostName = addr.getAddress().getHostAddress();
     }
     return hostName + ":" + addr.getPort();
+  }
+
+  private InetSocketAddress getClientAddress() {
+    return zkProps.getClientPortAddress() != null
+        ? zkProps.getClientPortAddress()
+        : zkProps.getSecureClientPortAddress();
   }
 
   public void parseConfig() {
@@ -119,11 +125,15 @@ public class SolrZkServer {
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
-      props.setProperty(
-          "clientPortAddress", EnvUtils.getProperty("solr.zookeeper.embedded.host", "127.0.0.1"));
-      if (props.getProperty("clientPort") == null) {
+      String bindHost = EnvUtils.getProperty("solr.zookeeper.embedded.host", "127.0.0.1");
+      boolean hasClientPort = props.getProperty("clientPort") != null;
+      boolean hasSecureClientPort = props.getProperty("secureClientPort") != null;
+      if (!hasClientPort && !hasSecureClientPort) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
+        hasClientPort = true;
       }
+      if (hasClientPort) props.setProperty("clientPortAddress", bindHost);
+      if (hasSecureClientPort) props.setProperty("secureClientPortAddress", bindHost);
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
       if (zkRun) {
@@ -168,10 +178,11 @@ public class SolrZkServer {
             "embeddedZkServer");
 
     if (log.isInfoEnabled()) {
-      log.info(
+      InetSocketAddress clientAddress = getClientAddress();
+      log.info( // nowarn
           "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at {}:{}",
-          zkProps.getClientPortAddress().getAddress().getHostAddress(),
-          zkProps.getClientPortAddress().getPort());
+          clientAddress.getAddress().getHostAddress(),
+          clientAddress.getPort());
     }
 
     zkThread.setDaemon(true);

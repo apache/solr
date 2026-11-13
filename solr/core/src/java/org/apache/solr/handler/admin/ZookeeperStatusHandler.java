@@ -23,6 +23,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -31,9 +32,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.net.ssl.SSLSocket;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -41,6 +44,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.common.ClientX509Util;
+import org.apache.zookeeper.common.X509Exception;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +64,20 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final String STATUS_NA = "N/A";
   private CoreContainer cores;
 
+  // Lazily created, reused across requests: building an SSLContext means reading and parsing
+  // the truststore, which is wasteful to repeat for every four-letter-word command.
+  private volatile ClientX509Util x509Util;
+
   public ZookeeperStatusHandler(CoreContainer cc) {
     this.cores = cc;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (x509Util != null) {
+      x509Util.close();
+    }
+    super.close();
   }
 
   @Override
@@ -333,7 +350,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       port = Integer.parseInt(hostPort[1]);
     }
 
-    try (Socket socket = new Socket(host, port);
+    boolean zkClientSecure = EnvUtils.getPropertyAsBool("zookeeper.client.secure", false);
+    try (Socket socket = zkClientSecure ? createSecureSocket(host, port) : new Socket(host, port);
         Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         PrintWriter out = new PrintWriter(writer, true);
         BufferedReader in =
@@ -348,6 +366,36 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed talking to Zookeeper " + zkHostPort, e);
     }
+  }
+
+  /**
+   * Opens a TLS socket to a ZooKeeper server, using the same {@code zookeeper.ssl.*} trust material
+   * {@code -Dzookeeper.client.secure=true} already configures for the regular ZooKeeper client (see
+   * {@link org.apache.zookeeper.common.ClientX509Util}), rather than Solr's own HTTPS
+   * keystore/truststore system properties.
+   */
+  private Socket createSecureSocket(String host, int port) throws IOException {
+    try {
+      SSLSocket socket = x509Util().getDefaultSSLContextAndOptions().createSSLSocket();
+      socket.connect(new InetSocketAddress(host, port));
+      return socket;
+    } catch (X509Exception e) {
+      throw new IOException(
+          "Failed to create a secure socket to ZooKeeper " + host + ":" + port, e);
+    }
+  }
+
+  private ClientX509Util x509Util() {
+    ClientX509Util util = x509Util;
+    if (util == null) {
+      synchronized (this) {
+        util = x509Util;
+        if (util == null) {
+          x509Util = util = new ClientX509Util();
+        }
+      }
+    }
+    return util;
   }
 
   /**
