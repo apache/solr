@@ -1,4 +1,4 @@
-title: The default wait for ZooKeeper at node startup is 30 seconds again instead of 30000, and the deprecated -DwaitForZk system property works again with a deprecation warning
+title: Fix the default ZooKeeper startup timeout to use solr.zookeeper.client.timeout in milliseconds, deprecate the separate solr.cloud.wait.for.zk.seconds override, and restore the legacy waitForZk alias
 type: fixed
 authors:
   - name: Julian Chandra Sutadi

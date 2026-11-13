@@ -31,16 +31,17 @@ import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ContainerPluginsRegistry;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.LogListener;
 import org.junit.Before;
 import org.junit.Ignore;
 
@@ -601,13 +602,27 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testStartUpZkTimeOutDefaultsToZkClientTimeout() {
     System.clearProperty("solr.cloud.wait.for.zk.seconds");
-    assertEquals(
-        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, NodeConfig.getStartUpZkTimeOutSeconds());
+    System.clearProperty("solr.zookeeper.client.timeout");
+    assertEquals(30_000, NodeConfig.getStartUpZkTimeOutMillis());
   }
 
-  public void testStartUpZkTimeOutConvertsSecondsToMillis() {
+  public void testStartUpZkTimeOutReadsCurrentZkClientTimeout() {
+    System.setProperty("solr.zookeeper.client.timeout", "1000");
+    assertEquals(1000, NodeConfig.getStartUpZkTimeOutMillis());
+    System.setProperty("solr.zookeeper.client.timeout", "20000");
+    assertEquals(20_000, NodeConfig.getStartUpZkTimeOutMillis());
+  }
+
+  public void testDeprecatedStartUpZkTimeOutOverridesClientTimeoutWithWarning() {
+    System.setProperty("solr.zookeeper.client.timeout", "1000");
     System.setProperty("solr.cloud.wait.for.zk.seconds", "60");
-    assertEquals(60_000, NodeConfig.getStartUpZkTimeOutSeconds());
+    try (LogListener warnings =
+        LogListener.warn(DeprecationLog.LOG_PREFIX + "solr.cloud.wait.for.zk.seconds")) {
+      assertEquals(60_000, NodeConfig.getStartUpZkTimeOutMillis());
+      assertEquals(60_000, NodeConfig.getStartUpZkTimeOutMillis());
+      assertEquals(1, warnings.getCount());
+      assertTrue(warnings.pollMessage().contains("solr.zookeeper.client.timeout"));
+    }
   }
 
   public static class CS implements ClusterSingleton {

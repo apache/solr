@@ -67,14 +67,14 @@
 # Set to true if your ZK host has a chroot path, and you want to create it automatically.
 #ZK_CREATE_CHROOT=true
 
-# Set the ZooKeeper client timeout (for SolrCloud mode)
+# Set the ZooKeeper client timeout in milliseconds
 #ZK_CLIENT_TIMEOUT="30000"
 
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
 #SOLR_HOST_ADVERTISE="192.168.1.1"
 
-# By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+# Deprecated startup-only override in seconds; use ZK_CLIENT_TIMEOUT in milliseconds instead.
 #SOLR_CLOUD_WAIT_FOR_ZK_SECONDS="30"
 
 # By default Solr will log a warning for cores that are not registered in Zookeeper at startup
