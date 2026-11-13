@@ -30,6 +30,9 @@ pushd %SOLR_TIP%
 set SOLR_TIP=%CD%
 popd
 
+REM Where the per-node files recording running Solr instances live
+IF NOT DEFINED SOLR_PID_DIR set "SOLR_PID_DIR=%SOLR_TIP%\bin"
+
 REM Used to report errors before exiting the script
 set SCRIPT_ERROR=
 set NO_USER_PROMPT=0
@@ -858,9 +861,9 @@ IF "%SCRIPT_CMD%"=="stop" (
   IF "%SOLR_PORT%"=="" (
     IF "%STOP_ALL%"=="1" (
       set found_it=0
-      for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+      for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
         set SOME_SOLR_PORT=
-        For /F "delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+        For /F "delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
         if NOT "!SOME_SOLR_PORT!"=="" (
           for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
             @REM j is the ip:port and k is the pid
@@ -874,7 +877,7 @@ IF "%SCRIPT_CMD%"=="stop" (
                   set LOCAL_STOP_PORT=%STOP_PORT%
                 )
                 "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-                del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
+                del "%SOLR_PID_DIR%"\solr-!SOME_SOLR_PORT!.port
                 REM wait for the process to terminate
                 CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
                 REM Kill it if it is still running after the graceful shutdown
@@ -902,7 +905,7 @@ IF "%SCRIPT_CMD%"=="stop" (
           @echo Stopping Solr process %%N running on port %SOLR_PORT%
           IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
           "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-          del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+          del "%SOLR_PID_DIR%"\solr-%SOLR_PORT%.port
           REM wait for the process to terminate
           CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
           REM Kill it if it is still running after the graceful shutdown
@@ -1245,7 +1248,7 @@ IF "%DEFAULT_CONFDIR%"=="" set "DEFAULT_CONFDIR=%SOLR_SERVER_DIR%\solr\configset
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
-  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+  echo %SOLR_PORT%>"%SOLR_PID_DIR%"\solr-%SOLR_PORT%.port
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
@@ -1259,7 +1262,7 @@ IF "%FG%"=="1" (
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
     -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
-  echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+  echo %SOLR_PORT%>"%SOLR_PID_DIR%"\solr-%SOLR_PORT%.port
 
   IF "!SOLR_START_WAIT!"=="" (
     set SOLR_START_WAIT=180
@@ -1463,9 +1466,9 @@ IF "!CREATE_CONFNAME!"=="" set CREATE_CONFNAME=!CREATE_NAME!
 
 REM Find a port that Solr is running on
 if "!CREATE_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+  for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
-    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+    For /F "Delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
     if NOT "!SOME_SOLR_PORT!"=="" (
       for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
         IF NOT "%%k"=="0" set CREATE_PORT=!SOME_SOLR_PORT!
@@ -1550,9 +1553,9 @@ IF "!DELETE_NAME!"=="" (
 
 REM Find a port that Solr is running on
 if "!DELETE_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+  for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
-    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+    For /F "Delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
     if NOT "!SOME_SOLR_PORT!"=="" (
       for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
         IF NOT "%%k"=="0" set DELETE_PORT=!SOME_SOLR_PORT!
@@ -1614,9 +1617,9 @@ IF NOT EXIST "%SOLR_HOME%\" (
 )
 
 if "!AUTH_PORT!"=="" (
-  for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+  for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
     set SOME_SOLR_PORT=
-    For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+    For /F "Delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
     if NOT "!SOME_SOLR_PORT!"=="" (
       for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
         IF NOT "%%k"=="0" set AUTH_PORT=!SOME_SOLR_PORT!
