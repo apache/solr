@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,7 +32,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
-public class ZkClientClusterStateProviderTest extends SolrTestCaseJ4 {
+public class ZkClientClusterStateProviderTest extends SolrTestCase {
 
   private record ReadAttempt(String path, String failure) {}
 
@@ -67,7 +67,7 @@ public class ZkClientClusterStateProviderTest extends SolrTestCaseJ4 {
 
   @Test
   public void testKnownAliasDoesNotReadAliasCollectionState() throws Exception {
-    String collection = "target_" + getSaferTestName();
+    String collection = "target";
     String alias = collection + "_alias";
     String aliasCollectionPath = DocCollection.getCollectionPath(alias);
     ZkTestServer server = new ZkTestServer(createTempDir("alias-read-signal"));
