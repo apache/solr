@@ -64,8 +64,20 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final String STATUS_NA = "N/A";
   private CoreContainer cores;
 
+  // Lazily created, reused across requests: building an SSLContext means reading and parsing
+  // the truststore, which is wasteful to repeat for every four-letter-word command.
+  private volatile ClientX509Util x509Util;
+
   public ZookeeperStatusHandler(CoreContainer cc) {
     this.cores = cc;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (x509Util != null) {
+      x509Util.close();
+    }
+    super.close();
   }
 
   @Override
@@ -338,8 +350,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       port = Integer.parseInt(hostPort[1]);
     }
 
-    boolean zkClientSecure =
-        Boolean.parseBoolean(EnvUtils.getProperty("zookeeper.client.secure", "false"));
+    boolean zkClientSecure = EnvUtils.getPropertyAsBool("zookeeper.client.secure", false);
     try (Socket socket = zkClientSecure ? createSecureSocket(host, port) : new Socket(host, port);
         Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         PrintWriter out = new PrintWriter(writer, true);
@@ -363,15 +374,28 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    * {@link org.apache.zookeeper.common.ClientX509Util}), rather than Solr's own HTTPS
    * keystore/truststore system properties.
    */
-  private static Socket createSecureSocket(String host, int port) throws IOException {
-    try (ClientX509Util x509Util = new ClientX509Util()) {
-      SSLSocket socket = x509Util.getDefaultSSLContextAndOptions().createSSLSocket();
+  private Socket createSecureSocket(String host, int port) throws IOException {
+    try {
+      SSLSocket socket = x509Util().getDefaultSSLContextAndOptions().createSSLSocket();
       socket.connect(new InetSocketAddress(host, port));
       return socket;
     } catch (X509Exception e) {
       throw new IOException(
           "Failed to create a secure socket to ZooKeeper " + host + ":" + port, e);
     }
+  }
+
+  private ClientX509Util x509Util() {
+    ClientX509Util util = x509Util;
+    if (util == null) {
+      synchronized (this) {
+        util = x509Util;
+        if (util == null) {
+          x509Util = util = new ClientX509Util();
+        }
+      }
+    }
+    return util;
   }
 
   /**
