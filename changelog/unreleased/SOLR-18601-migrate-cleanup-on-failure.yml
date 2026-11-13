@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  A MIGRATE that fails now removes its routing rule and drops the updates buffered on the target
+  leader, instead of leaving the target buffering updates so that retrying the MIGRATE fails
+type: fixed
+authors:
+  - name: Boyi Dai
+    nick: SpookyJumpyBeans
+links:
+  - name: SOLR-18601
+    url: https://issues.apache.org/jira/browse/SOLR-18601
