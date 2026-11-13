@@ -30,7 +30,10 @@ public class OverseerStatusTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).withOverseer(true).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(2)
+        .withOverseer(true)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
   @Test
@@ -52,8 +55,7 @@ public class OverseerStatusTest extends SolrCloudTestCase {
             .getIsCollectionApiDistributed());
     for (String jsonNl : new String[] {"", "&json.nl=arrarr"}) {
       var jetty = cluster.getRandomJetty(random());
-      String url =
-          jetty.getBaseUrl() + "/admin/collections?action=OVERSEERSTATUS&wt=json" + jsonNl;
+      String url = jetty.getBaseUrl() + "/admin/collections?action=OVERSEERSTATUS&wt=json" + jsonNl;
       var response = jetty.getSolrClient().getHttpClient().GET(url);
       assertEquals(200, response.getStatus());
       Map<?, ?> json = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
