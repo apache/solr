@@ -962,19 +962,26 @@ fi
 if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
-    for stop_zookeeper in false true; do
-      while IFS= read -r PIDF; do
-        NEXT_PID=$(cat "$PIDF")
-        if ! $stop_zookeeper && ps -ww -o args= -p "$NEXT_PID" | grep -q -- '-Dsolr.zookeeper.server.enabled=true'; then
-          continue
-        fi
-        port=$(solr_port_listen "$NEXT_PID")
-        if [ "$port" != "" ]; then
-          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
-          none_stopped=false
-        fi
-        rm -f "$PIDF"
-      done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+    other_pidfiles=()
+    zookeeper_pidfiles=()
+    while IFS= read -r PIDF; do
+      NEXT_PID=$(cat "$PIDF")
+      if ps -ww -o args= -p "$NEXT_PID" | grep -q -- '-Dsolr.zookeeper.server.enabled=true'; then
+        zookeeper_pidfiles+=("$PIDF")
+      else
+        other_pidfiles+=("$PIDF")
+      fi
+    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+    # Stop embedded-ZooKeeper hosts last, so other local nodes can still reach ZooKeeper
+    # while they shut down.
+    for PIDF in "${other_pidfiles[@]}" "${zookeeper_pidfiles[@]}"; do
+      NEXT_PID=$(cat "$PIDF")
+      port=$(solr_port_listen "$NEXT_PID")
+      if [ "$port" != "" ]; then
+        stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
+        none_stopped=false
+      fi
+      rm -f "$PIDF"
     done
     if $none_stopped; then
       echo -e "\nNo Solr nodes found to stop.\n"

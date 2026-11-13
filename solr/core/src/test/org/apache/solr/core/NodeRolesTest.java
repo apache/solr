@@ -31,7 +31,7 @@ public class NodeRolesTest extends SolrTestCase {
   @Test
   public void testZooKeeperRoleDefaultsToOff() {
     NodeRoles roles = new NodeRoles(null);
-    assertEquals(NodeRoles.MODE_OFF, roles.getRoleMode(NodeRoles.Role.getRole("zookeeper")));
+    assertEquals(NodeRoles.MODE_OFF, roles.getRoleMode(NodeRoles.Role.ZOOKEEPER));
     assertEquals(NodeRoles.MODE_ON, roles.getRoleMode(NodeRoles.Role.DATA));
     assertEquals(NodeRoles.MODE_ALLOWED, roles.getRoleMode(NodeRoles.Role.OVERSEER));
   }
@@ -40,7 +40,7 @@ public class NodeRolesTest extends SolrTestCase {
   public void testZooKeeperRolePreservesOtherRoles() {
     System.setProperty("solr.zookeeper.server.enabled", "true");
     NodeRoles roles = new NodeRoles("data:off,overseer:preferred,zookeeper:off");
-    assertEquals(NodeRoles.MODE_ON, roles.getRoleMode(NodeRoles.Role.getRole("zookeeper")));
+    assertEquals(NodeRoles.MODE_ON, roles.getRoleMode(NodeRoles.Role.ZOOKEEPER));
     assertEquals(NodeRoles.MODE_OFF, roles.getRoleMode(NodeRoles.Role.DATA));
     assertEquals(NodeRoles.MODE_PREFERRED, roles.getRoleMode(NodeRoles.Role.OVERSEER));
   }
@@ -55,15 +55,15 @@ public class NodeRolesTest extends SolrTestCase {
   }
 
   @Test
-  public void testZooKeeperRoleReflectsServerSetting() {
-    NodeRoles roles = new NodeRoles("data:on,zookeeper:on");
-    assertEquals(NodeRoles.MODE_OFF, roles.getRoleMode(NodeRoles.Role.ZOOKEEPER));
-  }
-
-  @Test
-  public void testZooKeeperRoleCanBeOff() {
-    NodeRoles roles = new NodeRoles("data:on,zookeeper:off");
-    assertEquals(NodeRoles.MODE_OFF, roles.getRoleMode(NodeRoles.Role.getRole("zookeeper")));
+  public void testZooKeeperRoleIgnoresExplicitValue() {
+    // The zookeeper role always reflects solr.zookeeper.server.enabled (false here, via
+    // @Before), regardless of what the roles string explicitly requests.
+    assertEquals(
+        NodeRoles.MODE_OFF,
+        new NodeRoles("data:on,zookeeper:on").getRoleMode(NodeRoles.Role.ZOOKEEPER));
+    assertEquals(
+        NodeRoles.MODE_OFF,
+        new NodeRoles("data:on,zookeeper:off").getRoleMode(NodeRoles.Role.ZOOKEEPER));
   }
 
   @Test

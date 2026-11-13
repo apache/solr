@@ -58,9 +58,10 @@ public class NodeRoles {
         roles.put(r, r.modeWhenRoleIsAbsent());
       }
     }
+    // Overrides any parsed zookeeper mode with reality; invalid modes are still rejected above.
     roles.put(
         Role.ZOOKEEPER,
-        EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false) ? MODE_ON : MODE_OFF);
+        EnvUtils.getPropertyAsBool(ZkContainer.ZK_SERVER_ENABLED_PROP, false) ? MODE_ON : MODE_OFF);
     nodeRoles = Collections.unmodifiableMap(roles);
   }
 
