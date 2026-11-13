@@ -39,6 +39,10 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 When adding a test to a suite that already exists, match the design choices of the file you are editing.
 
+- For BATS shell integration tests in `solr/packaging/test/`:
+    - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
+    - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
+
 ## Documentation
 
 - For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
