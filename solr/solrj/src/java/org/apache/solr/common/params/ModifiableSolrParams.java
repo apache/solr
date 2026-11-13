@@ -62,6 +62,35 @@ public class ModifiableSolrParams extends SolrParams {
     return new ModifiableSolrParams(params);
   }
 
+  /** An empty, modifiable instance. */
+  public static ModifiableSolrParams of() {
+    return new ModifiableSolrParams();
+  }
+
+  /** A modifiable instance holding one pair. A null name or value is treated as "". */
+  public static ModifiableSolrParams of(String name, String value) {
+    return new ModifiableSolrParams().add(name == null ? "" : name, value == null ? "" : value);
+  }
+
+  /**
+   * A modifiable instance from alternating names and values. A repeated name yields multiple
+   * values. A null name or value is treated as "".
+   *
+   * @throws IllegalArgumentException if the length is odd
+   */
+  public static ModifiableSolrParams of(String... namesAndValues) {
+    if (namesAndValues.length % 2 != 0) {
+      throw new IllegalArgumentException("Names and values must come in pairs");
+    }
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i = 0; i < namesAndValues.length; i += 2) {
+      String name = namesAndValues[i];
+      String value = namesAndValues[i + 1];
+      msp.add(name == null ? "" : name, value == null ? "" : value);
+    }
+    return msp;
+  }
+
   public int size() {
     return vals == null ? 0 : vals.size();
   }
