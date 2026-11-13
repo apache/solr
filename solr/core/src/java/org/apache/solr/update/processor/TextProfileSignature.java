@@ -35,7 +35,7 @@ import org.apache.solr.common.params.SolrParams;
  *   <li>remove all characters except letters and digits, and bring all characters to lower case,
  *   <li>split the text into tokens (all consecutive non-whitespace characters),
  *   <li>discard tokens equal or shorter than MIN_TOKEN_LEN (default 2 characters),
- *   <li>sort the list of tokens by decreasing frequency,
+ *   <li>sort the list of tokens by decreasing frequency (ties broken by token string),
  *   <li>round down the counts of tokens to the nearest multiple of QUANT (<code>
  *       QUANT = QUANT_RATE * maxFreq</code>, where <code>QUANT_RATE</code> is 0.01f by default, and
  *       <code>maxFreq</code> is the maximum token frequency). If <code>maxFreq</code> is higher
@@ -151,7 +151,11 @@ public class TextProfileSignature extends MD5Signature {
   private static class TokenComparator implements Comparator<Token> {
     @Override
     public int compare(Token t1, Token t2) {
-      return t2.cnt - t1.cnt;
+      int c = Integer.compare(t2.cnt, t1.cnt);
+      if (c != 0) {
+        return c;
+      }
+      return t1.val.compareTo(t2.val);
     }
   }
 }
