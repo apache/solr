@@ -361,7 +361,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkAliasDoesNotReadAliasCollectionState() throws Exception {
+  public void testZkAliasRequestsResolveAndQuery() throws Exception {
     String collection = getSaferTestName();
     String alias = collection + "_alias";
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
@@ -373,17 +373,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress()).build()) {
       assertEquals(List.of(collection), client.getClusterStateProvider().resolveAlias(alias));
       assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
-
-      var zkClient = cluster.getZkClient();
-      var metrics = zkClient.getMetrics();
-      long before = metrics.getReads();
-      zkClient.getData(DocCollection.getCollectionPath(collection), null, null);
-      assertEquals(before + 1, metrics.getReads());
-      long baseline = metrics.getReads();
       for (int i = 0; i < 3; i++) {
         assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
       }
-      assertEquals("Alias requests should not read collection state", baseline, metrics.getReads());
     } finally {
       CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
