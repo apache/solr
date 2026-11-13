@@ -52,10 +52,7 @@ public class StreamingSolrClients {
   private Map<String, ConcurrentUpdateBaseSolrClient> solrClients = new HashMap<>();
   private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
-  // Maps each UpdateRequest handed to a streaming client back to the distributor request it
-  // belongs to, so a stream's outcome can be attributed to the requests that were in it. An
-  // entry is removed when its stream completes, on failure as its error is reported and on
-  // success as its result is tracked, so no request outlives its stream.
+  // Maps each streamed UpdateRequest to its Req; entries leave when their stream completes.
   private final Map<UpdateRequest, SolrCmdDistributor.Req> reqByUpdateRequest =
       Collections.synchronizedMap(new IdentityHashMap<>());
 
@@ -149,6 +146,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   @Override
   public void handleError(Throwable ex) {
     reqByUpdateRequest.remove(req.uReq);
+    log.error("Update stream failed", ex);
     recordError(ex, req);
   }
 
@@ -159,9 +157,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
       handleError(ex);
       return;
     }
-    // The failure belongs to the stream as a whole, so record it once against each request
-    // that was actually in the stream, instead of once against the request this client
-    // happened to be built with.
+    log.error("Update stream failed", ex);
     for (UpdateRequest updateRequest : requests) {
       SolrCmdDistributor.Req streamReq = reqByUpdateRequest.remove(updateRequest);
       recordError(ex, streamReq != null ? streamReq : req);
@@ -169,7 +165,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   }
 
   private void recordError(Throwable ex, SolrCmdDistributor.Req errorReq) {
-    log.error("Error when calling {} to {}", errorReq, errorReq.node.getUrl(), ex);
+    log.error("Error when calling {} to {}", errorReq, errorReq.node.getUrl());
     SolrError error = new SolrError();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {
@@ -192,9 +188,6 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   @Override
   public void onSuccess(
       Object responseMetadata, InputStream respBody, List<UpdateRequest> requests) {
-    // The stream succeeded, so its requests need no error attribution; drop their registry
-    // entries rather than keeping the requests, and the documents they carry, reachable until
-    // the update request that submitted them ends.
     for (UpdateRequest updateRequest : requests) {
       reqByUpdateRequest.remove(updateRequest);
     }

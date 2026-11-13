@@ -174,8 +174,7 @@ public class SolrCmdDistributor implements Closeable {
             err.req.node.getMaxRetries(),
             err.req.cmd,
             err.req.uReq.getParams(),
-            err.statusCode,
-            err.e);
+            err.statusCode);
       } else {
         SolrCmdDistributor.log.error(
             "FROMLEADER request to {} failed - retrying ... retries: {}/{}. {} params: {} rsp: {}",
@@ -184,8 +183,7 @@ public class SolrCmdDistributor implements Closeable {
             err.req.node.getMaxRetries(),
             err.req.cmd,
             err.req.uReq.getParams(),
-            err.statusCode,
-            err.e);
+            err.statusCode);
       }
       submit(err.req, false);
     }

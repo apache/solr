@@ -235,10 +235,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       firstErrTracker.caught(duae);
 
       // adjust our stats based on each of the distributed errors
-      // A failed stream records one error per request that was in the stream, and all of
-      // those errors share the same exception, so aggregate each distinct exception only
-      // once; aggregating once per error would count the remote tolerated errors once per
-      // request in the stream.
+      // Errors from one failed stream share an exception; count it once.
       Set<Exception> aggregatedExceptions = Collections.newSetFromMap(new IdentityHashMap<>());
       for (SolrError error : duae.errors) {
         if (!aggregatedExceptions.add(error.e)) {

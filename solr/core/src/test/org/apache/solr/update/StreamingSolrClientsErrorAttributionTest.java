@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
+import org.apache.solr.util.LogListener;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -123,7 +124,9 @@ public class StreamingSolrClientsErrorAttributionTest extends SolrTestCase {
   @Test
   public void testDeleteByQueryRetryRuleIsJudgedOnItsOwnRequest() throws Exception {
     StdNode node = deadNode(1);
-    try (SolrCmdDistributor distrib = new SolrCmdDistributor(updateShardHandler)) {
+    try (LogListener streamLog = LogListener.error(ErrorReportingConcurrentUpdateSolrClient.class);
+        LogListener retryLog = LogListener.error(SolrCmdDistributor.class).substring("retrying");
+        SolrCmdDistributor distrib = new SolrCmdDistributor(updateShardHandler)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       DeleteUpdateCommand delete = new DeleteUpdateCommand(null);
       delete.setQuery("id:1");
@@ -148,6 +151,24 @@ public class StreamingSolrClientsErrorAttributionTest extends SolrTestCase {
       assertEquals("3", addError.req.uReq.getDocuments().get(0).getFieldValue("id"));
       assertEquals(
           "the add is retriable, so it must have been resubmitted once", 1, addError.req.retries);
+
+      int streamFailures = 0;
+      int requestFailures = 0;
+      while (!streamLog.getQueue().isEmpty()) {
+        var event = streamLog.getQueue().remove();
+        if (event.getMessage().getFormattedMessage().equals("Update stream failed")) {
+          assertNotNull(event.getThrown());
+          streamFailures++;
+        } else {
+          assertTrue(event.getMessage().getFormattedMessage().startsWith("Error when calling"));
+          assertNull(event.getThrown());
+          requestFailures++;
+        }
+      }
+      assertTrue(streamFailures > 0);
+      assertTrue(requestFailures >= 2);
+      assertEquals(1, retryLog.getCount());
+      assertNull(retryLog.getQueue().remove().getThrown());
     }
   }
 }

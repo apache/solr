@@ -663,8 +663,9 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
    * merged requests via {@link #recordStreamedUpdate(Update)}; when none were reported, {@code
    * requests} holds only the request the stream was started with.
    *
-   * <p>The default implementation reports the failure once for the stream as a whole, exactly like
-   * {@link #handleError(Throwable)}. Override it to react per request instead.
+   * <p>The default implementation reports the failure to the registered {@link UpdateErrorHandler},
+   * or calls {@link #handleError(Throwable)} if none is registered. Override it to react per
+   * request instead.
    *
    * @param ex the failure
    * @param requests the update requests written into the failed stream
