@@ -51,9 +51,6 @@ public class SolrProcessManager {
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
   private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
-  // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
-  // processes
-  public static boolean enableTestingMode = false;
 
   /**
    * System property ({@code solr.process.scan.marker}, or the {@code SOLR_PROCESS_SCAN_MARKER}
@@ -82,8 +79,6 @@ public class SolrProcessManager {
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
             .filter(p -> commandLine(p).orElse("").contains("-Dsolr.port.listen="))
-            .filter(
-                p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
             .filter(p -> scanMarker == null || commandLine(p).orElse("").contains(scanMarker))
             .collect(
                 Collectors.toUnmodifiableMap(
