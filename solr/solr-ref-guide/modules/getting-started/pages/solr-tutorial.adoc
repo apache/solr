@@ -29,7 +29,8 @@ The xref:tutorial-films.adoc[second exercise] works with a different set of data
 The xref:tutorial-diy.adoc[third exercise] encourages you to begin to work with your own data and start a plan for your implementation.
 
 The tutorial also includes other, more advanced, exercises that introduce you to xref:tutorial-paramsets.adoc[ParamSets],
-xref:tutorial-vectors.adoc[vector search], xref:tutorial-opennlp.adoc[sentiment analysis with OpenNLP], xref:tutorial-solrcloud.adoc[SolrCloud], and xref:tutorial-aws.adoc[deploying Solr to AWS].
+xref:tutorial-vectors.adoc[vector search], xref:tutorial-opennlp.adoc[sentiment analysis with OpenNLP], xref:tutorial-solrcloud.adoc[SolrCloud],
+xref:tutorial-securing-solr.adoc[securing a two-node cluster], and xref:tutorial-aws.adoc[deploying Solr to AWS].
 
 Finally, we'll introduce <<Spatial Queries,spatial search>>, and show you how to get your Solr instance back into a clean state.
 
@@ -37,8 +38,7 @@ Finally, we'll introduce <<Spatial Queries,spatial search>>, and show you how to
 
 To follow along with this tutorial, you will need...
 
-// TODO possibly remove this system requirements or only replace the link
-. To meet the {solr-javadocs}/SYSTEM_REQUIREMENTS.html[system requirements]
+. To meet the xref:deployment-guide:system-requirements.adoc[system requirements]
 . An Apache Solr release http://solr.apache.org/downloads.html[download].
 This tutorial is designed for Apache Solr {solr-docs-version}.
 
@@ -92,10 +92,10 @@ Nice work!
 As you work through this tutorial, you may want to stop Solr and reset the environment back to the starting point.
 The following command line will stop Solr and remove the directories for each of the two nodes that were created all the way back in Exercise 1:
 
-[,console]
+[,bash]
 ----
-$ bin/solr stop --all
-$ rm -Rf example/cloud/
+bin/solr stop --all
+rm -Rf example/cloud/
 ----
 
 == Where to next?

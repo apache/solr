@@ -51,7 +51,7 @@
  </requestHandler>
 
  <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.languagemodels.update.processor.factory.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>

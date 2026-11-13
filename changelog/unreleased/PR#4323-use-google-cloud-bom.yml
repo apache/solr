@@ -1,0 +1,7 @@
+title: Resolve Google cloud dependencies using google-cloud-bom.
+type: other
+authors:
+- name: Jan Høydahl
+links:
+- name: PR#4323
+  url: https://github.com/apache/solr/pull/4323

@@ -34,6 +34,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -491,10 +492,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "1");
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -553,11 +553,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "1,4");
 
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='1']", // Elevated
         "//result/doc[2]/str[@name='id'][.='4']", // Elevated
@@ -585,11 +584,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']", // Elevated
         "//result/doc[2]/str[@name='id'][.='1']", // Elevated
@@ -616,11 +614,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']", // Elevated
         "//result/doc[2]/str[@name='id'][.='1']", // Elevated
@@ -649,11 +646,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "4");
     params.add("rows", "10");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='2']" // Was not in reRankDocs
@@ -678,10 +674,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "4");
     params.add("rows", "10");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
-    assertQ(req(params), "*[count(//doc)=0]");
+    assertQ(reqWithPath("/elevate", params), "*[count(//doc)=0]");
 
     // Pass in reRankDocs lower than the length being collected.
     params = new ModifiableSolrParams();
@@ -1095,11 +1090,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("start", "0");
     params.add("rows", "3");
-    params.add("qt", "/elevate");
     params.add("elevateIds", "1,4");
 
     assertQ(
-        req(params),
+        reqWithPath("/elevate", params),
         "*[count(//doc)=3]",
         "//result/doc[1]/str[@name='id'][.='1']", // Elevated
         "//result/doc[2]/str[@name='id'][.='4']", // Elevated
@@ -1107,6 +1101,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testRerankQueryParsingShouldFailWithoutMandatoryReRankQueryParameter() {
     assertU(delQ("*:*"));
     assertU(commit());
@@ -1139,16 +1134,16 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "2");
 
-    ignoreException("reRankQuery parameter is mandatory");
-    SolrException se =
-        expectThrows(
-            SolrException.class,
-            "A syntax error should be thrown when "
-                + ReRankQParserPlugin.RERANK_QUERY
-                + " parameter is not specified",
-            () -> h.query(req(params)));
-    assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
-    unIgnoreException("reRankQuery parameter is mandatory");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("reRankQuery parameter is mandatory")) {
+      SolrException se =
+          expectThrows(
+              SolrException.class,
+              "A syntax error should be thrown when "
+                  + ReRankQParserPlugin.RERANK_QUERY
+                  + " parameter is not specified",
+              () -> h.query(req(params)));
+      assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
+    }
   }
 
   @Test

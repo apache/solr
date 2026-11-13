@@ -18,7 +18,6 @@ package org.apache.solr.common.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
@@ -191,22 +190,5 @@ public class NamedListTest extends SolrTestCase {
     assertNull(enltest3);
     Object enltest4 = enl._get(List.of("key2"), null);
     assertNull(enltest4);
-  }
-
-  @Test
-  public void testShallowMap() {
-    NamedList<String> nl = new NamedList<>();
-    nl.add("key1", "Val1");
-    Map<String, String> m = nl.asShallowMap();
-    m.put("key1", "Val1_");
-    assertEquals("Val1_", nl.get("key1"));
-    assertEquals("Val1_", m.get("key1"));
-    assertEquals(0, nl.indexOf("key1", 0));
-    m.putAll(Map.of("key1", "Val1__", "key2", "Val2"));
-    assertEquals("Val1__", nl.get("key1"));
-    assertEquals("Val1__", m.get("key1"));
-    assertEquals(0, nl.indexOf("key1", 0));
-    assertEquals("Val2", nl.get("key2"));
-    assertEquals("Val2", m.get("key2"));
   }
 }

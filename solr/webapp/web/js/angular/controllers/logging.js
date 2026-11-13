@@ -24,60 +24,49 @@ var format_time_content = function( time, timeZone ) {
 }
 
 solrAdminApp.controller('LoggingController',
-  function($scope, $timeout, $cookies, Logging, Constants){
+  function($scope, $timeout, $cookies, LoggingV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
     $scope.refresh = function() {
-      Logging.events(function(data) {
-        $scope.since = new Date();
-        $scope.sinceDisplay = format_time_content($scope.since, "Local");
-        var events = data.history.docs;
-        for (var i=0; i<events.length; i++) {
-          var event = events[i];
-          var time = new Date(event.time);
-          event.local_time = format_time_content(time, "Local");
-          event.utc_time = format_time_content(time, "UTC");
-          event.loggerBase = event.logger.split( '.' ).pop();
-
-          if( !event.trace ) {
-            var lines = event.message.split( "\n" );
-            if( lines.length > 1) {
-              event.trace = event.message;
-              event.message = lines[0];
-            }
-          }
-          event.message = event.message.replace(/,/g, ',&#8203;');
-          event.showTrace = false;
-        }
-        $scope.events = events;
-        $scope.watcher = data.watcher;
-        /* @todo sticky_mode
-        // state element is in viewport
-        sticky_mode = ( state.position().top <= $( window ).scrollTop() + $( window ).height() - ( $( 'body' ).height() - state.position().top ) );
-        // initial request
-        if( 0 === since ) {
-          sticky_mode = true;
-        }
-        $scope.loggingEvents = events;
-
-        if( sticky_mode )
-        {
-          $( 'body' )
-            .animate
-            (
-                { scrollTop: state.position().top },
-                1000
-            );
-        }
-      */
-      });
-      $scope.timeout = $timeout($scope.refresh, 10000);
-      var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+      if (NodeTarget.needsSelection()) {
         $timeout.cancel($scope.timeout);
-        onRouteChangeOff();
+        return;
+      }
+      LoggingV2.fetchLocalLogMessages(NodeTarget.withNodes({since: 0}), function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); return; }
+          var payload = NodeTarget.unwrap(data, response) || {};
+          $scope.since = new Date();
+          $scope.sinceDisplay = format_time_content($scope.since, "Local");
+          var events = payload.history || [];
+          for (var i=0; i<events.length; i++) {
+            var event = events[i];
+            var time = new Date(event.time);
+            event.local_time = format_time_content(time, "Local");
+            event.utc_time = format_time_content(time, "UTC");
+            event.loggerBase = event.logger.split( '.' ).pop();
+
+            if( !event.trace ) {
+              var lines = event.message.split( "\n" );
+              if( lines.length > 1) {
+                event.trace = event.message;
+                event.message = lines[0];
+              }
+            }
+            event.message = event.message.replace(/,/g, ',&#8203;');
+            event.showTrace = false;
+          }
+          $scope.events = events;
+          $scope.watcher = payload.watcher;
+        });
       });
+      $timeout.cancel($scope.timeout);
+      $scope.timeout = $timeout($scope.refresh, 10000);
     };
-    $scope.refresh();
+    $scope.$on('$destroy', function() {
+      $timeout.cancel($scope.timeout);
+    });
+    NodeTarget.whenReady($scope.refresh, $scope);
     $scope.toggleRefresh = function() {
       if(!$scope.stopped) {
         $scope.stopped = true;
@@ -98,7 +87,7 @@ solrAdminApp.controller('LoggingController',
 )
 
 .controller('LoggingLevelController',
-  function($scope, Logging) {
+  function($scope, $timeout, LoggingV2, ApiErrorHandler, NodeTarget) {
     $scope.resetMenu("logging-levels");
 
     var packageOf = function(logger) {
@@ -123,13 +112,17 @@ solrAdminApp.controller('LoggingController',
     };
 
     $scope.refresh = function() {
-      Logging.levels(function(data) {
-        $scope.logging = makeTree(data.loggers, "");
-        $scope.watcher = data.watcher;
-        $scope.levels = [];
-        for (level in data.levels) {
-          $scope.levels.push({name:data.levels[level], pos:level});
-        }
+      LoggingV2.listAllLoggersAndLevels(function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); return; }
+          var payload = data || {};
+          $scope.logging = makeTree(payload.loggers || [], "");
+          $scope.watcher = payload.watcher;
+          $scope.levels = [];
+          for (var level in payload.levels) {
+            $scope.levels.push({name:payload.levels[level], pos:level});
+          }
+        });
       });
     };
 
@@ -153,12 +146,28 @@ solrAdminApp.controller('LoggingController',
       if (!$scope.isPermitted(permissions.CONFIG_EDIT_PERM)) {
         return;
       }
-      var setString = logger.name + ":" + newLevel;
       logger.showOptions = false;
-      Logging.setLevel({set: setString}, function(data) {
-        $scope.refresh();
-      });
+      var doSetLevel = function() {
+        var opts = {logLevelChange: [{logger: logger.name, level: newLevel}]};
+        // Broadcast in SolrCloud; omit in standalone (handled locally).
+        if ($scope.isCloudEnabled) {
+          opts.nodes = "all";
+        }
+        LoggingV2.modifyLocalLogLevel(opts, function(error, data, response) {
+          if (error) { ApiErrorHandler.handle(response); return; }
+          $scope.refresh();
+        });
+      };
+      if ($scope.isCloudEnabled === undefined) {
+        var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+          if (value === undefined) return;
+          unwatchCloudEnabled();
+          doSetLevel();
+        });
+      } else {
+        doSetLevel();
+      }
     };
 
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh, $scope);
   });

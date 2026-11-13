@@ -18,22 +18,17 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -64,11 +59,6 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
   private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
     req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return req;
-  }
-
-  private QueryResponse queryWithBasicAuth(SolrClient client, SolrQuery q)
-      throws IOException, SolrServerException {
-    return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
   @Test
@@ -110,16 +100,13 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
     long[] numCounts = new long[replicas.size()];
     int i = 0;
     for (Replica replica : replicas) {
-      try (var client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
-              .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
-              .build()) {
-        var q = new SolrQuery("*:*");
-        q.add("distrib", "false");
-        numCounts[i] = queryWithBasicAuth(client, q).getResults().getNumFound();
-        i++;
-      }
+      var client = cluster.getReplicaJetty(replica).getSolrClient();
+      var q = new SolrQuery("q", "*:*", "distrib", "false");
+      numCounts[i++] =
+          withBasicAuth(new QueryRequest(q))
+              .process(client, replica.getCoreName())
+              .getResults()
+              .getNumFound();
     }
     for (int j = 1; j < replicas.size(); j++) {
       if (numCounts[j] != numCounts[j - 1])

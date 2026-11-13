@@ -371,8 +371,6 @@ public class Lang {
         .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("select", SelectStream.class)
         .withFunctionName("shortestPath", ShortestPathStream.class)
-        .withFunctionName("gatherNodes", GatherNodesStream.class)
-        .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("scoreNodes", ScoreNodesStream.class)
         .withFunctionName("model", ModelStream.class)
         .withFunctionName("fetch", FetchStream.class)

@@ -41,27 +41,36 @@ solrAdminApp.controller('StreamController',
       $scope.response = null;
       $scope.url = "";
 
+      // Shown for reference only - the request is actually sent as a POST body below, since a
+      // streaming expression can be too large for a URL/header (SOLR-9759).
       var url = Query.url(params);
 
-      Query.query(params, function(data) {
-
-        var jsonData = JSON.parse(data.toJSON().data);
-        if (undefined != jsonData["explanation"]) {
-          $scope.showExplanation = true;
-
-          streamGraphSubController($scope, jsonData["explanation"])
-          delete jsonData["explanation"]
-        } else {
-          $scope.showExplanation = false;
+      // Handles both the success and error callbacks below: app.js's global interceptor
+      // (see failed()'s doNotIntercept branch) routes most failures for this request through
+      // the "success" callback too, so this must defend against a non-JSON body either way.
+      var showResult = function(raw) {
+        $scope.showExplanation = false;
+        try {
+          var jsonData = JSON.parse(raw);
+          if (undefined != jsonData["explanation"]) {
+            $scope.showExplanation = true;
+            streamGraphSubController($scope, jsonData["explanation"]);
+            delete jsonData["explanation"];
+          }
+          raw = JSON.stringify(jsonData, null, 2);
+        } catch (e) {
+          // not JSON (e.g. a raw HTTP error page) - show it as-is rather than crashing
         }
-
-        data.data = JSON.stringify(jsonData,null,2);
-
         $scope.lang = "json";
-        $scope.response = data;
+        $scope.response = {data: raw};
         $scope.url = url;
         $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
+      };
 
+      Query.queryPost({core: params.core, handler: params.handler}, params, function(data) {
+        showResult(data.toJSON().data);
+      }, function(rejection) {
+        showResult((rejection.data && rejection.data.data) || ("HTTP " + rejection.status + " " + rejection.statusText));
       });
     };
 
@@ -151,29 +160,29 @@ solrAdminApp.directive('explanationGraph', function(Constants) {
       var helper_node_class = function(d) {
         var classes = ['node'];
 
-        if (d.data && d.data.expressionType) {
-          classes.push(d.data.expressionType);
+        if (d.data.data && d.data.data.expressionType) {
+          classes.push(d.data.data.expressionType);
         }
 
         return classes.join(' ');
       };
 
       var helper_node_text = function(d) {
-        if (d.data && d.data.functionName) {
-          return d.data.functionName;
+        if (d.data.data && d.data.data.functionName) {
+          return d.data.data.functionName;
         }
 
-        return d.name
+        return d.data.name
       };
 
       var helper_tooltip = function(d) {
 
         return [
-          "Function: " + d.data.functionName,
-          "Type: " + d.data.expressionType,
-          "Class: " + d.data.implementingClass.replace("org.apache.solr.client.solrj.io", "o.a.s.c.s.i"),
+          "Function: " + d.data.data.functionName,
+          "Type: " + d.data.data.expressionType,
+          "Class: " + d.data.data.implementingClass.replace("org.apache.solr.client.solrj.io", "o.a.s.c.s.i"),
           "=============",
-          d.data.expression
+          d.data.data.expression
         ].join("\n");
       }
 
@@ -187,11 +196,12 @@ solrAdminApp.directive('explanationGraph', function(Constants) {
         var w = 100 + (depth * 100),
           h = leafCount * 40;
 
-        var tree = d3.layout.tree().size([h, w]);
+        var root = d3.hierarchy(graphData);
+        d3.tree().size([h, w])(root);
 
-        var diagonal = d3.svg.diagonal().projection(function(d) {
-          return [d.y * .7, d.x];
-        });
+        var diagonal = d3.linkHorizontal()
+          .x(function(d) { return d.y * .7; })
+          .y(function(d) { return d.x; });
 
         d3.select('#canvas', element).html('');
         var vis = d3.select('#canvas', element).append('svg')
@@ -200,10 +210,10 @@ solrAdminApp.directive('explanationGraph', function(Constants) {
           .append('g')
           .attr('transform', 'translate(25, 0)');
 
-        var nodes = tree.nodes(graphData);
+        var nodes = root.descendants();
 
         var link = vis.selectAll('path.link')
-          .data(tree.links(nodes))
+          .data(root.links())
           .enter().append('path')
           .attr('class', helper_path_class)
           .attr('d', diagonal);

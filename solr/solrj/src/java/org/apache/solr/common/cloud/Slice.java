@@ -207,7 +207,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       for (Map.Entry<String, Object> entry : rules.entrySet()) {
         Object o = entry.getValue();
         if (o instanceof Map map) {
-          RoutingRule rule = new RoutingRule(entry.getKey(), map);
+          RoutingRule rule = new RoutingRule(map);
           routingRules.put(entry.getKey(), rule);
         } else {
           routingRules.put(entry.getKey(), (RoutingRule) o);

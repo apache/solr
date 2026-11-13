@@ -23,13 +23,14 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -37,13 +38,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
@@ -51,8 +52,8 @@ import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseLis
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -62,7 +63,6 @@ import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.Origin.Address;
@@ -85,7 +85,6 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -95,12 +94,8 @@ import org.slf4j.MDC;
 /**
  * An HTTP {@link SolrClient} using Jetty {@link HttpClient}. This is Solr's most mature client for
  * direct HTTP.
- *
- * <p>Despite the name, this client supports HTTP 1.1 and 2 -- toggle with {@link
- * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
- * HttpJettySolrClient}.
  */
-public class HttpJettySolrClient extends HttpSolrClientBase {
+public class HttpJettySolrClient extends HttpSolrClient {
   // formerly known at Http2SolrClient
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -125,8 +120,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
   private final long idleTimeoutMillis;
 
-  private List<HttpListenerFactory> listenerFactory;
+  private final List<HttpListenerFactory> listenerFactory;
   protected AsyncTracker asyncTracker = new AsyncTracker();
+  // null unless built withAbortableRequests(true)
+  protected AbortTracker abortTracker;
 
   private final boolean closeClient;
   private ExecutorService executor;
@@ -138,6 +135,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
   protected HttpJettySolrClient(String serverBaseUrl, Builder builder) {
     super(serverBaseUrl, builder);
+    this.abortTracker = builder.abortableRequests ? new AbortTracker() : null;
 
     if (builder.httpClient != null) {
       // Validate that no conflicting options are provided when using an existing HttpClient
@@ -165,7 +163,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       this.listenerFactory = new ArrayList<>(0);
     }
 
-    updateDefaultMimeTypeForParser();
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     try {
@@ -214,12 +211,11 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     }
   }
 
-  @Deprecated(since = "9.7")
-  public void addListenerFactory(HttpListenerFactory factory) {
-    this.listenerFactory.add(factory);
-  }
-
-  /** internal use only */
+  /**
+   * FOR INTERNAL USE: The underlying Jetty HttpClient. Warning: a request created directly from it
+   * doesn't have some settings applied that {@link #decorateRequest(Request, SolrRequest, boolean)}
+   * will do. Call {@link #applyListeners} to apply the listeners.
+   */
   public HttpClient getHttpClient() {
     return httpClient;
   }
@@ -227,10 +223,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   private HttpClient createHttpClient(Builder builder) {
     executor = builder.getExecutor();
     if (executor == null) {
-      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-      this.executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
+      this.executor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("h2sc"));
       shutdownExecutor = true;
     } else {
       shutdownExecutor = false;
@@ -484,9 +477,26 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     String url = getRequestUrl(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
+    // Jetty notifies "commit" once the request headers have been written to the network. Until then
+    // nothing of the request has reached the server, so a failure is safe to retry elsewhere.
+    AtomicBoolean committed = new AtomicBoolean();
     try {
       InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
-      req = sendRequest(makeRequest(solrRequest, url, false), listener);
+      MakeRequestReturnValue mrrv = makeRequest(solrRequest, url, false);
+      mrrv.request.onRequestCommit(r -> committed.set(true));
+      try {
+        req = sendRequest(mrrv, listener);
+      } catch (IOException e) {
+        // Writing the body can fail on this thread rather than asynchronously, typically when the
+        // pooled connection was already closed.
+        abortCause = e;
+        req = mrrv.request;
+        throw committed.get()
+            ? new SolrServerException("IOException occurred when talking to server at: " + url, e)
+            : new SolrServerException(
+                "Connection failed before the request was sent to: " + url,
+                new RequestNotSentException(e.getMessage(), e));
+      }
       // only waits for headers, so use the idle timeout
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
@@ -508,10 +518,21 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       if (cause instanceof SolrServerException) {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
-        throw new SolrServerException(
-            "IOException occurred when talking to server at: " + url, cause);
+        throw committed.get()
+            ? new SolrServerException(
+                "IOException occurred when talking to server at: " + url, cause)
+            : new SolrServerException(
+                "Connection failed before the request was sent to: " + url,
+                new RequestNotSentException(cause.getMessage(), cause));
       }
       throw new SolrServerException(cause.getMessage(), cause);
+    } catch (IllegalStateException e) {
+      // Jetty HTTP/2 throws IllegalStateException ("session closed") when the connection is lost.
+      abortCause = e;
+      throw committed.get()
+          ? new SolrServerException("Connection lost at: " + url, new IOException(e))
+          : new SolrServerException(
+              "Connection lost at: " + url, new RequestNotSentException(e.getMessage(), e));
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
@@ -555,8 +576,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public HttpSolrClientBuilderBase<?, ?> builder() {
-    return new HttpJettySolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJettySolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   // merely exposing for superclass's method visibility to this package
@@ -579,7 +600,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
 
   // merely exposing for superclass's method visibility to this package
   protected static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
-    return HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
+    return HttpSolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
   }
 
   private NamedList<Object> processErrorsAndResponse(
@@ -620,8 +641,33 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     }
   }
 
+  /**
+   * FOR INTERNAL USE: Applies this client's request listeners (e.g. internode authentication and
+   * tracing) to a request created directly from {@link #getHttpClient()}.
+   */
+  public void applyListeners(Request req) {
+    for (HttpListenerFactory factory : listenerFactory) {
+      HttpListenerFactory.RequestResponseListener listener = factory.get();
+      listener.onQueued(req);
+      req.onRequestBegin(listener);
+      req.onComplete(listener);
+    }
+  }
+
   protected void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.headers(h -> h.remove(HttpHeader.ACCEPT_ENCODING));
+    Map<String, String> customHeaders = solrRequest.getHeaders();
+    if (customHeaders != null) {
+      req.headers(h -> customHeaders.forEach(h::add));
+    }
+    // note: if subsequent headers already added, the existing values win (first value considered)
+    req.headers(
+        h -> {
+          h.add(CommonParams.SOLR_REQUEST_TYPE_PARAM, solrRequest.getRequestType().toString());
+          // TODO: validate request context here: https://issues.apache.org/jira/browse/SOLR-14720
+          h.add(CommonParams.SOLR_REQUEST_CONTEXT_PARAM, getContext().toString());
+        });
+
     req.idleTimeout(idleTimeoutMillis, TimeUnit.MILLISECONDS);
     req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
 
@@ -630,28 +676,45 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     }
 
     setBasicAuthHeader(solrRequest, req);
-    for (HttpListenerFactory factory : listenerFactory) {
-      HttpListenerFactory.RequestResponseListener listener = factory.get();
-      listener.onQueued(req);
-      req.onRequestBegin(listener);
-      req.onComplete(listener);
-    }
+    applyListeners(req);
 
-    if (isAsync) {
-      req.onRequestQueued(asyncTracker.queuedListener);
-      req.onComplete(asyncTracker.completeListener);
-    }
-
-    Map<String, String> headers = solrRequest.getHeaders();
-    if (headers != null) {
-      req.headers(h -> headers.forEach(h::add));
+    AsyncTracker asyncTracker = isAsync ? this.asyncTracker : null;
+    AbortTracker abortTracker = this.abortTracker;
+    if (asyncTracker != null || abortTracker != null) {
+      // One listener each, so this order doesn't depend on how Jetty orders separate listeners.
+      // The async tracker must take its permit before the request can be aborted: aborting a
+      // queued request completes it synchronously, and a permit taken after that is never
+      // released. Requests still waiting for a permit get one as aborted in-flight requests
+      // complete, and are then aborted here.
+      req.onRequestQueued(
+          request -> {
+            if (asyncTracker != null) {
+              asyncTracker.queuedListener.onQueued(request);
+            }
+            if (abortTracker != null) {
+              abortTracker.track(request);
+            }
+          });
+      req.onComplete(
+          result -> {
+            if (asyncTracker != null) {
+              asyncTracker.completeListener.onComplete(result);
+            }
+            if (abortTracker != null) {
+              abortTracker.untrack(result.getRequest());
+            }
+          });
     }
   }
+
+  private record PartContent(
+      RequestWriter.ContentWriter writer, OutputStreamRequestContent content) {}
 
   private static class MakeRequestReturnValue {
     final Request request;
     final RequestWriter.ContentWriter contentWriter;
     final OutputStreamRequestContent requestContent;
+    final List<PartContent> partContents;
 
     MakeRequestReturnValue(
         Request request,
@@ -660,12 +723,21 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       this.request = request;
       this.contentWriter = contentWriter;
       this.requestContent = requestContent;
+      this.partContents = null;
+    }
+
+    MakeRequestReturnValue(Request request, List<PartContent> partContents) {
+      this.request = request;
+      this.contentWriter = null;
+      this.requestContent = null;
+      this.partContents = partContents;
     }
 
     MakeRequestReturnValue(Request request) {
       this.request = request;
       this.contentWriter = null;
       this.requestContent = null;
+      this.partContents = null;
     }
   }
 
@@ -690,36 +762,31 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
         || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
       RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-      Collection<ContentStream> streams =
-          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-
-      boolean isMultipart = isMultipart(streams);
 
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
 
-      if (contentWriter != null) {
+      if (contentWriter instanceof RequestWriter.MultipartContentWriter multipartWriter) {
+        // send server list and request list as query string params
+        ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
+        queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
+        Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
+        var r = fillMultipartContent(req, multipartWriter, wparams);
+        decorateRequest(r.request, solrRequest, isAsync);
+        return r;
+
+      } else if (contentWriter != null) {
         var content = new OutputStreamRequestContent(contentWriter.getContentType());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r, contentWriter, content);
 
-      } else if (streams == null || isMultipart) {
-        // send server list and request list as query string params
+      } else {
+        // application/x-www-form-urlencoded, params only
         ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), wparams));
         Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
-        var r = fillContentStream(req, streams, wparams, isMultipart);
-        decorateRequest(r, solrRequest, isAsync);
-        return new MakeRequestReturnValue(r);
-
-      } else {
-        // If it has one stream, it is the post body, put the params in the URL
-        ContentStream contentStream = streams.iterator().next();
-        var content =
-            new InputStreamRequestContent(
-                contentStream.getContentType(), contentStream.getStream());
-        var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
+        var r = fillParamsOnlyBody(req, wparams);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r);
       }
@@ -736,93 +803,67 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       try (var output = mrrv.requestContent.getOutputStream()) {
         mrrv.contentWriter.write(output);
       }
+    } else if (mrrv.partContents != null) {
+      for (PartContent part : mrrv.partContents) {
+        try (var output = part.content().getOutputStream()) {
+          part.writer().write(output);
+        }
+      }
     }
     return mrrv.request;
   }
 
-  private Request fillContentStream(
-      Request req,
-      Collection<ContentStream> streams,
-      ModifiableSolrParams wparams,
-      boolean isMultipart)
-      throws IOException {
-    if (isMultipart) {
-      // multipart/form-data
-      try (MultiPartRequestContent content = new MultiPartRequestContent()) {
-        Iterator<String> iter = wparams.getParameterNamesIterator();
-        while (iter.hasNext()) {
-          String key = iter.next();
-          String[] vals = wparams.getParams(key);
-          if (vals != null) {
-            for (String val : vals) {
-              content.addPart(
-                  new MultiPart.ContentSourcePart(key, null, null, new StringRequestContent(val)));
-            }
-          }
-        }
-        if (streams != null) {
-          for (ContentStream contentStream : streams) {
-            String contentType = contentStream.getContentType();
-            if (contentType == null) {
-              contentType = "multipart/form-data"; // default
-            }
-            String name = contentStream.getName();
-            if (name == null) {
-              name = "";
-            }
-            HttpFields.Mutable fields = HttpFields.build(1);
-            fields.add(HttpHeader.CONTENT_TYPE, contentType);
-            content.addPart(
-                new MultiPart.ContentSourcePart(
-                    name,
-                    contentStream.getName(),
-                    fields,
-                    new InputStreamRequestContent(contentStream.getStream())));
-          }
-        }
-        req.body(content);
-      }
-    } else {
-      // application/x-www-form-urlencoded
-      String queryString = wparams.toQueryString();
-      // remove the leading "?" if there is any
-      queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
-      req.body(
-          new StringRequestContent(
-              "application/x-www-form-urlencoded", queryString, FALLBACK_CHARSET));
-    }
-
+  private Request fillParamsOnlyBody(Request req, ModifiableSolrParams wparams) {
+    String queryString = wparams.toQueryString();
+    // remove the leading "?" if there is any
+    queryString = queryString.startsWith("?") ? queryString.substring(1) : queryString;
+    req.body(
+        new StringRequestContent(
+            "application/x-www-form-urlencoded", queryString, FALLBACK_CHARSET));
     return req;
+  }
+
+  private MakeRequestReturnValue fillMultipartContent(
+      Request req,
+      RequestWriter.MultipartContentWriter multipartWriter,
+      ModifiableSolrParams wparams)
+      throws IOException {
+    MultiPartRequestContent content = new MultiPartRequestContent();
+    try {
+      Iterator<String> iter = wparams.getParameterNamesIterator();
+      while (iter.hasNext()) {
+        String key = iter.next();
+        String[] vals = wparams.getParams(key);
+        if (vals != null) {
+          for (String val : vals) {
+            content.addPart(
+                new MultiPart.ContentSourcePart(key, null, null, new StringRequestContent(val)));
+          }
+        }
+      }
+      List<PartContent> partContents = new ArrayList<>();
+      for (RequestWriter.NamedPart part : multipartWriter.getParts()) {
+        String contentType = part.writer.getContentType();
+        if (contentType == null) {
+          contentType = "multipart/form-data"; // default
+        }
+        String name = part.name == null ? "" : part.name;
+        HttpFields.Mutable fields = HttpFields.build(1);
+        fields.add(HttpHeader.CONTENT_TYPE, contentType);
+        var partContent = new OutputStreamRequestContent(contentType);
+        content.addPart(new MultiPart.ContentSourcePart(name, part.name, fields, partContent));
+        partContents.add(new PartContent(part.writer, partContent));
+      }
+      req.body(content);
+      return new MakeRequestReturnValue(req, partContents);
+    } finally {
+      content.close();
+    }
   }
 
   @Override
   protected boolean isFollowRedirects() {
     return httpClient.isFollowRedirects();
-  }
-
-  @Override
-  protected boolean processorAcceptsMimeType(
-      Collection<String> processorSupportedContentTypes, String mimeType) {
-
-    return processorSupportedContentTypes.stream()
-        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
-        .anyMatch(mimeType::equalsIgnoreCase);
-  }
-
-  @Override
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-            .collect(Collectors.toSet());
-  }
-
-  @Override
-  protected String allProcessorSupportedContentTypesCommaDelimited(
-      Collection<String> processorSupportedContentTypes) {
-    return processorSupportedContentTypes.stream()
-        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-        .collect(Collectors.joining(", "));
   }
 
   /**
@@ -839,6 +880,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       super(baseUrl, new HttpJettySolrClient.Builder(baseUrl).withHttpClient(parentClient));
 
       this.asyncTracker = parentClient.asyncTracker;
+      this.abortTracker = parentClient.abortTracker;
     }
 
     @Override
@@ -931,6 +973,68 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     }
   }
 
+  /**
+   * Tracks a client's requests, synchronous and asynchronous, from queued to complete, so that
+   * {@link #abort(Throwable)} can reach them.
+   */
+  private static class AbortTracker {
+    // requests queued and not yet complete
+    private final Set<Request> outstanding = ConcurrentHashMap.newKeySet();
+    // non-null once abort() has been called; fails any request queued afterwards
+    private volatile Throwable abortCause;
+
+    void track(Request request) {
+      // Pairs with abort(): add-then-check here and set-then-scan there, so a request queued
+      // concurrently with abort() is aborted by at least one of the two.
+      outstanding.add(request);
+      Throwable cause = abortCause;
+      if (cause != null) {
+        request.abort(cause);
+      }
+    }
+
+    void untrack(Request request) {
+      outstanding.remove(request);
+    }
+
+    void abort(Throwable cause) {
+      abortCause = Objects.requireNonNull(cause);
+      outstanding.forEach(request -> request.abort(cause));
+    }
+
+    boolean isAborted() {
+      return abortCause != null;
+    }
+  }
+
+  /**
+   * Aborts every request in flight on this client, and fails any request made afterwards. Unlike
+   * {@link #close()}, this does not wait: each aborted request completes exceptionally straight
+   * away, so a subsequent {@link #close()} returns promptly.
+   *
+   * <p>Scoped to this client instance and to the clients derived from it by {@link
+   * #requestWithBaseUrl}, which share its tracking. Other clients wrapping the same Jetty {@link
+   * HttpClient} are unaffected, so a lightweight copy made with {@link
+   * Builder#withHttpClient(HttpJettySolrClient)} can be aborted without disturbing anyone else.
+   *
+   * @param cause reported as the failure of each aborted request, and rethrown as-is to anyone
+   *     reading a streamed response body, so pass an {@link IOException} to keep {@link
+   *     InputStream} callers on their usual error path; must not be null
+   * @throws IllegalStateException if the client was not built with {@link
+   *     Builder#withAbortableRequests(boolean)}
+   */
+  public void abort(Throwable cause) {
+    if (abortTracker == null) {
+      throw new IllegalStateException("Client was not built with withAbortableRequests(true)");
+    }
+    abortTracker.abort(cause);
+  }
+
+  /** Whether {@link #abort(Throwable)} has been called on this client. */
+  public boolean isAborted() {
+    return abortTracker != null && abortTracker.isAborted();
+  }
+
   /** Returns the configured maximum number of outstanding async requests. */
   public int asyncTrackerMaxPermits() {
     return asyncTracker.maxPermits();
@@ -941,8 +1045,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     return asyncTracker.availablePermits();
   }
 
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient> {
+  public static class Builder extends BuilderBase<Builder, HttpJettySolrClient> {
 
     private HttpClient httpClient;
 
@@ -953,6 +1056,8 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     protected Long keyStoreReloadIntervalSecs;
 
     private List<HttpListenerFactory> listenerFactories;
+
+    private boolean abortableRequests;
 
     public Builder() {
       super();
@@ -1004,8 +1109,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return this;
     }
 
-    public HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient>
-        withSSLConfig(SSLConfig sslConfig) {
+    public BuilderBase<Builder, HttpJettySolrClient> withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
     }
@@ -1041,8 +1145,21 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       return null;
     }
 
-    protected <B extends HttpSolrClientBase> B build(Class<B> type) {
+    protected <B extends HttpSolrClient> B build(Class<B> type) {
       return type.cast(build());
+    }
+
+    /**
+     * Tracks every request, so that {@link HttpJettySolrClient#abort(Throwable)} can fail them. Off
+     * by default, since it adds bookkeeping to every request. Can be combined with {@link
+     * #withHttpClient(HttpJettySolrClient)}; it is not inherited from the client passed there.
+     *
+     * @param abortableRequests whether this client's requests can be aborted
+     * @return This Builder
+     */
+    public Builder withAbortableRequests(boolean abortableRequests) {
+      this.abortableRequests = abortableRequests;
+      return this;
     }
 
     @Override

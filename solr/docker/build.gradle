@@ -17,6 +17,7 @@
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import javax.inject.Inject
 import org.apache.commons.codec.digest.DigestUtils
 
 description = 'Solr Docker image'
@@ -138,9 +139,8 @@ dependencies {
 
 // We're using commons-codec for computing checksums.
 buildscript {
-  repositories {
-    mavenCentral()
-  }
+  apply from: rootProject.file('build-tools/build-infra/declare-repositories.gradle'), to: delegate
+
   dependencies {
     classpath libs.commonscodec.commonscodec
   }
@@ -149,10 +149,16 @@ def checksum = {file ->
   return new DigestUtils(DigestUtils.sha512Digest).digestAsHex(file).trim()
 }
 
+interface ExecOperationsHolder {
+  @Inject
+  ExecOperations getExecOperations()
+}
+def execOps = project.objects.newInstance(ExecOperationsHolder).execOperations
+
 // Helper method to get Docker Buildx builder info, throws exception if not available
 def getBuildxBuilderInfo = {
   def builderCheckOutput = new ByteArrayOutputStream()
-  def builderCheckResult = exec {
+  def builderCheckResult = execOps.exec {
     ignoreExitValue = true
     standardOutput = builderCheckOutput
     errorOutput = new ByteArrayOutputStream()
@@ -201,7 +207,7 @@ task dockerBuild() {
   dependsOn(solrTgzConfiguration)
 
   doLast {
-    exec {
+    execOps.exec {
       standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
       commandLine "docker", "build",
           "-f", "solr-${-> project.version}${dockerImageDistSuffix}/docker/Dockerfile",
@@ -238,7 +244,7 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   doLast {
     def dockerImageId = dockerImageIdFile.text
 
-    exec {
+    execOps.exec {
       commandLine "docker", "tag", dockerImageId, inputs.properties.dockerImageName
     }
 
@@ -249,10 +255,26 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   }
 }
 
+// Removes the dangling Solr images that retagging leaves behind, identified by the label from the Dockerfile
+task dockerPrune() {
+  group = 'Docker'
+  description = 'Remove dangling Solr docker images'
+
+  doLast {
+    execOps.exec {
+      ignoreExitValue = true
+      standardOutput = new ByteArrayOutputStream()
+      commandLine "docker", "image", "prune", "--force", "--filter", "label=org.opencontainers.image.title=Apache Solr"
+    }
+  }
+}
+tasks.dockerTag.finalizedBy tasks.dockerPrune
+
 task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image built from the local Dockerfile'
 
+  slimImage.set(isImageSlim())
   idFile = tasks.dockerBuild.outputs.files.singleFile
   outputDir = file("$buildDir/test-results")
 
@@ -312,7 +334,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
       }
 
       def solrTgzConfiguration = getSolrTgzConfiguration()
-      exec {
+      execOps.exec {
         standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
         commandLine "docker", "buildx", "build",
             "-f", "solr-${-> project.version}${dockerImageDistSuffix}/docker/Dockerfile",
@@ -326,7 +348,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
       project.logger.lifecycle("\tPlatforms: \t$platformValue")
     } else {
       // Standard push (works for both standard builds and single-platform buildx builds)
-      exec {
+      execOps.exec {
         commandLine "docker", "push", dockerImageName
       }
       project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
@@ -534,7 +556,7 @@ if (''.equals(releaseGpgFingerprint)) {
       try {
         // run an httpd server to host our artifacts
         logger.lifecycle('Running mock HTTPD server our testing...');
-        exec {
+        execOps.exec {
           commandLine 'docker', 'run',
               '--cidfile', mockServerIdFile,
               '--rm',
@@ -547,7 +569,7 @@ if (''.equals(releaseGpgFingerprint)) {
         try {
           def mockServerId = mockServerIdFile.text
           def mockServerIpStdOut = new ByteArrayOutputStream()
-          exec {
+          execOps.exec {
             commandLine 'docker',
                 'inspect',
                 "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
@@ -564,7 +586,7 @@ if (''.equals(releaseGpgFingerprint)) {
           if (!project(":solr:distribution").ext.withSignedArtifacts) {
             downloadHost = "mock-downloads.test.org"
           }
-          exec {
+          execOps.exec {
             standardInput =
                 file("${dockerfilesDirPath}/Dockerfile.official-${lowerVariant}")
                     .newDataInputStream()
@@ -588,7 +610,7 @@ if (''.equals(releaseGpgFingerprint)) {
           if (mockServerIdFile.exists()) {
             def mockServerId = mockServerIdFile.text
             try {
-              exec {commandLine 'docker', 'stop', mockServerId}
+              execOps.exec {commandLine 'docker', 'stop', mockServerId}
             } catch (Exception e) {
               logger.error("Unable to stop docker container ${mockServerId}", e)
               if (null != mainException) {
@@ -619,6 +641,7 @@ task testDockerfileOfficialFull(type: TestDockerImageTask,
     dependsOn: configurations.dockerOfficialFullSmokeCheckImage) {
   description = 'Smoke Test Full Solr docker image built from the official Dockerfile'
 
+  slimImage.set(false)
   idFile = file(imageIdFileOfficial("Full"))
   outputDir = file("$smokeTestOfficial/full/test-results")
 
@@ -632,6 +655,7 @@ task testDockerfileOfficialSlim(type: TestDockerImageTask,
     dependsOn: configurations.dockerOfficialSlimSmokeCheckImage) {
   description = 'Smoke Test Slim Solr docker image built from the official Slim Dockerfile'
 
+  slimImage.set(true)
   idFile = file(imageIdFileOfficial("Slim"))
   outputDir = file("$smokeTestOfficial/slim/test-results")
 
@@ -647,6 +671,9 @@ task testDockerfileOfficial {
 
 // Re-usable class for running tests...
 abstract class TestDockerImageTask extends DefaultTask {
+
+  @Input
+  abstract public Property<Boolean> getSlimImage()
 
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
   @InputFile
@@ -681,6 +708,8 @@ abstract class TestDockerImageTask extends DefaultTask {
     Property<String> getWorkDir();
 
     Property<String> getImageId();
+
+    Property<Boolean> getSlimImage();
   }
 
   public abstract static class SingleTestAction implements WorkAction<SingleTestParameters> {
@@ -695,6 +724,8 @@ abstract class TestDockerImageTask extends DefaultTask {
       def testCaseBuildDir = "${testCaseWorkDir}/build_dir"
       System.out.println("Starting Solr Docker test: ${testCaseName}")
 
+      def solrDockerDist = getParameters().getSlimImage().get() ? "slim" : "full"
+
       def res = getExec().exec {
         // we'll handle it ourselves so we can report the details of which test failed
         ignoreExitValue true
@@ -702,6 +733,7 @@ abstract class TestDockerImageTask extends DefaultTask {
         environment "DEBUG", "true"
         environment "TEST_DIR", testCaseDir
         environment "BUILD_DIR", testCaseBuildDir
+        environment "SOLR_DOCKER_DIST", solrDockerDist
 
         standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
         errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
@@ -727,6 +759,7 @@ abstract class TestDockerImageTask extends DefaultTask {
         "false").toBoolean()
 
     def imageId = idFile.getAsFile().get().text
+    def testSlimImage = getSlimImage().get()
     // Print information on the image before it is tested
     logger
         .lifecycle("Testing Solr Image ID: $imageId ${-> runConcurrentTests ? '(concurrently)' : '(sequentially)'}")
@@ -750,6 +783,7 @@ abstract class TestDockerImageTask extends DefaultTask {
           params.getTestDir().set(file.getPath())
           params.getWorkDir().set(testCaseWorkDir.getAsFile().getPath())
           params.getImageId().set(imageId)
+          params.getSlimImage().set(testSlimImage)
         }
         workQueue.submit(SingleTestAction.class, paramSetup);
         if (!runConcurrentTests) {

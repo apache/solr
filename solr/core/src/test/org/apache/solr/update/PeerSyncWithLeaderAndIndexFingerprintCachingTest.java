@@ -32,13 +32,10 @@ public class PeerSyncWithLeaderAndIndexFingerprintCachingTest
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
+            "/get",
             params(
-                "qt",
-                "/get",
-                "getVersions",
-                Integer.toString(numVersions),
-                "syncWithLeader",
-                StrUtils.join(Arrays.asList(syncWith), ',')));
+                "getVersions", Integer.toString(numVersions),
+                "syncWithLeader", StrUtils.join(Arrays.asList(syncWith), ',')));
     @SuppressWarnings({"rawtypes"})
     NamedList rsp = client.request(qr);
     assertEquals(true, (Boolean) rsp.get("syncWithLeader"));

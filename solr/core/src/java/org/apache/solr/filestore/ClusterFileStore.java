@@ -46,10 +46,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -88,8 +89,8 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   public UploadToFileStoreResponse uploadFile(
       String filePath, List<String> sig, InputStream requestBody) {
     final var response = instantiateJerseyResponse(UploadToFileStoreResponse.class);
-    if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-      throw new RuntimeException(PackageAPI.ERR_MSG);
+    if (!coreContainer.getPackageLoader().getPackageStore().isEnabled()) {
+      throw new RuntimeException(PackageStore.ERR_MSG);
     }
     try {
       coreContainer
@@ -269,7 +270,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     entryMetadata.size = size;
     entryMetadata.timestamp = timestamp;
     if (details.getMetaData() != null) {
-      details.getMetaData().toMap(entryMetadata.unknownProperties());
+      Utils.convertToMap(details.getMetaData(), entryMetadata.unknownProperties());
     }
 
     return entryMetadata;
@@ -316,12 +317,12 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
   public SolrJerseyResponse deleteFile(String filePath, Boolean localDelete) {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-      throw new RuntimeException(PackageAPI.ERR_MSG);
+    if (!coreContainer.getPackageLoader().getPackageStore().isEnabled()) {
+      throw new RuntimeException(PackageStore.ERR_MSG);
     }
 
     validateName(filePath, true);
-    if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(filePath)) {
+    if (coreContainer.getPackageLoader().getPackageStore().isJarInuse(filePath)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
     }
     doDelete(filePath, localDelete);
@@ -399,7 +400,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
     }
-    CryptoKeys cryptoKeys = null;
+    CryptoKeys cryptoKeys;
     try {
       cryptoKeys = new CryptoKeys(keys);
     } catch (Exception e) {

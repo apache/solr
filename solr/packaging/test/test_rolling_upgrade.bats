@@ -17,11 +17,11 @@
 
 load bats_helper
 
-# You can test alternative images via 
-# export SOLR_BEGIN_IMAGE="apache/solr-nightly:9.9.0-slim" and then running
+# Upgrades from the latest release of the previous major version to the image of the Solr version
+# under test, which must already exist locally (./gradlew dockerTag); the test is skipped otherwise.
+# Either image can be overridden, e.g.
+# export SOLR_BEGIN_IMAGE="solr:9.11-slim" and then running
 # ./gradlew iTest --tests test_rolling_upgrade.bats
-SOLR_BEGIN_IMAGE="${SOLR_BEGIN_IMAGE:-apache/solr-nightly:9.10.0-SNAPSHOT-slim}"
-SOLR_END_IMAGE="${SOLR_END_IMAGE:-apache/solr-nightly:10.0.0-SNAPSHOT-slim}"
 
 setup() {
   common_clean_setup
@@ -30,8 +30,18 @@ setup() {
   if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
     skip "Docker is not available"
   fi
+  local solr_version major
+  solr_version="$(basename "$SOLR_TIP")"
+  solr_version="${solr_version#solr-}"
+  major="${solr_version%%.*}"
+  SOLR_BEGIN_IMAGE="${SOLR_BEGIN_IMAGE:-solr:$((major - 1))-slim}"
   docker pull "$SOLR_BEGIN_IMAGE" || skip "Docker image $SOLR_BEGIN_IMAGE is not available"
-  docker pull "$SOLR_END_IMAGE" || skip "Docker image $SOLR_END_IMAGE is not available"
+
+  # Default matches the tag applied by the Gradle dockerTag task
+  SOLR_END_IMAGE="${SOLR_END_IMAGE:-apache/solr:${solr_version}}"
+  docker image inspect "$SOLR_END_IMAGE" >/dev/null 2>&1 || docker pull "$SOLR_END_IMAGE" ||
+    skip "Docker image $SOLR_END_IMAGE is not available; build it with: ./gradlew dockerTag"
+  export SOLR_BEGIN_IMAGE SOLR_END_IMAGE
 
   # Record test start time for scoping logs on failure
   TEST_STARTED_AT_ISO=$(date -Iseconds)
@@ -85,9 +95,9 @@ teardown() {
   docker run --name solr-node1 -d \
     --network solrcloud-test \
     --memory=400m \
-    --platform linux/amd64 \
+    -e SOLR_MODE=solrcloud \
     -v solr-data1:/var/solr \
-    "$SOLR_BEGIN_IMAGE" solr start -f -c -m 200m --host solr-node1 -p 8983
+    "$SOLR_BEGIN_IMAGE" solr start -f -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 10000
 
   # start next 2 in parallel
@@ -96,17 +106,17 @@ teardown() {
   docker run --name solr-node2 -d \
     --network solrcloud-test \
     --memory=400m \
-    --platform linux/amd64 \
+    -e SOLR_MODE=solrcloud \
     -v solr-data2:/var/solr \
-    "$SOLR_BEGIN_IMAGE" solr start -f -c -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
+    "$SOLR_BEGIN_IMAGE" solr start -f -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
 
   echo "Started solr-node3 connected to first node's ZooKeeper"
   docker run --name solr-node3 -d \
     --network solrcloud-test \
     --memory=400m \
-    --platform linux/amd64 \
+    -e SOLR_MODE=solrcloud \
     -v solr-data3:/var/solr \
-    "$SOLR_BEGIN_IMAGE" solr start -f -c -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
+    "$SOLR_BEGIN_IMAGE" solr start -f -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
 
   docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
@@ -118,7 +128,9 @@ teardown() {
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
 
   echo "Add some sample data"
-  docker exec --user=solr solr-node1 solr post -c test-collection example/exampledocs/mem.xml
+  run docker exec solr-node1 curl -fsS -H 'Content-Type: application/json' \
+    --data-binary '[{"id":"rolling-upgrade-smoke"}]' \
+    'http://localhost:8983/solr/test-collection/update?commit=true'
   assert_success
 
   # Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
@@ -128,7 +140,7 @@ teardown() {
   docker run --name solr-node3 -d \
     --network solrcloud-test \
     --memory=400m \
-    --platform linux/amd64 \
+    -e SOLR_MODE=solrcloud \
     -v solr-data3:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
@@ -141,7 +153,7 @@ teardown() {
   docker run --name solr-node2 -d \
     --network solrcloud-test \
     --memory=400m \
-    --platform linux/amd64 \
+    -e SOLR_MODE=solrcloud \
     -v solr-data2:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
   docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
@@ -153,7 +165,7 @@ teardown() {
   docker run --name solr-node1 -d \
     --network solrcloud-test \
     --memory=400m \
-    --platform linux/amd64 \
+    -e SOLR_MODE=solrcloud \
     -v solr-data1:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
@@ -161,6 +173,12 @@ teardown() {
 
   # Final collection health check
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+
+  echo "Checking the indexed document survived the upgrade"
+  run docker exec solr-node1 curl -fsS \
+    'http://localhost:8983/solr/test-collection/select?q=id%3Arolling-upgrade-smoke&wt=json'
+  assert_success
+  assert_equal "$(echo "$output" | jq '.response.numFound')" "1"
 
   echo "checking cluster has exactly 3 live nodes"
   run docker exec solr-node1 curl -s "http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS"

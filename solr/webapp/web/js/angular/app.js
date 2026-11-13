@@ -204,7 +204,7 @@ solrAdminApp.config([
 })
 .filter('highlight', function($sce) {
   return function(input, lang) {
-    if (lang && input && lang!="txt" && lang!="csv") return hljs.highlight(lang, input).value;
+    if (lang && input && hljs.getLanguage(lang)) return hljs.highlight(input, {language: lang}).value;
     return input;
   }
 })
@@ -330,6 +330,15 @@ solrAdminApp.config([
           onSelect: '&'
         },
         link: function(scope, element, attrs) {
+            // Bind once; previously this was inside the $watch which stacked listeners
+            // on every data change and could fire synchronously during a digest,
+            // triggering $rootScope:inprog.
+            element.on("select_node.jstree", function (event, data) {
+                scope.$applyAsync(function() {
+                  scope.onSelect({url: data.node.a_attr.href, data: data});
+                });
+            });
+
             scope.$watch("data", function(newValue, oldValue) {
               if (newValue && !jQuery.isEmptyObject(newValue)) {
                   var treeConfig = {
@@ -339,7 +348,7 @@ solrAdminApp.config([
                     }
                   };
 
-                  var tree = $(element).jstree(treeConfig);
+                  $(element).jstree(treeConfig);
 
                   // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
                   // Putting the data in the treeConfig makes it stack and doesn't update.
@@ -347,13 +356,6 @@ solrAdminApp.config([
                   $(element).jstree(true).refresh();
 
                   $(element).jstree('open_node','li:first');
-                  if (tree) {
-                      element.bind("select_node.jstree", function (event, data) {
-                          scope.$apply(function() {
-                            scope.onSelect({url: data.node.a_attr.href, data: data});
-                          });
-                      });
-                  }
                 }
             }, true);
         }
@@ -378,6 +380,10 @@ solrAdminApp.config([
     }
     if ($rootScope.exceptions[config.url]) {
       delete $rootScope.exceptions[config.url];
+    }
+    if (config.url && config.url.startsWith("/api/cluster/security/")) {
+      // Clear any stale security panel error when a new security request starts
+      $rootScope.$broadcast('securityApiClearError');
     }
     activeRequests++;
     if (sessionStorage.getItem("auth.header")) {
@@ -420,8 +426,12 @@ solrAdminApp.config([
         return rejection;
     }
 
-    // Schema Designer handles errors internally to provide a better user experience than the global error handler
+    // Schema Designer and Security panels handle errors internally to provide a better user experience than the global error handler
     var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
+    var isHandledBySecurity = rejection.config.url && rejection.config.url.startsWith("/api/cluster/security/");
+    // HTTP 510 means a feature is switched off in solr.xml, e.g. metrics collection. The screen
+    // asking for that data explains it in place, so skip the global error banner.
+    var isDisabledFeature = rejection.status === 510 && rejection.config.url && rejection.config.url.endsWith("admin/metrics");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -450,10 +460,13 @@ solrAdminApp.config([
         sessionStorage.setItem("auth.location", $location.path());
         $location.path('/login');
       }
-    } else if (rejection.status === 403 && !isHandledBySchemaDesigner) {
+    } else if (rejection.status === 403 && !isHandledBySchemaDesigner && !isHandledBySecurity) {
       // No permission
       $rootScope.showAuthzFailures = true;
-    } else {
+    } else if (isHandledBySecurity) {
+      // Let the security panel surface the detailed error in its own dialog
+      $rootScope.$broadcast('securityApiError', rejection);
+    } else if (!isDisabledFeature) {
       // schema designer prefers to handle errors itself
       if (!isHandledBySchemaDesigner) {
         $rootScope.exceptions[rejection.config.url] = rejection.data.error;
@@ -464,10 +477,25 @@ solrAdminApp.config([
 
   return {request: started, response: ended, responseError: failed};
 })
-.config(function($httpProvider) {
+.config(function($httpProvider, $qProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
   // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
   $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+  // The V2 solrApi client (superagent-based) never goes through $httpProvider, so X-Requested-With
+  // (for the same popup-suppression trick) needs its own copy here.
+  solrApi.ApiClient.instance.defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
+  // Authorization is set via a superagent plugin instead of defaultHeaders, so it's re-read from
+  // sessionStorage on every request -- same as $http gets via httpInterceptor.started above -- and
+  // there's a single place to keep in sync (nowhere else should touch
+  // solrApi.ApiClient.instance.defaultHeaders['Authorization']).
+  solrApi.ApiClient.instance.plugins = [function(request) {
+    if (sessionStorage.getItem("auth.header")) {
+      request.set('Authorization', sessionStorage.getItem("auth.header"));
+    }
+    return request;
+  }];
+  // Suppress AngularJS 1.6+ "Possibly unhandled rejection" console noise; errors are handled via callbacks and the security/schema-designer error dialogs
+  $qProvider.errorOnUnhandledRejections(false);
 })
 .directive('fileModel', function ($parse) {
     return {
@@ -485,9 +513,10 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, $timeout, CoresV2, CollectionsV2, AliasesV2, SystemV2, ClusterV2, Ping, Constants, SchemaDesigner, ApiErrorHandler, NodeTarget) {
 
   $rootScope.exceptions={};
+  var cloudLandingDone = false;
 
   $rootScope.toggleException = function() {
     $scope.showException=!$scope.showException;
@@ -497,6 +526,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.cores = [];
       $scope.collections = [];
       $scope.aliases = [];
+      $scope.liveNodes = [];
   }
 
   $scope.permissions = permissions;
@@ -504,95 +534,255 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
   }
 
+  var loadCoresForSelectedNode = function(pageType) {
+    if (NodeTarget.needsSelection()) {
+      $scope.cores = [];
+      delete $scope.currentCore;
+      $scope.viewingRemoteNode = false;
+      return;
+    }
+    CoresV2.getAllCoreStatus(NodeTarget.withNodes({indexInfo: false}), function(error, data, response) {
+      $timeout(function() {
+        if (error) { ApiErrorHandler.handle(response); return; }
+        var payload = NodeTarget.unwrap(data, response) || {};
+        var status = payload.status || {};
+        var initFailures = payload.initFailures || {};
+        $scope.cores = [];
+        var currentCoreName = $route.current.params.core;
+        delete $scope.currentCore;
+        for (var key in status) {
+          var core = status[key];
+          if (core.name.startsWith("._designer_")) {
+            continue;
+          }
+          $scope.cores.push(core);
+          if ((!$scope.isCloudEnabled || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
+              $scope.currentCore = core;
+          }
+        }
+        $scope.showInitFailures = Object.keys(initFailures).length>0;
+        $scope.initFailures = initFailures;
+        $scope.viewingRemoteNode = NodeTarget.isRemote();
+      });
+    });
+  };
+
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
-    Cores.list(function(data) {
-      $scope.cores = [];
-      var currentCoreName = $route.current.params.core;
-      delete $scope.currentCore;
-      for (key in data.status) {
-        var core = data.status[key];
-        if (core.name.startsWith("._designer_")) {
-          continue;
+    // Standalone never hits listClusterNodes; fetch cores here (also before mode is known).
+    if (!$scope.isCloudEnabled) {
+      loadCoresForSelectedNode(pageType);
+    }
+
+    SystemV2.getNodeSystemInfo({}, function(error, data, response) {
+      $timeout(function() {
+        if (error) {
+          ApiErrorHandler.handle(response);
+          // Settle mode so pages waiting on isCloudEnabled do not hang.
+          $scope.isCloudEnabled = false;
+          NodeTarget.clear();
+          return;
         }
-        $scope.cores.push(core);
-        if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
-            $scope.currentCore = core;
+        $scope.isCloudEnabled = !!(data.mode && data.mode.match(/solrcloud/i));
+        if ($scope.isCloudEnabled) {
+          if (!cloudLandingDone && $location.path() === '/' && !NodeTarget.state.selectedNode) {
+            cloudLandingDone = true;
+            $location.url('/~cloud?view=nodes');
+          } else {
+            cloudLandingDone = true;
+          }
         }
-      }
-      $scope.showInitFailures = Object.keys(data.initFailures).length>0;
-      $scope.initFailures = data.initFailures;
-    });
+        $scope.usersPermissions = data.security.permissions;
+        $scope.isSecurityEnabled = data.security.authenticationPlugin != null;
+        if (!$scope.isCloudEnabled) {
+          NodeTarget.clear();
+          $scope.liveNodes = [];
+          $scope.selectedNode = null;
+          $scope.viewingRemoteNode = false;
+          $scope.needsNodeSelection = false;
+        } else if (data.node) {
+          NodeTarget.setLocalNode(data.node);
+          $scope.localNode = data.node;
+          $scope.selectedNode = NodeTarget.state.selectedNode;
+        }
 
-    System.get(function(data) {
-      $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
-      $scope.usersPermissions = data.security.permissions;
-      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
+        $scope.isSchemaDesignerEnabled = $scope.isPermitted([
+          permissions.CONFIG_EDIT_PERM,
+          permissions.SCHEMA_EDIT_PERM,
+          permissions.READ_PERM,
+          permissions.UPDATE_PERM
+        ]);
 
-      $scope.isSchemaDesignerEnabled = $scope.isPermitted([
-        permissions.CONFIG_EDIT_PERM,
-        permissions.SCHEMA_EDIT_PERM,
-        permissions.READ_PERM,
-        permissions.UPDATE_PERM
-      ]);
-
-      var currentCollectionName = $route.current.params.core;
-      delete $scope.currentCollection;
-      if ($scope.isCloudEnabled) {
-        Collections.list(function (cdata) {
-          Collections.listaliases(function (adata) {
-            $scope.aliases = [];
-            for (var key in adata.aliases) {
-              props = {};
-              if (key in adata.properties) {
-                props = adata.properties[key];
+        var currentCollectionName = $route.current.params.core;
+        delete $scope.currentCollection;
+        if ($scope.isCloudEnabled) {
+          ClusterV2.listClusterNodes(function(error, nodesData, response) {
+            $timeout(function() {
+              if (error) {
+                ApiErrorHandler.handle(response);
+                NodeTarget.setLiveNodes([]);
+              } else {
+                NodeTarget.setLiveNodes(nodesData.nodes || []);
               }
-              var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
-              $scope.aliases.push(alias);
-              if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
-                $scope.currentCollection = alias;
+              $scope.liveNodes = NodeTarget.state.liveNodes;
+              $scope.selectedNode = NodeTarget.state.selectedNode;
+              $scope.viewingRemoteNode = NodeTarget.isRemote();
+              $scope.needsNodeSelection = NodeTarget.needsSelection();
+              if (pageType === Constants.IS_CORE_PAGE && NodeTarget.isRemote()) {
+                $location.url('/');
+                return;
               }
-            }
-            $scope.collections = [];
-            for (key in cdata.collections) {
-              if (cdata.collections[key].startsWith("._designer_")) {
-                continue; // ignore temp designer collections
-              }
-              var collection = {name: cdata.collections[key], type: 'collection'};
-              $scope.collections.push(collection);
-              if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-                $scope.currentCollection = collection;
-              }
-            }
-
-            $scope.aliases_and_collections = $scope.aliases;
-            if ($scope.aliases.length > 0) {
-              $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
-            }
-            $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+              loadCoresForSelectedNode(pageType);
+            });
           });
-        });
-      }
+          CollectionsV2.listCollections({}, function (error, cdata, response) {
+            $timeout(function() {
+              if (error) { ApiErrorHandler.handle(response); return; }
+              AliasesV2.getAliases(function (error, adata, response) {
+                $timeout(function() {
+                  if (error) { ApiErrorHandler.handle(response); return; }
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                    var props = {};
+                    if (key in adata.properties) {
+                      props = adata.properties[key];
+                    }
+                    var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                    $scope.aliases.push(alias);
+                    if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
+                      $scope.currentCollection = alias;
+                    }
+                  }
+                  $scope.collections = [];
+                  for (var key in cdata.collections) {
+                    if (cdata.collections[key].startsWith("._designer_")) {
+                      continue; // ignore temp designer collections
+                    }
+                    var collection = {name: cdata.collections[key], type: 'collection'};
+                    $scope.collections.push(collection);
+                    if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+                      $scope.currentCollection = collection;
+                    }
+                  }
 
-      $scope.showEnvironment = data.environment !== undefined;
-      if (data.environment) {
-        $scope.environment = data.environment;
-        var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
-        $scope.environment_label = env_labels[data.environment];
-        if (data.environment_label) {
-          $scope.environment_label = data.environment_label;
+                  $scope.aliases_and_collections = $scope.aliases;
+                  if ($scope.aliases.length > 0) {
+                    $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+                  }
+                  $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+                });
+              });
+            });
+          });
         }
-        if (data.environment_color) {
-          $scope.environment_color = data.environment_color;
+
+        $scope.showEnvironment = data.environment !== undefined;
+        if (data.environment) {
+          $scope.environment = data.environment;
+          var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
+          $scope.environment_label = env_labels[data.environment];
+          if (data.environment_label) {
+            $scope.environment_label = data.environment_label;
+          }
+          if (data.environment_color) {
+            $scope.environment_color = data.environment_color;
+          }
         }
-      }
+      });
     });
 
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
+    $scope.pageType = pageType;
+    // logging-levels is cluster-wide (nodes=all), so omit it from the Node badge pages.
+    $scope.isNodeScopedPage =
+      (pageType === Constants.IS_CORE_PAGE && !NodeTarget.isRemote()) ||
+      /^(index|logging|java-props|threads|cores)$/.test(page);
     $scope.currentUser = sessionStorage.getItem("auth.username");
     $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  // Keep long node names scrollable in the open Chosen list; #menu-wrapper steals wheel otherwise.
+  var stretchNodeResultRows = function(ul) {
+    if (!ul) {
+      return;
+    }
+    var lis = ul.querySelectorAll('li.active-result');
+    var max = ul.clientWidth;
+    var i;
+    for (i = 0; i < lis.length; i++) {
+      lis[i].style.minWidth = '';
+      if (lis[i].scrollWidth > max) {
+        max = lis[i].scrollWidth;
+      }
+    }
+    for (i = 0; i < lis.length; i++) {
+      lis[i].style.minWidth = max + 'px';
+    }
+    if (ul.scrollWidth > max) {
+      max = ul.scrollWidth;
+      for (i = 0; i < lis.length; i++) {
+        lis[i].style.minWidth = max + 'px';
+      }
+    }
+  };
+  var bindNodeResultsWheel = function(el) {
+    if (!el || el.getAttribute('data-node-wheel') === '1') {
+      return;
+    }
+    el.setAttribute('data-node-wheel', '1');
+    el.addEventListener('wheel', function(e) {
+      var canX = el.scrollWidth > el.clientWidth;
+      var canY = el.scrollHeight > el.clientHeight;
+      var absX = Math.abs(e.deltaX);
+      var absY = Math.abs(e.deltaY);
+      if (canX && (e.shiftKey || absX > absY || !canY)) {
+        el.scrollLeft += (e.shiftKey && !e.deltaX) ? e.deltaY : (e.deltaX || e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+      } else if (canY) {
+        e.stopPropagation();
+      }
+    }, {passive: false});
+  };
+  var syncNodeSelectorTitle = function() {
+    var chosen = document.querySelector('#node_selector_select_chosen > a.chosen-single');
+    if (chosen) {
+      chosen.title = $scope.selectedNode || '';
+    }
+  };
+  $scope.$watch('selectedNode', function() {
+    $timeout(syncNodeSelectorTitle);
+  });
+  $scope.$watchCollection('liveNodes', function() {
+    $timeout(syncNodeSelectorTitle);
+  });
+  angular.element(document).on('chosen:showing_dropdown', '#node_selector_select', function() {
+    $timeout(function() {
+      var results = document.querySelector('#node_selector_select_chosen .chosen-results');
+      stretchNodeResultRows(results);
+      bindNodeResultsWheel(results);
+    });
+  });
+  $scope.$on('$destroy', function() {
+    angular.element(document).off('chosen:showing_dropdown', '#node_selector_select');
+  });
+
+  $scope.onSelectedNodeChange = function() {
+    if (!$scope.selectedNode) {
+      return;
+    }
+    if (!NodeTarget.selectNode($scope.selectedNode)) {
+      return;
+    }
+    $scope.viewingRemoteNode = NodeTarget.isRemote();
+    $scope.needsNodeSelection = NodeTarget.needsSelection();
+    if ($scope.isNodeScopedPage && !($scope.pageType === Constants.IS_CORE_PAGE && NodeTarget.isRemote())) {
+      $route.reload();
+      return;
+    }
+    $location.url('/');
   };
 
   $scope.showHideMenu = function() {
@@ -616,10 +806,18 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCore = function(core) {
-    $location.url("/" + core.name + "/core-overview");
+    if (core && !NodeTarget.isRemote()) {
+      $location.url("/" + core.name + "/core-overview");
+    }
   }
 
   $scope.showCollection = function(collection) {
+    if (!collection || !collection.type) {
+      return;
+    }
+    if ($route.current && $route.current.params && $route.current.params.core === collection.name) {
+      return;
+    }
     if (collection.type === 'collection') {
       $location.url("/" + collection.name + "/collection-overview")
     } else if (collection.type === 'alias') {

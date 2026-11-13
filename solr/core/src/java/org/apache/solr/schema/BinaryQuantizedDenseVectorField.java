@@ -16,11 +16,24 @@
  */
 package org.apache.solr.schema;
 
+import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
 import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding;
+import org.apache.solr.common.SolrException;
 
 public class BinaryQuantizedDenseVectorField extends DenseVectorField {
+
+  @Override
+  public void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
+
+    if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "knnAlgorithm 'flat' is not supported for BinaryQuantizedDenseVectorField");
+    }
+  }
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {

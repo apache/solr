@@ -38,7 +38,7 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
@@ -70,7 +70,7 @@ import org.apache.solr.util.SolrDefaultScorerSupplier;
 public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequirer {
 
   protected final String query;
-  protected final String zkHost;
+  protected final CloudSolrClient.CloudSolrClientConnection solrConnection;
   protected final String solrUrl;
   protected final String collection;
   protected final String fromField;
@@ -85,7 +85,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
   public CrossCollectionJoinQuery(
       String query,
-      String zkHost,
+      CloudSolrClient.CloudSolrClientConnection solrConnection,
       String solrUrl,
       String collection,
       String fromField,
@@ -95,7 +95,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       SolrParams otherParams) {
 
     this.query = query;
-    this.zkHost = zkHost;
+    this.solrConnection = solrConnection;
     this.solrUrl = solrUrl;
     this.collection = collection;
     this.fromField = fromField;
@@ -221,14 +221,18 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       }
     }
 
-    private TupleStream createCloudSolrStream(SolrClientCache solrClientCache) throws IOException {
+    private TupleStream createCloudSolrStream() throws IOException {
       ZkController zkController = searcher.getCore().getCoreContainer().getZkController();
+      if (zkController == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SolrCloud is required");
+      }
 
-      String streamZkHost;
-      if (zkHost != null) {
-        streamZkHost = zkHost;
+      CloudSolrClient.CloudSolrClientConnection streamingSolrConnection;
+      if (solrConnection != null) {
+        streamingSolrConnection = solrConnection;
       } else {
-        streamZkHost = zkController.getZkServerAddress();
+        streamingSolrConnection =
+            CloudSolrClient.CloudSolrClientConnection.parse(zkController.getZkServerAddress());
       }
 
       ModifiableSolrParams params = new ModifiableSolrParams(otherParams);
@@ -239,28 +243,26 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
       }
       params.set(CommonParams.FL, fromField);
       params.set(CommonParams.SORT, fromField + " asc");
-      params.set(CommonParams.QT, "/export");
       params.set(CommonParams.WT, CommonParams.JAVABIN);
 
       StreamContext streamContext = new StreamContext();
-      streamContext.setSolrClientCache(solrClientCache);
+      streamContext.setSolrClientCache(zkController.getSolrClientCache());
       streamContext.setRequestParams(new ModifiableSolrParams(otherParams));
-      if (zkController != null) {
-        RequestReplicaListTransformerGenerator rltg =
-            new RequestReplicaListTransformerGenerator(
-                zkController
-                    .getZkStateReader()
-                    .getClusterProperties()
-                    .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
-                    .toString(),
-                zkController.getNodeName(),
-                zkController.getBaseUrl(),
-                zkController.getHostName(),
-                zkController.getSysPropsCacher());
-        streamContext.setRequestReplicaListTransformerGenerator(rltg);
-      }
+      RequestReplicaListTransformerGenerator rltg =
+          new RequestReplicaListTransformerGenerator(
+              zkController
+                  .getZkStateReader()
+                  .getClusterProperties()
+                  .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+                  .toString(),
+              zkController.getNodeName(),
+              zkController.getBaseUrl(),
+              zkController.getHostName(),
+              zkController.getSysPropsCacher());
+      streamContext.setRequestReplicaListTransformerGenerator(rltg);
 
-      TupleStream cloudSolrStream = new CloudSolrStream(streamZkHost, collection, params);
+      TupleStream cloudSolrStream =
+          new CloudSolrStream(streamingSolrConnection, collection, "/export", params);
       TupleStream uniqueStream = new UniqueStream(cloudSolrStream, new FieldEqualitor(fromField));
       uniqueStream.setStreamContext(streamContext);
       return uniqueStream;
@@ -293,17 +295,20 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("expr", uniqueExpr.toString());
-      params.set(CommonParams.QT, "/stream");
       params.set(CommonParams.WT, CommonParams.JAVABIN);
 
-      return new SolrStream(solrUrl + "/" + collection, params);
+      var solrStream = new SolrStream(solrUrl, collection, "/stream", params);
+      StreamContext streamContext = new StreamContext();
+      streamContext.setSolrClientCache(
+          searcher.getCore().getCoreContainer().getZkController().getSolrClientCache());
+      solrStream.setStreamContext(streamContext);
+      return solrStream;
     }
 
     private DocSet getDocSet() throws IOException {
-      SolrClientCache solrClientCache = searcher.getCore().getCoreContainer().getSolrClientCache();
       TupleStream solrStream;
-      if (zkHost != null || solrUrl == null) {
-        solrStream = createCloudSolrStream(solrClientCache);
+      if (solrConnection != null || solrUrl == null) {
+        solrStream = createCloudSolrStream();
       } else {
         solrStream = createSolrStream();
       }
@@ -381,7 +386,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
     final int prime = 31;
     int result = classHash();
     result = prime * result + Objects.hashCode(query);
-    result = prime * result + Objects.hashCode(zkHost);
+    result = prime * result + Objects.hashCode(solrConnection);
     result = prime * result + Objects.hashCode(solrUrl);
     result = prime * result + Objects.hashCode(collection);
     result = prime * result + Objects.hashCode(fromField);
@@ -399,7 +404,7 @@ public class CrossCollectionJoinQuery extends Query implements SolrSearcherRequi
 
   private boolean equalsTo(CrossCollectionJoinQuery other) {
     return Objects.equals(query, other.query)
-        && Objects.equals(zkHost, other.zkHost)
+        && Objects.equals(solrConnection, other.solrConnection)
         && Objects.equals(solrUrl, other.solrUrl)
         && Objects.equals(collection, other.collection)
         && Objects.equals(fromField, other.fromField)

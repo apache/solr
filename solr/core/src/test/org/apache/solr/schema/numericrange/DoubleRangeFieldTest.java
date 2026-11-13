@@ -22,9 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.DoubleRange;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
@@ -377,6 +380,47 @@ public class DoubleRangeFieldTest extends SolrTestCase {
     range = fieldType.parseRangeValue("[1.0e100 TO 1.0e200]");
     assertEquals(1.0e100, range.mins[0], 0.0);
     assertEquals(1.0e200, range.maxs[0], 0.0);
+  }
+
+  public void test2dMultiValuedDocValuesEncodingIsSortedAndCanonical() {
+    final int numDims = 2;
+    DoubleRangeField fieldType = createFieldType(numDims);
+    String field = "double_range_mv_dv";
+
+    // The same set of 2D ranges in two different insertion orders. Includes negatives (to exercise
+    // the floating-point sortable transform).
+    List<Object> order1 =
+        List.of(
+            "[0.5,4.0 TO 1.5,5.0]",
+            "[-10.0,5.0 TO -9.0,6.0]",
+            "[0.5,-3.0 TO 1.5,-2.0]",
+            "[-2.5,1.0 TO -1.0,2.0]");
+    List<Object> order2 =
+        List.of(
+            "[-2.5,1.0 TO -1.0,2.0]",
+            "[0.5,-3.0 TO 1.5,-2.0]",
+            "[-10.0,5.0 TO -9.0,6.0]",
+            "[0.5,4.0 TO 1.5,5.0]");
+
+    BytesRef packed1 = fieldType.encodePackedValues(field, order1);
+    BytesRef packed2 = fieldType.encodePackedValues(field, order2);
+
+    // Canonical: insertion order must not change the packed docValues blob.
+    assertEquals(packed1, packed2);
+
+    // Packed ascending by encoded min bytes, dimension-major: primary key is the dim-0 min, ties
+    // broken by the dim-1 min. Expected order of (min_d0, min_d1):
+    final double[][] expectedMins = {{-10.0, 5.0}, {-2.5, 1.0}, {0.5, -3.0}, {0.5, 4.0}};
+    final int stride = 2 * numDims * Double.BYTES;
+    assertEquals(expectedMins.length, packed1.length / stride);
+    for (int i = 0; i < expectedMins.length; i++) {
+      for (int d = 0; d < numDims; d++) {
+        int offset = packed1.offset + i * stride + d * Double.BYTES;
+        long sortable = NumericUtils.sortableBytesToLong(packed1.bytes, offset);
+        double min = NumericUtils.sortableLongToDouble(sortable);
+        assertEquals("min[" + i + "][" + d + "]", expectedMins[i][d], min, 0.0);
+      }
+    }
   }
 
   private IndexSchema createMockSchema() {

@@ -23,18 +23,15 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestJsonFacetErrors extends SolrTestCaseHS {
 
-  private static SolrInstances servers; // for distributed testing
-
-  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
     JSONTestUtil.failRepeatedKeys = true;
 
     // we need DVs on point fields to compute stats & facets
@@ -44,22 +41,9 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
 
-  /** Start all servers for cluster if they don't already exist */
-  public static void initServers() throws Exception {
-    if (servers == null) {
-      servers = new SolrInstances(3, "solrconfig-tlog.xml", "schema_latest.xml");
-    }
-  }
-
-  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrEnableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
-    if (servers != null) {
-      servers.stop();
-      servers = null;
-    }
   }
 
   public void indexSimple(Client client) throws Exception {
@@ -577,52 +561,51 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testAggErrors() {
-    ignoreException("aggregation");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("aggregation")) {
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
+              });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(
+          e.getMessage(),
+          containsString(
+              "Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
 
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
-            });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(
-        e.getMessage(),
-        containsString(
-            "Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
+      e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
+              });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(
+          e.getMessage(),
+          containsString(
+              "Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
 
-    e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
-            });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(
-        e.getMessage(),
-        containsString(
-            "Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
+      e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
+              });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(
+          e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
 
-    e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
-            });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(
-        e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
-
-    e =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
-            });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
-
-    resetExceptionIgnores();
+      e =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
+              });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+    }
   }
 }

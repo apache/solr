@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+pluginManagement {
+  apply from: file("declare-repositories.gradle"), to: delegate
+}
+
 rootProject.name = 'build-infra'
 
 // Use project's version catalog for centralized dependency management

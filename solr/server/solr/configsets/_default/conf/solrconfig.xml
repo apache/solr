@@ -476,23 +476,19 @@
     <!-- QuerySenderListener takes an array of NamedList and executes a
          local query request for each NamedList in sequence.
       -->
+    <!--
     <listener event="newSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
-        <!--
-           <lst><str name="q">solr</str><str name="sort">price asc</str></lst>
-           <lst><str name="q">rocks</str><str name="sort">weight asc</str></lst>
-          -->
+        <lst><str name="q">solr</str><str name="sort">price asc</str></lst>
+        <lst><str name="q">rocks</str><str name="sort">weight asc</str></lst>
       </arr>
     </listener>
     <listener event="firstSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
-        <!--
-        <lst>
-          <str name="q">static firstSearcher warming in solrconfig.xml</str>
-        </lst>
-        -->
+        <lst><str name="q">static firstSearcher warming in solrconfig.xml</str></lst>
       </arr>
     </listener>
+    -->
 
     <!-- Use Cold Searcher
 

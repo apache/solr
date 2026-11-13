@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 
 /** Utility class to guess the mime type of file based on its magic number. */
 public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
@@ -194,7 +195,7 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
   private static final Set<String> forbiddenTypes =
       new HashSet<>(
           Arrays.asList(
-              System.getProperty(
+              EnvUtils.getProperty(
                       "solr.configset.upload.mimetypes.forbidden",
                       "application/x-java-applet,application/zip,application/x-tar,text/x-shellscript")
                   .split(",")));

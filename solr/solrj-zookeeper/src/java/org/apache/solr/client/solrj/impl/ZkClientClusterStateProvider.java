@@ -147,13 +147,6 @@ public class ZkClientClusterStateProvider
         : (String) state.get().getProperties().get("policy");
   }
 
-  @Override
-  public void connect() {
-    // Esentially a No-Op, but force a check that we're not closed and the ZkStateReader is
-    // available...
-    final ZkStateReader ignored = getZkStateReader();
-  }
-
   public ZkStateReader getZkStateReader() {
     if (isClosed) { // quick check...
       throw new AlreadyClosedException();

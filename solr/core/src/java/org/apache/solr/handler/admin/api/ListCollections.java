@@ -21,11 +21,18 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.api.endpoint.ListCollectionsApi;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
+import org.apache.solr.client.api.model.ListCollectionsResponse.CollectionState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.ClusterStatus;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -33,6 +40,12 @@ import org.apache.solr.response.SolrQueryResponse;
  * V2 API for listing collections.
  *
  * <p>This API (GET /v2/collections) is equivalent to the v1 /admin/collections?action=LIST command
+ *
+ * <p>With {@code detailed=true}, it instead returns the collections, shards, and replicas tree (in
+ * {@code collectionsDetail}) -- the same tree v1 {@code CLUSTERSTATUS} returns under {@code
+ * cluster.collections}, without the live-node list, alias map, or cluster properties that accompany
+ * it there. Live nodes, aliases, and cluster properties have their own v2 endpoints: {@code GET
+ * /api/cluster/nodes}, {@code GET /api/aliases}, and {@code GET /api/cluster/properties}.
  */
 public class ListCollections extends AdminAPIBase implements ListCollectionsApi {
 
@@ -43,10 +56,30 @@ public class ListCollections extends AdminAPIBase implements ListCollectionsApi 
 
   @Override
   @PermissionName(COLL_READ_PERM)
-  public ListCollectionsResponse listCollections() {
+  public ListCollectionsResponse listCollections(
+      Boolean detailed, String collection, String shard, String routeKey, Boolean prs)
+      throws Exception {
     final ListCollectionsResponse response =
         instantiateJerseyResponse(ListCollectionsResponse.class);
     validateZooKeeperAwareCoreContainer(coreContainer);
+
+    if (Boolean.TRUE.equals(detailed)) {
+      if (collection != null) {
+        recordCollectionForLogAndTracing(collection, solrQueryRequest);
+      }
+      // Bind only the documented query params; anything else on the request is ignored.
+      final ModifiableSolrParams params = new ModifiableSolrParams();
+      params.setNonNull("collection", collection);
+      params.setNonNull("shard", shard);
+      params.setNonNull(ShardParams._ROUTE_, routeKey);
+      if (prs != null) {
+        params.set("prs", prs);
+      }
+      final ClusterStatus clusterStatus =
+          new ClusterStatus(coreContainer.getZkController().getZkStateReader(), params);
+      response.collectionsDetail = typedCollections(clusterStatus.getCollectionStatuses());
+      return response;
+    }
 
     // resolve each name to ensure it exists.
     //  TODO https://issues.apache.org/jira/browse/SOLR-16909 to go direct to ZK?
@@ -62,5 +95,18 @@ public class ListCollections extends AdminAPIBase implements ListCollectionsApi 
     response.collections = collectionList;
 
     return response;
+  }
+
+  /**
+   * Bind the state maps onto the response types. Fields the model knows about are typed; every
+   * other entry stays on the object through its catch-all.
+   */
+  private static Map<String, CollectionState> typedCollections(Map<String, Object> raw) {
+    var mapper = SolrJacksonMapper.getObjectMapper();
+    Map<String, CollectionState> collections = CollectionUtil.newLinkedHashMap(raw.size());
+    for (Map.Entry<String, Object> entry : raw.entrySet()) {
+      collections.put(entry.getKey(), mapper.convertValue(entry.getValue(), CollectionState.class));
+    }
+    return collections;
   }
 }

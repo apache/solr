@@ -17,11 +17,11 @@
 
 var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 
-solrAdminServices.factory('System',
-  ['$resource', function($resource) {
-    return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
-  }])
-.factory('Metrics',
+// The generated v2 client caches GET responses by default. Set this here, once, since
+// ApiClient.instance is shared across every *V2 factory below.
+solrApi.ApiClient.instance.cache = false;
+
+solrAdminServices.factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
     return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
       get: {
@@ -44,63 +44,307 @@ solrAdminServices.factory('System',
       }
     });
   }])
+.factory('ApiErrorHandler',
+    ['$rootScope', '$location', '$timeout', function($rootScope, $location, $timeout) {
+      // v2 API calls go through the generated OpenAPI client, which uses superagent directly and
+      // so never passes through Angular's $http -- meaning httpInterceptor in app.js (the global
+      // error banner, 401 redirect, 403 handling) never fires for them. This mirrors
+      // httpInterceptor's responseError handling for v2's superagent responses, so a failure looks
+      // the same to the user regardless of which API generation served it. Call from any v2
+      // callback's error branch: `if (error) { ApiErrorHandler.handle(response); return; }`
+      function handle(response) {
+        if (!response) {
+          return;
+        }
+        // superagent callbacks fire outside Angular's digest cycle, so changes here are invisible
+        // until the next digest -- $timeout both defers and triggers one.
+        $timeout(function() {
+          if (response.status === 401) {
+            var headers = response.headers || {};
+            sessionStorage.setItem("auth.wwwAuthHeader", headers['www-authenticate']);
+            sessionStorage.setItem("auth.authDataHeader", headers['x-solr-authdata']);
+            sessionStorage.setItem("auth.statusText", response.statusText);
+            sessionStorage.setItem("http401", "true");
+            sessionStorage.removeItem("auth.scheme");
+            sessionStorage.removeItem("auth.realm");
+            sessionStorage.removeItem("auth.username");
+            sessionStorage.removeItem("auth.header");
+            sessionStorage.removeItem("auth.state");
+            if ($location.path().includes('/login')) {
+              if (!sessionStorage.getItem("auth.location")) {
+                sessionStorage.setItem("auth.location", "/");
+              }
+            } else {
+              sessionStorage.setItem("auth.location", $location.path());
+              $location.path('/login');
+            }
+          } else if (response.status === 403) {
+            $rootScope.showAuthzFailures = true;
+          } else {
+            var url = (response.req && response.req.url) || (response.status + ' ' + $location.url());
+            var body = response.body || {};
+            var msg = (body.error && body.error.msg) || response.statusText || "Unknown error";
+            // MainController normally sets this up first, but don't assume that ordering here.
+            $rootScope.exceptions = $rootScope.exceptions || {};
+            $rootScope.exceptions[url] = {msg: msg};
+          }
+        });
+      }
+      return {handle: handle};
+    }])
+.factory('NodeTarget',
+    ['$rootScope', function($rootScope) {
+      var STORAGE_KEY = 'adminui.selectedNode';
+      var state = {
+        localNode: null,
+        selectedNode: sessionStorage.getItem(STORAGE_KEY) || null,
+        liveNodes: [],
+        ready: false
+      };
+
+      function isRemote() {
+        return !!(state.selectedNode && state.localNode && state.selectedNode !== state.localNode);
+      }
+
+      function persistSelected() {
+        if (state.selectedNode) {
+          sessionStorage.setItem(STORAGE_KEY, state.selectedNode);
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      function isNodeScopedUrl(url) {
+        url = url || '';
+        return /\/api\/node\/(system|threads|properties|logging\/messages)(?:\?|$)/.test(url)
+            || /\/api\/cores(?:\?|$)/.test(url);
+      }
+
+      var pendingTarget = null;
+
+      function withNodes(opts) {
+        opts = opts || {};
+        if (isRemote()) {
+          pendingTarget = state.selectedNode;
+        }
+        return opts;
+      }
+
+      function unwrap(data, response) {
+        if (!isRemote()) {
+          return data;
+        }
+        var body = (response && response.body) || data || {};
+        if (state.selectedNode && body[state.selectedNode]) {
+          return body[state.selectedNode];
+        }
+        return data;
+      }
+
+      function needsSelection() {
+        return state.liveNodes.length > 1 && !state.selectedNode;
+      }
+
+      function publish() {
+        $rootScope.localNode = state.localNode;
+        $rootScope.selectedNode = state.selectedNode;
+        $rootScope.liveNodes = state.liveNodes;
+        $rootScope.viewingRemoteNode = isRemote();
+        $rootScope.needsNodeSelection = needsSelection();
+      }
+
+      function markReady() {
+        if (!state.ready) {
+          state.ready = true;
+          publish();
+        }
+      }
+
+      function whenReady(fn, scope) {
+        if (state.ready) {
+          fn();
+          return angular.noop;
+        }
+        var unwatch = $rootScope.$watch(function() { return state.ready; }, function(ready) {
+          if (!ready) {
+            return;
+          }
+          unwatch();
+          fn();
+        });
+        if (scope) {
+          scope.$on('$destroy', unwatch);
+        }
+        return unwatch;
+      }
+
+      function setLocalNode(nodeName) {
+        state.localNode = nodeName;
+        publish();
+      }
+
+      function setLiveNodes(nodes) {
+        state.liveNodes = (nodes || []).slice().sort();
+        if (state.liveNodes.length <= 1) {
+          state.selectedNode = state.localNode || state.liveNodes[0] || null;
+          persistSelected();
+        } else if (state.selectedNode && state.liveNodes.indexOf(state.selectedNode) === -1) {
+          state.selectedNode = null;
+          persistSelected();
+        }
+        publish();
+        markReady();
+      }
+
+      function selectNode(nodeName) {
+        if (!nodeName || nodeName === state.selectedNode) {
+          return false;
+        }
+        state.selectedNode = nodeName;
+        persistSelected();
+        publish();
+        return true;
+      }
+
+      function clear() {
+        state.localNode = null;
+        state.selectedNode = null;
+        state.liveNodes = [];
+        persistSelected();
+        publish();
+        markReady();
+      }
+
+      var plugins = solrApi.ApiClient.instance.plugins || [];
+      plugins.push(function(request) {
+        var target = pendingTarget;
+        pendingTarget = null;
+        if (!target) {
+          return request;
+        }
+        var method = (request.method || 'GET').toUpperCase();
+        if (method === 'GET' && isNodeScopedUrl(request.url)) {
+          request.set('X-Solr-targetNode', target);
+        }
+        return request;
+      });
+      solrApi.ApiClient.instance.plugins = plugins;
+
+      return {
+        state: state,
+        isRemote: isRemote,
+        needsSelection: needsSelection,
+        withNodes: withNodes,
+        unwrap: unwrap,
+        setLocalNode: setLocalNode,
+        setLiveNodes: setLiveNodes,
+        selectNode: selectNode,
+        clear: clear,
+        markReady: markReady,
+        whenReady: whenReady
+      };
+    }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
       delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
       return new solrApi.CollectionsApi();
     })
-.factory('Collections',
-  ['$resource', function($resource) {
-    return $resource('admin/collections',
-    {'wt':'json', '_':Date.now()}, {
-    "list": {params:{action: "LIST"}},
-    "listaliases": {params:{action: "LISTALIASES"}},
-    "status": {params:{action: "CLUSTERSTATUS"}},
-    "add": {params:{action: "CREATE"}},
-    "delete": {params:{action: "DELETE"}},
-    "rename": {params:{action: "RENAME"}},
-    "createAlias": {params:{action: "CREATEALIAS"}},
-    "deleteAlias": {params:{action: "DELETEALIAS"}},
-    "deleteReplica": {params:{action: "DELETEREPLICA"}},
-    "addReplica": {params:{action: "ADDREPLICA"}},
-    "deleteShard": {params:{action: "DELETESHARD"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
-    });
-  }])
-.factory('ConfigSets',
- ['$resource', function ($resource) {
-    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
-    });
+.factory('CoresV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.CoresApi();
+    })
+.factory('LoggingV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.LoggingApi();
+    })
+.factory('SystemV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SystemApi();
+    })
+.factory('AliasesV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.AliasesApi();
+    })
+.factory('ShardsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ShardsApi();
+    })
+.factory('ReplicasV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicasApi();
+    })
+.factory('ConfigSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigsetsApi();
+    })
+.factory('ClusterV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ClusterApi();
+    })
+.factory('SegmentsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SegmentsApi();
+    })
+.factory('SchemaDesignerV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaDesignerApi();
+    })
+.factory('SchemaV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.SchemaApi();
+    })
+.factory('ConfigV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ConfigApi();
+    })
+.factory('ConfigSetFiles',
+ ['$http', function ($http) {
+    // Fetches a single file from a configset via V2 /api/configsets/{name}/files/{path}.
+    // Each path segment is encoded separately so subdirectory paths like "lang/stopwords.txt"
+    // preserve their slashes (encoding them as %2F gets rejected by Jetty).
+    // transformResponse is overridden to skip JSON parsing since files are raw text.
+    return {
+      get: function (params, successFn, errorFn) {
+        var url = "/api/configsets/" + encodeURIComponent(params.configSet) +
+                  "/files/" + params.filePath.split("/").map(encodeURIComponent).join("/");
+        $http.get(url, {transformResponse: [function (data) { return data; }]}).then(
+          function (response) { if (successFn) successFn({content: response.data}); },
+          function (response) { if (errorFn) errorFn(response); }
+        );
+      }
+    };
  }])
-.factory('Cores',
-  ['$resource', function($resource) {
-    return $resource('admin/cores',
-    {'wt':'json', '_':Date.now()}, {
-    "query": {},
-    "list": {params:{indexInfo: false}},
-    "add": {params:{action: "CREATE"}},
-    "unload": {params:{action: "UNLOAD", core: "@core"}},
-    "rename": {params:{action: "RENAME"}},
-    "swap": {params:{action: "SWAP"}},
-    "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}, headers:{doNotIntercept: "true"}}
-    });
-  }])
-.factory('Logging',
-  ['$resource', function($resource) {
-    return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
-      "events": {params: {since:'0'}},
-      "levels": {},
-      "setLevel": {params: {nodes:'all'}}
-      });
-  }])
 .factory('Zookeeper',
   ['$resource', function($resource) {
+    // Tree browsing (formerly "simple"/"detail") moved to ZookeeperReadV2; this factory now only
+    // covers the graph view's cluster state read, which has no v2 equivalent.
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
-      "simple": {},
-      "liveNodes": {params: {path: '/live_nodes'}},
-      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
-      "detail": {params: {detail: "true", path: "@path"}}
+      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}}
     });
   }])
 .factory('ZookeeperStatus',
@@ -109,18 +353,44 @@ solrAdminServices.factory('System',
       "monitor": {}
     });
   }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
+.factory('ZookeeperReadV2',
+  ['$http', function($http) {
+    // Hand-rolled rather than the generated solrApi.ZookeeperReadApi client: the generated
+    // ApiClient.buildUrl() runs encodeURIComponent() on the whole zkPath value, turning its '/'
+    // separators into %2F, which Jetty's URI-ambiguity checks reject for any path beyond a
+    // single segment (even the root path "/" itself). SolrJ's generated Java client avoids this
+    // by not encoding path params at all; we do the same here by building the URL ourselves.
+    return {
+      listNodes: function(zkPath, opts) {
+        opts = opts || {};
+        var params = {};
+        if (opts.children !== undefined) {
+          params.children = opts.children;
+        }
+        return $http.get('/api/cluster/zookeeper/children' + zkPath, {params: params});
+      },
+      readNode: function(zkPath) {
+        // Content is raw znode bytes, not JSON -- skip Angular's default JSON-parsing attempt
+        // (the server's Content-Type is negotiated and may say application/json even when the
+        // body itself is plain text or XML).
+        return $http.get('/api/cluster/zookeeper/data' + zkPath, {
+          transformResponse: [function(data) { return data; }]
+        });
+      }
+    };
   }])
-.factory('Threads',
-  ['$resource', function($resource) {
-    return $resource('admin/info/threads', {'wt':'json', '_':Date.now()});
-  }])
-.factory('Properties',
-  ['$resource', function($resource) {
-    return $resource('admin/info/properties', {'wt':'json', '_':Date.now()});
-  }])
+.factory('NodeV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.NodeApi();
+    })
+.factory('ReplicationV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ReplicationApi();
+    })
 .factory('Replication',
   ['$resource', function($resource) {
     return $resource(':core/replication', {'wt':'json', core: "@core", '_':Date.now()}, {
@@ -142,11 +412,23 @@ solrAdminServices.factory('System',
       "postCsv": {headers: {'Content-type': 'application/csv'}, method: "POST", params: {handler: '@handler'}}
     });
   }])
+.factory('ParamSetsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.ParamSetsApi();
+    })
 .factory('ParamSet',
   ['$resource', function($resource) {
-    return $resource(':core/config/params/:name', {core: '@core', wt:'json', _:Date.now()}, {
-      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"},
-      "get": {headers: {'Content-type': 'application/json'}, method: "GET"}
+    // Creating, updating and deleting paramsets is still on ModifyParamSetAPI (/config/params) --
+    // reading them goes through ParamSetsV2 instead (see paramsets.js, query.js).
+    // NB: unlike v1's flexible routing, the v2 API requires knowing up front whether ":core" is a
+    // collection name (SolrCloud) or an actual core name (standalone/user-managed) --
+    // /api/collections/... 500s in standalone mode (it tries to resolve aliases, which needs ZK),
+    // and there's no such thing as a "collection" there anyway. Callers must pass "indexType" as
+    // "collections" or "cores" (see paramsets.js, driven by $scope.isCloudEnabled).
+    return $resource('/api/:indexType/:core/config/params', {core: '@core', indexType: '@indexType', wt:'json', _:Date.now()}, {
+      "submit": {headers: {'Content-type': 'application/json'}, method: "POST"}
     });
   }])
 .service('FileUpload', function ($http) {
@@ -227,54 +509,55 @@ solrAdminServices.factory('System',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
-           "query": {
-             method: "GET",
-             transformResponse: function (data) {
-               return {data: data}
-             },
-             headers: {doNotIntercept: "true"}
-           }
-       });
-       resource.url = function(params) {
+       var toQueryString = function(params) {
            var qs = [];
-           for (key in params) {
+           for (var key in params) {
                if (key != "core" && key != "handler") {
                    for (var i in params[key]) {
                        qs.push(key + "=" + encodeURIComponent(params[key][i]));
                    }
                }
            }
-           return "" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
+           return qs.sort().join("&");
+       }
+       var wrapRawResponse = function(data) {
+           return {data: data}
+       }
+       var resource = $resource(':core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
+           "query": {
+             method: "GET",
+             transformResponse: wrapRawResponse,
+             headers: {doNotIntercept: "true"}
+           },
+           // Same request as "query" above, but as a form-encoded POST body instead of a query
+           // string - for request params (e.g. a streaming expression) too large for a URL/header.
+           "queryPost": {
+             method: "POST",
+             transformRequest: toQueryString,
+             transformResponse: wrapRawResponse,
+             headers: {
+               'Content-Type': 'application/x-www-form-urlencoded',
+               doNotIntercept: "true"
+             }
+           }
+       });
+       resource.url = function(params) {
+           return "" + params.core + "/" + params.handler + "?" + toQueryString(params);
        }
        return resource;
 }])
-.factory('Segments',
-   ['$resource', function($resource) {
-       return $resource(':core/admin/segments', {'wt':'json', core: '@core', _:Date.now()}, {
-           get: {}
-       });
-}])
-.factory('Schema',
-   ['$resource', function($resource) {
-     return $resource(':core/schema', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"},
-       check: {method: "GET", headers: {doNotIntercept: "true"}},
-       post: {method: "POST"}
-     });
-}])
-.factory('Config',
-   ['$resource', function($resource) {
-     return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
-       get: {method: "GET"}
-     })
-}])
 .factory('SchemaDesigner',
    ['$resource', function($resource) {
-     return $resource('/api/schema-designer/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+     // Schema Designer's analyze (sample-doc upload/paste, dynamic content-type) and query
+     // (arbitrary forwarded Solr query params) endpoints read their request bodies/params in ways
+     // the OpenAPI-generated SchemaDesignerApi client can't express: analyze() always sends a null
+     // body (the server deliberately reads the raw content stream, dispatched by Content-Type,
+     // rather than a formal parameter) and query() takes no query params at all (the server
+     // forwards arbitrary SolrParams straight through). Both stay on this plain $resource, like
+     // ParamSet. Every other Schema Designer endpoint uses SchemaDesignerV2.
+     return $resource('/api/schema-designer/:configSet/:path', {wt: 'json', path: '@path', configSet: '@configSet', filePath: '@filePath', _:Date.now()}, {
        get: {method: "GET"},
        post: {method: "POST", timeout: 90000},
-       put: {method: "PUT"},
        postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
        postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
        upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
@@ -360,6 +643,8 @@ solrAdminServices.factory('System',
         service.SetCredentials = function (username, password) {
           var authdata = base64.encode(username + ':' + password);
 
+          // The V2 solrApi client picks this up automatically via the superagent plugin
+          // registered in app.js .config().
           sessionStorage.setItem("auth.header", "Basic " + authdata);
           sessionStorage.setItem("auth.username", username);
         };

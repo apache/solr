@@ -128,7 +128,7 @@ class TermPrefixCursor {
         if (termsEnum.next() == null) { // case END
           return false;
         }
-        // fall through to NOT_FOUND
+      // fall through to NOT_FOUND
 
       case NOT_FOUND:
         // termsEnum must start with prefixBuf to continue

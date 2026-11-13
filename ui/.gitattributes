@@ -1,0 +1,8 @@
+# Without a text attribute, line-ending handling for this tree falls back to whatever
+# core.autocrlf the checkout happens to use, so a CRLF working copy on Windows no longer
+# matches the LF blobs committed here. solr/.gitattributes declares the same policy.
+* text=auto
+
+# Binary assets - no eol normalization.
+*.ico binary
+*.png binary

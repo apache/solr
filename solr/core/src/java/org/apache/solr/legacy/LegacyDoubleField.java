@@ -91,7 +91,7 @@ import org.apache.lucene.index.IndexOptions;
  * @deprecated Please use {@link DoublePoint} instead
  * @since 2.9
  */
-@Deprecated
+@Deprecated(since = "6.0")
 public final class LegacyDoubleField extends LegacyField {
 
   /**

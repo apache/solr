@@ -26,6 +26,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.FiltersQParser;
+import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * Create a boolean query from sub queries. Sub queries can be marked as {@code must}, {@code
@@ -46,10 +47,10 @@ public class BoolQParserPlugin extends QParserPlugin {
       }
 
       @Override
-      protected BooleanQuery.Builder createBuilder() {
-        BooleanQuery.Builder builder = super.createBuilder();
-        builder.setMinimumNumberShouldMatch(localParams.getInt("mm", 0));
-        return builder;
+      protected BooleanQuery parseImpl() throws SyntaxError {
+        BooleanQuery query = super.parseImpl();
+        String minShouldMatch = SolrPluginUtils.parseMinShouldMatch(req.getSchema(), localParams);
+        return SolrPluginUtils.setMinShouldMatch(query, minShouldMatch, false);
       }
 
       @Override

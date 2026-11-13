@@ -20,12 +20,15 @@ package org.apache.solr.handler.admin.proxy;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -33,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -49,6 +53,9 @@ public abstract class RemoteRequestProxy {
   protected static final String PARAM_NODES = "nodes";
 
   protected final CoreContainer coreContainer;
+
+  // Per-request state: each request builds a fresh proxy instance, so this is never shared.
+  private final Set<String> failedNodes = new TreeSet<>();
 
   public RemoteRequestProxy(CoreContainer container) {
     this.coreContainer = container;
@@ -89,6 +96,15 @@ public abstract class RemoteRequestProxy {
     return true;
   }
 
+  /**
+   * Destination nodes (per {@link #getDestinationNodes()}) that did not produce a response, e.g.
+   * because the request errored or timed out. Only meaningful after {@link #proxyRequest()} returns
+   * true; empty if every destination node responded.
+   */
+  public List<String> getFailedNodes() {
+    return new ArrayList<>(failedNodes);
+  }
+
   private void bulkProcessResponses(Map<String, Future<NamedList<Object>>> responseFutures) {
     for (Map.Entry<String, Future<NamedList<Object>>> entry : responseFutures.entrySet()) {
       try {
@@ -97,8 +113,10 @@ public abstract class RemoteRequestProxy {
       } catch (ExecutionException | InterruptedException ee) {
         log.warn(
             "Exception when fetching result from node {}", entry.getKey(), ee.getCause()); // nowarn
+        failedNodes.add(entry.getKey());
       } catch (TimeoutException e) {
         log.warn("Timeout exceeded waiting for response from proxied node {}", entry.getKey());
+        failedNodes.add(entry.getKey());
       }
     }
     if (log.isDebugEnabled()) {
@@ -132,9 +150,7 @@ public abstract class RemoteRequestProxy {
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
 
     try {
-      return zkController
-          .getCoreContainer()
-          .getDefaultHttpSolrClient()
+      return ((HttpJettySolrClient) zkController.getCoreContainer().getDefaultHttpSolrClient())
           .requestWithBaseUrl(baseUri.toString(), c -> c.requestAsync(solrRequest));
     } catch (SolrServerException | IOException e) {
       // requestWithBaseUrl declares it throws these but it actually depends on the lambda
@@ -146,9 +162,15 @@ public abstract class RemoteRequestProxy {
   /**
    * Resolve node names from the "nodes" parameter into a set of live node names.
    *
+   * <p>For an explicit (non-"all") list, every named node is checked against the live-node set
+   * before returning, so a caller that validates up front (e.g. via {@link #getDestinationNodes()}
+   * before dispatching) fails atomically instead of partway through a broadcast: {@link
+   * #callRemoteNode} re-checks liveness per node regardless, but only once dispatch is already
+   * underway.
+   *
    * @param nodeNames the value of the "nodes" parameter ("all" or comma-separated node names)
    * @return set of resolved node names
-   * @throws SolrException if node format is invalid
+   * @throws SolrException if node format is invalid, or a named node is not live
    */
   protected Set<String> validateNodeNames(String nodeNames) {
     Set<String> liveNodes =
@@ -165,6 +187,13 @@ public abstract class RemoteRequestProxy {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " has wrong format");
       }
+    }
+    final List<String> unknownNodes =
+        nodes.stream().filter(n -> !liveNodes.contains(n)).sorted().toList();
+    if (!unknownNodes.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Requested nodes are not part of the cluster: " + unknownNodes);
     }
     log.debug("Nodes requested: {}", nodes);
     return nodes;

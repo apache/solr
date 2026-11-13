@@ -109,9 +109,8 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         new String[] {"http2ClusterStateProvider"}, new String[] {"zkClientClusterStateProvider"});
   }
 
-  static class ClosingHttpClusterStateProvider
-      extends HttpClusterStateProvider<HttpSolrClientBase> {
-    public ClosingHttpClusterStateProvider(List<String> solrUrls, HttpSolrClientBase httpClient)
+  static class ClosingHttpClusterStateProvider extends HttpClusterStateProvider<HttpSolrClient> {
+    public ClosingHttpClusterStateProvider(List<String> solrUrls, HttpSolrClient httpClient)
         throws Exception {
       super(solrUrls, httpClient);
     }
@@ -130,7 +129,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
   private static HttpClusterStateProvider<?> http2ClusterStateProvider(String userAgent) {
     try {
       var useJdkProvider = random().nextBoolean();
-      HttpSolrClientBase client;
+      HttpSolrClient client;
 
       if (userAgent != null) {
         if (useJdkProvider) {

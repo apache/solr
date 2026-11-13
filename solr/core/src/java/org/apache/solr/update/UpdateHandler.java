@@ -165,8 +165,8 @@ public abstract class UpdateHandler implements SolrInfoBean {
               ? dirFactory.newDefaultUpdateLog()
               : core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
 
-      if (log.isInfoEnabled()) {
-        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
+      if (log.isDebugEnabled()) {
+        log.debug("Using UpdateLog implementation: {}", ulog.getClass().getName());
       }
       ulog.init(ulogPluginInfo);
 

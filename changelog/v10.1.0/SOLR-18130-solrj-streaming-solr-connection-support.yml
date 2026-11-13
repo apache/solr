@@ -1,0 +1,7 @@
+title: Added solrConnection param to solrj-streaming module, expanding use to HTTP based SolrCloud coordinates. zkHost is deprecated.
+type: added
+authors:
+  - name: vyatkin.v
+links:
+  - name: SOLR-18130
+    url: https://issues.apache.org/jira/browse/SOLR-18130

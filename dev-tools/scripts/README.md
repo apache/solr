@@ -1,3 +1,8 @@
+<!--
+  Keep this listing very brief: 3 sentences at most per script plus any applicable links.
+  This is not the place to document each script in detail; put that at the head of the script itself.
+-->
+
 # Developer Scripts
 
 This folder contains various useful scripts for developers, mostly related to
@@ -9,13 +14,17 @@ Python scripts require Python 3.6 or above. To install necessary python modules,
 
 ## Scripts description
 
+### pr-triage-llm.py
+
+Advisory LLM-based triage comment on new PRs, run from GitHub Actions. See the script's header for details.
+
 ### smokeTestRelease.py
 
 Used to validate new release candidates (RC). The script downloads an RC from a URL
 or local folder, then runs a number of sanity checks on the artifacts, and then runs
 the full tests.
 
-    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--test-alt-java TEST_ALT_JAVA] [--download-only] [--dev-mode] url ...
+    usage: smokeTestRelease.py [-h] [--tmp-dir PATH] [--not-signed] [--local-keys PATH] [--revision REVISION] [--version X.Y.Z(-ALPHA|-BETA)?] [--download-only] [--dev-mode] url ...
 
     Utility to test a release.
 
@@ -31,14 +40,20 @@ the full tests.
       --revision REVISION   GIT revision number that release was built with, defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
                             Version of the release, defaults to that in URL
-      --test-alt-java TEST_ALT_JAVA
-                            Path to Java alternative home directory, to run tests with if specified
       --download-only       Only perform download and sha hash check steps
       --dev-mode            Enable dev mode, will not check branch compatibility
 
     Example usage:
     python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
 
+
+### releaseDryRun.sh
+
+Dry run of the release process for the version in `build.gradle`, without signing or
+publishing anything: prepares the changelog on a local branch, builds an RC with
+`buildAndPushRelease.py`, and smoke tests it. Used by the `Solr-Smoketest-*` Jenkins jobs.
+
+    Usage: dev-tools/scripts/releaseDryRun.sh [TMP_DIR]
 
 ### releaseWizard.py
 
@@ -181,6 +196,27 @@ Each YAML file complies with the schema outlined in `dev-docs/changelog.adoc`.
 
     # Default behavior
     python3 dev-tools/scripts/changes2logchange.py solr/CHANGES.txt
+
+### validate-changelog-yaml.py
+
+Validates one or more changelog YAML files, or all YAML files in a folder.
+Used by the GitHub Actions workflow to validate entries on pull requests,
+and called automatically by `logchange.py prepare` as a pre-flight check.
+
+    python3 dev-tools/scripts/validate-changelog-yaml.py changelog/unreleased/my-fix.yml
+    python3 dev-tools/scripts/validate-changelog-yaml.py changelog/unreleased/
+
+### logchange.py
+
+Handles changelog git operations during a release. Normally invoked by the
+Release Wizard, but can also be run standalone.
+
+    usage: logchange.py prepare [-h] --version VERSION --release-branch RELEASE_BRANCH [--gradle-cmd GRADLE_CMD]
+                            [--git-remote GIT_REMOTE] [--dry-run] [--commit]
+
+    usage: logchange.py forward-port [-h] --version VERSION --release-branch RELEASE_BRANCH [--gradle-cmd GRADLE_CMD]
+                                 [--git-remote GIT_REMOTE] [--dry-run] --stable-branch STABLE_BRANCH
+                                 [--release-date RELEASE_DATE] [--push]
 
 ### validateChangelogs.py
 

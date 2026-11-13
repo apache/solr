@@ -48,13 +48,14 @@ class SolrAggregate extends Aggregate implements SolrRel {
 
   // Returns the Solr agg metric identifier (includes column) for the SQL metric
   static String solrAggMetricId(String metric, String column) {
-    // CountDistinctMetric's getIdentifer returns "countDist" but all others return a lowercased
+    // CountDistinctMetric's getIdentifier returns "countDist" but all others return a lowercased
     // value
     String funcName =
         COUNT_DISTINCT.equals(metric) ? COUNT_DISTINCT : metric.toLowerCase(Locale.ROOT);
     return String.format(Locale.ROOT, "%s(%s)", funcName, column);
   }
 
+  @SuppressWarnings("ReferenceEquality")
   SolrAggregate(
       RelOptCluster cluster,
       RelTraitSet traitSet,
@@ -64,6 +65,7 @@ class SolrAggregate extends Aggregate implements SolrRel {
       List<ImmutableBitSet> groupSets,
       List<AggregateCall> aggCalls) {
     super(cluster, traitSet, hints, child, groupSet, groupSets, aggCalls);
+    // Conventions are singletons (see SolrRel.CONVENTION); identity comparison is intentional.
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
   }
@@ -72,17 +74,6 @@ class SolrAggregate extends Aggregate implements SolrRel {
   public Aggregate copy(
       RelTraitSet traitSet,
       RelNode input,
-      ImmutableBitSet groupSet,
-      List<ImmutableBitSet> groupSets,
-      List<AggregateCall> aggCalls) {
-    return new SolrAggregate(getCluster(), traitSet, hints, input, groupSet, groupSets, aggCalls);
-  }
-
-  @Override
-  public Aggregate copy(
-      RelTraitSet traitSet,
-      RelNode input,
-      boolean indicator,
       ImmutableBitSet groupSet,
       List<ImmutableBitSet> groupSets,
       List<AggregateCall> aggCalls) {
@@ -129,7 +120,7 @@ class SolrAggregate extends Aggregate implements SolrRel {
           return new Pair<>(aggregation.getName(), "*");
         }
       case 1:
-        String inName = inNames.get(args.get(0));
+        String inName = inNames.get(args.getFirst());
         String name = implementor.fieldMappings.getOrDefault(inName, inName);
         if (SUPPORTED_AGGREGATIONS.contains(aggregation)) {
           return new Pair<>(aggregation.getName(), name);

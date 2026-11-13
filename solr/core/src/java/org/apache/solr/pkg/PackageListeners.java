@@ -60,6 +60,8 @@ public class PackageListeners {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // removing the exact registered listener instance, not an equal one
   public synchronized void removeListener(Listener listener) {
     Iterator<Reference<Listener>> it = listeners.iterator();
     while (it.hasNext()) {
@@ -110,7 +112,7 @@ public class PackageListeners {
     String packageName();
 
     /** fetch the package versions of class names */
-    Map<String, PackageAPI.PkgVersion> packageDetails();
+    Map<String, PackageStore.PkgVersion> packageDetails();
 
     /** A callback when the package is updated */
     void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx);

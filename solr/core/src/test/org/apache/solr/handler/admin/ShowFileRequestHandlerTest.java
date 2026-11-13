@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -41,6 +40,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ContentStreamBase;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -142,6 +142,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
         createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 404);
   }
 
@@ -152,6 +153,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
             params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 404);
   }
 
@@ -162,6 +164,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 400);
   }
 
@@ -176,6 +179,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
                 "text/plain; charset=utf-8"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
     NamedList<Object> response = client.request(request);
+    closeResponseStream(response);
     assertEquals(response.get("responseStatus"), 400);
   }
 
@@ -201,5 +205,12 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
     // Non-known content types are rejected with 400 error
     expectThrows(SolrException.class, () -> ShowFileRequestHandler.getSafeContentType("foo/bar"));
+  }
+
+  private void closeResponseStream(NamedList<Object> response) throws IOException {
+    InputStream stream = (InputStream) response.get("stream");
+    if (stream != null) {
+      stream.close();
+    }
   }
 }

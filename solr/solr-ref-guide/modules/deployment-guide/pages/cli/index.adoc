@@ -1,0 +1,88 @@
+= Command Line Interface
+:page-toclevels: 2
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The `bin/solr` command line tool is built on https://picocli.info/[picocli].
+This page and the per-command pages linked below are the references for its commands and options.
+
+Run `bin/solr <command> --help` for the same information on the command line.
+
+== Commands
+
+Each command has its own reference page.
+
+// CLI-DOCS-TABLE-START
+[cols="1",options="header"]
+|===
+|Command
+
+|xref:cli/solr-api.adoc[bin/solr api]
+|xref:cli/solr-assert.adoc[bin/solr assert]
+|xref:cli/solr-auth.adoc[bin/solr auth]
+|xref:cli/solr-cluster.adoc[bin/solr cluster]
+|xref:cli/solr-config.adoc[bin/solr config]
+|xref:cli/solr-create.adoc[bin/solr create]
+|xref:cli/solr-delete.adoc[bin/solr delete]
+|xref:cli/solr-export.adoc[bin/solr export]
+|xref:cli/solr-healthcheck.adoc[bin/solr healthcheck]
+|xref:cli/solr-package-add-key.adoc[bin/solr package add-key]
+|xref:cli/solr-package-add-repo.adoc[bin/solr package add-repo]
+|xref:cli/solr-package-deploy.adoc[bin/solr package deploy]
+|xref:cli/solr-package-install.adoc[bin/solr package install]
+|xref:cli/solr-package-list-available.adoc[bin/solr package list-available]
+|xref:cli/solr-package-list-deployed.adoc[bin/solr package list-deployed]
+|xref:cli/solr-package-list-installed.adoc[bin/solr package list-installed]
+|xref:cli/solr-package-undeploy.adoc[bin/solr package undeploy]
+|xref:cli/solr-package-uninstall.adoc[bin/solr package uninstall]
+|xref:cli/solr-package.adoc[bin/solr package]
+|xref:cli/solr-post.adoc[bin/solr post]
+|xref:cli/solr-postlogs.adoc[bin/solr postlogs]
+|xref:cli/solr-restart.adoc[bin/solr restart]
+|xref:cli/solr-snapshot-create.adoc[bin/solr snapshot create]
+|xref:cli/solr-snapshot-delete.adoc[bin/solr snapshot delete]
+|xref:cli/solr-snapshot-describe.adoc[bin/solr snapshot describe]
+|xref:cli/solr-snapshot-export.adoc[bin/solr snapshot export]
+|xref:cli/solr-snapshot-list.adoc[bin/solr snapshot list]
+|xref:cli/solr-snapshot.adoc[bin/solr snapshot]
+|xref:cli/solr-start.adoc[bin/solr start]
+|xref:cli/solr-status.adoc[bin/solr status]
+|xref:cli/solr-stop.adoc[bin/solr stop]
+|xref:cli/solr-stream.adoc[bin/solr stream]
+|xref:cli/solr-version.adoc[bin/solr version]
+|xref:cli/solr-zk-cp.adoc[bin/solr zk cp]
+|xref:cli/solr-zk-downconfig.adoc[bin/solr zk downconfig]
+|xref:cli/solr-zk-ls.adoc[bin/solr zk ls]
+|xref:cli/solr-zk-mkroot.adoc[bin/solr zk mkroot]
+|xref:cli/solr-zk-mv.adoc[bin/solr zk mv]
+|xref:cli/solr-zk-rm.adoc[bin/solr zk rm]
+|xref:cli/solr-zk-upconfig.adoc[bin/solr zk upconfig]
+|xref:cli/solr-zk-updateacls.adoc[bin/solr zk updateacls]
+|xref:cli/solr-zk.adoc[bin/solr zk]
+|===
+// CLI-DOCS-TABLE-END
+
+[WARNING]
+====
+Some options and behaviors changed from the Commons CLI.
+
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#solr-cli-now-uses-picocli[Solr CLI now uses PicoCLI] in Major Changes in Solr 10 for the full list.
+====
+
+== Reporting Problems
+
+Please report anything that behaves differently from xref:cli/commons-cli-reference.adoc[] against https://issues.apache.org/jira/browse/SOLR-17697[SOLR-17697].

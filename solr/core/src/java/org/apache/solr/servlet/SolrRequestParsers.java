@@ -49,8 +49,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
@@ -59,6 +57,8 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 import org.apache.solr.util.RTimerTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -270,7 +270,11 @@ public class SolrRequestParsers {
    * @param charset to be used to decode resulting bytes after %-decoding
    * @param map place all parameters in this map
    */
-  @SuppressWarnings({"fallthrough", "resource"})
+  @SuppressWarnings({
+    "fallthrough",
+    "resource",
+    "ReferenceEquality" // currentStream points at keyStream or valueStream; identity is the flag
+  })
   static long parseFormDataContent(
       final InputStream postContent,
       final long maxLen,
@@ -352,7 +356,7 @@ public class SolrRequestParsers {
             currentStream = valueStream;
             break;
           }
-          // fall-through
+        // fall-through
         default:
           currentStream.write(b);
       }

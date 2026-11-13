@@ -23,7 +23,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,7 +33,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
 public class XMLRequestWriter extends RequestWriter {
@@ -58,14 +56,6 @@ public class XMLRequestWriter extends RequestWriter {
       };
     }
     return req.getContentWriter(ClientUtils.TEXT_XML);
-  }
-
-  @Override
-  public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
-    if (req instanceof UpdateRequest) {
-      return null;
-    }
-    return req.getContentStreams();
   }
 
   @Override

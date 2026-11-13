@@ -24,9 +24,7 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
-import org.apache.solr.cluster.placement.DeleteShardsRequest;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Slice;
 
 /** Helper class to create modification request instances. */
 public class ModificationRequestImpl {
@@ -77,39 +75,11 @@ public class ModificationRequestImpl {
     SolrCollection solrCollection =
         SimpleClusterAbstractionsImpl.SolrCollectionImpl.fromDocCollection(docCollection);
     Shard shard = solrCollection.getShard(shardName);
-    Slice slice = docCollection.getSlice(shardName);
     Set<Replica> solrReplicas = new HashSet<>();
     replicas.forEach(
         replica -> {
           solrReplicas.add(shard.getReplica(replica.getName()));
         });
     return createDeleteReplicasRequest(solrCollection, solrReplicas);
-  }
-
-  public static DeleteShardsRequest createDeleteShardsRequest(
-      SolrCollection collection, Set<String> shardNames) {
-    return new DeleteShardsRequest() {
-      @Override
-      public Set<String> getShardNames() {
-        return shardNames;
-      }
-
-      @Override
-      public SolrCollection getCollection() {
-        return collection;
-      }
-
-      @Override
-      public String toString() {
-        return "DeleteShardsRequest{collection=" + collection.getName() + ",shards=" + shardNames;
-      }
-    };
-  }
-
-  public static DeleteShardsRequest createDeleteShardsRequest(
-      DocCollection docCollection, Set<String> shardNames) {
-    SolrCollection solrCollection =
-        SimpleClusterAbstractionsImpl.SolrCollectionImpl.fromDocCollection(docCollection);
-    return createDeleteShardsRequest(solrCollection, shardNames);
   }
 }

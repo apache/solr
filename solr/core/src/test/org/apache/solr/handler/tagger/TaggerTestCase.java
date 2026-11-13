@@ -37,8 +37,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -47,6 +45,8 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -70,6 +70,8 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   protected final ModifiableSolrParams baseParams = new ModifiableSolrParams();
 
+  protected static final String HANDLER = "/tag";
+
   // populated in buildNames; tested in assertTags
   protected static List<String> NAMES;
 
@@ -77,7 +79,6 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     baseParams.clear();
-    baseParams.set(CommonParams.QT, "/tag");
     baseParams.set(CommonParams.WT, "xml");
   }
 
@@ -121,7 +122,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   /** Asserts the tags. Will call req.close(). */
   protected void assertTags(SolrQueryRequest req, TestTag... eTags) throws Exception {
     try {
-      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+      SolrQueryResponse rsp = h.queryAndResponse(HANDLER, req);
       TestTag[] aTags = pullTagsFromResponse(req, rsp);
 
       String message;

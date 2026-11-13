@@ -216,6 +216,8 @@ public class SolrResourceLoader
    *
    * @param urls the URLs of files to add
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // ClassLoader has no value-equality; identity check is intentional
   synchronized void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
     if (newLoader == classLoader) {
@@ -227,8 +229,7 @@ public class SolrResourceLoader
 
     if (log.isInfoEnabled()) {
       log.info(
-          "Added {} libs to classloader, from paths: {}",
-          urls.size(),
+          "Added lib dirs to classloader: {}",
           urls.stream()
               .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf('/')))
               .sorted()
@@ -484,6 +485,8 @@ public class SolrResourceLoader
    * @param subpackages the packages to be tried if the cname starts with solr.
    * @return the loaded class. An exception is thrown if it fails
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting the default `packages` array vs. a caller-supplied one
   public <T> Class<? extends T> findClass(
       String cname, Class<T> expectedType, String... subpackages) {
     if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
@@ -695,6 +698,8 @@ public class SolrResourceLoader
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether the same SolrConfig instance is being re-associated
   protected final void setSolrConfig(SolrConfig config) {
     if (this.config != null && this.config != config) {
       throw new IllegalStateException("SolrConfig instance is already associated with this loader");
@@ -702,6 +707,9 @@ public class SolrResourceLoader
     this.config = config;
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether the same CoreContainer instance is being
+  // re-associated
   protected final void setCoreContainer(CoreContainer coreContainer) {
     if (this.coreContainer != null && this.coreContainer != coreContainer) {
       throw new IllegalStateException(

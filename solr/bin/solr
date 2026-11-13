@@ -420,12 +420,13 @@ function print_usage() {
     echo "  -e/--example <name>   Name of the example to run; available examples:"
     echo "      cloud:              SolrCloud example"
     echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
+    echo "      secure:             Two-node HTTPS example with Basic Authentication and ZooKeeper ACLs"
     echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
     echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
     echo ""
     echo "  -y/--no-prompt        Don't prompt for input; accept all defaults when running examples that accept user input."
     echo ""
-    echo "  --prompt-inputs <values> Don't prompt for input; comma delimited list of inputs read when running examples that accept user input."
+    echo "  --script-inputs <values> Don't prompt for input; comma delimited list of inputs read when running examples that accept user input."
     echo ""
     echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '--force' parameter."
@@ -475,6 +476,11 @@ function solr_pid_by_port() {
       echo "$PID"
     fi
   fi
+}
+
+# find the pid of a running Solr process listening on the given port
+function solr_pid_by_ps() {
+  ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$1/"' {print $2}' | sort -r
 }
 
 # extract the value of the -Dsolr.port.listen parameter from a running Solr process
@@ -631,6 +637,17 @@ fi
 
 # Everything below here is to support start, stop and restart.
 
+if [[ "$SCRIPT_CMD" == "start" ]]; then
+  # This has to re-scan the raw args rather than reuse $EXAMPLE (set further below by the
+  # full option-parsing loop): the ulimit check right below this runs before that loop does.
+  for example_arg in "$@"; do
+    if [[ "$example_arg" == "-e" || "$example_arg" == "--example" ]]; then
+      export SOLR_ULIMIT_CHECKS=false
+      break
+    fi
+  done
+fi
+
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
 
 : "${SOLR_RECOMMENDED_MAX_PROCESSES:=65000}"
@@ -682,11 +699,27 @@ SOLR_OPTS=(${SOLR_OPTS:-})
 SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
 SOLR_MODE="solrcloud"
+CLOUD_FLAG_SET=false
+USER_MANAGED_FLAG_SET=false
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
+        -c|--cloud|-cloud)
+            if [[ "$USER_MANAGED_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            echo "WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default."
+            CLOUD_FLAG_SET=true
+            shift
+        ;;
         --user-managed)
+            if [[ "$CLOUD_FLAG_SET" == "true" ]]; then
+              print_usage "$SCRIPT_CMD" "Cannot combine -c/--cloud with --user-managed; choose one."
+              exit 1
+            fi
+            USER_MANAGED_FLAG_SET=true
             SOLR_MODE="user-managed"
             PASS_TO_RUN_EXAMPLE+=("--user-managed")
             shift
@@ -812,21 +845,25 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -h|--help)
-            print_usage "$SCRIPT_CMD"
+            if [[ "${SOLR_PICOCLI:-}" == "false" ]]; then
+              print_usage "$SCRIPT_CMD"
+            else
+              run_tool "$SCRIPT_CMD" --help
+            fi
             exit 0
         ;;
         -y|--no-prompt)
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
-        --prompt-inputs)
+        --script-inputs)
         if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-          print_usage "$SCRIPT_CMD" "Prompt values are required when using the $1 option!"
+          print_usage "$SCRIPT_CMD" "Session input values are required when using the $1 option!"
           exit 1
         fi
-        PASS_TO_RUN_EXAMPLE+=("--prompt-inputs" "$2")
+        PASS_TO_RUN_EXAMPLE+=("--script-inputs" "$2")
         shift 2
-        ;;        
+        ;;
         --verbose)
             verbose=true
             SOLR_LOG_LEVEL=DEBUG
@@ -925,21 +962,19 @@ fi
 if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
-    find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
-      do
-        NEXT_PID=$(cat "$PIDF")
-        port=$(solr_port_listen "$NEXT_PID")
-        if [ "$port" != "" ]; then
-          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
-          none_stopped=false
-        fi
-        rm -f "$PIDF"
-    done
-    # TODO: none_stopped doesn't get reflected across the subshell
-    # This can be uncommented once we find a clean way out of it
-    # if $none_stopped; then
-    #   echo -e "\nNo Solr nodes found to stop.\n"
-    # fi
+    # Read from a process substitution, not a pipeline, so none_stopped survives the loop
+    while read -r PIDF; do
+      NEXT_PID=$(cat "$PIDF")
+      port=$(solr_port_listen "$NEXT_PID")
+      if [ "$port" != "" ]; then
+        stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
+        none_stopped=false
+      fi
+      rm -f "$PIDF"
+    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+    if $none_stopped; then
+      echo -e "\nNo Solr nodes found to stop.\n"
+    fi
     exit
   elif [[ -z "${PROVIDED_SOLR_PORT:-}" ]]; then
     # not stopping all and don't have a port, but if we can find a single pid file for Solr, then use that
@@ -994,7 +1029,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 
   if [ -z "${SOLR_PID:-}" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
+    SOLR_PID=$(solr_pid_by_ps "$SOLR_PORT_LISTEN")
   fi
 
   if [ -n "${SOLR_PID:-}" ]; then
@@ -1007,7 +1042,7 @@ else
   SOLR_PID=$(solr_pid_by_port "$SOLR_PORT_LISTEN")
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
+    SOLR_PID=$(solr_pid_by_ps "$SOLR_PORT_LISTEN")
   fi
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT_LISTEN" "$STOP_KEY" "$SOLR_PID"
@@ -1380,7 +1415,7 @@ function start_solr() {
             exit # subshell!
           fi
         else
-          SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
+          SOLR_PID=$(solr_pid_by_ps "$SOLR_PORT_LISTEN")
           echo -e "\nStarted Solr server on port $SOLR_PORT_LISTEN (pid=$SOLR_PID). Happy searching!\n"
           exit # subshell!
         fi
@@ -1389,7 +1424,7 @@ function start_solr() {
     else
       echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT_LISTEN."
       sleep 10
-      SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
+      SOLR_PID=$(solr_pid_by_ps "$SOLR_PORT_LISTEN")
       echo -e "\nStarted Solr server on port $SOLR_PORT_LISTEN (pid=$SOLR_PID). Happy searching!\n"
       return;
     fi

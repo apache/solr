@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
 /**
@@ -68,7 +69,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
   private static NamedList<Object> createAddFieldTypeNamedList(
       FieldTypeDefinition fieldTypeDefinition) {
-    final NamedList<Object> addFieldTypeNamedList = new NamedList<>();
+    final NamedList<Object> addFieldTypeNamedList = new SimpleOrderedMap<>();
     addFieldTypeNamedList.addAll(fieldTypeDefinition.getAttributes());
     AnalyzerDefinition analyzerDefinition = fieldTypeDefinition.getAnalyzer();
     if (analyzerDefinition != null) {
@@ -93,39 +94,33 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     Map<String, Object> similarityAttributes = fieldTypeDefinition.getSimilarity();
     if (similarityAttributes != null && !similarityAttributes.isEmpty()) {
-      addFieldTypeNamedList.add("similarity", new NamedList<>(similarityAttributes));
+      addFieldTypeNamedList.add("similarity", similarityAttributes);
     }
 
     return addFieldTypeNamedList;
   }
 
   private static NamedList<Object> createAnalyzerNamedList(AnalyzerDefinition analyzerDefinition) {
-    NamedList<Object> analyzerNamedList = new NamedList<>();
+    NamedList<Object> analyzerNamedList = new SimpleOrderedMap<>();
     Map<String, Object> analyzerAttributes = analyzerDefinition.getAttributes();
     if (analyzerAttributes != null) analyzerNamedList.addAll(analyzerAttributes);
     List<Map<String, Object>> charFiltersAttributes = analyzerDefinition.getCharFilters();
     if (charFiltersAttributes != null) {
-      List<NamedList<Object>> charFiltersList = new ArrayList<>();
-      for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
-        charFiltersList.add(new NamedList<>(charFilterAttributes));
-      analyzerNamedList.add("charFilters", charFiltersList);
+      analyzerNamedList.add("charFilters", charFiltersAttributes);
     }
     Map<String, Object> tokenizerAttributes = analyzerDefinition.getTokenizer();
     if (tokenizerAttributes != null) {
-      analyzerNamedList.add("tokenizer", new NamedList<>(tokenizerAttributes));
+      analyzerNamedList.add("tokenizer", tokenizerAttributes);
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
-      List<NamedList<Object>> filtersList = new ArrayList<>();
-      for (Map<String, Object> filterAttributes : filtersAttributes)
-        filtersList.add(new NamedList<>(filterAttributes));
-      analyzerNamedList.add("filters", filtersList);
+      analyzerNamedList.add("filters", filtersAttributes);
     }
     return analyzerNamedList;
   }
 
   private static NamedList<Object> createAddFieldNamedList(Map<String, Object> fieldAttributes) {
-    final NamedList<Object> addFieldProps = new NamedList<>();
+    final NamedList<Object> addFieldProps = new SimpleOrderedMap<>();
     if (fieldAttributes != null) addFieldProps.addAll(fieldAttributes);
     return addFieldProps;
   }
@@ -373,7 +368,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
     private static NamedList<Object> createRequestParameters(Map<String, Object> fieldAttributes) {
       final NamedList<Object> addFieldParameters = createAddFieldNamedList(fieldAttributes);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("add-field", addFieldParameters);
       return requestParameters;
     }
@@ -403,7 +398,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
     private static NamedList<Object> createRequestParameters(Map<String, Object> fieldAttributes) {
       final NamedList<Object> replaceFieldParameters = createAddFieldNamedList(fieldAttributes);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("replace-field", replaceFieldParameters);
       return requestParameters;
     }
@@ -430,9 +425,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     private static NamedList<Object> createRequestParameters(String fieldName) {
-      final NamedList<Object> deleteFieldParameters = new NamedList<>();
+      final NamedList<Object> deleteFieldParameters = new SimpleOrderedMap<>();
       deleteFieldParameters.add("name", fieldName);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("delete-field", deleteFieldParameters);
       return requestParameters;
     }
@@ -463,7 +458,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
     private static NamedList<Object> createRequestParameters(Map<String, Object> fieldAttributes) {
       final NamedList<Object> addDynamicFieldParameters = createAddFieldNamedList(fieldAttributes);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("add-dynamic-field", addDynamicFieldParameters);
       return requestParameters;
     }
@@ -499,7 +494,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
         Map<String, Object> dynamicFieldAttributes) {
       final NamedList<Object> replaceDynamicFieldParameters =
           createAddFieldNamedList(dynamicFieldAttributes);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("replace-dynamic-field", replaceDynamicFieldParameters);
       return requestParameters;
     }
@@ -525,9 +520,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     private static NamedList<Object> createRequestParameters(String fieldName) {
-      final NamedList<Object> deleteDynamicFieldParameters = new NamedList<>();
+      final NamedList<Object> deleteDynamicFieldParameters = new SimpleOrderedMap<>();
       deleteDynamicFieldParameters.add("name", fieldName);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("delete-dynamic-field", deleteDynamicFieldParameters);
       return requestParameters;
     }
@@ -553,7 +548,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
         FieldTypeDefinition fieldTypeDefinition) {
       final NamedList<Object> addFieldTypeParameters =
           createAddFieldTypeNamedList(fieldTypeDefinition);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("add-field-type", addFieldTypeParameters);
       return requestParameters;
     }
@@ -584,7 +579,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
         FieldTypeDefinition fieldTypeDefinition) {
       final NamedList<Object> replaceFieldTypeParameters =
           createAddFieldTypeNamedList(fieldTypeDefinition);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("replace-field-type", replaceFieldTypeParameters);
       return requestParameters;
     }
@@ -610,9 +605,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     private static NamedList<Object> createRequestParameters(String fieldTypeName) {
-      final NamedList<Object> deleteFieldTypeParameters = new NamedList<>();
+      final NamedList<Object> deleteFieldTypeParameters = new SimpleOrderedMap<>();
       deleteFieldTypeParameters.add("name", fieldTypeName);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("delete-field-type", deleteFieldTypeParameters);
       return requestParameters;
     }
@@ -658,13 +653,13 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
 
     private static NamedList<Object> createRequestParameters(
         String source, List<String> dest, Integer maxchars) {
-      final NamedList<Object> addCopyFieldParameters = new NamedList<>();
+      final NamedList<Object> addCopyFieldParameters = new SimpleOrderedMap<>();
       addCopyFieldParameters.add("source", source);
       addCopyFieldParameters.add("dest", dest);
       if (maxchars != null) {
         addCopyFieldParameters.add("maxChars", maxchars);
       }
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("add-copy-field", addCopyFieldParameters);
       return requestParameters;
     }
@@ -691,10 +686,10 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     private static NamedList<Object> createRequestParameters(String source, List<String> dest) {
-      final NamedList<Object> addCopyFieldParameters = new NamedList<>();
+      final NamedList<Object> addCopyFieldParameters = new SimpleOrderedMap<>();
       addCopyFieldParameters.add("source", source);
       addCopyFieldParameters.add("dest", dest);
-      final NamedList<Object> requestParameters = new NamedList<>();
+      final NamedList<Object> requestParameters = new SimpleOrderedMap<>();
       requestParameters.add("delete-copy-field", addCopyFieldParameters);
       return requestParameters;
     }

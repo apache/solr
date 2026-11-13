@@ -16,6 +16,7 @@
  */
 package org.apache.solr.spelling;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,12 +32,17 @@ import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryLimit;
+import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -219,7 +225,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
   public void testCollateWithOverride() {
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckCompRH",
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             SpellCheckComponent.SPELLCHECK_DICT,
@@ -232,8 +239,6 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
             "10",
             SpellingParams.SPELLCHECK_MAX_COLLATIONS,
             "10",
-            "qt",
-            "/spellCheckCompRH",
             "defType",
             "edismax",
             "qf",
@@ -244,7 +249,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
             "partisian politcal mashine"),
         "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='parisian political machine'");
     assertQ(
-        req(
+        reqWithPath(
+            "/spellCheckCompRH",
             SpellCheckComponent.COMPONENT_NAME,
             "true",
             SpellCheckComponent.SPELLCHECK_DICT,
@@ -257,8 +263,6 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
             "10",
             SpellingParams.SPELLCHECK_MAX_COLLATIONS,
             "10",
-            "qt",
-            "/spellCheckCompRH",
             "defType",
             "edismax",
             "qf",
@@ -363,7 +367,6 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
     params.add(CommonParams.Q, "lowerfilt:(+fauth +home +loane)");
     params.add(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true");
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -505,11 +508,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     String[] dictionary = {"direct", "default_teststop"};
     for (int i = 0; i <= 1; i++) {
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH",
               "q",
               "teststop:(flew AND form AND heathrow)",
-              "qt",
-              "/spellCheckCompRH",
               "indent",
               "true",
               SpellCheckComponent.COMPONENT_NAME,
@@ -545,11 +547,10 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
           "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='form']='from'");
 
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH",
               "q",
               "teststop:(june AND customs)",
-              "qt",
-              "/spellCheckCompRH",
               "indent",
               "true",
               SpellCheckComponent.COMPONENT_NAME,
@@ -580,13 +581,12 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
           "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'");
       // SOLR-5090, alternativeTermCount==0 was being evaluated, would sometimes throw NPE
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH",
               "q",
               "teststop:(june customs)",
               "mm",
               "2",
-              "qt",
-              "/spellCheckCompRH",
               "indent",
               "true",
               SpellCheckComponent.COMPONENT_NAME,
@@ -621,13 +621,11 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
             SpellingParams.SPELLCHECK_MAX_COLLATIONS,
             "1",
             SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS,
-            "true",
-            "qt",
-            "/spellCheckCompRH");
+            "true");
 
     // default case, no SPELLCHECK_COLLATE_MAX_COLLECT_DOCS should be exact num hits
     assertQ(
-        req(reusedParams, CommonParams.Q, "teststop:metnoia"),
+        reqWithPath("/spellCheckCompRH", reusedParams, CommonParams.Q, "teststop:metnoia"),
         xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'",
         xpathPrefix + "long[@name='hits']=6");
 
@@ -636,7 +634,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // "estimating" and getting exact number as well.
     for (String val : new String[] {"0", "30", "100", "10000"}) {
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH",
               reusedParams,
               CommonParams.Q,
               "teststop:metnoia",
@@ -652,7 +651,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     for (int iter = 0; iter < iters; iter++) {
       final int val = TestUtil.nextInt(random(), 1, 17);
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH",
               reusedParams,
               CommonParams.Q,
               "teststop:metnoia",
@@ -688,7 +688,8 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         hitsXPath += "[.=" + NUM_DOCS_WITH_TERM_EVERYOTHER + "]";
       }
       assertQ(
-          req(
+          reqWithPath(
+              "/spellCheckCompRH",
               reusedParams,
               CommonParams.Q,
               "teststop:everother",
@@ -755,5 +756,102 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     NamedList collationList = (NamedList) spellCheck.get("collations");
     List<?> collations = (List<?>) collationList.getAll("collation");
     assertEquals(1, collations.size());
+  }
+
+  @Test
+  public void testCollationWithQueryLimitsSupportsPartialResults() throws Exception {
+    // Create a SpellingResult with multiple suggestions to test collation
+    SpellingResult result = new SpellingResult();
+
+    // Add tokens with multiple suggestions to generate many possible collations
+    SpellCheckToken token1 = new SpellCheckToken("test", 0, 4);
+    result.add(token1, "best", 1);
+    result.add(token1, "rest", 2);
+    result.add(token1, "nest", 3);
+    result.add(token1, "fest", 4);
+
+    SpellCheckToken token2 = new SpellCheckToken("query", 5, 10);
+    result.add(token2, "quarry", 1);
+    result.add(token2, "quiry", 2);
+    result.add(token2, "quary", 3);
+    result.add(token2, "querry", 4);
+
+    // Create a QueryLimit that will trigger during collation processing
+    final int[] callCount = {0};
+    TestInjection.queryTimeout =
+        new QueryLimit() {
+          @Override
+          public boolean shouldExit() {
+            callCount[0]++;
+            // Return true after a few calls to force early exit during collation
+            return callCount[0] > 3;
+          }
+
+          @Override
+          public Object currentValue() {
+            return callCount[0];
+          }
+        };
+
+    try {
+      SolrCore core = h.getCore();
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add(CommonParams.Q, "test query");
+      params.add(CommonParams.DF, "teststop");
+
+      SolrQueryRequest req = new SolrQueryRequestBase(core, params);
+      SolrQueryResponse response = new SolrQueryResponse();
+      response.addResponseHeader(new SimpleOrderedMap<>());
+
+      // Set up proper request context for QueryLimits
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, response));
+
+      try {
+        // Create ResponseBuilder with QueryComponent for collation
+        List<SearchComponent> components = new ArrayList<>();
+        QueryComponent queryComponent = new QueryComponent();
+        components.add(queryComponent);
+
+        ResponseBuilder rb = new ResponseBuilder(req, response, components);
+
+        // Create SpellCheckCollator with settings for multiple collations
+        SpellCheckCollator collator = new SpellCheckCollator();
+        collator.setMaxCollationTries(0); // Disable query verification
+        collator.setMaxCollations(20); // High number to ensure partial results
+
+        // This should trigger the maybeExitWithPartialResults condition
+        List<SpellCheckCollation> collations = collator.collate(result, "test query", rb);
+
+        // Verify that we got partial results due to timeout
+        assertNotNull("Collations should not be null", collations);
+        assertTrue("Should have some collations before timeout", collations.size() > 0);
+        assertTrue("Should have partial results due to timeout", collations.size() < 20);
+
+        // Verify that the timeout was triggered
+        assertTrue("Timeout should have been triggered", callCount[0] > 3);
+
+        // Verify that the response is marked as partial
+        Object partialResults = response.getResponseHeader().get("partialResults");
+        assertTrue(
+            "Response should be marked as partial when query limits are exceeded",
+            partialResults != null && Boolean.TRUE.equals(partialResults));
+
+        // Most importantly: verify that the list is mutable (supports partial results)
+        try {
+          collations.add(new SpellCheckCollation());
+          // If we get here, the list is mutable - this is the key requirement
+        } catch (UnsupportedOperationException e) {
+          fail("Collations list should be mutable to support partial results");
+        }
+
+      } finally {
+        req.close();
+      }
+
+    } finally {
+      // Clean up
+      TestInjection.queryTimeout = null;
+      SolrRequestInfo.clearRequestInfo();
+    }
   }
 }

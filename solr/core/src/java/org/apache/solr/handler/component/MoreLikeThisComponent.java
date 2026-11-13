@@ -81,7 +81,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       ReturnFields returnFields = new SolrReturnFields(rb.req);
 
       int flags = 0;
-      if (returnFields.wantsScore()) {
+      if (returnFields.returnsScore()) {
         flags |= SolrIndexSearcher.GET_SCORES;
       }
 

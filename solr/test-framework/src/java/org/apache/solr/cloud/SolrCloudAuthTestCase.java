@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.HistogramSnapshot;
@@ -37,6 +36,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrMetricTestUtils;
@@ -252,7 +252,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static Map<String, DataPointSnapshot> getMetricValues(
       CoreContainer coreContainer, List<String> metricNames, String registryName, Labels labels) {
     Map<String, DataPointSnapshot> metrics = new HashMap<>();
-    PrometheusMetricReader prometheusMetricReader =
+    FilterablePrometheusMetricReader prometheusMetricReader =
         SolrMetricTestUtils.getPrometheusMetricReader(coreContainer, registryName);
     for (String metricName : metricNames) {
       if ("solr_authentication_request_times_nanoseconds".equals(metricName)) {

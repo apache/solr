@@ -39,7 +39,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -48,6 +47,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.apache.solr.util.ContentStreamBase;
 import org.junit.Test;
 
 public class TestCollectionAPIs extends SolrTestCaseJ4 {
@@ -86,34 +86,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       apiBag.registerObject(clusterAPI);
       apiBag.registerObject(clusterAPI.commands);
     }
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{split:{shard:shard1, ranges: '0-1f4,1f5-3e8,3e9-5dc', coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        "{collection: collName , shard : shard1, ranges :'0-1f4,1f5-3e8,3e9-5dc', operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/cluster",
-        POST,
-        "{add-role : {role : overseer, node : 'localhost_8978'} }",
-        "{operation : addrole ,role : overseer, node : 'localhost_8978'}");
-
-    compareOutput(
-        apiBag,
-        "/cluster",
-        POST,
-        "{remove-role : {role : overseer, node : 'localhost_8978'} }",
-        "{operation : removerole ,role : overseer, node : 'localhost_8978'}");
 
     compareOutput(
         apiBag,

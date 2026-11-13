@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -39,18 +40,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
-import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.Before;
@@ -97,7 +94,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
           "/package/mypkg/v1.0/runtimelibs.jar",
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-      NavigableObject rsp =
+      UploadToFileStoreResponse rsp =
           postFile(
               cluster.getSolrClient(),
               getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -105,8 +102,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
               "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
       assertTrue(
-          Objects.requireNonNullElse(rsp._getStr("message"), "")
-              .contains("File with same metadata exists "));
+          Objects.requireNonNullElse(rsp.message, "").contains("File with same metadata exists "));
 
       assertResponseValues(
           10,
@@ -173,18 +169,17 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
         final var fetchReq = new FileStoreApi.FetchFile("/package/mypkg/v1.0/runtimelibs.jar2");
         fetchReq.setGetFrom("someFakeSolrNode:8983_solr");
-        try (final var solrClient = jettySolrRunner.newClient()) {
-          final var expectedExc =
-              expectThrows(
-                  RemoteSolrException.class,
-                  () -> {
-                    fetchReq.process(solrClient);
-                  });
-          assertEquals(400, expectedExc.code());
-          assertThat(
-              expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
-          assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
-        }
+        final var solrClient = jettySolrRunner.getSolrClient();
+        final var expectedExc =
+            expectThrows(
+                RemoteSolrException.class,
+                () -> {
+                  fetchReq.process(solrClient);
+                });
+        assertEquals(400, expectedExc.code());
+        assertThat(
+            expectedExc.getMessage(), containsString("File store cannot fetch from source node"));
+        assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
       }
 
       // Delete Jars
@@ -331,7 +326,13 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
+
+    FileStoreAPI.MetaData metaData = ClusterFileStore._createJsonMetaData(bytes, null);
+    DistribFileStore._persistToFile(
+        jetty.getCoreContainer().getSolrHome(),
+        path,
+        ByteBuffer.wrap(bytes),
+        ByteBuffer.wrap(Utils.toJSON(metaData)));
 
     final var syncReq = new FileStoreApi.SyncFile(path);
     final var syncRsp = syncReq.process(jetty.getSolrClient());
@@ -344,23 +345,31 @@ public class TestDistribFileStore extends SolrCloudTestCase {
         false);
   }
 
-  public static NavigableObject postFile(
+  public static UploadToFileStoreResponse postFile(
       SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
-    String resource = "/cluster/filestore/files" + name;
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("sig", sig);
-    V2Response rsp =
-        new V2Request.Builder(resource)
-            .withMethod(SolrRequest.METHOD.PUT)
-            .withPayload(buffer)
-            .forceV2(true)
-            .withMimeType("application/octet-stream")
-            .withParams(params)
-            .build()
-            .process(client);
-    assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
+    final var uploadReq = new FileStoreApi.UploadFile(name, new ByteBufferInputStream(buffer));
+    if (sig != null) {
+      uploadReq.setSig(List.of(sig));
+    }
+    final UploadToFileStoreResponse rsp = uploadReq.process(client);
+    assertEquals(name, rsp.file);
     return rsp;
+  }
+
+  /**
+   * Upload a file from the test classpath to the distributed file store under the given path, then
+   * wait until every node in the cluster reports the expected SHA-512 for that path.
+   */
+  public static void postFileAndWait(
+      MiniSolrCloudCluster cluster, String fname, String path, String sig) throws Exception {
+    ByteBuffer fileContent = getFileContent(fname);
+    @SuppressWarnings("ByteBufferBackingArray") // this is the result of a call to wrap()
+    String sha512 = DigestUtils.sha512Hex(fileContent.array());
+
+    postFile(cluster.getSolrClient(), fileContent, path, sig);
+
+    checkAllNodesForFile(cluster, path, Map.of(":files:" + path + ":sha512", sha512), false);
   }
 
   /**

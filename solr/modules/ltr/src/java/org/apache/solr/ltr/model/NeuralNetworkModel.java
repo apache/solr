@@ -112,11 +112,11 @@ public class NeuralNetworkModel extends LTRScoringModel {
   }
 
   public interface Layer {
-    public float[] calculateOutput(float[] inputVec);
+    float[] calculateOutput(float[] inputVec);
 
-    public int validate(int inputDim) throws ModelException;
+    int validate(int inputDim) throws ModelException;
 
-    public String describe();
+    String describe();
   }
 
   public class DefaultLayer implements Layer {
@@ -235,11 +235,11 @@ public class NeuralNetworkModel extends LTRScoringModel {
             "Dimension mismatch in model \""
                 + name
                 + "\". Layer "
-                + Integer.toString(this.layerID)
+                + this.layerID
                 + " has "
-                + Integer.toString(this.numUnits)
+                + this.numUnits
                 + " bias weights but "
-                + Integer.toString(this.matrixRows)
+                + this.matrixRows
                 + " weight matrix rows.");
       }
       if (this.activation == null) {
@@ -247,7 +247,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
             "Invalid activation function (\""
                 + this.activationStr
                 + "\") in layer "
-                + Integer.toString(this.layerID)
+                + this.layerID
                 + " of model \""
                 + name
                 + "\".");
@@ -258,23 +258,23 @@ public class NeuralNetworkModel extends LTRScoringModel {
               "Dimension mismatch in model \""
                   + name
                   + "\". The input has "
-                  + Integer.toString(inputDim)
+                  + inputDim
                   + " features, but the weight matrix for layer 0 has "
-                  + Integer.toString(this.matrixCols)
+                  + this.matrixCols
                   + " columns.");
         } else {
           throw new ModelException(
               "Dimension mismatch in model \""
                   + name
                   + "\". The weight matrix for layer "
-                  + Integer.toString(this.layerID - 1)
+                  + (this.layerID - 1)
                   + " has "
-                  + Integer.toString(inputDim)
+                  + inputDim
                   + " rows, but the "
                   + "weight matrix for layer "
-                  + Integer.toString(this.layerID)
+                  + this.layerID
                   + " has "
-                  + Integer.toString(this.matrixCols)
+                  + this.matrixCols
                   + " columns.");
         }
       }
@@ -285,9 +285,9 @@ public class NeuralNetworkModel extends LTRScoringModel {
     public String describe() {
       final StringBuilder sb = new StringBuilder();
       sb.append("(matrix=")
-          .append(Integer.toString(this.matrixRows))
+          .append(this.matrixRows)
           .append('x')
-          .append(Integer.toString(this.matrixCols))
+          .append(this.matrixCols)
           .append(",activation=")
           .append(this.activationStr)
           .append(")");
@@ -338,7 +338,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
           "The output matrix for model \""
               + name
               + "\" has "
-              + Integer.toString(inputDim)
+              + inputDim
               + " rows, but should only have one.");
     }
   }

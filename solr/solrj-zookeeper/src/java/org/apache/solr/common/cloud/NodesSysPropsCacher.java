@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
@@ -34,9 +34,9 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
   private volatile boolean isClosed = false;
   private final Map<String, Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
   private final ZkStateReader zkStateReader;
-  private final HttpSolrClientBase solrClient;
+  private final HttpSolrClient solrClient;
 
-  public NodesSysPropsCacher(HttpSolrClientBase solrClient, ZkStateReader zkStateReader) {
+  public NodesSysPropsCacher(HttpSolrClient solrClient, ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.solrClient = solrClient;
     zkStateReader.registerLiveNodesListener(

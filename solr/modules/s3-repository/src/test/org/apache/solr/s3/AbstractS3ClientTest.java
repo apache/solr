@@ -16,13 +16,15 @@
  */
 package org.apache.solr.s3;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.SocketProxy;
 import org.junit.After;
@@ -31,14 +33,18 @@ import org.junit.ClassRule;
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting;
 
 /** Abstract class for test with S3Mock. */
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
   protected static final String BUCKET_NAME = "test-bucket";
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   S3StorageClient client;
   private SocketProxy proxy;
@@ -52,7 +58,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
 
     // We are using a proxy in front of S3Mock to be able to test connection loss
     proxy = new SocketProxy();
-    proxy.open(URI.create("http://localhost:" + S3_MOCK_RULE.getHttpPort()));
+    proxy.open(URI.create(s3MockContainer.getHttpEndpoint()));
     client =
         new S3StorageClient(
             BUCKET_NAME,

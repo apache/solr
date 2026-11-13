@@ -161,6 +161,27 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNullRequestDoesNotThrowAndIsNotModified() {
+    // req can be null when this is called from Jersey's CatchAllExceptionMapper for a request
+    // that failed before a SolrQueryRequest was attached to the request context.
+    final Exception e = new RuntimeException("Some generic, non-SolrException");
+
+    final Exception normalized = RequestHandlerBase.processReceivedException(null, e);
+
+    assertSame(e, normalized);
+  }
+
+  @Test
+  public void testNullRequestWithSyntaxErrorIsStillWrappedIn400SolrException() {
+    final Exception e = new SyntaxError("Some syntax error");
+
+    final Exception normalized = RequestHandlerBase.processReceivedException(null, e);
+
+    assertEquals(SolrException.class, normalized.getClass());
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) normalized).code());
+  }
+
+  @Test
   public void testIsInternalShardRequest() {
     final SolrQueryRequest solrQueryRequest =
         new SolrQueryRequestBase(solrCore, new ModifiableSolrParams()) {

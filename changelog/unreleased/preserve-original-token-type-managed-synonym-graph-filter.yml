@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: ManagedSynonymGraphFilterFactory no longer tags the original token as type `SYNONYM` for equivalence-group mappings (e.g. `[terma]->[terma, termb, termc]`), using Lucene's `includeOrig` flag so only the injected synonyms get that type.
+type: fixed
+authors:
+  - name: Renato Haeberli
+    nick: renatoh
+links:
+  - name: PR#4960
+    url: https://github.com/apache/solr/pull/4960

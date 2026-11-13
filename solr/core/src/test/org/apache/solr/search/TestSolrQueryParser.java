@@ -58,6 +58,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -476,6 +477,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Solr() throws Exception {
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
 
@@ -484,12 +486,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String too_long = "id:(" + a + a + a + a + a + ")";
 
     final String expectedMsg = "Too many clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     // but should still work as a filter query since TermsQuery can be used...
@@ -499,6 +503,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testManyClauses_Lucene() throws Exception {
     final int numZ = IndexSearcher.getMaxClauseCount();
 
@@ -515,12 +520,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     final String way_too_long = sb.toString();
 
     final String expectedMsg = "too many boolean clauses";
-    ignoreException(expectedMsg);
-    SolrException e =
-        expectThrows(
-            SolrException.class,
-            "expected SolrException",
-            () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    SolrException e;
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expectedMsg)) {
+      e =
+          expectThrows(
+              SolrException.class,
+              "expected SolrException",
+              () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    }
     assertThat(e.getMessage(), containsString(expectedMsg));
 
     assertNotNull(e.getCause());
@@ -1727,178 +1734,244 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   @Test
   public void testFieldExistsQueries() throws SyntaxError {
-    SolrQueryRequest req = req();
-    String[] fieldSuffix =
-        new String[] {
-          "ti",
-          "tf",
-          "td",
-          "tl",
-          "tdt", // trie types
-          "pi",
-          "pf",
-          "pd",
-          "pl",
-          "pdt", // point types
-          "i",
-          "f",
-          "d",
-          "l",
-          "dt",
-          "s",
-          "b", // numeric types
-          "is",
-          "fs",
-          "ds",
-          "ls",
-          "dts",
-          "ss",
-          "bs", // multi-valued
-          "i_dv",
-          "f_dv",
-          "d_dv",
-          "l_dv",
-          "dt_dv",
-          "s_dv",
-          "b_dv", // numerics + docValues
-          "is_dv",
-          "fs_dv",
-          "ds_dv",
-          "ls_dv",
-          "dts_dv",
-          "ss_dv",
-          "bs_dv", // multi-docValues
-          "i_dvo",
-          "f_dvo",
-          "d_dvo",
-          "l_dvo",
-          "dt_dvo", // not indexed
-          "t",
-          "t_on",
-          "b_norms",
-          "s_norms",
-          "dt_norms",
-          "i_norms",
-          "l_norms",
-          "f_norms",
-          "d_norms"
-        };
-    String[] existenceQueries = new String[] {"*", "[* TO *]"};
+    try (SolrQueryRequest req = req()) {
+      String[] fieldSuffix =
+          new String[] {
+            "ti",
+            "tf",
+            "td",
+            "tl",
+            "tdt", // trie types
+            "pi",
+            "pf",
+            "pd",
+            "pl",
+            "pdt", // point types
+            "i",
+            "f",
+            "d",
+            "l",
+            "dt",
+            "s",
+            "b", // numeric types
+            "is",
+            "fs",
+            "ds",
+            "ls",
+            "dts",
+            "ss",
+            "bs", // multi-valued
+            "i_dv",
+            "f_dv",
+            "d_dv",
+            "l_dv",
+            "dt_dv",
+            "s_dv",
+            "b_dv", // numerics + docValues
+            "is_dv",
+            "fs_dv",
+            "ds_dv",
+            "ls_dv",
+            "dts_dv",
+            "ss_dv",
+            "bs_dv", // multi-docValues
+            "i_dvo",
+            "f_dvo",
+            "d_dvo",
+            "l_dvo",
+            "dt_dvo", // not indexed
+            "t",
+            "t_on",
+            "b_norms",
+            "s_norms",
+            "dt_norms",
+            "i_norms",
+            "l_norms",
+            "f_norms",
+            "d_norms"
+          };
+      String[] existenceQueries = new String[] {"*", "[* TO *]"};
 
-    for (String existenceQuery : existenceQueries) {
-      for (String suffix : fieldSuffix) {
-        IndexSchema indexSchema = h.getCore().getLatestSchema();
-        String field = "foo_" + suffix;
-        String query = field + ":" + existenceQuery;
-        QParser qParser = QParser.getParser(query, req);
-        Query createdQuery = qParser.getQuery();
-        SchemaField schemaField = indexSchema.getField(field);
+      for (String existenceQuery : existenceQueries) {
+        for (String suffix : fieldSuffix) {
+          IndexSchema indexSchema = h.getCore().getLatestSchema();
+          String field = "foo_" + suffix;
+          String query = field + ":" + existenceQuery;
+          QParser qParser = QParser.getParser(query, req);
+          Query createdQuery = qParser.getQuery();
+          SchemaField schemaField = indexSchema.getField(field);
 
-        // Test float & double realNumber queries differently
-        if ("[* TO *]".equals(existenceQuery)
-            && (schemaField.getType().getNumberType() == NumberType.DOUBLE
-                || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
-          assertFalse(
-              "For float and double fields \""
-                  + query
-                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
-              createdQuery instanceof FieldExistsQuery);
-          assertFalse(
-              "For float and double fields \""
-                  + query
-                  + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
-              createdQuery instanceof FieldExistsQuery);
-          assertFalse(
-              "For float and double fields \""
-                  + query
-                  + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.",
-              createdQuery instanceof ConstantScoreQuery);
-          assertFalse(
-              "For float and double fields\""
-                  + query
-                  + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).",
-              createdQuery instanceof BooleanQuery);
-        } else {
-          if (schemaField.hasDocValues()) {
-            assertTrue(
-                "Field has docValues, so existence query \""
+          // Test float & double realNumber queries differently
+          if ("[* TO *]".equals(existenceQuery)
+              && (schemaField.getType().getNumberType() == NumberType.DOUBLE
+                  || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
+            assertFalse(
+                "For float and double fields \""
                     + query
-                    + "\" should return FieldExistsQuery",
+                    + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
                 createdQuery instanceof FieldExistsQuery);
-          } else if (!schemaField.omitNorms()
-              && !schemaField
-                  .getType()
-                  .isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-            assertTrue(
-                "Field has norms and no docValues, so existence query \""
+            assertFalse(
+                "For float and double fields \""
                     + query
-                    + "\" should return FieldExistsQuery",
+                    + "\" is not an existence query, so the query returned should not be a FieldExistsQuery.",
                 createdQuery instanceof FieldExistsQuery);
-          } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE
-              || schemaField.getType().getNumberType() == NumberType.FLOAT) {
-            if (schemaField.getType().isPointField()) {
+            assertFalse(
+                "For float and double fields \""
+                    + query
+                    + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.",
+                createdQuery instanceof ConstantScoreQuery);
+            assertFalse(
+                "For float and double fields\""
+                    + query
+                    + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).",
+                createdQuery instanceof BooleanQuery);
+          } else {
+            if (schemaField.hasDocValues()) {
               assertTrue(
-                  "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                  "Field has docValues, so existence query \""
                       + query
-                      + "\".",
-                  createdQuery instanceof PointRangeQuery);
-              if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
-                assertEquals(
+                      + "\" should return FieldExistsQuery",
+                  createdQuery instanceof FieldExistsQuery);
+            } else if (!schemaField.omitNorms()
+                && !schemaField
+                    .getType()
+                    .isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
+              assertTrue(
+                  "Field has norms and no docValues, so existence query \""
+                      + query
+                      + "\" should return FieldExistsQuery",
+                  createdQuery instanceof FieldExistsQuery);
+            } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE
+                || schemaField.getType().getNumberType() == NumberType.FLOAT) {
+              if (schemaField.getType().isPointField()) {
+                assertTrue(
                     "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
                         + query
                         + "\".",
-                    Double.NaN,
-                    DoublePoint.decodeDimension(
-                        ((PointRangeQuery) createdQuery).getUpperPoint(), 0),
-                    0);
+                    createdQuery instanceof PointRangeQuery);
+                if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
+                  assertEquals(
+                      "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                          + query
+                          + "\".",
+                      Double.NaN,
+                      DoublePoint.decodeDimension(
+                          ((PointRangeQuery) createdQuery).getUpperPoint(), 0),
+                      0);
+                } else {
+                  assertEquals(
+                      "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                          + query
+                          + "\".",
+                      Float.NaN,
+                      FloatPoint.decodeDimension(
+                          ((PointRangeQuery) createdQuery).getUpperPoint(), 0),
+                      0);
+                }
               } else {
-                assertEquals(
-                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                assertTrue(
+                    "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
                         + query
                         + "\".",
-                    Float.NaN,
-                    FloatPoint.decodeDimension(((PointRangeQuery) createdQuery).getUpperPoint(), 0),
-                    0);
+                    createdQuery instanceof ConstantScoreQuery);
+                assertTrue(
+                    "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
+                assertEquals(
+                    "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\". This boolean query must be an OR.",
+                    1,
+                    ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                        .getMinimumNumberShouldMatch());
+                assertEquals(
+                    "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\". This boolean query must have 2 clauses.",
+                    2,
+                    ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                        .clauses()
+                        .size());
               }
             } else {
-              assertTrue(
-                  "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+              assertFalse(
+                  "Field doesn't have docValues, so existence query \""
                       + query
-                      + "\".",
-                  createdQuery instanceof ConstantScoreQuery);
-              assertTrue(
-                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + "\" should not return FieldExistsQuery",
+                  createdQuery instanceof FieldExistsQuery);
+              assertFalse(
+                  "Field doesn't have norms, so existence query \""
                       + query
-                      + "\".",
-                  ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
-              assertEquals(
-                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                      + query
-                      + "\". This boolean query must be an OR.",
-                  1,
-                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
-                      .getMinimumNumberShouldMatch());
-              assertEquals(
-                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                      + query
-                      + "\". This boolean query must have 2 clauses.",
-                  2,
-                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+                      + "\" should not return FieldExistsQuery",
+                  createdQuery instanceof FieldExistsQuery);
             }
-          } else {
-            assertFalse(
-                "Field doesn't have docValues, so existence query \""
-                    + query
-                    + "\" should not return FieldExistsQuery",
-                createdQuery instanceof FieldExistsQuery);
-            assertFalse(
-                "Field doesn't have norms, so existence query \""
-                    + query
-                    + "\" should not return FieldExistsQuery",
-                createdQuery instanceof FieldExistsQuery);
           }
         }
       }
+    }
+  }
+
+  @Test
+  public void testNestedPureNegativeQuery() throws Exception {
+
+    // Standard sample data with completely unique field values to isolate matches
+    assertU(adoc("id", "9414", "v_t", "pureneg foo bar", "type_t", "negativetest"));
+    assertU(adoc("id", "9415", "v_t", "pureneg foo baz", "type_t", "negativetest"));
+    assertU(adoc("id", "9416", "v_t", "pureneg baz", "type_t", "negativetest"));
+    assertU(commit());
+
+    QParser pLatest = QParser.getParser("-foo", req());
+    assertTrue(
+        "Should default to true on latest luceneMatchVersion", pLatest.isAutoFixPureNegative());
+
+    // Top-level negative query must exclude 'bar' but successfully find our other docs
+    // Force sort by ID so the array index expectations always line up perfectly
+    assertJQ(
+        req("q", "v_t:pureneg AND -v_t:bar", "df", "v_t", "sort", "id asc"),
+        "/response/docs/[0]/id=='9415'",
+        "/response/docs/[1]/id=='9416'");
+
+    // Nested pure negative query inside a parenthesized group with AND
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (-v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    // Nested pure negative query using explicit NOT syntax
+    assertJQ(
+        req("q", "v_t:pureneg AND v_t:foo AND (NOT v_t:bar)", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9415'");
+
+    assertJQ(
+        req("q", "v_t:pureneg NOT v_t:foo", "df", "v_t"),
+        "/response/numFound==1",
+        "/response/docs/[0]/id=='9416'");
+
+    assertJQ(
+        req("q", "NOT v_t:pureneg", "df", "v_t", "fq", "type_t:negativetest"),
+        "/response/numFound==0");
+
+    try (SolrQueryRequest req = req("df", "v_t")) {
+      // Pure negative clause without auto-fix should NOT inject *:*
+      QParser pDisabled = QParser.getParser("-v_t:bar", req);
+      pDisabled.setAutoFixPureNegative(false);
+      assertFalse(
+          "autoFixPureNegative should be false when set explicitly",
+          pDisabled.isAutoFixPureNegative());
+
+      Query qDisabled = pDisabled.parse();
+      assertFalse(
+          "Query should NOT contain MatchAllDocsQuery when autoFixPureNegative is false",
+          qDisabled.toString().contains("*:*"));
+
+      // Sub-query propagation test: Verify subQuery inherits autoFixPureNegative = false
+      QParser subParserDisabled = pDisabled.subQuery("-v_t:bar", null);
+      assertFalse(
+          "subQuery should inherit autoFixPureNegative=false from parent parser",
+          subParserDisabled.isAutoFixPureNegative());
     }
   }
 }

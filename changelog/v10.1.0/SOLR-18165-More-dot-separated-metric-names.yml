@@ -1,0 +1,8 @@
+title: Complete dot-separated metric name migration
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18165
+    url: https://issues.apache.org/jira/browse/SOLR-18165

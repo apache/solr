@@ -18,10 +18,7 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -37,8 +34,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.MapWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,16 +61,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
 
     @Override
     public EntryWriter put(CharSequence k, Object v) throws IOException {
-      if (v instanceof IteratorWriter) {
-        List<Object> lst = new ArrayList<>();
-        ((IteratorWriter) v).toList(lst);
-        v = lst;
-      } else if (v instanceof MapWriter) {
-        Map<String, Object> map = new HashMap<>();
-        ((MapWriter) v).toMap(map);
-        v = map;
-      }
-      tuple.put(k.toString(), v);
+      tuple.put(k.toString(), ExportWriter.materialize(v));
       return this;
     }
   }

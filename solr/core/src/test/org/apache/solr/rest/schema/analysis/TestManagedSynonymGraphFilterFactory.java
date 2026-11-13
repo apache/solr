@@ -20,6 +20,7 @@ package org.apache.solr.rest.schema.analysis;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -150,7 +151,10 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='5150']");
     assertQ(
-        "/select?q=" + newFieldName + ":" + URLEncoder.encode(multiTermOrigin, "UTF-8"),
+        "/select?q="
+            + newFieldName
+            + ":"
+            + URLEncoder.encode(multiTermOrigin, StandardCharsets.UTF_8),
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='040']");
@@ -168,7 +172,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(
-        endpoint + "/" + URLEncoder.encode(multiTermSynonym, "UTF-8"),
+        endpoint + "/" + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8),
         "/" + multiTermSynonym + "==['" + multiTermOrigin + "']");
 
     // should not match as the synonym mapping between mad and angry does not
@@ -184,7 +188,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, "UTF-8")
+            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='0']");
@@ -203,7 +207,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, "UTF-8")
+            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
@@ -241,6 +245,32 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
     // should fail with 404 as some/thing doesn't exist
     assertJDelete(endpoint + "/cheerful/joyful", "/error/code==404");
+  }
+
+  @Test
+  public void testUpstreamTokenTypeIsPreserved() throws Exception {
+    String endpoint = "/schema/analysis/synonyms/englishgraph";
+
+    List<String> equivGroup = Arrays.asList("funny", "entertaining", "whimsical");
+    assertJPut(endpoint, toJSONString(equivGroup), "/responseHeader/status==0");
+
+    assertJQ(endpoint + "/funny", "/funny==['entertaining','funny','whimsical']");
+
+    restTestHarness.reload();
+
+    String analysisUrl = "/analysis/field?analysis.fieldtype=managed_graph_en&analysis.query=funny";
+    String synFilter = "//arr[contains(@name,'SynonymGraphFilter')]";
+    assertQ(
+        analysisUrl,
+        "count("
+            + synFilter
+            + "/lst[str[@name='text'][.='funny']]/str[@name='type'][.='<ALPHANUM>']) = 1",
+        "count("
+            + synFilter
+            + "/lst[str[@name='text'][.='entertaining']]/str[@name='type'][.='SYNONYM']) = 1",
+        "count("
+            + synFilter
+            + "/lst[str[@name='text'][.='whimsical']]/str[@name='type'][.='SYNONYM']) = 1");
   }
 
   /** Can we add and remove stopwords with umlauts */

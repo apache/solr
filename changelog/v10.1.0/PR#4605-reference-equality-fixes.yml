@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix reference-equality comparison bugs in ZkMaintenanceUtils single-file upload and HttpShardHandler onlyNrt detection
+type: fixed
+authors:
+  - name: Jan Høydahl
+links:
+- name: PR#4605
+  url: https://github.com/apache/solr/pull/4605

@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.ErrorLogMuter;
 
 public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
 
@@ -39,6 +40,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
    * errString, asserts that initializing a core with these files causes an error matching the
    * specified errString ot be thrown.
    */
+  @SuppressWarnings("try")
   protected final void assertConfigs(
       final String solrconfigFile,
       final String schemaFile,
@@ -46,9 +48,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
       final String errString)
       throws Exception {
 
-    ignoreException(Pattern.quote(errString));
-    try {
-
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(Pattern.quote(errString))) {
       if (null == solrHome) {
         initCore(solrconfigFile, schemaFile);
       } else {
@@ -65,7 +65,6 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
       throw e;
     } finally {
       deleteCore();
-      resetExceptionIgnores();
     }
     fail("Did not encounter any exception from: " + solrconfigFile + " using " + schemaFile);
   }

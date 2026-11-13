@@ -112,6 +112,7 @@ public class ExecutorUtil {
    * detail on the waiting can be found in {@link #awaitTermination(ExecutorService)}.
    *
    * @param pool The ExecutorService to shut down and wait on
+   * @throws ExecutorTerminationTimeoutException if the pool does not terminate after both waits
    */
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
@@ -120,23 +121,10 @@ public class ExecutorUtil {
   }
 
   /**
-   * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
-   * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
+   * Interrupt the pool's tasks and wait for termination.
    *
-   * <p>This should likely not be used in {@code close()} methods, as we want to time bound when
-   * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
-   * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
-   * case, this method should be used as there is no inherent time bound to waiting on those tasks
-   * to complete.
-   *
-   * @param pool The ExecutorService to shut down and wait on
+   * @throws ExecutorTerminationTimeoutException if the pool does not terminate after both waits
    */
-  public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
-    if (pool == null) return;
-    pool.shutdown(); // Disable new tasks from being submitted
-    awaitTerminationForever(pool);
-  }
-
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdownNow(); // Disable new tasks from being submitted; interrupt existing tasks
@@ -148,6 +136,7 @@ public class ExecutorUtil {
    * shutdown the remaining threads and wait another 60 seconds.
    *
    * @param pool the ExecutorService to wait on
+   * @throws ExecutorTerminationTimeoutException if the pool does not terminate after both waits
    */
   public static void awaitTermination(ExecutorService pool) {
     awaitTermination(pool, 60, TimeUnit.SECONDS);
@@ -164,7 +153,8 @@ public class ExecutorUtil {
         if (!pool.awaitTermination(timeout, unit)) {
           String executorDetails = describeExecutorForLogging(pool);
           log.error("Threads from pool did not forcefully stop. {}", executorDetails);
-          throw new RuntimeException("Timeout waiting for pool to shutdown. " + executorDetails);
+          throw new ExecutorTerminationTimeoutException(
+              "Timeout waiting for pool to shutdown. " + executorDetails);
         }
       }
     } catch (InterruptedException ie) {
@@ -172,6 +162,13 @@ public class ExecutorUtil {
       pool.shutdownNow();
       // Preserve interrupt status
       Thread.currentThread().interrupt();
+    }
+  }
+
+  /** The executor did not terminate within either the graceful or forced shutdown wait. */
+  public static final class ExecutorTerminationTimeoutException extends RuntimeException {
+    private ExecutorTerminationTimeoutException(String message) {
+      super(message);
     }
   }
 

@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -100,7 +101,6 @@ public class StreamHandler extends RequestHandlerBase
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
-    this.solrClientCache = coreContainer.getSolrClientCache();
     this.coreName = core.getName();
     String cacheKey = this.getClass().getName() + "_" + coreName + "_";
     this.objectCache =
@@ -109,17 +109,19 @@ public class StreamHandler extends RequestHandlerBase
             .computeIfAbsent(
                 cacheKey + "objectCache", ConcurrentHashMap.class, k -> new ConcurrentHashMap<>());
     if (coreContainer.isZooKeeperAware()) {
+      this.solrClientCache = coreContainer.getZkController().getSolrClientCache();
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
-      streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
-      streamFactory.withDefaultZkHost(defaultZkhost);
+      var solrConnection = CloudSolrClient.CloudSolrClientConnection.parse(defaultZkhost);
+      streamFactory.withCollectionUseThisConnection(defaultCollection, solrConnection);
+      streamFactory.withDefaultSolrConnection(solrConnection);
       modelCache =
           coreContainer
               .getObjectCache()
               .computeIfAbsent(
                   cacheKey + "modelCache",
                   ModelCache.class,
-                  k -> new ModelCache(250, defaultZkhost, solrClientCache));
+                  k -> new ModelCache(250, solrConnection, solrClientCache));
     }
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 

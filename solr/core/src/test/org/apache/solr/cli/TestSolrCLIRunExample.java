@@ -39,6 +39,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -55,6 +56,11 @@ import org.slf4j.LoggerFactory;
 /** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr start -e [example] */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
+
+  /** Runs the tool. Overridden by the picocli variant of this test. */
+  protected int runTool(RunExampleTool tool, String[] args) throws Exception {
+    return tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
+  }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -321,10 +327,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     for (int pass = 0; pass < 2; pass++) {
       // need a port to start the example server on
-      int bindPort;
-      try (ServerSocket socket = new ServerSocket(0)) {
-        bindPort = socket.getLocalPort();
-      }
+      int bindPort = pickFreePort();
 
       log.info("Selected port {} to start {} example Solr instance on ...", bindPort, exampleName);
 
@@ -349,15 +352,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
       try {
-        int status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+        int status = runTool(tool, toolArgs);
 
         if (status == -1) {
           // maybe it's the port, try again
-          try (ServerSocket socket = new ServerSocket(0)) {
-            bindPort = socket.getLocalPort();
-          }
+          bindPort = pickFreePort();
           Thread.sleep(100);
-          status = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+          status = runTool(tool, toolArgs);
         }
 
         assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
@@ -376,7 +377,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("techproducts".equals(exampleName)) {
         try (SolrClient solrClient =
-            getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName)) {
+            new HttpJettySolrClient.Builder("http://localhost:" + bindPort + "/solr")
+                .withDefaultCollection(exampleName)
+                .build()) {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
           long numFound = qr.getResults().getNumFound();
@@ -427,10 +430,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--example-dir", solrExampleDir.toString()
         };
 
-    int bindPort;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     String collectionName = "testCloudExamplePrompt";
 
@@ -449,7 +449,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, userInputSim, runtime);
     try {
-      tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+      runTool(tool, toolArgs);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -475,7 +475,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // index some docs - to verify all is good for both shards
     try (CloudSolrClient cloudClient =
-        new RandomizingCloudHttp2SolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 List.of(executor.solrCloudCluster.getZkServer().getZkAddress()), Optional.empty())
             .withDefaultCollection(collectionName)
             .build()) {
@@ -519,11 +519,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test the --prompt-inputs option that allows providing all prompt values as a comma-separated
+   * Test the --script-inputs option that allows providing all prompt values as a comma-separated
    * string without requiring interactive input.
    */
   @Test
-  public void testSolrCloudExampleWithPrompts() throws Exception {
+  public void testSolrCloudExampleWithScriptInputs() throws Exception {
     Path solrHomeDir = ExternalPaths.SERVER_HOME;
     if (!Files.isDirectory(solrHomeDir))
       fail(solrHomeDir + " not found and is required to run this test!");
@@ -531,16 +531,13 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrExampleDir = createTempDir();
     Path solrServerDir = solrHomeDir.getParent();
 
-    int bindPort = -1;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
-    String collectionName = "testCloudExampleWithPrompts";
+    String collectionName = "testCloudExampleWithScriptInputs";
 
-    // Provide all prompt values via --prompt-inputs option:
+    // Provide all prompt values via --script-inputs option:
     // numNodes, port1, collectionName, numShards, replicationFactor, configName
-    String promptsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
+    String scriptInputsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
 
     String[] toolArgs =
         new String[] {
@@ -550,8 +547,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           solrServerDir.toString(),
           "--example-dir",
           solrExampleDir.toString(),
-          "--prompt-inputs",
-          promptsValue
+          "--script-inputs",
+          scriptInputsValue
         };
 
     // capture tool output to stdout
@@ -562,7 +559,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     try {
-      tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+      runTool(tool, toolArgs);
     } catch (Exception e) {
       System.err.println(
           "RunExampleTool failed due to: "
@@ -578,7 +575,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String solrUrl = "http://localhost:" + bindPort + "/solr";
     if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
-          "After running Solr cloud example with --prompt-inputs, test collection '"
+          "After running Solr cloud example with --script-inputs, test collection '"
               + collectionName
               + "' not found in Solr at: "
               + solrUrl
@@ -637,10 +634,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrServerDir = solrHomeDir.getParent();
 
     // need a port to start the example server on
-    int bindPort;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     Path toExecute = Path.of(solrExampleDir.toString(), "failExecuteScript");
     try {
@@ -662,7 +656,119 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     ToolRuntime runtime = new CLITestHelper.TestingRuntime(false);
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
-    int code = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
+    int code = runTool(tool, toolArgs);
     assertEquals("Execution should have failed with return code 1", 1, code);
+  }
+
+  @Test
+  public void testMissingDefaultExampleDirectoryExplainsSlimDistribution() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.initDirs(solrServerDir.toString(), null, null, null, "techproducts"));
+
+    assertEquals(
+        "The default example directory does not exist or is not a directory. "
+            + "This is expected when using the slim Solr distribution, which does not include "
+            + "examples. Use the full Solr distribution to run examples, or check that your "
+            + "full installation is complete.",
+        exception.getMessage());
+  }
+
+  @Test
+  public void testMissingDefaultExampleDirectoryExplainsSlimDistributionForFilms()
+      throws Exception {
+    Path solrServerDir = createTestServerDir();
+    String[] toolArgs =
+        new String[] {"--example", "films", "--server-dir", solrServerDir.toString()};
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertEquals(
+        "The default example directory does not exist or is not a directory. "
+            + "This is expected when using the slim Solr distribution, which does not include "
+            + "examples. Use the full Solr distribution to run examples, or check that your "
+            + "full installation is complete.",
+        exception.getMessage());
+  }
+
+  @Test
+  public void testExplicitMissingExampleDirectoryRemainsInvalid() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    Path missingExampleDir = solrServerDir.getParent().resolve("custom-example");
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                tool.initDirs(
+                    solrServerDir.toString(),
+                    null,
+                    missingExampleDir.toString(),
+                    null,
+                    "techproducts"));
+
+    assertTrue(
+        exception.getMessage(),
+        exception.getMessage().startsWith("Value of --example-dir option is invalid! "));
+    assertTrue(exception.getMessage().contains(missingExampleDir.toAbsolutePath().toString()));
+  }
+
+  @Test
+  public void testUnsupportedExampleWithExampleDirectoryPresent() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    Path exampleDir = Files.createDirectory(solrServerDir.getParent().resolve("example"));
+    Path solrHomeDir = createTempDir();
+    String unsupportedExample = "not-an-example";
+    String[] toolArgs =
+        new String[] {
+          "--example", unsupportedExample,
+          "--server-dir", solrServerDir.toString(),
+          "--solr-home", solrHomeDir.toString()
+        };
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertEquals(
+        "Unsupported example "
+            + unsupportedExample
+            + "! Please choose one of: cloud, secure, schemaless, techproducts, or films",
+        exception.getMessage());
+  }
+
+  private Path createTestServerDir() throws IOException {
+    Path installDir = createTempDir();
+    Path serverDir = Files.createDirectory(installDir.resolve("server"));
+    Path solrScript = installDir.resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
+    Files.createDirectories(solrScript.getParent());
+    Files.createFile(solrScript);
+    return serverDir;
+  }
+
+  /** Picks a free port, staying under 64536 so port + 1000 (embedded ZooKeeper) stays valid. */
+  private static int pickFreePort() throws IOException {
+    int port;
+    do {
+      try (ServerSocket socket = new ServerSocket(0)) {
+        port = socket.getLocalPort();
+      }
+    } while (port > 64535);
+    return port;
   }
 }

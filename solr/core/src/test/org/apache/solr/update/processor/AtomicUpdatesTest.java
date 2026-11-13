@@ -1551,7 +1551,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(adoc(sdoc("id", "7", fieldToUpdate, "666")));
       assertQ(
           fieldToUpdate + ": initial RTG",
-          req("qt", "/get", "id", "7"),
+          reqWithPath("/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='666']",
@@ -1565,7 +1565,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(adoc(sdoc("id", "7", fieldToUpdate, Map.of("inc", -555))));
       assertQ(
           fieldToUpdate + ": RTG after atomic update",
-          req("qt", "/get", "id", "7"),
+          reqWithPath("/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='111']",
@@ -1578,7 +1578,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(commit());
       assertQ(
           fieldToUpdate + ": post commit RTG",
-          req("qt", "/get", "id", "7"),
+          reqWithPath("/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='111']",
@@ -1599,7 +1599,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(adoc(sdoc("id", "7", fieldToUpdate, Map.of("inc", "666"))));
       assertQ(
           fieldToUpdate + ": initial RTG#7",
-          req("qt", "/get", "id", "7"),
+          reqWithPath("/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='708']",
@@ -1612,7 +1612,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(adoc(sdoc("id", "7", fieldToUpdate, Map.of("inc", -555))));
       assertQ(
           fieldToUpdate + ": RTG#7 after atomic update",
-          req("qt", "/get", "id", "7"),
+          reqWithPath("/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='153']",
@@ -1626,7 +1626,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(adoc(sdoc("id", "8", fieldToUpdate, Map.of("set", "666"))));
       assertQ(
           fieldToUpdate + ": initial RTG#8",
-          req("qt", "/get", "id", "8"),
+          reqWithPath("/get", "id", "8"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='8']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='666']",
@@ -1639,7 +1639,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertU(adoc(sdoc("id", "8", fieldToUpdate, Map.of("inc", -555))));
       assertQ(
           fieldToUpdate + ": RTG after atomic update",
-          req("qt", "/get", "id", "8"),
+          reqWithPath("/get", "id", "8"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='8']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='111']",
@@ -1653,7 +1653,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
       assertQ(
           fieldToUpdate + ": doc7 post commit RTG",
-          req("qt", "/get", "id", "7"),
+          reqWithPath("/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='153']",
@@ -1664,7 +1664,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
       assertQ(
           fieldToUpdate + ": doc8 post commit RTG",
-          req("qt", "/get", "id", "8"),
+          reqWithPath("/get", "id", "8"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='8']",
           "//doc/int[@name='" + fieldToUpdate + "'][.='111']",

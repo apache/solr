@@ -91,7 +91,9 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
     }
     SolrResponseBase resp;
     try (SolrClient client =
-        getHttpSolrClient(solrInstance.getBaseUrl(), solrInstance.getDefaultCollection())) {
+        new HttpJettySolrClient.Builder(solrInstance.getBaseUrl())
+            .withDefaultCollection(solrInstance.getDefaultCollection())
+            .build()) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();

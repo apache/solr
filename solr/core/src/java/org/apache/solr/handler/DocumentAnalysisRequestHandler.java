@@ -37,8 +37,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -47,6 +45,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,7 +214,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         try {
           termsToMatch =
               (queryValue != null && request.isShowMatch())
-                  ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+                  ? getQueryTokenSet(queryValue, getQueryAnalyzer(fieldType))
                   : EMPTY_BYTES_SET;
         } catch (Exception e) {
           // ignore analysis exceptions since we are applying arbitrary text to all fields
@@ -224,14 +224,14 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
         if (request.getQuery() != null) {
           try {
             AnalysisContext analysisContext =
-                new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), EMPTY_BYTES_SET);
+                new AnalysisContext(fieldType, getQueryAnalyzer(fieldType), EMPTY_BYTES_SET);
             fieldTokens.add("query", analyzeValue(request.getQuery(), analysisContext));
           } catch (Exception e) {
             // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
         }
 
-        Analyzer analyzer = fieldType.getIndexAnalyzer();
+        Analyzer analyzer = getIndexAnalyzer(fieldType);
         AnalysisContext analysisContext = new AnalysisContext(fieldType, analyzer, termsToMatch);
         Collection<Object> fieldValues = document.getFieldValues(name);
         NamedList<NamedList<? extends Object>> indexTokens = new SimpleOrderedMap<>();
@@ -279,7 +279,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     while (true) {
       int event = reader.next();
       switch (event) {
-          // Add everything to the text
+        // Add everything to the text
         case XMLStreamConstants.SPACE:
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:

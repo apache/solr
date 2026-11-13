@@ -22,7 +22,7 @@ many of the world's largest organizations.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
-https://solr.apache.org/solr
+https://solr.apache.org/
 
 How to Use
 ----------
@@ -33,8 +33,9 @@ To get started run
   bin/solr --help
 ```
 
-Solr includes a few examples to help you get started.  For instance, if you want
-to run the techproducts example, enter:
+The full Solr distribution includes a few examples to help you get started.
+Examples are not included in the "slim" release. To run the techproducts example
+from the full distribution, enter:
 
 ```
   bin/solr start -e techproducts
@@ -47,7 +48,7 @@ Support
 -------
 
 - Users Mailing List: https://solr.apache.org/community.html#mailing-lists-chat
-- Slack: Solr Community Channel.  Sign up at https://s.apache.org/solr-slack
+- Slack: #solr-dev channel in the ASF Slack workspace: https://the-asf.slack.com/messages/CE70MDPMF
 - IRC: #solr on libera.chat: https://web.libera.chat/?channels=#solr
 
 
@@ -68,6 +69,7 @@ cross-dc-manager/
   A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
 
 example/
+  (Not included in the "slim" release)
   Contains example documents and an alternative Solr home
   directory containing various examples.
 
@@ -81,8 +83,15 @@ docker/
   `docker/scripts` contains scripts that the Docker image uses to manage Solr.
   Refer to the README.md for instructions on how to build an image.
 
-docs/index.html
-  A link to the online version of Apache Solr Javadoc API documentation and Tutorial
+CHANGELOG.md
+  The list of changes in this release.
+
+Online Documentation
+  The online version of Apache Solr Javadoc API documentation and Tutorial:
+  @SOLR_DOC_URL@
+
+  Changes in this release are also published there, at:
+  @SOLR_CHANGES_URL@
 
 licenses/
   Licenses, notice files and signatures for Solr dependencies.

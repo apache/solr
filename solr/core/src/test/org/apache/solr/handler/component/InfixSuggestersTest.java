@@ -45,7 +45,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   public void test2xBuildReload() throws Exception {
     for (int i = 0; i < 2; ++i) {
       assertQ(
-          req("qt", rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+          reqWithPath(rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
           "//str[@name='command'][.='buildAll']");
       h.reload();
     }
@@ -54,12 +54,12 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   public void testTwoSuggestersBuildThenReload() throws Exception {
     assertQ(
-        req("qt", rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
     h.reload();
 
     assertQ(
-        req("qt", rh_blended_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh_blended_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
     h.reload();
   }
@@ -67,7 +67,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   public void testBuildThen2xReload() throws Exception {
     assertQ(
-        req("qt", rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
     h.reload();
     h.reload();
@@ -76,7 +76,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   public void testAnalyzingInfixSuggesterBuildThenReload() throws Exception {
     assertQ(
-        req("qt", rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
     h.reload();
   }
@@ -84,7 +84,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   public void testBlendedInfixSuggesterBuildThenReload() throws Exception {
     assertQ(
-        req("qt", rh_blended_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
+        reqWithPath(rh_blended_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
         "//str[@name='command'][.='buildAll']");
     h.reload();
   }
@@ -102,11 +102,8 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
                       SolrCoreState.CoreIsClosedException.class,
                       () ->
                           assertQ(
-                              req(
-                                  "qt",
-                                  rh_analyzing_long,
-                                  SuggesterParams.SUGGEST_BUILD_ALL,
-                                  "true"),
+                              reqWithPath(
+                                  rh_analyzing_long, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
                               "//str[@name='command'][.='buildAll']")));
       h.reload();
       // Stop the dictionary's input iterator
@@ -142,11 +139,8 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
                           expected,
                           () ->
                               assertQ(
-                                  req(
-                                      "qt",
-                                      rh_analyzing_long,
-                                      SuggesterParams.SUGGEST_BUILD_ALL,
-                                      "true"),
+                                  reqWithPath(
+                                      rh_analyzing_long, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
                                   "//str[@name='command'][.='buildAll']")));
       Thread.sleep(100); // TODO: is there a better way to ensure that the build has begun?
       h.close();

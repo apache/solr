@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -108,18 +107,16 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), collectionName);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.QT, "/sql");
     params.set("stmt", "select id from " + collectionName);
-    String baseUrl =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + collectionName;
-    SolrStream solrStream = new SolrStream(baseUrl, params);
+    String baseUrl = cluster.getJettySolrRunners().getFirst().getBaseUrl().toString();
+    SolrStream solrStream = new SolrStream(baseUrl, collectionName, "/sql", params);
     solrStream.setCredentials(SAD_USER, PASS);
 
     // sad user is not authorized to access /sql endpoints
     expectThrows(IOException.class, () -> countTuples(solrStream));
 
     // sql user has access
-    SolrStream solrStream2 = new SolrStream(baseUrl, params);
+    SolrStream solrStream2 = new SolrStream(baseUrl, collectionName, "/sql", params);
     solrStream2.setCredentials(SQL_USER, PASS);
     assertEquals(8, countTuples(solrStream2));
   }

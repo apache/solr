@@ -16,18 +16,24 @@ concurrency:
 
 jobs:
   test:
-    name: Build and test Docker image
+    name: Build and test Docker image (${{ matrix.dist }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        dist: [full, slim]
 
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     env:
+      SOLR_DOCKER_DIST: ${{ matrix.dist }}
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - uses: ./.github/actions/prepare-for-build
 

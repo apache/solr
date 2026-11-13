@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -50,59 +49,31 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl(), ANY_COLLECTION)) {
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(NULL_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(EMPTY_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-    }
-
-    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl())) {
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-    }
+  public void testDeleteByIdReportsInvalidIdLists() {
+    SolrClient client = solrTestRule.getSolrClient(ANY_COLLECTION);
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          client.deleteById(NULL_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          client.deleteById(EMPTY_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
   }
 }

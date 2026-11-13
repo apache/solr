@@ -57,7 +57,7 @@ public class JsonRecordReader {
         fieldName = s.substring(0, idx);
         path = s.substring(idx + 1);
       }
-      jsonRecordReader.addField(path, fieldName, true, false);
+      jsonRecordReader.addField(path, fieldName, false);
     }
     return jsonRecordReader;
   }
@@ -82,9 +82,9 @@ public class JsonRecordReader {
       split = split.trim();
       if (split.startsWith("//"))
         throw new RuntimeException("split cannot start with '//': " + split);
-      if (split.length() == 0) continue;
+      if (split.isEmpty()) continue;
       // The created Node has a name set to the full split attribute path
-      addField(split, split, false, true);
+      addField(split, split, true);
     }
   }
 
@@ -95,19 +95,18 @@ public class JsonRecordReader {
    *
    * @param path The path expression for this field
    * @param fieldName The name for this field in the emitted record
-   * @param multiValued If 'true' then the emitted record will have values in a List&lt;String&gt;
    * @param isRecord Flags that this PATH is from a forEach statement
    */
-  private void addField(String path, String fieldName, boolean multiValued, boolean isRecord) {
+  private void addField(String path, String fieldName, boolean isRecord) {
     if (!path.startsWith("/")) throw new RuntimeException("All paths must start with '/' " + path);
     List<String> paths = splitEscapeQuote(path);
-    if (paths.size() == 0) {
+    if (paths.isEmpty()) {
       if (isRecord) rootNode.setAsRecord();
       return; // the path is "/"
     }
     // deal with how split behaves when separator starts with an empty string!
     if (paths.get(0).trim().isEmpty()) paths.remove(0);
-    rootNode.build(paths, fieldName, multiValued, isRecord, path);
+    rootNode.build(paths, fieldName, isRecord, path);
     rootNode.buildOptimize();
   }
 
@@ -138,7 +137,7 @@ public class JsonRecordReader {
   }
 
   public void streamRecords(JSONParser parser, Handler handler) throws IOException {
-    rootNode.parse(parser, handler, new LinkedHashMap<>());
+    rootNode.parse(parser, handler);
   }
 
   /**
@@ -168,12 +167,6 @@ public class JsonRecordReader {
       // Node.pathName and Node.name are set to same value.
       this.name = name;
       parent = p;
-    }
-
-    public Node(String name, String fieldName) {
-      // This is only called from build() when describing an attribute.
-      this.name = name; // a segment from the path
-      this.fieldName = fieldName; // name to store collected values against
     }
 
     void setAsRecord() {
@@ -218,13 +211,12 @@ public class JsonRecordReader {
     private void build(
         List<String> paths, // a List of segments from the split paths
         String fieldName, // the fieldName assoc with this path
-        boolean multiValued, // flag if this fieldName is multiValued or not
         boolean record, // is this path a record or a field
         String path) {
       // recursively walk the paths Lists adding new Nodes as required
       String segment = paths.remove(0); // shift out next path segment
 
-      if (segment.length() < 1)
+      if (segment.isEmpty())
         throw new RuntimeException("all pieces in path must be non empty " + path);
 
       // does this "name" already exist as a child node.
@@ -263,7 +255,7 @@ public class JsonRecordReader {
         if (WILDCARD_PATH.equals(name) || RECURSIVE_WILDCARD_PATH.equals(name))
           throw new RuntimeException("wild cards are allowed only in the end " + path);
         // recurse to handle next paths segment
-        n.build(paths, fieldName, multiValued, record, path);
+        n.build(paths, fieldName, record, path);
       }
     }
 
@@ -275,8 +267,7 @@ public class JsonRecordReader {
       return n;
     }
 
-    private void parse(JSONParser parser, Handler handler, Map<String, Object> values)
-        throws IOException {
+    private void parse(JSONParser parser, Handler handler) throws IOException {
 
       int event = -1;
       boolean recordStarted = false;

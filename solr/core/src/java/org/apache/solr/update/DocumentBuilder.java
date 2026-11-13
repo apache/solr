@@ -207,6 +207,42 @@ public class DocumentBuilder {
                       usedFields);
             }
           }
+        } else if (sfield != null
+            && sfield.multiValued()
+            && !forInPlaceUpdate
+            && sfield.getType().shouldCreateFieldsFromAllValues()) {
+          // Types that must combine a field's values into a single indexable field (e.g. all of a
+          // doc's ranges into one BinaryDocValues blob) receive them together. copyFields stay
+          // per-value.
+          List<Object> values = new ArrayList<>(field.getValueCount());
+          for (Object v : field) {
+            if (v != null) {
+              values.add(v);
+            }
+          }
+          if (!values.isEmpty()) {
+            hasField = true;
+            for (IndexableField f : sfield.getType().createFieldsFromAllValues(sfield, values)) {
+              if (f != null) {
+                out.add(f);
+              }
+            }
+            usedFields.add(sfield.getName());
+            used = true;
+            if (copyFields != null) {
+              for (Object v : values) {
+                addCopyFields(
+                    schema,
+                    v,
+                    sfield.getType(),
+                    copyFields,
+                    forInPlaceUpdate,
+                    uniqueKeyFieldName,
+                    out,
+                    usedFields);
+              }
+            }
+          }
         } else {
           Iterator<?> it = field.iterator();
           while (it.hasNext()) {

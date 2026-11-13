@@ -16,11 +16,12 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
+  function($scope, $route, $routeParams, $location, $timeout, Query, Constants, ParamSetsV2, ApiErrorHandler){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
+    $scope.facetFields = [{value:""}];
     $scope.rawParams = [{rawParam:""}];
     $scope.val = {};
     $scope.val['q'] = "*:*";
@@ -29,28 +30,28 @@ solrAdminApp.controller('QueryController',
     $scope.val['indent'] = true;
     $scope.useParams = [];
 
-    getParamsets();
+    // isCloudEnabled populates asynchronously via resetMenu(), so calling getParamsets()
+    // synchronously here would race it and fall back to indexType "cores" even in SolrCloud --
+    // wait for isCloudEnabled to settle before the first fetch (see paramsets.js for the same fix).
+    var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+      if (value === undefined) return;
+      unwatchCloudEnabled();
+      getParamsets();
+    });
 
     function getParamsets() {
+      // The v2 config/paramsets API needs to know up front whether ":core" is a collection name
+      // (SolrCloud) or an actual core name (standalone/user-managed); see paramsets.js for details.
+      var indexType = $scope.isCloudEnabled ? "collections" : "cores";
 
-      var params = {};
-      params.core = $routeParams.core;
-      params.wt = "json";
+      ParamSetsV2.listParamSets(indexType, $routeParams.core, function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); $scope.responseStatus = response; return; }
 
-      ParamSet.get(params, callback, failure);
-
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
-      }
-
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
+          $scope.responseStatus = "success";
+          $scope.paramsetList = data.params ? Object.keys(data.params) : [];
+        });
+      });
     }
 
     // get list of ng-models that have a form element
@@ -72,6 +73,8 @@ solrAdminApp.controller('QueryController',
         // filters and rawParams are handled specially because of possible multiple values
         if( p === "fq" ) {
             addFilters(urlParams[p]);
+        } else if( p === "facet.field" ) {
+            addFacetFields(urlParams[p]);
         } else {
             setParam(p, urlParams[p]);
         }
@@ -125,6 +128,18 @@ solrAdminApp.controller('QueryController',
             }
           } else {
             $scope.filters.push({fq: argObject});
+          }
+      }
+    }
+    function addFacetFields(argObject){
+      if( argObject ){
+        $scope.facetFields = [];
+          if( Array.isArray(argObject) ){
+            for( var i = 0, iLen = argObject.length; i<iLen; i++ ){
+              $scope.facetFields.push({value: argObject[i]});
+            }
+          } else {
+            $scope.facetFields.push({value: argObject});
           }
       }
     }
@@ -187,6 +202,12 @@ solrAdminApp.controller('QueryController',
 
       for (var filter in $scope.filters) {
         copy(params, $scope.filters[filter]);
+      }
+
+      for (var fi in $scope.facetFields) {
+        if ($scope.facetFields[fi].value) {
+          set("facet.field", $scope.facetFields[fi].value);
+        }
       }
 
       for (var rawIndex in $scope.rawParams) {
@@ -293,6 +314,16 @@ solrAdminApp.controller('QueryController',
     };
     $scope.addFilter = function(index) {
       $scope.filters.splice(index+1, 0, {fq:""});
+    };
+    $scope.removeFacetField = function(index) {
+      if ($scope.facetFields.length === 1) {
+        $scope.facetFields = [{value: ""}];
+      } else {
+        $scope.facetFields.splice(index, 1);
+      }
+    };
+    $scope.addFacetField = function(index) {
+      $scope.facetFields.splice(index+1, 0, {value:""});
     };
     $scope.removeRawParam = function (index) {
       if ($scope.rawParams.length === 1) {

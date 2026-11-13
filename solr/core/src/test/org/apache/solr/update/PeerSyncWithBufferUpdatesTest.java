@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.Test;
@@ -82,8 +83,11 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     }
 
     // it restarted and must do PeerSync
-    SolrCore jetty1Core = jettys.get(1).getCoreContainer().getCores().iterator().next();
-    jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
+    CoreContainer jetty1Cores = jettys.get(1).getCoreContainer();
+    String jetty1CoreName = jetty1Cores.getLoadedCoreNames().get(0);
+    try (SolrCore jetty1Core = jetty1Cores.getCore(jetty1CoreName)) {
+      jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
+    }
     for (int i = 16; i <= 20; i++) {
       add(client0, seenLeader, sdoc("id", String.valueOf(i), "_version_", ++v));
       add(client1, seenLeader, sdoc("id", String.valueOf(i), "_version_", v));
@@ -105,7 +109,9 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     add(client1, seenLeader, sdoc("id", "22", "_version_", v - 1));
 
     log.info("Apply buffered updates");
-    jetty1Core.getUpdateHandler().getUpdateLog().applyBufferedUpdates().get();
+    try (SolrCore jetty1Core = jetty1Cores.getCore(jetty1CoreName)) {
+      jetty1Core.getUpdateHandler().getUpdateLog().applyBufferedUpdates().get();
+    }
 
     for (int i = 1; i <= 23; i++) docsAdded.add(i);
 
@@ -121,7 +127,9 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     }
 
     log.info("After buffer updates");
-    jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
+    try (SolrCore jetty1Core = jetty1Cores.getCore(jetty1CoreName)) {
+      jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
+    }
     Set<Integer> docIds = new HashSet<>();
 
     for (int i = 0; i <= 50; i++) {
@@ -193,13 +201,8 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
-            params(
-                "qt",
-                "/get",
-                "getVersions",
-                Integer.toString(numVersions),
-                "syncWithLeader",
-                syncWith));
+            "/get",
+            params("getVersions", Integer.toString(numVersions), "syncWithLeader", syncWith));
     NamedList<?> rsp = client.request(qr);
     assertEquals(true, rsp.get("syncWithLeader"));
   }

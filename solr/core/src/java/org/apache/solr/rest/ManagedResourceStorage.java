@@ -308,13 +308,8 @@ public abstract class ManagedResourceStorage {
             public void close() {
               byte[] znodeData = toByteArray();
               try {
-                if (zkClient.exists(znodePath)) {
-                  zkClient.setData(znodePath, znodeData);
-                  log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
-                } else {
-                  zkClient.makePath(znodePath, znodeData);
-                  log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
-                }
+                zkClient.makePath(znodePath, znodeData, false);
+                log.info("Wrote {} bytes to znode {}", znodeData.length, znodePath);
               } catch (Exception e) {
                 // have to throw a runtimer here as we're in close,
                 // which doesn't throw IOException

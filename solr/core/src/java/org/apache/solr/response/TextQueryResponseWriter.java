@@ -24,9 +24,10 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.ContentStreamBase;
 
 /** A writer supporting character streams ({@link Writer} based). */
 public interface TextQueryResponseWriter extends QueryResponseWriter {
@@ -70,7 +71,7 @@ public interface TextQueryResponseWriter extends QueryResponseWriter {
     Writer writer =
         (charset == null)
             ? new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)
-            : new OutputStreamWriter(outputStream, charset);
+            : new OutputStreamWriter(outputStream, IOUtils.charsetForName(charset));
 
     return new FastWriter(writer); // note: buffered; therefore we need to call flush()
   }

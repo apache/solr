@@ -20,19 +20,23 @@ package org.apache.solr.cli;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +53,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -58,6 +64,21 @@ import org.noggit.JSONWriter;
  * <p>Enhances start command by providing an interactive session with the user to launch (or
  * relaunch the -e cloud example)
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "run_example",
+    hidden = true,
+    description =
+        "Enhances the start command by providing an interactive session with the user to launch"
+            + " (or relaunch) one of the bundled examples.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Launch the interactive SolrCloud example",
+      "  bin/solr start -e cloud",
+      "",
+      "  # Launch the techproducts example, accepting all prompt defaults",
+      "  bin/solr start -e techproducts --no-prompt"
+    })
 public class RunExampleTool extends ToolBase {
 
   private static final String PROMPT_FOR_NUMBER = "Please enter %s [%d]: ";
@@ -68,6 +89,11 @@ public class RunExampleTool extends ToolBase {
   private static final String PROMPT_NUMBER_TOO_LARGE =
       "%d is too large! " + PROMPT_FOR_NUMBER_IN_RANGE;
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option NO_PROMPT_OPTION =
       Option.builder("y")
           .longOpt("no-prompt")
@@ -75,25 +101,41 @@ public class RunExampleTool extends ToolBase {
               "Don't prompt for input; accept all defaults when running examples that accept user input.")
           .get();
 
-  private static final Option PROMPT_INPUTS_OPTION =
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
+  private static final Option SCRIPT_INPUTS_OPTION =
       Option.builder()
-          .longOpt("prompt-inputs")
+          .longOpt("script-inputs")
           .hasArg()
           .argName("VALUES")
           .desc(
-              "Provide comma-separated values for prompts. Same as --no-prompt but uses provided values instead of defaults. "
-                  + "Example: --prompt-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+              "Provide comma-separated values for the interactive session's prompts. Same as --no-prompt but uses provided values instead of defaults. "
+                  + "Example: --script-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
           .build();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option EXAMPLE_OPTION =
       Option.builder("e")
           .longOpt("example")
           .hasArg()
           .argName("NAME")
           .required()
-          .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
+          .desc(
+              "Name of the example to launch, one of: cloud, secure, techproducts, schemaless, films.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SCRIPT_OPTION =
       Option.builder()
           .longOpt("script")
@@ -102,6 +144,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Path to the bin/solr script.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SERVER_DIR_OPTION =
       Option.builder("d")
           .longOpt("server-dir")
@@ -111,6 +158,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Path to the Solr server directory.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
@@ -118,6 +170,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Force option in case Solr is run as root.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option EXAMPLE_DIR_OPTION =
       Option.builder()
           .longOpt("example-dir")
@@ -127,6 +184,11 @@ public class RunExampleTool extends ToolBase {
               "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SOLR_HOME_OPTION =
       Option.builder()
           .longOpt("solr-home")
@@ -137,6 +199,11 @@ public class RunExampleTool extends ToolBase {
               "Path to the Solr home directory; if not provided, ${serverDir}/solr is expected to exist.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option URL_SCHEME_OPTION =
       Option.builder()
           .longOpt("url-scheme")
@@ -145,6 +212,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Solr URL scheme: http or https, defaults to http if not specified.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
@@ -153,6 +225,11 @@ public class RunExampleTool extends ToolBase {
           .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option HOST_OPTION =
       Option.builder()
           .longOpt("host")
@@ -161,9 +238,19 @@ public class RunExampleTool extends ToolBase {
           .desc("Specify the hostname for this Solr instance.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option USER_MANAGED_OPTION =
       Option.builder().longOpt("user-managed").desc("Start Solr in User Managed mode.").get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option MEMORY_OPTION =
       Option.builder("m")
           .longOpt("memory")
@@ -173,6 +260,11 @@ public class RunExampleTool extends ToolBase {
               "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option JVM_OPTS_OPTION =
       Option.builder()
           .longOpt("jvm-opts")
@@ -188,7 +280,166 @@ public class RunExampleTool extends ToolBase {
   protected Path exampleDir;
   protected Path solrHomeDir;
   protected String urlScheme;
-  private boolean usingPromptInputs = false;
+  private boolean usingScriptInputs = false;
+
+  /**
+   * Parameters consumed when starting a single Solr node via the bin/solr script, common to all
+   * example modes.
+   *
+   * @param extraArgs extra arguments to pass on to the {@code bin/solr start} command
+   */
+  record StartSolrParams(
+      String example,
+      String host,
+      String memory,
+      String jvmOpts,
+      boolean force,
+      String credentials,
+      List<String> extraArgs) {}
+
+  /**
+   * Parameters for running a single-node example (techproducts, schemaless or films), independent
+   * of the command line parser.
+   *
+   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
+   */
+  record RunExampleParams(boolean isCloudMode, String zkHost, int port, StartSolrParams start) {}
+
+  /**
+   * Parameters for running the multi-node cloud example, independent of the command line parser.
+   *
+   * @param scriptInputs comma-separated answers to the example's prompts, or null to run the
+   *     interactive session instead
+   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
+   * @param basePort first node port; remaining nodes use basePort+1..+3 unless prompted otherwise
+   */
+  record CloudExampleParams(
+      boolean noPrompt, String scriptInputs, String zkHost, int basePort, StartSolrParams start) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = {"-y", "--no-prompt"},
+      description =
+          "Don't prompt for input; accept all defaults when running examples that accept user"
+              + " input.")
+  private boolean noPromptOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--script-inputs",
+      paramLabel = "VALUES",
+      description =
+          "Provide comma-separated values for prompts. Same as --no-prompt but uses provided"
+              + " values instead of defaults. Example: --script-inputs"
+              + " 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+  private String scriptInputsOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-e", "--example"},
+      required = true,
+      paramLabel = "NAME",
+      description =
+          "Name of the example to launch, one of: cloud, secure, techproducts, schemaless, films.")
+  private String exampleOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--script",
+      paramLabel = "PATH",
+      description = "Path to the bin/solr script.")
+  private String scriptOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-d", "--server-dir"},
+      required = true,
+      paramLabel = "DIR",
+      description = "Path to the Solr server directory.")
+  private String serverDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-f", "--force"},
+      description = "Force option in case Solr is run as root.")
+  private boolean forceOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--example-dir",
+      paramLabel = "DIR",
+      description =
+          "Path to the Solr example directory; if not provided, ${serverDir}/../example is"
+              + " expected to exist.")
+  private String exampleDirOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--solr-home",
+      paramLabel = "SOLR_HOME_DIR",
+      description =
+          "Path to the Solr home directory; if not provided, ${serverDir}/solr is expected to"
+              + " exist.")
+  private String solrHomeOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--url-scheme",
+      defaultValue = "http",
+      paramLabel = "SCHEME",
+      description = "Solr URL scheme: http or https, defaults to http if not specified.")
+  private String urlSchemeOpt;
+
+  // No explicit paramLabel: the default "<port>" is what CliDefaultValueProvider keys on, giving
+  // the solr.port.listen property / SOLR_PORT_LISTEN, else 8983, as under commons-cli.
+  @picocli.CommandLine.Option(
+      names = {"-p", "--port"},
+      description = "Specify the port to start the Solr HTTP listener on; default is 8983.")
+  private int port;
+
+  @picocli.CommandLine.Option(
+      names = "--host",
+      paramLabel = "HOSTNAME",
+      description = "Specify the hostname for this Solr instance.")
+  private String hostOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--user-managed",
+      description = "Start Solr in User Managed mode.")
+  private boolean userManagedOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-m", "--memory"},
+      paramLabel = "MEM",
+      description =
+          "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in:"
+              + " -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
+  private String memoryOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--jvm-opts",
+      paramLabel = "OPTS",
+      description =
+          "Additional options to be passed to the JVM when starting example Solr server(s).")
+  private String jvmOptsOpt;
+
+  // Likewise "<zkHost>": the zkHost property / ZK_HOST, else null.
+  @picocli.CommandLine.Option(
+      names = {"-z", "--zk-host"},
+      description = "Zookeeper connection string.")
+  private String zkHost;
+
+  @picocli.CommandLine.Parameters(
+      arity = "0..*",
+      paramLabel = "ARG",
+      description = "Extra arguments passed through to the underlying bin/solr start command.")
+  private String[] extraArgsOpt = new String[0];
+
+  /**
+   * Options picocli does not know. {@code bin/solr start -e <example> -Dfoo=bar} forwards the
+   * {@code -D} system properties here; they are kept as extra arguments, as {@code
+   * SolrCLI.parseCmdLine} does for commons-cli, and anything else is an unknown option.
+   */
+  @picocli.CommandLine.Unmatched private List<String> unmatchedOpts = new ArrayList<>();
+
+  @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
+
+  public RunExampleTool() {
+    this(new DefaultToolRuntime());
+  }
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
@@ -210,7 +461,7 @@ public class RunExampleTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(NO_PROMPT_OPTION)
-        .addOption(PROMPT_INPUTS_OPTION)
+        .addOption(SCRIPT_INPUTS_OPTION)
         .addOption(EXAMPLE_OPTION)
         .addOption(SCRIPT_OPTION)
         .addOption(SERVER_DIR_OPTION)
@@ -228,23 +479,116 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(PROMPT_INPUTS_OPTION)) {
+    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(SCRIPT_INPUTS_OPTION)) {
       throw new IllegalArgumentException(
-          "Cannot use both --no-prompt and --prompt-inputs options together. "
-              + "Use --no-prompt to accept defaults, or --prompt-inputs to provide specific values.");
+          "Cannot use both --no-prompt and --script-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --script-inputs to provide specific values.");
     }
 
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
     String exampleType = cli.getOptionValue(EXAMPLE_OPTION);
 
-    serverDir = Path.of(cli.getOptionValue(SERVER_DIR_OPTION));
+    initDirs(
+        cli.getOptionValue(SERVER_DIR_OPTION),
+        cli.getOptionValue(SCRIPT_OPTION),
+        cli.getOptionValue(EXAMPLE_DIR_OPTION),
+        cli.getOptionValue(SOLR_HOME_OPTION),
+        exampleType);
+
+    echoIfVerbose(
+        "Running with\nserverDir="
+            + serverDir.toAbsolutePath()
+            + ",\nexampleDir="
+            + exampleDir.toAbsolutePath()
+            + ",\nsolrHomeDir="
+            + solrHomeDir.toAbsolutePath()
+            + "\nscript="
+            + script);
+
+    if (!"cloud".equals(exampleType)
+        && !"secure".equals(exampleType)
+        && !"techproducts".equals(exampleType)
+        && !"schemaless".equals(exampleType)
+        && !"films".equals(exampleType)) {
+      throw new IllegalArgumentException(
+          "Unsupported example "
+              + exampleType
+              + "! Please choose one of: cloud, secure, schemaless, techproducts, or films");
+    }
+
+    StartSolrParams startParams =
+        new StartSolrParams(
+            exampleType,
+            cli.getOptionValue(HOST_OPTION),
+            cli.getOptionValue(MEMORY_OPTION),
+            cli.getOptionValue(JVM_OPTS_OPTION),
+            cli.hasOption(FORCE_OPTION),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            readExtraArgs(cli.getArgs()));
+    String zkHost =
+        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
+    int port =
+        Integer.parseInt(
+            cli.getOptionValue(
+                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
+    validatePort(port);
+
+    if ("cloud".equals(exampleType)) {
+      runCloudExample(
+          new CloudExampleParams(
+              cli.hasOption(NO_PROMPT_OPTION),
+              cli.getOptionValue(SCRIPT_INPUTS_OPTION),
+              zkHost,
+              port,
+              startParams));
+    } else if ("secure".equals(exampleType)) {
+      runSecureExample(
+          new CloudExampleParams(
+              cli.hasOption(NO_PROMPT_OPTION),
+              cli.getOptionValue(SCRIPT_INPUTS_OPTION),
+              zkHost,
+              port,
+              startParams),
+          cli.hasOption(USER_MANAGED_OPTION));
+    } else {
+      runExample(
+          new RunExampleParams(!cli.hasOption(USER_MANAGED_OPTION), zkHost, port, startParams));
+    }
+  }
+
+  /**
+   * Rejects ports outside the range bin/solr's embedded ZooKeeper (port + 1000) can support, for
+   * every example type.
+   */
+  private static void validatePort(int port) {
+    if (port < 1024 || port > 64535) {
+      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
+    }
+  }
+
+  /**
+   * Resolves and validates the server, example and Solr home directories plus the bin/solr script
+   * from the given raw values, seeding the corresponding tool state.
+   */
+  void initDirs(
+      String serverDirArg,
+      String scriptArg,
+      String exampleDirArg,
+      String solrHomeArg,
+      String exampleType)
+      throws Exception {
+    if ("secure".equals(exampleType) && CLIUtils.isWindows()) {
+      throw new IllegalArgumentException(
+          "The secure example requires Unix or macOS; Windows is not supported.");
+    }
+    serverDir = Path.of(serverDirArg);
     if (!Files.isDirectory(serverDir))
       throw new IllegalArgumentException(
           "Value of --server-dir option is invalid! "
               + serverDir.toAbsolutePath()
               + " is not a directory!");
 
-    script = cli.getOptionValue(SCRIPT_OPTION);
+    script = scriptArg;
     if (script != null) {
       if (!Files.isRegularFile(Path.of(script)))
         throw new IllegalArgumentException(
@@ -263,71 +607,560 @@ public class RunExampleTool extends ToolBase {
     }
 
     exampleDir =
-        (cli.hasOption(EXAMPLE_DIR_OPTION))
-            ? Path.of(cli.getOptionValue(EXAMPLE_DIR_OPTION))
-            : serverDir.getParent().resolve("example");
-    if (!Files.isDirectory(exampleDir))
+        (exampleDirArg != null) ? Path.of(exampleDirArg) : serverDir.getParent().resolve("example");
+    boolean exampleDirIsDirectory = Files.isDirectory(exampleDir);
+    if (!exampleDirIsDirectory && exampleDirArg != null) {
       throw new IllegalArgumentException(
           "Value of --example-dir option is invalid! "
               + exampleDir.toAbsolutePath()
               + " is not a directory!");
+    }
+    if (!exampleDirIsDirectory) {
+      throw new IllegalArgumentException(
+          "The default example directory does not exist or is not a directory. "
+              + "This is expected when using the slim Solr distribution, which does not include "
+              + "examples. Use the full Solr distribution to run examples, or check that your "
+              + "full installation is complete.");
+    }
 
-    if (cli.hasOption(SOLR_HOME_OPTION)) {
-      solrHomeDir = Path.of(cli.getOptionValue(SOLR_HOME_OPTION));
+    if (solrHomeArg != null) {
+      solrHomeDir = Path.of(solrHomeArg);
     } else {
       String solrHomeProp = EnvUtils.getProperty("solr.home");
       if (solrHomeProp != null && !solrHomeProp.isEmpty()) {
         solrHomeDir = Path.of(solrHomeProp);
-      } else if ("cloud".equals(exampleType)) {
-        solrHomeDir = exampleDir.resolve("cloud");
+      } else if ("cloud".equals(exampleType) || "secure".equals(exampleType)) {
+        solrHomeDir = exampleDir.resolve(exampleType);
         if (!Files.isDirectory(solrHomeDir)) Files.createDirectory(solrHomeDir);
       } else {
         solrHomeDir = serverDir.resolve("solr");
       }
     }
+    if ("secure".equals(exampleType)) Files.createDirectories(solrHomeDir);
     if (!Files.isDirectory(solrHomeDir))
       throw new IllegalArgumentException(
           "Value of --solr-home option is invalid! "
               + solrHomeDir.toAbsolutePath()
               + " is not a directory!");
+  }
 
-    echoIfVerbose(
-        "Running with\nserverDir="
-            + serverDir.toAbsolutePath()
-            + ",\nexampleDir="
-            + exampleDir.toAbsolutePath()
-            + ",\nsolrHomeDir="
-            + solrHomeDir.toAbsolutePath()
-            + "\nscript="
-            + script);
-
-    if ("cloud".equals(exampleType)) {
-      runCloudExample(cli);
-    } else if ("techproducts".equals(exampleType)
-        || "schemaless".equals(exampleType)
-        || "films".equals(exampleType)) {
-      runExample(cli, exampleType);
-    } else {
+  /** Runs the equivalent steps of the Ref Guide security tutorial */
+  void runSecureExample(CloudExampleParams params, boolean userManaged) throws Exception {
+    StartSolrParams start = params.start();
+    if (userManaged || params.zkHost() != null) {
       throw new IllegalArgumentException(
-          "Unsupported example "
-              + exampleType
-              + "! Please choose one of: cloud, schemaless, techproducts, or films");
+          "The secure example requires its own embedded ZooKeeper in SolrCloud mode.");
+    }
+    if (start.host() != null
+        || start.jvmOpts() != null
+        || !start.extraArgs().isEmpty()
+        || params.scriptInputs() != null
+        || System.getenv("SOLR_DATA_HOME") != null) {
+      throw new IllegalArgumentException(
+          "Unsupported argument provided.  'secure' example currently only supports: --solr-home,"
+              + " -p, --no-prompt, -m, or --force.");
+    }
+    int port = params.basePort();
+    String password = generateSecureExamplePassword();
+    Path home = solrHomeDir.toAbsolutePath().normalize();
+    echo(
+        "Commands below use paths relative to "
+            + serverDir.getParent().toAbsolutePath().normalize());
+    Path tls = home.resolve("tls");
+    Path include = tls.resolve("solr.in.sh");
+    String zkHost = "localhost:" + (port + 1000);
+    Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
+    environment.put("SOLR_INCLUDE", include.toString());
+    environment.put("SOLR_ULIMIT_CHECKS", "false");
+    environment.put("SOLR_PID_DIR", home.toString());
+    environment.put("SOLR_HOME", tls.toString());
+    environment.remove("SOLR_ZK_CREDS_AND_ACLS");
+    environment.remove("ZK_HOST");
+    echo(
+        "Generated password: "
+            + password
+            + " (used for the keystore and all basic-auth/ZooKeeper demonstration accounts below).");
+    echo("ZooKeeper is protected by digest ACLs; its transport remains plaintext on loopback.");
+    if (!params.noPrompt()) {
+      prompt(
+          userInputScanner(),
+          "Press Enter to delete and recreate "
+              + secureExampleDisplayArgument(home.toString())
+              + ", or Ctrl-C to cancel: ",
+          "");
+    }
+    resetSecureExampleHome(home, environment);
+    Files.setPosixFilePermissions(home, PosixFilePermissions.fromString("rwx------"));
+    Files.createDirectories(tls);
+    Files.setPosixFilePermissions(tls, PosixFilePermissions.fromString("rwx------"));
+    for (String node : List.of("node1", "node2")) {
+      Path nodeHome = Files.createDirectories(home.resolve(node).resolve("solr"));
+      for (String file : List.of("solr.xml", "zoo.cfg")) {
+        Files.copy(serverDir.resolve("solr").resolve(file), nodeHome.resolve(file));
+      }
+    }
+    writeSecureExampleFile(
+        include,
+        String.format(
+            Locale.ROOT,
+            """
+            SOLR_ULIMIT_CHECKS=false
+            SOLR_HOST_BIND=127.0.0.1
+            SOLR_HOST_ADVERTISE=127.0.0.1
+            SOLR_PID_DIR=%s
+            SOLR_OPTS=%s
+            """,
+            secureExampleShellQuote(home.toString()),
+            secureExampleShellQuote("-Dsolr.security.allow.paths=" + home)));
+    boolean ready = false;
+    try {
+      echo("\n");
+      echo("1. Start both nodes.");
+      startSecureNodes(params, home, environment, zkHost);
+      for (int nodePort : List.of(port, port + 1)) {
+        waitForSecureExample(
+            environment, tls, null, "http://localhost:" + nodePort + "/api/node/health");
+      }
+      stopSecureNodes(port, environment);
+
+      echo("\n");
+      echo("2. Generate a self-signed certificate and PKCS12 key and trust stores.");
+      String keytool = Path.of(EnvUtils.getProperty("java.home"), "bin", "keytool").toString();
+      runSecureCommand(
+          environment,
+          keytool,
+          "-genkeypair",
+          "-alias",
+          "solr-ssl",
+          "-keyalg",
+          "RSA",
+          "-keysize",
+          "2048",
+          "-validity",
+          "365",
+          "-dname",
+          "CN=localhost",
+          "-ext",
+          "SAN=DNS:localhost,IP:127.0.0.1",
+          "-storetype",
+          "PKCS12",
+          "-keystore",
+          tls.resolve("solr-ssl.keystore.p12").toString(),
+          "-storepass",
+          password,
+          "-keypass",
+          password);
+      runSecureCommand(
+          environment,
+          keytool,
+          "-exportcert",
+          "-rfc",
+          "-alias",
+          "solr-ssl",
+          "-keystore",
+          tls.resolve("solr-ssl.keystore.p12").toString(),
+          "-storetype",
+          "PKCS12",
+          "-storepass",
+          password,
+          "-file",
+          tls.resolve("cert.pem").toString());
+      runSecureCommand(
+          environment,
+          keytool,
+          "-importcert",
+          "-noprompt",
+          "-alias",
+          "solr-ssl",
+          "-file",
+          tls.resolve("cert.pem").toString(),
+          "-storetype",
+          "PKCS12",
+          "-keystore",
+          tls.resolve("solr-ssl.truststore.p12").toString(),
+          "-storepass",
+          password);
+      runSecureCommand(
+          environment,
+          "openssl",
+          "x509",
+          "-in",
+          tls.resolve("cert.pem").toString(),
+          "-noout",
+          "-subject",
+          "-dates");
+      Files.writeString(
+          include,
+          String.format(
+              Locale.ROOT,
+              """
+              SOLR_SSL_ENABLED=true
+              SOLR_SSL_KEY_STORE=%s
+              SOLR_SSL_KEY_STORE_TYPE=PKCS12
+              SOLR_SSL_KEY_STORE_PASSWORD=%s
+              SOLR_SSL_TRUST_STORE=%s
+              SOLR_SSL_TRUST_STORE_TYPE=PKCS12
+              SOLR_SSL_TRUST_STORE_PASSWORD=%s
+              SOLR_SSL_CLIENT_TRUST_STORE=${SOLR_SSL_CLIENT_TRUST_STORE:-%s}
+              SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12
+              SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=%s
+              SOLR_SSL_NEED_CLIENT_AUTH=false
+              SOLR_SSL_WANT_CLIENT_AUTH=false
+              SOLR_SSL_CHECK_PEER_NAME=true
+              """,
+              secureExampleShellQuote(tls.resolve("solr-ssl.keystore.p12").toString()),
+              secureExampleShellQuote(password),
+              secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString()),
+              secureExampleShellQuote(password),
+              secureExampleShellQuote(tls.resolve("solr-ssl.truststore.p12").toString()),
+              secureExampleShellQuote(password)),
+          StandardOpenOption.APPEND);
+      for (String file : List.of("solr-ssl.keystore.p12", "solr-ssl.truststore.p12")) {
+        Files.setPosixFilePermissions(
+            tls.resolve(file), PosixFilePermissions.fromString("rw-------"));
+      }
+
+      echo("\n");
+      echo("3. Restart both nodes with HTTPS and verify the certificate.");
+      startSecureNodes(params, home, environment, zkHost);
+      for (int nodePort : List.of(port, port + 1)) {
+        waitForSecureExample(
+            environment,
+            tls,
+            "admin:" + password,
+            "https://localhost:" + nodePort + "/api/node/health");
+      }
+      echo("\n");
+      echo("\n");
+      echo(
+          "4. Enable Basic Authentication and configure administrator, indexing, and search accounts.");
+      runSecureCommand(
+          environment,
+          script,
+          "auth",
+          "enable",
+          "--type",
+          "basicAuth",
+          "--credentials",
+          "admin:" + password,
+          "--block-unknown",
+          "true",
+          "-z",
+          zkHost);
+      waitForSecureExample(
+          environment, tls, "admin:" + password, "https://localhost:" + port + "/api/node/health");
+      secureExampleRequest(
+          environment,
+          tls,
+          port,
+          password,
+          "/api/cluster/security/authentication",
+          String.format(
+              Locale.ROOT,
+              """
+              {
+                "set-user": {
+                  "index": "%s",
+                  "search": "%s"
+                }
+              }
+              """,
+              password,
+              password));
+      secureExampleRequest(
+          environment,
+          tls,
+          port,
+          password,
+          "/api/cluster/security/authorization",
+          """
+          {
+            "update-permission": {"index": 9, "role": ["admin", "search"]},
+            "set-user-role": {
+              "admin": ["superadmin", "admin"],
+              "index": ["index", "search"],
+              "search": ["search"]
+            }
+          }
+          """);
+
+      echo("\n");
+      echo("\n");
+      echo(
+          "5. Configure ZooKeeper digest accounts and migrate existing znodes to restricted ACLs.");
+      Path credentials = tls.resolve("zk-credentials.properties");
+      writeSecureExampleFile(
+          credentials,
+          String.format(
+              Locale.ROOT,
+              """
+              zkDigestUsername=zk-admin
+              zkDigestPassword=%s
+              zkDigestReadonlyUsername=zk-readonly
+              zkDigestReadonlyPassword=%s
+              """,
+              password,
+              password));
+      String zkOptions =
+          "-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector "
+              + "-DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider "
+              + "-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ";
+      String zkSettings =
+          String.format(
+              Locale.ROOT,
+              """
+
+              SOLR_ZK_CREDS_AND_ACLS=%s
+              SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+              """,
+              secureExampleShellQuote(zkOptions + "-DzkDigestCredentialsFile=" + credentials));
+      Files.writeString(include, zkSettings, StandardOpenOption.APPEND);
+      echo("Added ZooKeeper settings to " + secureExampleDisplayArgument(include.toString()) + ":");
+      echo(zkSettings.strip());
+      stopSecureNodes(port, environment);
+      startSecureNodes(params, home, environment, zkHost);
+      for (int nodePort : List.of(port, port + 1)) {
+        waitForSecureExample(
+            environment,
+            tls,
+            "admin:" + password,
+            "https://localhost:" + nodePort + "/api/node/health");
+      }
+      runSecureCommand(environment, script, "zk", "updateacls", "/", "-z", zkHost);
+      Map<String, String> adminEnvironment = new HashMap<>(environment);
+      adminEnvironment.put("SOLR_INCLUDE", "/dev/null");
+      adminEnvironment.put(
+          "SOLR_ZK_CREDS_AND_ACLS",
+          zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=" + password);
+      runSecureCommand(
+          adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
+
+      echo("\n");
+      echo("6. Create one shard per node and index the techproducts documents over HTTPS.");
+      runSecureCommand(
+          environment,
+          script,
+          "create",
+          "-c",
+          "techproducts",
+          "--shards",
+          "2",
+          "--replication-factor",
+          "1",
+          "--conf-dir",
+          serverDir
+              .resolve("solr/configsets/sample_techproducts_configs/conf")
+              .toAbsolutePath()
+              .toString(),
+          "--solr-url",
+          "https://localhost:" + port,
+          "--credentials",
+          "admin:" + password);
+      runSecureCommand(
+          environment,
+          script,
+          "post",
+          "-c",
+          "techproducts",
+          "--credentials",
+          "index:" + password,
+          "--solr-url",
+          "https://localhost:" + port,
+          exampleDir.resolve("exampledocs/*.xml").toAbsolutePath().toString());
+      ready = true;
+    } finally {
+      if (!ready) {
+        echo(
+            "Setup failed. See "
+                + home
+                + "/node{1,2}/logs/solr.log. Run the secure example again to reset it and retry.");
+        for (int nodePort : List.of(port + 1, port)) {
+          try {
+            runSecureCommand(environment, script, "stop", "-p", Integer.toString(nodePort));
+          } catch (Exception ignored) {
+            // Preserve the setup failure if cleanup also fails.
+          }
+        }
+      }
+    }
+    for (int nodePort : List.of(port, port + 1)) {
+      waitForSecureExample(
+          environment,
+          tls,
+          "search:" + password,
+          "https://localhost:"
+              + nodePort
+              + "/api/collections/techproducts/select?q=*:*&rows=0&shards.tolerant=false");
+    }
+    echo("\n\n");
+    echo(
+        "Two-node secure example is ready: https://localhost:"
+            + port
+            + "/solr/ and https://localhost:"
+            + (port + 1)
+            + "/solr/");
+    echo(
+        "HTTP accounts: admin (administration), index (indexing/search), search (search only)."
+            + " Password: "
+            + password
+            + ".");
+    echo(
+        "ZooKeeper accounts: zk-admin (all), zk-readonly (metadata read only). Password: "
+            + password
+            + ".");
+    echo("Configuration: " + secureExampleDisplayArgument(include.toString()));
+    echo(
+        "Check status: SOLR_INCLUDE='"
+            + secureExampleDisplayArgument(include.toString())
+            + "' ./bin/solr status");
+    echo("\n");
+    echo(
+        "Stop nodes: SOLR_INCLUDE='"
+            + secureExampleDisplayArgument(include.toString())
+            + "' ./bin/solr stop --all ");
+    echo("\n");
+    echo(
+        "See the Securing Solr tutorial for the individual commands and inter-node trust exercise.");
+  }
+
+  private void resetSecureExampleHome(Path home, Map<String, String> environment)
+      throws IOException {
+    echo("Resetting the secure example in " + secureExampleDisplayArgument(home.toString()));
+    Map<String, String> stopEnvironment = new HashMap<>(environment);
+    stopEnvironment.put("SOLR_INCLUDE", "/dev/null");
+    runSecureCommand(stopEnvironment, script, "stop", "--all");
+    PathUtils.deleteDirectory(home);
+    Files.createDirectories(home);
+  }
+
+  private void startSecureNodes(
+      CloudExampleParams params, Path home, Map<String, String> environment, String zkHost)
+      throws IOException {
+    for (int node = 1; node <= 2; node++) {
+      Map<String, String> nodeEnvironment = new HashMap<>(environment);
+      nodeEnvironment.put("SOLR_LOGS_DIR", home.resolve("node" + node + "/logs").toString());
+      List<String> command =
+          new ArrayList<>(
+              List.of(
+                  script,
+                  "start",
+                  "--solr-home",
+                  home.resolve("node" + node + "/solr").toString(),
+                  "--server-dir",
+                  serverDir.toAbsolutePath().toString(),
+                  "-p",
+                  Integer.toString(params.basePort() + node - 1)));
+      if (node == 2) command.addAll(List.of("-z", zkHost));
+      if (params.start().force()) command.add("--force");
+      if (params.start().memory() != null) command.addAll(List.of("-m", params.start().memory()));
+      runSecureCommand(nodeEnvironment, command.toArray(String[]::new));
     }
   }
 
-  protected void runExample(CommandLine cli, String exampleName) throws Exception {
+  private void stopSecureNodes(int port, Map<String, String> environment) throws IOException {
+    for (int nodePort : List.of(port + 1, port)) {
+      runSecureCommand(environment, script, "stop", "-p", Integer.toString(nodePort));
+    }
+  }
+
+  private static String secureExampleShellQuote(String value) {
+    return "'" + value.replace("'", "'\\''") + "'";
+  }
+
+  /**
+   * Generates a fresh password for the secure example's keystore and demonstration accounts, so
+   * every run gets its own secret instead of a hardcoded one.
+   */
+  private static String generateSecureExamplePassword() {
+    final String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    SecureRandom random = new SecureRandom();
+    StringBuilder password = new StringBuilder(20);
+    for (int i = 0; i < 20; i++) {
+      password.append(alphabet.charAt(random.nextInt(alphabet.length())));
+    }
+    return password.toString();
+  }
+
+  private void writeSecureExampleFile(Path file, String content) throws IOException {
+    if (!Files.exists(file))
+      Files.createFile(
+          file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+    Files.writeString(file, content);
+  }
+
+  private void secureExampleRequest(
+      Map<String, String> environment, Path tls, int port, String password, String api, String json)
+      throws IOException {
+    runSecureCommand(
+        environment,
+        "curl",
+        "--silent",
+        "--show-error",
+        "--fail",
+        "--cacert",
+        tls.resolve("cert.pem").toString(),
+        "--user",
+        "admin:" + password,
+        "-H",
+        "Content-Type: application/json",
+        "--data-binary",
+        json,
+        "https://localhost:" + port + api);
+  }
+
+  private void waitForSecureExample(
+      Map<String, String> environment, Path tls, String credentials, String url) throws Exception {
+    List<String> command = new ArrayList<>(List.of("curl", "--silent", "--show-error", "--fail"));
+    if (url.startsWith("https://")) {
+      command.addAll(List.of("--cacert", tls.resolve("cert.pem").toString()));
+    }
+    if (credentials != null) command.addAll(List.of("--user", credentials));
+    command.add(url);
+    new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "Timed out waiting for " + url,
+            () -> {
+              try {
+                runSecureCommand(environment, command.toArray(String[]::new));
+                return true;
+              } catch (ExecuteException e) {
+                return false;
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
+  }
+
+  private String secureExampleDisplayArgument(String argument) {
+    String installPrefix = serverDir.getParent().toAbsolutePath().normalize() + "/";
+    return argument.startsWith(installPrefix)
+        ? "./" + argument.substring(installPrefix.length())
+        : argument;
+  }
+
+  private void runSecureCommand(Map<String, String> environment, String... arguments)
+      throws IOException {
+    var command = new org.apache.commons.exec.CommandLine(arguments[0]);
+    command.addArguments(Arrays.copyOfRange(arguments, 1, arguments.length), false);
+    echo(
+        "\n"
+            + String.join(
+                " ", Arrays.stream(arguments).map(this::secureExampleDisplayArgument).toList()));
+    int result = executor.execute(command, environment);
+    if (result != 0)
+      throw new ExecuteException("Secure example command failed: " + arguments[0], result);
+  }
+
+  void runExample(RunExampleParams params) throws Exception {
+    String exampleName = params.start().example();
     String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isCloudMode = !cli.hasOption(USER_MANAGED_OPTION);
-    String zkHost =
-        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
-    int port =
-        Integer.parseInt(
-            cli.getOptionValue(
-                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
-    Map<String, Object> nodeStatus = startSolr(solrHomeDir, isCloudMode, cli, port, zkHost, 30);
+    String zkHost = params.zkHost();
+    int port = params.port();
+    Map<String, Object> nodeStatus =
+        startSolr(solrHomeDir, params.isCloudMode(), params.start(), port, zkHost, 30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
@@ -337,7 +1170,7 @@ public class RunExampleTool extends ToolBase {
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
       if (CLIUtils.safeCheckCollectionExists(
-          solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+          solrUrl, collectionName, params.start().credentials())) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
@@ -346,8 +1179,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (CLIUtils.safeCheckCoreExists(
-          solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+      if (CLIUtils.safeCheckCoreExists(solrUrl, coreName, params.start().credentials())) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -416,9 +1248,7 @@ public class RunExampleTool extends ToolBase {
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      try (SolrClient solrClient =
-          CLIUtils.getSolrClient(
-              solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+      try (SolrClient solrClient = CLIUtils.getSolrClient(solrUrl, params.start().credentials())) {
         echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
@@ -538,16 +1368,13 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected void runCloudExample(CommandLine cli) throws Exception {
+  void runCloudExample(CloudExampleParams params) throws Exception {
 
-    usingPromptInputs = cli.hasOption(PROMPT_INPUTS_OPTION);
-    boolean prompt = !cli.hasOption(NO_PROMPT_OPTION);
+    usingScriptInputs = params.scriptInputs() != null;
+    boolean prompt = !params.noPrompt();
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
-    int defaultPort =
-        Integer.parseInt(
-            cli.getOptionValue(
-                PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT_LISTEN", "8983")));
+    int defaultPort = params.basePort();
     if (defaultPort != 8983) {
       // Override the old default port numbers if user has started the example overriding
       // SOLR_PORT_LISTEN
@@ -557,20 +1384,20 @@ public class RunExampleTool extends ToolBase {
     echo("\nWelcome to the SolrCloud example!\n");
 
     Scanner readInput = null;
-    if (usingPromptInputs) {
-      // Create a scanner from the provided prompts
-      String promptsValue = cli.getOptionValue(PROMPT_INPUTS_OPTION);
-      InputStream promptsStream =
-          new ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
-      readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
+    if (usingScriptInputs) {
+      // Create a scanner from the provided script inputs
+      String scriptInputsValue = params.scriptInputs();
+      InputStream scriptInputsStream =
+          new ByteArrayInputStream(scriptInputsValue.getBytes(StandardCharsets.UTF_8));
+      readInput = new Scanner(scriptInputsStream, StandardCharsets.UTF_8);
       readInput.useDelimiter(",");
-      prompt = true; // Enable prompting code path, but reading from prompts instead of user
+      prompt = true; // Enable prompting code path, but reading from script inputs instead of user
     } else if (prompt) {
-      readInput = new Scanner(userInput, StandardCharsets.UTF_8);
+      readInput = userInputScanner();
     }
 
     if (prompt) {
-      if (!usingPromptInputs) {
+      if (!usingScriptInputs) {
         echo(
             "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
       }
@@ -624,12 +1451,11 @@ public class RunExampleTool extends ToolBase {
     }
 
     // deal with extra args passed to the script to run the example
-    String zkHost =
-        CLIUtils.getCliOptionOrPropValue(cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", null);
+    String zkHost = params.zkHost();
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
-        startSolr(node1Dir.resolve("solr"), true, cli, cloudPorts[0], zkHost, 30);
+        startSolr(node1Dir.resolve("solr"), true, params.start(), cloudPorts[0], zkHost, 30);
 
     if (zkHost == null) {
       @SuppressWarnings("unchecked")
@@ -648,7 +1474,7 @@ public class RunExampleTool extends ToolBase {
         startSolr(
             solrHomeDir.resolve("node" + (n + 1)).resolve("solr"),
             true,
-            cli,
+            params.start(),
             cloudPorts[n],
             zkHost,
             30);
@@ -662,19 +1488,15 @@ public class RunExampleTool extends ToolBase {
     // create the collection
     String collectionName =
         createCloudExampleCollection(
-            numNodes,
-            readInput,
-            prompt,
-            solrUrl,
-            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+            numNodes, readInput, prompt, solrUrl, params.start().credentials());
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
 
   /** wait until the number of live nodes == numNodes. */
   protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
-    try (CloudSolrClient cloudClient =
-        new CloudSolrClient.Builder(List.of(zkHost), Optional.empty()).build()) {
+    // honours a chroot inside zkHost, e.g. zk1:2181/solr
+    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(zkHost).build()) {
       Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
       int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
       long timeoutNanos = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
@@ -713,30 +1535,18 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  protected Map<String, Object> startSolr(
+  Map<String, Object> startSolr(
       Path solrHomeDir,
       boolean cloudMode,
-      CommandLine cli,
+      StartSolrParams params,
       int port,
       String zkHost,
       int maxWaitSecs)
       throws Exception {
 
-    String extraArgs = readExtraArgs(cli.getArgs());
-
-    String host = cli.getOptionValue(HOST_OPTION);
-    String memory = cli.getOptionValue(MEMORY_OPTION);
-
-    String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
-    String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
-    String memArg = (memory != null) ? " -m " + memory : "";
-    String cloudModeArg = cloudMode ? "" : "--user-managed";
-    String forceArg = cli.hasOption(FORCE_OPTION) ? " --force" : "";
-    String verboseArg = isVerbose() ? "--verbose" : "";
-
-    String jvmOpts = cli.getOptionValue(JVM_OPTS_OPTION);
-    String jvmOptsArg =
-        (jvmOpts != null && !jvmOpts.isEmpty()) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
+    String host = params.host();
+    String memory = params.memory();
+    String jvmOpts = params.jvmOpts();
 
     Path cwd = Path.of(System.getProperty("user.dir"));
     Path binDir = Path.of(script).getParent();
@@ -751,31 +1561,49 @@ public class RunExampleTool extends ToolBase {
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
-    final var syspropArg =
-        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION)))
-            ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
-            : "";
+    // Built as discrete arguments (never a single string later re-tokenized by
+    // CommandLine.parse()) so that values containing whitespace, such as a --solr-home path,
+    // survive intact.
+    List<String> command = new ArrayList<>();
+    command.add(callScript);
+    command.add("start");
+    if (!cloudMode) command.add("--user-managed");
+    command.add("-p");
+    command.add(Integer.toString(port));
+    command.add("--solr-home");
+    command.add(solrHome);
+    command.add("--server-dir");
+    command.add(serverDir.toAbsolutePath().toString());
+    if (host != null && !"localhost".equals(host)) {
+      command.add("--host");
+      command.add(host);
+    }
+    if (zkHost != null) {
+      command.add("-z");
+      command.add(zkHost);
+    }
+    if (memory != null) {
+      command.add("-m");
+      command.add(memory);
+    }
+    if (params.force()) command.add("--force");
+    if (isVerbose()) command.add("--verbose");
+    command.addAll(params.extraArgs());
+    if ("techproducts".equals(params.example())) {
+      command.addAll(
+          List.of(
+              "-Dsolr.modules=clustering,extraction,langid,ltr,scripting,sql",
+              "-Dsolr.ltr.enabled=true",
+              "-Dsolr.clustering.enabled=true"));
+    }
+    if (jvmOpts != null && !jvmOpts.isEmpty()) {
+      command.add("--jvm-opts");
+      command.add(jvmOpts);
+    }
 
-    String startCmdStr =
-        String.format(
-            Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" --server-dir \"%s\" %s %s %s %s %s %s %s",
-            callScript,
-            cloudModeArg,
-            port,
-            solrHome,
-            serverDir.toAbsolutePath(),
-            hostArg,
-            zkHostArg,
-            memArg,
-            forceArg,
-            verboseArg,
-            extraArgs,
-            syspropArg);
-    startCmdStr = startCmdStr.replaceAll("\\s+", " ").trim(); // for pretty printing
-
+    String cmdStr = String.join(" ", command);
     echo("\nStarting up Solr on port " + port + " using command:");
-    echo(startCmdStr + jvmOptsArg + "\n");
+    echo(cmdStr + "\n");
 
     String solrUrl =
         String.format(
@@ -787,7 +1615,9 @@ public class RunExampleTool extends ToolBase {
     if (nodeStatus != null)
       return nodeStatus; // the server they are trying to start is already running
 
-    int code;
+    var startCmd = new org.apache.commons.exec.CommandLine(command.get(0));
+    startCmd.addArguments(command.subList(1, command.size()).toArray(String[]::new), false);
+
     if (isWindows) {
       // On Windows, the execution doesn't return, so we have to execute async
       // and when calling the script, it seems to be inheriting the environment that launched this
@@ -804,20 +1634,6 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      org.apache.commons.exec.CommandLine startCmd =
-          org.apache.commons.exec.CommandLine.parse(startCmdStr);
-
-      if (!jvmOptsArg.isEmpty()) {
-        startCmd.addArgument("--jvm-opts");
-
-        /* CommandLine.parse() tends to strip off the quotes by default before sending to cmd.exe.
-        This may cause cmd to break up the argument value on certain characters in unintended ways
-        thereby passing incorrect value to start.cmd
-        (eg: for "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:18983", it
-        breaks apart the value at "-agentlib:jdwp" passing incorrect args to start.cmd ).
-        The 'false' here tells Exec: “don’t touch my quotes—this is one atomic argument” */
-        startCmd.addArgument("\"" + jvmOpts + "\"", false);
-      }
       executor.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
@@ -827,28 +1643,22 @@ public class RunExampleTool extends ToolBase {
         // safe to ignore ...
       }
       if (handler.hasResult() && handler.getExitValue() != 0) {
-        startCmdStr += jvmOptsArg;
         throw new Exception(
             "Failed to start Solr using command: "
-                + startCmdStr
+                + cmdStr
                 + " Exception : "
                 + handler.getException());
       }
     } else {
-      // Unlike Windows, special handling of jvmOpts is not required on linux. We can simply
-      // concatenate to form the complete command
-      startCmdStr += jvmOptsArg;
       try {
-        code = executor.execute(org.apache.commons.exec.CommandLine.parse(startCmdStr));
+        int code = executor.execute(startCmd);
+        if (code != 0) throw new Exception("Failed to start Solr using command: " + cmdStr);
       } catch (ExecuteException e) {
-        throw new Exception(
-            "Failed to start Solr using command: " + startCmdStr + " Exception : " + e);
+        throw new Exception("Failed to start Solr using command: " + cmdStr + " Exception : " + e);
       }
-      if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmdStr);
     }
 
-    return getNodeStatus(
-        solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
+    return getNodeStatus(solrUrl, params.credentials(), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(
@@ -885,23 +1695,17 @@ public class RunExampleTool extends ToolBase {
     throw new IllegalStateException("Port " + port + " is already being used by another process.");
   }
 
-  protected String readExtraArgs(String[] extraArgsArr) {
-    String extraArgs = "";
-    if (extraArgsArr != null && extraArgsArr.length > 0) {
-      StringBuilder sb = new StringBuilder();
-      int app = 0;
+  protected List<String> readExtraArgs(String[] extraArgsArr) {
+    List<String> extraArgs = new ArrayList<>();
+    if (extraArgsArr != null) {
       for (int e = 0; e < extraArgsArr.length; e++) {
         String arg = extraArgsArr[e];
         if ("e".equals(arg) || "example".equals(arg)) {
           e++; // skip over the example arg
           continue;
         }
-
-        if (app > 0) sb.append(" ");
-        sb.append(arg);
-        ++app;
+        extraArgs.add(arg);
       }
-      extraArgs = sb.toString().trim();
     }
     return extraArgs;
   }
@@ -1079,6 +1883,84 @@ public class RunExampleTool extends ToolBase {
       throw new IllegalStateException("Required file " + dest.toAbsolutePath() + " not found!");
   }
 
+  /** The unknown options that are not {@code -D} system properties; picocli would reject these. */
+  List<String> unknownOptions() {
+    return unmatchedOpts.stream().filter(opt -> !opt.startsWith("-D")).toList();
+  }
+
+  /**
+   * The positional arguments followed by the {@code -D} options, the order commons-cli gives them.
+   */
+  String[] picocliExtraArgs() {
+    List<String> extra = new ArrayList<>(Arrays.asList(extraArgsOpt));
+    unmatchedOpts.stream().filter(opt -> opt.startsWith("-D")).forEach(extra::add);
+    return extra.toArray(new String[0]);
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    List<String> unknown = unknownOptions();
+    if (!unknown.isEmpty()) {
+      // What picocli does for an unknown option it parses itself; thrown from here it would be a
+      // stack trace and exit code 1 instead.
+      java.io.PrintWriter err = spec.commandLine().getErr();
+      err.println("Unknown option: '" + unknown.getFirst() + "'");
+      spec.commandLine().usage(err);
+      err.flush();
+      return picocli.CommandLine.ExitCode.USAGE;
+    }
+    String[] extraArgs = picocliExtraArgs();
+    if (noPromptOpt && scriptInputsOpt != null) {
+      throw new IllegalArgumentException(
+          "Cannot use both --no-prompt and --script-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --script-inputs to provide specific values.");
+    }
+
+    this.urlScheme = urlSchemeOpt;
+    String exampleType = exampleOpt;
+
+    initDirs(serverDirOpt, scriptOpt, exampleDirOpt, solrHomeOpt, exampleType);
+
+    echoIfVerbose(
+        "Running with\nserverDir="
+            + serverDir.toAbsolutePath()
+            + ",\nexampleDir="
+            + exampleDir.toAbsolutePath()
+            + ",\nsolrHomeDir="
+            + solrHomeDir.toAbsolutePath()
+            + "\nscript="
+            + script);
+
+    if (!"cloud".equals(exampleType)
+        && !"secure".equals(exampleType)
+        && !"techproducts".equals(exampleType)
+        && !"schemaless".equals(exampleType)
+        && !"films".equals(exampleType)) {
+      throw new IllegalArgumentException(
+          "Unsupported example "
+              + exampleType
+              + "! Please choose one of: cloud, secure, schemaless, techproducts, or films");
+    }
+
+    validatePort(port);
+
+    StartSolrParams startParams =
+        new StartSolrParams(
+            exampleType, hostOpt, memoryOpt, jvmOptsOpt, forceOpt, null, readExtraArgs(extraArgs));
+
+    if ("cloud".equals(exampleType)) {
+      runCloudExample(
+          new CloudExampleParams(noPromptOpt, scriptInputsOpt, zkHost, port, startParams));
+    } else if ("secure".equals(exampleType)) {
+      runSecureExample(
+          new CloudExampleParams(noPromptOpt, scriptInputsOpt, zkHost, port, startParams),
+          userManagedOpt);
+    } else {
+      runExample(new RunExampleParams(!userManagedOpt, zkHost, port, startParams));
+    }
+    return 0;
+  }
+
   protected boolean isPortAvailable(int port) {
     try (Socket s = new Socket("localhost", port)) {
       assert s != null; // To allow compilation.
@@ -1159,6 +2041,11 @@ public class RunExampleTool extends ToolBase {
     return (inputAsInt != null) ? inputAsInt : defVal;
   }
 
+  /** A scanner reading from {@link #userInput}, for interactive (non-script-input) prompting. */
+  private Scanner userInputScanner() {
+    return new Scanner(userInput, StandardCharsets.UTF_8);
+  }
+
   protected String prompt(Scanner s, String prompt) {
     return prompt(s, prompt, null);
   }
@@ -1166,10 +2053,10 @@ public class RunExampleTool extends ToolBase {
   protected String prompt(Scanner s, String prompt, String defaultValue) {
     echo(prompt);
     String nextInput;
-    if (usingPromptInputs) {
-      // Reading from prompts option - use next() instead of nextLine()
+    if (usingScriptInputs) {
+      // Reading from script-inputs option - use next() instead of nextLine()
       nextInput = s.hasNext() ? s.next() : null;
-      // Echo the value being used from prompts
+      // Echo the value being used from script inputs
       if (nextInput != null) {
         echo(nextInput);
       }

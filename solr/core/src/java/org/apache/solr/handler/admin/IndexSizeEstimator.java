@@ -59,6 +59,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -277,12 +278,10 @@ public class IndexSizeEstimator {
     for (Map.Entry<String, Object> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (value instanceof ItemPriorityQueue queue) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        queue.toMap(map);
+        Map<String, Object> map = new SimpleOrderedMap<>(queue);
         entry.setValue(map);
       } else if (value instanceof MapWriterSummaryStatistics stats) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        stats.toMap(map);
+        Map<String, Object> map = new SimpleOrderedMap<>(stats);
         entry.setValue(map);
       } else if (value instanceof AtomicLong) {
         entry.setValue(((AtomicLong) value).longValue());
@@ -586,6 +585,8 @@ public class IndexSizeEstimator {
     }
   }
 
+  @SuppressWarnings(
+      "ReferenceEquality") // detecting whether getMergeInstance() returned a new closeable clone
   private void estimateStoredFields(Map<String, Object> result) throws IOException {
     log.info("- estimating stored fields...");
     Map<String, Map<String, Object>> stats = new HashMap<>();

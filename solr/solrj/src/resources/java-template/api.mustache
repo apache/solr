@@ -179,13 +179,18 @@ public class {{classname}} {
             {{#bodyParam}}
             {{#vars}}
             // TODO find a way to add required parameters in the request body to the class constructor
+            // The setter parameter (and the requestBody.<field> access below) both use the
+            // "name" var: openapi-generator's Java-safe sanitization of this property's wire
+            // name (e.g. the reserved word "class" becomes "propertyClass"). The hand-written
+            // requestBody model class's field MUST be named to match exactly, or the field
+            // access below fails to compile.
             {{#description}}
             /**
-             * @param {{baseName}} {{description}}
+             * @param {{name}} {{description}}
              */
              {{/description}}
-             public void {{setter}}({{{dataType}}} {{baseName}}) {
-               this.requestBody.{{baseName}} = {{baseName}};
+             public void {{setter}}({{{dataType}}} {{name}}) {
+               this.requestBody.{{name}} = {{name}};
              }
             {{/vars}}
 
@@ -228,14 +233,14 @@ public class {{classname}} {
 
             @Override
             public SolrParams getParams() {
-              final ModifiableSolrParams params = new ModifiableSolrParams();
+              final ModifiableSolrParams solrParams = new ModifiableSolrParams();
               {{#queryParams}}
               if ({{paramName}} != null) {
-                  {{#isArray}}{{paramName}}.forEach(v -> params.add("{{baseName}}", v{{^items.isString}}.toString(){{/items.isString}}));{{/isArray}}
-                  {{^isArray}}params.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});{{/isArray}}
+                  {{#isArray}}{{paramName}}.forEach(v -> solrParams.add("{{baseName}}", v{{^items.isString}}.toString(){{/items.isString}}));{{/isArray}}
+                  {{^isArray}}solrParams.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});{{/isArray}}
               }
               {{/queryParams}}
-              return params;
+              return solrParams;
             }
 
             @Override

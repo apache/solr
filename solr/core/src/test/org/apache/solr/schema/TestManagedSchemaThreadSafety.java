@@ -63,9 +63,11 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
               .withTimeout(ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     boolean isSlowpoke() {
       Thread youKnow;
       if ((youKnow = slowpoke.get()) != null) {
+        // Thread identity comparison is intentional (and Thread has no meaningful equals()).
         return youKnow == Thread.currentThread();
       } else {
         return slowpoke.compareAndSet(null, Thread.currentThread());

@@ -16,30 +16,43 @@
 */
 
 solrAdminApp.controller('JavaPropertiesController',
-  function($scope, Properties, Constants){
+  function($scope, $timeout, NodeV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("java-props", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
-      Properties.get(function(data) {
-        var sysprops = data["system.properties"];
-        var sep = sysprops["path.separator"]
-        var props = [];
-        for (var key in sysprops) {
-          var value = sysprops[key];
-          var values = value.split(sep);
-          if (value === sep) {
-            values = [':'];
+      if (NodeTarget.needsSelection()) {
+        return;
+      }
+      NodeTarget.withNodes();
+      NodeV2.getNodeProperties(function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); return; }
+
+          var payload = NodeTarget.unwrap(data, response) || {};
+          var sysprops = payload["system.properties"] || payload.systemProperties;
+          if (!sysprops) {
+            $scope.props = [];
+            return;
           }
-          props.push({
-            name: key.replace(/\./g, '.&#8203;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;'),
-            values: values
-          });
-        }
-        $scope.pathSeparator = sep;
-        $scope.props = props;
+          var sep = sysprops["path.separator"]
+          var props = [];
+          for (var key in sysprops) {
+            var value = sysprops[key];
+            var values = value.split(sep);
+            if (value === sep) {
+              values = [':'];
+            }
+            props.push({
+              name: key.replace(/\./g, '.&#8203;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;'),
+              values: values
+            });
+          }
+          $scope.pathSeparator = sep;
+          $scope.props = props;
+        });
       });
     };
 
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh, $scope);
   });

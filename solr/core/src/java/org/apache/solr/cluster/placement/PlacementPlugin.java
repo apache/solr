@@ -98,5 +98,5 @@ public interface PlacementPlugin {
    */
   default void verifyAllowedModification(
       ModificationRequest modificationRequest, PlacementContext placementContext)
-      throws PlacementException, InterruptedException {}
+      throws PlacementException {}
 }

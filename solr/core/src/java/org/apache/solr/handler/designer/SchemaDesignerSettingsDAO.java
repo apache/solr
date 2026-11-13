@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.designer;
 
-import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
+import static org.apache.solr.handler.designer.SchemaDesigner.getConfigSetZkPath;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

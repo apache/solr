@@ -27,13 +27,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.util.ContentStream;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -246,7 +246,7 @@ public class RequestUtil {
               arr = true;
               isQuery = true;
               convertJsonPropertyToLocalParams(
-                  newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
+                  req, newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
             continue;
           } else {
@@ -262,7 +262,7 @@ public class RequestUtil {
               SolrException.ErrorCode.BAD_REQUEST,
               "Unknown top-level key in JSON request : " + key);
         }
-        convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, entry, out, isQuery, arr);
+        convertJsonPropertyToLocalParams(req, newMap, jsonQueryConverter, entry, out, isQuery, arr);
       }
     }
 
@@ -272,6 +272,7 @@ public class RequestUtil {
   }
 
   private static void convertJsonPropertyToLocalParams(
+      SolrQueryRequest req,
       Map<String, String[]> outMap,
       JsonQueryConverter jsonQueryConverter,
       Map.Entry<String, Object> jsonProperty,
@@ -293,17 +294,19 @@ public class RequestUtil {
         for (int i = 0; i < jsonSize; i++) {
           Object v = lst.get(i);
           newval[existingSize + i] =
-              isQuery ? jsonQueryConverter.toLocalParams(v, outMap) : v.toString();
+              isQuery ? jsonQueryConverter.toLocalParams(req, v, outMap) : v.toString();
         }
       } else {
         newval[newval.length - 1] =
-            isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString();
+            isQuery ? jsonQueryConverter.toLocalParams(req, val, outMap) : val.toString();
       }
       outMap.put(outKey, newval);
     } else {
       outMap.put(
           outKey,
-          new String[] {isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString()});
+          new String[] {
+            isQuery ? jsonQueryConverter.toLocalParams(req, val, outMap) : val.toString()
+          });
     }
   }
 

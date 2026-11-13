@@ -30,14 +30,14 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
-All of the examples in this section assume you are running the "techproducts" Solr example:
+All of the examples in this section assume you are running the "techproducts" Solr example in user-managed mode:
 
 [source,bash]
 ----
-bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts
+bin/solr start --user-managed -e techproducts
 ----
 
-We are passing in the explicit relative path for the `configSetBaseDir` to enable creating new cores using the `sample_techproducts_configs` configset in the examples below.
+The `sample_techproducts_configs` configset used to create new cores in the examples below is found in the default `configsets` directory of the Solr home.
 
 [[coreadmin-status]]
 == STATUS
@@ -61,21 +61,21 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores/
+curl 'http://localhost:8983/api/cores/'
 ----
 
 To get the status for a single core:
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores/techproducts
+curl 'http://localhost:8983/api/cores/techproducts'
 ----
 
 To skip returning information about the index:
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores?indexInfo=false
+curl 'http://localhost:8983/api/cores?indexInfo=false'
 ----
 
 ====
@@ -111,7 +111,7 @@ The `CREATE` action creates a new core and registers it.
 If a Solr core with the given name already exists, it will continue to handle requests while the new core is initializing.
 When the new core is ready, it will take new requests and the old core will be unloaded.
 
-`admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data`
+`admin/cores?action=CREATE&name=\{coreName}&instanceDir=\{instanceDir}&config=solrconfig.xml&dataDir=data`
 [tabs#coreadmin-create-request]
 ======
 V1 API::
@@ -127,7 +127,7 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=techproducts_v2&config
 If you have already existing core files deployed on disk, and need to just create the Solr core from them then the url will look something like
 [source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data
+http://localhost:8983/solr/admin/cores?action=CREATE&name={coreName}&instanceDir={instanceDir}&config=solrconfig.xml&dataDir=data
 ----
 ====
 
@@ -136,7 +136,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cores' -H 'Content-Type: application/json' -d '
   {
     "name": "techproducts_v2",
     "configSet": "sample_techproducts_configs"
@@ -314,7 +314,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/techproducts/reload
+curl -X POST 'http://localhost:8983/api/cores/techproducts/reload'
 ----
 ====
 ======
@@ -352,7 +352,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=RENAME&core=currentCoreName&other=newCoreName"
+curl 'http://localhost:8983/solr/admin/cores?action=RENAME&core={currentCoreName}&other=newCoreName'
 ----
 ====
 V2 API::
@@ -360,7 +360,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cores/{currentCoreName}/rename' -H 'Content-Type: application/json' -d '
   {
     "to": "newCoreName"
   }
@@ -416,7 +416,7 @@ V1 API::
 ====
 [source,bash]
 ----
-`admin/cores?action=SWAP&core=_core-name_&other=_other-core-name_`
+`admin/cores?action=SWAP&core={coreName}&other={otherCoreName}`
 ----
 ====
 V2 API::
@@ -424,7 +424,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cores/{coreName}/swap' -H 'Content-Type: application/json' -d '
   {
     "with": "_other-core-name_"
   }
@@ -492,7 +492,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/techproducts/unload -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cores/techproducts/unload' -H 'Content-Type: application/json' -d '
   {}
 '
 ----
@@ -570,7 +570,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core=targetCoreName&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
+curl 'http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core={targetCoreName}&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index'
 ----
 ====
 
@@ -579,7 +579,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cores/{targetCoreName}/merge-indices' -H 'Content-Type: application/json' -d '
 {
   "indexDirs": ["path/to/core1/data/index","path/to/core2/data/index"]
 }
@@ -601,7 +601,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core=targetCoreName&srcCore=core1&srcCore=core2"
+curl 'http://localhost:8983/solr/admin/cores?action=mergeindexes&core={targetCoreName}&srcCore=core1&srcCore=core2'
 ----
 ====
 
@@ -610,7 +610,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/cores/{targetCoreName}/merge-indices' -H 'Content-Type: application/json' -d '
 {
   "srcCores": ["core1","core2"]
 }
@@ -671,8 +671,12 @@ Request ID to track this action which will be processed asynchronously.
 The `SPLIT` action splits an index into two or more indexes.
 The index being split can continue to handle requests.
 The split pieces can be placed into a specified directory on the server's filesystem or it can be merged into running Solr cores.
+See the <<SPLIT Examples>> below for sample V1 and V2 requests.
+The v2 response includes per-phase split measurements in `timing` after a synchronous split, and a `requestid` acknowledgement when `async` is supplied.
+Poll `GET /api/node/commands/{requestId}` to retrieve the result of an asynchronous split.
+Synchronous requests referencing an unknown source core return HTTP 404 in v2.
 
-The `SPLIT` action supports five parameters, which are described in the table below.
+The `SPLIT` action supports the following parameters.
 
 === SPLIT Parameters
 
@@ -684,6 +688,7 @@ s|Required |Default: none
 |===
 +
 The name of the core to be split.
+This parameter is required in v1, and part of the URL in the v2 API.
 
 `path`::
 +
@@ -718,7 +723,7 @@ A comma-separated list of hash ranges in hexadecimal format.
 If this parameter is used, `split.key` should not be.
 See the <<SPLIT Examples>> below for an example of how this parameter can be used.
 
-`split.key`::
+`split.key` (v1), `splitKey` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -744,29 +749,119 @@ The `core` index will be split into as many pieces as the number of `path` or `t
 
 *Usage with two targetCore parameters*:
 
+[tabs#coreadmin-split-targetcore-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1", "core2"]
+  }
+'
+----
+====
+======
 
 Here the `core` index will be split into two pieces and merged into the two `targetCore` indexes.
 
 *Usage with two path parameters*:
 
+[tabs#coreadmin-split-path-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&path=/path/to/index/1&path=/path/to/index/2
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "path": ["/path/to/index/1", "/path/to/index/2"]
+  }
+'
+----
+====
+======
 
 The `core` index will be split into two pieces and written into the two directory paths specified.
 
 *Usage with the split.key parameter*:
 
+[tabs#coreadmin-split-splitkey-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&split.key=A!
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1"],
+    "splitKey": "A!"
+  }
+'
+----
+====
+======
 
 Here all documents having the same route key as the `split.key` i.e., `A!` will be split from the `core` index and written to the `targetCore`.
 
 *Usage with ranges parameter*:
 
+[tabs#coreadmin-split-ranges-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2&targetCore=core3&ranges=0-1f4,1f5-3e8,3e9-5dc
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1", "core2", "core3"],
+    "ranges": "0-1f4,1f5-3e8,3e9-5dc"
+  }
+'
+----
+====
+======
 
 This example uses the `ranges` parameter with hash ranges 0-500, 501-1000 and 1001-1500 specified in hexadecimal.
 Here the index will be split into three pieces with each targetCore receiving documents matching the hash ranges specified i.e., core1 will get documents with hash range 0-500, core2 will receive documents with hash range 501-1000 and finally, core3 will receive documents with hash range 1001-1500.
@@ -792,7 +887,7 @@ Note:
 
 * Only stored fields and fields with docValues enabled can be preserved during upgrade.
 Fields that are neither stored nor docValues-backed will lose their data, unless they are `copyField` targets. 
-* Not supported in SolrCloud mode. In order to achieve the same purpose in SolrCloud mode (aka upgrade index for compatibility with next Solr version), configure the `LatestVersionMergePolicyFactory` for the collection and reindex all documents through a client utility.
+* Not supported in SolrCloud mode; see <<Upgrading an Index in SolrCloud Mode>> below for the equivalent procedure.
 * Indexes containing child/nested documents are not supported.
 
 It is recommended to test on a copy and have a backup before running on production data.
@@ -868,6 +963,36 @@ Then poll status:
 http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=upgrade_1
 ----
 
+=== Upgrading an Index in SolrCloud Mode
+
+Currently, a corresponding Collections API `UPGRADEINDEX` action for SolrCloud is not available.
+However, the equivalent goal -- making the index compatible with the next Solr major version -- can be achieved by reindexing all documents while `LatestVersionMergePolicyFactory` is the active merge policy on the collection.
+
+The procedure below avoids reprocessing documents that have already been reindexed, including across restarts:
+
+. *Prepare a configset that uses `LatestVersionMergePolicyFactory`.*
+Copy the collection's current xref:config-sets.adoc[configset] so the original is not modified, and edit `solrconfig.xml` in the copy to set the xref:index-segments-merging.adoc#mergepolicyfactory[`<mergePolicyFactory>`] to `org.apache.solr.index.LatestVersionMergePolicyFactory`.
+. *Point the collection at the new configset.*
+Use the xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION] Collections API action to set the `collection.configName` property to the name of the new configset.
+. *Reload the collection* with the xref:deployment-guide:collection-management.adoc#reload[RELOAD] Collections API action so the new merge policy takes effect.
+. *Record the current highest `\_version_` value in the index.*
+Query the collection sorting by `\_version_` descending and note the top value, for example:
++
+[source,bash]
+----
+http://localhost:8983/solr/_collection_/select?q=*:*&sort=_version_+desc&rows=1&fl=_version_
+----
+. *Reindex only the documents at or below that version.*
+Have your client reindex all docs where `\_version_ \<= <highest_version>` (substituting the recorded value).
++
+Reusing the same `<highest_version>` value across restarts ensures continuity: Documents that have already been reindexed -- as well as any newly indexed documents -- will have a `\_version_` greater than the recorded value and will fall outside the range, so no work is duplicated.
+. *Issue a commit once reindexing is complete* to clear any older version segments:
++
+[source,bash]
+----
+http://localhost:8983/solr/_collection_/update?commit=true
+----
+
 [[coreadmin-requeststatus]]
 == REQUESTSTATUS
 
@@ -890,7 +1015,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/node/commands/id
+curl 'http://localhost:8983/api/node/commands/id'
 ----
 ====
 ======
@@ -919,7 +1044,7 @@ http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=1
 The `REQUESTRECOVERY` action manually asks a core to recover by syncing with the leader.
 This should be considered an "expert" level command and should be used in situations where the node (SorlCloud replica) is unable to become active automatically.
 
-`admin/cores?action=REQUESTRECOVERY&core=_core-name_`
+`admin/cores?action=REQUESTRECOVERY&core=\{coreName}`
 
 === REQUESTRECOVERY Parameters
 
