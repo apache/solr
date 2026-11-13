@@ -91,6 +91,12 @@ A request with no other parameters returns every collection.
 
 The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 
+=== Permissions have a stable `id`
+
+Editing permissions of the Rule-Based Authorization Plugin now stores an `id` on each permission in `security.json`.
+Finish a rolling upgrade before editing permissions.
+Nodes running an older version reject commands that name an `id`, and drop the `id` of any permission they replace.
+
 == Solr 10.1
 
 === Misc

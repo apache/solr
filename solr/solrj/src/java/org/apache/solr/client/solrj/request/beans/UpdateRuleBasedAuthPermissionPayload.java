@@ -32,8 +32,9 @@ public class UpdateRuleBasedAuthPermissionPayload implements ReflectMapWriter {
 
   @JsonProperty public List<String> path;
 
-  @JsonProperty(required = true)
-  public Integer index;
+  @JsonProperty public Integer index;
+
+  @JsonProperty public String id;
 
   @JsonProperty public Integer before;
 
