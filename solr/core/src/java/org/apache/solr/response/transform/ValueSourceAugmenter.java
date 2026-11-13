@@ -85,6 +85,7 @@ public class ValueSourceAugmenter extends DocTransformer {
   public void setContext(ResultContext context) {
     cachedValuesById = null; // drop any values cached against a previous context/searcher
     super.setContext(context);
+    int docid = -1; // the doc being prefetched, named in the error message
     try {
       searcher = context.getSearcher();
       readerContexts = searcher.getIndexReader().leaves();
@@ -132,7 +133,8 @@ public class ValueSourceAugmenter extends DocTransformer {
       FunctionValues values = null;
       int docBase = -1;
       int nextDocBase = 0; // i.e. this segment's maxDoc
-      for (int docid : ids) {
+      for (int id : ids) {
+        docid = id;
         if (docid >= nextDocBase) {
           int idx = ReaderUtil.subIndex(docid, readerContexts);
           LeafReaderContext rcontext = readerContexts.get(idx);
@@ -154,7 +156,11 @@ public class ValueSourceAugmenter extends DocTransformer {
       fcontext.remove("scorer"); // remove ours; it was there only for prefetching
     } catch (IOException e) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "exception for valuesource " + valueSource, e);
+          SolrException.ErrorCode.SERVER_ERROR,
+          (docid < 0 ? "exception" : "exception at docid " + docid)
+              + " for valuesource "
+              + valueSource,
+          e);
     }
   }
 

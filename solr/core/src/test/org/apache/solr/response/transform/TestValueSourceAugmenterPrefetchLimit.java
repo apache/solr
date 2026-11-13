@@ -102,7 +102,7 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
         FOO_MATCHES_ID);
   }
 
-  public void testWithScoreAbovePrefetchLimitUsingPreFetchDocsParam() {
+  public void testWithScoreAbovePrefetchLimitUsingPreFetchDocsParam() throws Exception {
     assertQ(
         "fl=foo:field(id),score with custom preFetchDocs",
         req(
@@ -114,6 +114,7 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
         "//result/doc/float[@name='score']",
         "count(//result/doc/str[@name='foo'])=" + NUM_DOCS,
         FOO_MATCHES_ID);
+    assertPrefetchedCount("2000", NUM_DOCS); // the whole DocList is below the raised limit
   }
 
   /**
@@ -144,7 +145,7 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
     }
   }
 
-  public void testPreFetchDocsZeroComputesEveryValueOnDemand() {
+  public void testPreFetchDocsZeroComputesEveryValueOnDemand() throws Exception {
     assertQ(
         "preFetchDocs=0 disables prefetching",
         req(
@@ -154,6 +155,37 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
             "preFetchDocs", "0"),
         "count(//result/doc/str[@name='foo'])=20",
         FOO_MATCHES_ID);
+    assertPrefetchedCount("0", 0);
+  }
+
+  /**
+   * Builds an augmenter whose request carries {@code preFetchDocs}, sets a context holding every
+   * doc, and checks how many values were cached. The on-demand fallback produces the same output as
+   * the cache, so the assertQ tests above cannot tell whether the limit was honored.
+   */
+  private void assertPrefetchedCount(String preFetchDocs, int expectedCached) throws Exception {
+    int[] ids = new int[NUM_DOCS];
+    for (int i = 0; i < NUM_DOCS; i++) {
+      ids[i] = i;
+    }
+    DocList docs = new DocSlice(0, NUM_DOCS, ids, null, NUM_DOCS, 0f, TotalHits.Relation.EQUAL_TO);
+    try (SolrQueryRequest req = req("preFetchDocs", preFetchDocs)) {
+      QParser parser = QParser.getParser("field(id)", FunctionQParserPlugin.NAME, req);
+      ValueSource vs = ((FunctionQuery) parser.getQuery()).getValueSource();
+      ValueSourceAugmenter augmenter = new ValueSourceAugmenter("foo", parser, vs);
+      h.getCore()
+          .withSearcher(
+              searcher -> {
+                augmenter.setContext(new BasicResultContext(docs, null, searcher, null, req));
+                if (expectedCached == 0) {
+                  assertNull(augmenter.cachedValuesById);
+                } else {
+                  assertNotNull(augmenter.cachedValuesById);
+                  assertEquals(expectedCached, augmenter.cachedValuesById.size());
+                }
+                return null;
+              });
+    }
   }
 
   public void testInvalidPreFetchDocsIsBadRequest() {
