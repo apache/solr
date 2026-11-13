@@ -27,9 +27,22 @@ ext {
   useSecurityManager = false
 }
 
+configurations.configureEach {
+  // On Netty 4.2 this is an empty aggregator of codecs netty-nio-client does not use
+  exclude group: 'io.netty', module: 'netty-codec'
+}
+
 dependencies {
   implementation platform(project(':platform'))
   api(project(':solr:core'))
+
+  // The encryption client's classes carry SpotBugs annotations, which javac needs to resolve.
+  // It is not included in the release so exclude from checks.
+  compileOnly libs.spotbugs.annotations
+  testCompileOnly libs.spotbugs.annotations
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
 
   implementation libs.apache.lucene.core
 
@@ -40,14 +53,22 @@ dependencies {
   implementation libs.amazon.awssdk.regions
   implementation libs.amazon.awssdk.httpclient.spi
   implementation libs.amazon.awssdk.retries.spi
-  implementation(libs.amazon.awssdk.s3) {
-    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
-  }
+  implementation libs.amazon.awssdk.s3
   implementation libs.amazon.awssdk.sdkcore
-
-  runtimeOnly(libs.amazon.awssdk.sts) {
-    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  // The encryption client routes object reads and writes through an S3AsyncClient
+  implementation libs.amazon.awssdk.nettynioclient
+  implementation(libs.amazon.s3encryption.client) {
+    // only used by enableMultipartPutObject, which Solr does not use
+    exclude group: 'joda-time', module: 'joda-time'
+    // Duplicates jakarta.activation-api; the client only uses saaj-impl's MimeUtility.decodeText
+    exclude group: 'com.sun.activation', module: 'jakarta.activation'
   }
+  // The encryption client logs through commons-logging, which is globally excluded
+  runtimeOnly libs.slf4j.jcloverslf4j
+  // Unlike the JDK's provider, BouncyCastle's AES-GCM releases plaintext before the tag is checked
+  implementation libs.bouncycastle.bcprov
+
+  runtimeOnly libs.amazon.awssdk.sts
 
   implementation libs.google.guava
   implementation libs.slf4j.api

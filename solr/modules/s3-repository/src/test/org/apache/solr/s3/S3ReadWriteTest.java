@@ -39,6 +39,18 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     }
   }
 
+  /** Without encryption there is no async client, so no Netty event loop is started. */
+  @Test
+  public void testNoNettyWithoutEncryption() throws Exception {
+    pushContent("/no-netty", "my blob");
+    try (InputStream stream = client.pullStream("/no-netty")) {
+      stream.readAllBytes();
+    }
+    assertTrue(
+        Thread.getAllStackTraces().keySet().stream()
+            .noneMatch(t -> t.getName().startsWith("aws-java-sdk-NettyEventLoop")));
+  }
+
   /** Check writing a file with no path. */
   @Test
   public void testWriteNoPath() {
