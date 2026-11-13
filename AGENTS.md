@@ -34,19 +34,13 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Writing Tests
 
-- When adding a test to an existing suite/file, keep the same style / design choices
-- When adding a *new* Java test suite/file:
-    - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
-    - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
-    - Use SolrTestCase instead of SolrTestCaseJ4 for new tests
-- System properties set in a test are restored after each test by the base classes (`SystemPropertiesRestoreRule`); do not add `try/finally` + `System.clearProperty` cleanup
+**Read `dev-docs/writing-tests.adoc` before writing any test.** It is the authority on which harness to use — `SolrTestCase` by default, `SolrCloudTestCase` only when a cluster is needed, a `.bats` file for `bin/solr`, `AdminUiTestBase` for the browser, a Testcontainers `@ClassRule` for a real external service, and never `SolrTestCaseJ4` or `docker run` from a test — and on the lifecycle, randomization and waiting conventions, with a worked example per kind.
+
+When adding a test to a suite that already exists, match the design choices of the file you are editing.
+
 - For BATS shell integration tests in `solr/packaging/test/`:
     - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
     - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
-- Avoid `Thread.sleep`; fixed sleeps waste build time on every run and can flake under load.
-    - Have the other thread signal when it reaches a point, e.g. complete a `CompletableFuture` that the test thread `get`s with a timeout.
-    - If you must poll, use `org.apache.solr.util.TimeOut#waitFor` (solr-core) rather than a hand-rolled sleep loop.
-    - Derive timeouts from what they bound and define them as constants, e.g. `ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2`, not a bare `2, SECONDS`.
 
 ## Documentation
 
@@ -73,6 +67,7 @@ Internals:
 Process & tooling:
 
 - `dev-docs/solr-source-code.adoc`, `git.adoc`, `IDEs.adoc`, `jvms.adoc` — build and dev environment
+- `dev-docs/writing-tests.adoc` — the test harnesses, how to choose one, lifecycle and randomization conventions
 - `dev-docs/ref-guide/` — ref-guide authoring (AsciiDoc syntax, Antora templates)
 - `dev-docs/dependency-upgrades.adoc`, `lucene-upgrade.md`, `working-between-major-versions.adoc` — upgrades and branch management
 - `dev-docs/releasing.adoc`, `changelog.adoc`, `asf-jenkins.adoc` — release and CI process
