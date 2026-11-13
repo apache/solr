@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.shell;
+package org.apache.solr.docker;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -30,11 +30,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,12 +59,11 @@ import org.testcontainers.utility.DockerImageName;
  * <p>Upgrades from the latest release of the previous major version to an image of the Solr version
  * under test. Either end can be overridden, e.g. {@code export SOLR_BEGIN_IMAGE=solr:9.11-slim}.
  *
- * <p>Runs only from the {@code catsTestsDockerBuild} Gradle task, which builds the image from the
- * working tree, tags it under a local-only name and passes that in {@code SOLR_END_IMAGE}; the
- * ordinary CATS tasks exclude the class. That keeps the upgrade onto the code in the tree rather
- * than whatever {@code apache/solr:<version>} happens to be tagged on the machine, and keeps a
- * Docker- and network-using test out of ordinary builds — which is why there is no {@code @Nightly}
- * as well.
+ * <p>Runs only from the {@code dockerRollingUpgradeTest} Gradle task, which builds the image from
+ * the working tree and hands over the id {@code dockerBuild} wrote. That keeps the upgrade onto the
+ * code in the tree rather than whatever {@code apache/solr:<version>} happens to be tagged on the
+ * machine, and keeps a Docker- and network-using test out of ordinary builds — which is why there
+ * is no {@code @Nightly} as well.
  *
  * <p>A {@code @ClassRule} is not an option here: replacing a running node with one on the new image
  * mid-test <em>is</em> the thing under test.
@@ -82,7 +85,7 @@ import org.testcontainers.utility.DockerImageName;
       QuickPatchThreadsFilter.class,
       RollingUpgradeTest.TestcontainersThreadsFilter.class
     })
-public class RollingUpgradeTest extends SolrShellTestCase {
+public class RollingUpgradeTest extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -214,25 +217,34 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   /**
    * Works out which two images to upgrade between.
    *
-   * <p>The previous major is a property of the code, so it comes from {@link SolrVersion#LATEST}.
-   * The version to upgrade <em>to</em> is named by {@code SOLR_END_IMAGE}, which {@code
-   * catsTestsDockerBuild} sets to the image it just built. The fallback, for a hand-run, is the tag
-   * {@code ./gradlew dockerTag} applies — {@code project.version}, which carries the {@code
-   * -SNAPSHOT} qualifier {@code SolrVersion} does not, hence reading it off the distribution
-   * directory name.
+   * <p>The previous major is derived from {@code solr.version}, which the Gradle task sets from
+   * {@code project.version}. The version to upgrade <em>to</em> is the image id {@code dockerBuild}
+   * wrote, passed in {@code solr.docker.imageId} — an id rather than a tag, so nothing has to be
+   * tagged and an {@code apache/solr:<version>} already on the machine is never consulted.
    *
-   * <p>Neither end is checked for availability: a missing image should fail loudly where a
-   * container needs it, rather than skipping.
+   * <p>Either end can still be overridden by environment variable, e.g. {@code export
+   * SOLR_BEGIN_IMAGE=solr:9.11-slim}. Neither is checked for availability: a missing image should
+   * fail loudly where a container needs it, rather than skipping.
    */
   private void resolveImages() throws IOException {
-    int previousMajor = SolrVersion.LATEST.getMajorVersion() - 1;
+    int previousMajor = Integer.parseInt(requireProperty("solr.version").split("\\.", 2)[0]) - 1;
     beginImage = imageOverride("SOLR_BEGIN_IMAGE", "solr:" + previousMajor + "-slim");
+    endImage = imageOverride("SOLR_END_IMAGE", requireProperty("solr.docker.imageId"));
 
-    String builtVersion = harnessEnv.solrTip().getFileName().toString().replaceFirst("^solr-", "");
-    endImage = imageOverride("SOLR_END_IMAGE", "apache/solr:" + builtVersion);
+    artifactDir = Files.createDirectories(Path.of(requireProperty("solr.docker.artifactDir")));
+  }
 
-    // Persist artifacts under Gradle's test-output
-    artifactDir = Files.createDirectories(harnessEnv.testOutputDir().resolve("docker"));
+  /**
+   * A property the Gradle task is responsible for; absent means the test was run some other way.
+   */
+  private static String requireProperty(String name) {
+    String value = System.getProperty(name);
+    if (value == null || value.isBlank()) {
+      throw new IllegalStateException(
+          name
+              + " is not set. Run this through './gradlew -p solr/docker dockerRollingUpgradeTest'.");
+    }
+    return value;
   }
 
   /**
@@ -246,17 +258,23 @@ public class RollingUpgradeTest extends SolrShellTestCase {
   }
 
   private String imageOverride(String variable, String fallback) {
-    String override = env(variable);
+    String override = System.getenv(variable);
     return (override == null || override.isBlank()) ? fallback : override;
   }
 
-  /** Port of {@code wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection}. */
+  /** Waits for {@code solr healthcheck} inside the container to report the collection healthy. */
   private void awaitHealthy(Node node) {
-    awaitOrFail(
-        "test-collection to report healthy",
-        Duration.ofSeconds(30),
-        Duration.ofSeconds(1),
-        () -> node.exec("solr", "healthcheck", "-c", "test-collection").getExitCode() == 0);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    try {
+      timeout.waitFor(
+          "test-collection to report healthy on " + node.name,
+          () -> node.exec("solr", "healthcheck", "-c", "test-collection").getExitCode() == 0);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted waiting for " + node.name, e);
+    } catch (TimeoutException e) {
+      throw new AssertionError(e.getMessage(), e);
+    }
   }
 
   /** Diagnostics, then artifacts, then removal. */

@@ -38,7 +38,7 @@ cd solr/packaging/build/dev-slim && bin/solr start -f
 
 ## Tests
 
-CATS suites in `src/test/org/apache/solr/shell/`, the deprecated BATS suites in `test/*.bats`. Neither is in `check`: both need an unpacked distribution and start real nodes, so ask for them by name — `catsTests` and `integrationTests`, plus the `catsTestsPicocli`/`catsTestsCommonsCli`/`catsTestsAll` variants `gradlew -p solr/packaging tasks` lists. CATS classes are isolated by `SOLR_HOME` and port block and run in parallel; `-Pcats.tests.jvms=N` sets the fork count. Output, per-test transcripts and failure snapshots land under `build/cats-test-output*` and `build/test-output*`, wiped at the start of each run.
+CATS suites in `src/test/org/apache/solr/shell/`, the deprecated BATS suites in `test/*.bats`. Neither is in `check`: both need an unpacked distribution and start real nodes, so ask for them by name — `catsTests` and `integrationTests`, plus the `catsTestsPicocli`/`catsTestsCommonsCli` variants `gradlew -p solr/packaging tasks` lists. CATS classes are isolated by `SOLR_HOME` and port block and run in parallel; `-Pcats.tests.jvms=N` sets the fork count. Output, per-test transcripts and failure snapshots land under `build/cats-test-output*` and `build/test-output*`, wiped at the start of each run.
 
 CI runs CATS on pull requests touching `solr/bin`, this module or the CLI (`.github/workflows/cats-test.yml`).
 
