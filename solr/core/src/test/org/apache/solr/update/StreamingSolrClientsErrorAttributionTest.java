@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.util.LogListener;
@@ -122,6 +123,7 @@ public class StreamingSolrClientsErrorAttributionTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "LogListener exposes log4j events for assertions")
   public void testDeleteByQueryRetryRuleIsJudgedOnItsOwnRequest() throws Exception {
     StdNode node = deadNode(1);
     try (LogListener streamLog = LogListener.error(ErrorReportingConcurrentUpdateSolrClient.class);
