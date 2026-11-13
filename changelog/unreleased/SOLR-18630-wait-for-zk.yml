@@ -1,0 +1,8 @@
+title: Fix the default ZooKeeper startup timeout to use solr.zookeeper.client.timeout in milliseconds, deprecate the separate solr.cloud.wait.for.zk.seconds override, and restore the legacy waitForZk alias
+type: fixed
+authors:
+  - name: Julian Chandra Sutadi
+    nick: julianchandras
+links:
+  - name: SOLR-18630
+    url: https://issues.apache.org/jira/browse/SOLR-18630

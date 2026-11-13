@@ -75,7 +75,10 @@ public class EnvUtils {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
         for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(deprecatedProps.getProperty(key)), key);
+          // A property may have several legacy names, separated by commas
+          for (String legacyName : deprecatedProps.getProperty(key).split(",")) {
+            DEPRECATED_MAPPINGS.put(camelCaseToDotSeparated(legacyName.trim()), key);
+          }
         }
         init(false, System.getenv(), System.getProperties());
       }

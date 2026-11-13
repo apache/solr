@@ -35,12 +35,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.NodeConfigClusterPluginsSource;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.CoreContainerProvider;
@@ -239,21 +239,15 @@ public class NodeConfig {
     initModules(loader, null);
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
 
-    // TODO: Only job of this block is to
-    //  delay starting a solr core to satisfy
-    //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut =
-          1000
-              * Integer.getInteger(
-                  "solr.cloud.wait.for.zk.seconds", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT);
+      int startUpZkTimeOutMillis = getStartUpZkTimeOutMillis();
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withTimeout(startUpZkTimeOutMillis, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOutMillis, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
         zkClient.exists("/configs");
@@ -264,6 +258,17 @@ public class NodeConfig {
     }
 
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
+  }
+
+  static int getStartUpZkTimeOutMillis() {
+    Integer waitSeconds = EnvUtils.getPropertyAsInteger("solr.cloud.wait.for.zk.seconds");
+    if (waitSeconds != null) {
+      DeprecationLog.log(
+          "solr.cloud.wait.for.zk.seconds",
+          "solr.cloud.wait.for.zk.seconds is deprecated. Use solr.zookeeper.client.timeout in milliseconds instead.");
+      return Math.toIntExact(TimeUnit.SECONDS.toMillis(waitSeconds));
+    }
+    return EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
   }
 
   public String getConfigSetServiceClass() {
