@@ -79,7 +79,8 @@ public class SimpleOrderedMapTest extends SolrTestCase {
   @Test
   public void testSerialVersionUID() {
     assertEquals(
-        -8705511030983987520L, ObjectStreamClass.lookup(SimpleOrderedMap.class).getSerialVersionUID());
+        -8705511030983987520L,
+        ObjectStreamClass.lookup(SimpleOrderedMap.class).getSerialVersionUID());
   }
 
   @Test
@@ -276,7 +277,8 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     Map<String, Integer> mapCopy = (SimpleOrderedMap<Integer>) copy;
     assertThrows(UnsupportedOperationException.class, () -> mapCopy.put("one", 11));
     assertThrows(
-        UnsupportedOperationException.class, () -> mapCopy.entrySet().iterator().next().setValue(11));
+        UnsupportedOperationException.class,
+        () -> mapCopy.entrySet().iterator().next().setValue(11));
 
     map.put("three", 3);
     assertEquals("copy must not see later changes to the original", 2, copy.size());
