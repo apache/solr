@@ -1189,10 +1189,10 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   startTime = datetime.datetime.now()
   origTestArgs = testArgs
 
-  # Avoid @Nightly and @Badapple tests as they are slow and buggy
+  # Avoid @Nightly tests as they are slow and buggy
   # Instead verify that the recent Jenkins tests pass
-  print('NOTE: Not running @Nightly or @BadApple tests. Please verify that recent Jenkins runs have passed.')
-  testArgs = '-Dtests.nightly=false -Dtests.badapples=false %s' % testArgs
+  print('NOTE: Not running @Nightly tests. Please verify that recent Jenkins runs have passed.')
+  testArgs = '-Dtests.nightly=false %s' % testArgs
 
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):
