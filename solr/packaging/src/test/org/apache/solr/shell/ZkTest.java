@@ -29,18 +29,14 @@ import org.junit.Test;
 /**
  * Port of {@code test_zk.bats}.
  *
- * <p>Kept deliberately close to the original so the two can be compared line by line, including the
- * order of the tests and the text each one asserts on. Four things differ, each for a reason the
- * comment at the site explains: files are created through Java rather than {@code touch}, {@code
- * curl} becomes {@link #http}, the symlink test works on a copy of the config set instead of
- * mutating the shared distribution, and the {@code ZK_HOST} test asserts only the fallback message,
- * not the original's refutation of a listing from port 8983.
+ * <p>The symlink test works on a copy of the config set rather than mutating the shared
+ * distribution, and the {@code ZK_HOST} test asserts only the fallback message.
  */
 public class ZkTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start -DminStateByteLenForCompression=0");
   }
 
@@ -120,7 +116,7 @@ public class ZkTest extends SolrShellTestCase {
         .assertContains("Uploading")
         .assertNotContains("ERROR");
 
-    // BATS polled with curl and grep; the harness' own HTTP helper needs no curl, which is what
+    // The harness' own HTTP helper needs no curl, which is what
     // makes this work on Windows.
     awaitOrFail(
         "config set techproducts2 to appear",
@@ -135,7 +131,8 @@ public class ZkTest extends SolrShellTestCase {
   @EnabledOnShell(
       Shell.BASH) // Creating a symlink on Windows needs privileges a test cannot assume.
   public void solr12429UpconfigFailsWithSymlink() throws IOException {
-    // The BATS original symlinked inside the distribution's own config set and deleted the links
+    // A copy, rather than symlinking inside the distribution's own config set and deleting the
+    // links
     // afterwards. Here it works on a copy: the distribution is shared by every test class, so
     // mutating it would make this test unsafe to run alongside any other.
     Path configSet = workDir().resolve("configset");

@@ -28,26 +28,13 @@ import org.junit.Test;
 /**
  * Port of {@code test_extraction.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
+ * <p>The Tika Server the extraction handler delegates to comes from {@link
+ * TikaServerContainerRule}, on the host port Docker mapped rather than {@code SOLR_PORT+5} — a port
+ * this class does not own and which would collide with another class running in parallel.
  *
- * <ul>
- *   <li>the Tika Server the extraction handler delegates to comes from {@link
- *       TikaServerContainerRule} rather than from {@code docker run} and a {@code curl} polling
- *       loop, and its host port is the one Docker mapped instead of {@code SOLR_PORT+5} — a port
- *       this class does not own and which would collide with another class running in parallel. The
- *       rule's assumption is the original's {@code DOCKER_UNAVAILABLE} bypass;
- *   <li>Solr is started once for the class rather than once per test; the three tests already use a
- *       collection name each;
- *   <li>{@code curl} becomes the harness' HTTP helpers: {@link #http} for the queries, {@code
- *       httpPost} for the Config API call and {@code httpPostFile} for {@code curl -F
- *       "myfile=@..."};
- *   <li>the helper's {@code sleep 5} becomes a wait on the thing it was hiding — the {@code
- *       /update/extract} handler being registered on the collection, which in cloud mode happens
- *       only once the core has picked up the config overlay the POST wrote;
- *   <li>{@code solr create} and the extraction POST assert their exit status and HTTP status, which
- *       the original ignored.
- * </ul>
+ * <p>Before querying, the tests wait for the {@code /update/extract} handler to be registered on
+ * the collection, which in cloud mode happens only once the core has picked up the config overlay
+ * the POST wrote.
  */
 // Testcontainers' Docker client leaves threads behind, and when its probe finds no usable Docker -
 // as on a Windows runner offering only Windows containers - it leaves differently named ones each
@@ -62,7 +49,7 @@ public class ExtractionTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file, minus the Tika container the class rule above has already started.
+    // The Tika container is already started by the class rule above.
     // Disable security manager to allow extraction. This appears to be a bug.
     classCli.env("SOLR_SECURITY_MANAGER_ENABLED", "false");
     classCli.run("solr start -Dsolr.modules=extraction");
@@ -104,7 +91,7 @@ public class ExtractionTest extends SolrShellTestCase {
     awaitQueryable("website_extraction");
     applyExtractHandler("website_extraction");
 
-    // The original crawled https://solr.apache.org/ live. This serves a snapshot of that page
+    // Served locally rather than crawling https://solr.apache.org/ live: a snapshot of that page
     // locally instead: the subject is the post tool's web mode, not the website, and depending on
     // the network and on whatever the site says today buys nothing. The server is stopped for us
     // when the test ends.
@@ -122,7 +109,7 @@ public class ExtractionTest extends SolrShellTestCase {
     http("/solr/website_extraction/select?q=*:*").assertContains("\"numFound\":1");
   }
 
-  /** BATS' {@code wait_for ... curl .../select}: the collection is up and answering queries. */
+  /** Waits for the collection to be up and answering queries. */
   private void awaitQueryable(String collection) {
     awaitOrFail(
         "collection " + collection + " to answer a query",
@@ -132,8 +119,8 @@ public class ExtractionTest extends SolrShellTestCase {
   }
 
   /**
-   * Port of the original's {@code apply_extract_handler}: adds the {@code ExtractingRequestHandler}
-   * through the Config API, pointed at the Tika Server container.
+   * Adds the {@code ExtractingRequestHandler} through the Config API, pointed at the Tika Server
+   * container.
    */
   private void applyExtractHandler(String collection) {
     String json =

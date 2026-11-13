@@ -24,28 +24,16 @@ import org.junit.Test;
 /**
  * Port of {@code test_stream.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
+ * <p>A plain {@code solr start} plus the {@code create} and {@code post} that {@code
+ * RunExampleTool} would have run for the techproducts example — same config set, same documents,
+ * same {@code --filetypes xml}. On Windows the example tool drops every {@code SOLR_*} variable
+ * from the spawned node's environment (SOLR-18650), so {@code -e} would have made the whole suite
+ * bash-only; the subject here is the streaming expression, not the example.
  *
- * <ul>
- *   <li>{@code solr start -e techproducts --solr-home "${SOLR_HOME}"} becomes a plain {@code solr
- *       start} plus the {@code create} and {@code post} that {@code RunExampleTool} would have run
- *       for that example — same config set, same documents, same {@code --filetypes xml}. On
- *       Windows the example tool drops every {@code SOLR_*} variable from the spawned node's
- *       environment, so keeping {@code -e} would have made the whole suite bash-only (see {@code
- *       SnapshotsTest}); the subject here is the streaming expression, not the example.
- *   <li>The {@code .expr} file is written with {@link #write} instead of a chain of {@code echo}
- *       redirects, into the test's own work directory rather than {@code BATS_TEST_TMPDIR}, so the
- *       per-class {@code SOLR_HOME} carries nothing but the read-only techproducts collection from
- *       test to test.
- *   <li>The one-command {@code SOLR_INCLUDE=/force/credentials/to/be/supplied} prefix becomes an
- *       {@code env()} pointing at a non-existent path inside the work directory, as in {@code
- *       BasicAuthTest}: {@code auth enable} then writes neither the include file nor {@code
- *       basicAuth.conf}, so every command has to supply the credentials itself, and the
- *       distribution's own include file — shared with every concurrent class — is left alone.
- *   <li>Strengthened: the original ignores the exit status of every {@code solr stream} it runs, so
- *       the status is asserted here as well.
- * </ul>
+ * <p>{@code SOLR_INCLUDE} points at a non-existent path inside the work directory, as in {@code
+ * BasicAuthTest}: {@code auth enable} then writes neither the include file nor {@code
+ * basicAuth.conf}, so every command has to supply the credentials itself, and the distribution's
+ * own include file — shared with every concurrent class — is left alone.
  */
 public class StreamTest extends SolrShellTestCase {
 
@@ -62,7 +50,7 @@ public class StreamTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
     classCli.run("solr create -c techproducts -d sample_techproducts_configs");
     classCli

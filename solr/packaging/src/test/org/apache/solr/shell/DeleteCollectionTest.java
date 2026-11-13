@@ -20,20 +20,12 @@ package org.apache.solr.shell;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Port of {@code test_delete_collection.bats}.
- *
- * <p>Kept close to the original, including the order of the tests and the assertions each one
- * makes. Where it differs: the original named every collection {@code COLL_NAME} and relied on a
- * {@code delete_all_collections} teardown between tests, while here the class shares one {@code
- * SOLR_HOME} and ZooKeeper, so each test uses its own collection name. No assertion depends on the
- * name. Nothing in the original needs a shell construct, so the port runs on both shells.
- */
+/** Port of {@code test_delete_collection.bats}. */
 public class DeleteCollectionTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
   }
 

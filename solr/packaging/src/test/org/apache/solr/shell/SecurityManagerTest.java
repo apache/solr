@@ -25,24 +25,12 @@ import org.junit.Test;
 /**
  * Port of {@code test_security_manager.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
- *
- * <ul>
- *   <li>the two directories are created with {@link #mkdirs} and canonicalized with {@code
- *       toRealPath()}, instead of {@code mkdir -p} followed by {@code cd -P && pwd};
- *   <li>the backup {@code location} is built from {@link Path#toUri()} rather than by gluing {@code
- *       file://} onto the path — the same string as the original produces on Unix, and a valid file
- *       URL on Windows too, where a bare {@code file://C:\...} would not be;
- *   <li>{@code solr start} and {@code solr create}, which the original ran without looking at the
- *       outcome, assert their exit status;
- *   <li>the rejected backup also asserts a non-zero exit status; the request is answered with HTTP
- *       500 either way the rejection happens.
- * </ul>
- *
  * <p>The node's security manager is what this suite is about. On Java 24 and later {@code bin/solr}
  * does not install one, and Solr's own {@code allowPaths} check rejects the unpermitted directory
- * instead — hence the two alternatives in the final assertion, exactly as in the original.
+ * instead — hence the two alternatives in the final assertion.
+ *
+ * <p>The backup {@code location} is built from {@link Path#toUri()} rather than by gluing {@code
+ * file://} onto the path, which would not be a valid file URL on Windows.
  */
 public class SecurityManagerTest extends SolrShellTestCase {
 

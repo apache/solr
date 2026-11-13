@@ -20,21 +20,12 @@ package org.apache.solr.shell;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Port of {@code test_config.bats}.
- *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Nothing in the original needs a shell construct, so the port runs on both shells. Where it
- * differs: the original leaned on a {@code delete_all_collections} teardown to reuse one collection
- * name, while here the class shares one {@code SOLR_HOME} and ZooKeeper, so each test owns a
- * distinct collection; and the missing-{@code --value} case also asserts the non-zero exit the
- * message implies.
- */
+/** Port of {@code test_config.bats}. */
 public class ConfigTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
   }
 
@@ -42,7 +33,7 @@ public class ConfigTest extends SolrShellTestCase {
   public void settingProperty() {
     run("solr create -c config_set_property");
 
-    // Strengthened: a required-option complaint also means the command refused to run.
+    // A required-option complaint also means the command refused to run.
     runFail(
             "solr config -c config_set_property --action set-property"
                 + " --property updateHandler.autoCommit.maxDocs"

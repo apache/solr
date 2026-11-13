@@ -24,24 +24,12 @@ import org.junit.Test;
 /**
  * Port of {@code test_compression.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
- *
- * <ul>
- *   <li>{@code curl -D -} becomes {@link #http}, so the header dump the original asserted on as
- *       part of the body is asserted on as the response headers instead.
- *   <li>{@code curl --compressed} becomes a request that asks for {@code Accept-Encoding}; the
- *       harness decompresses the body the same way curl does.
- *   <li>The original's {@code solr start -e films} is deliberately not used: on Windows {@code
- *       RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the spawned node's
- *       environment, so the node cannot be discovered or stopped and the suite would be bash-only
- *       for a reason unrelated to what it tests (see {@code SnapshotsTest}). These tests only need
- *       a collection with enough documents that a response exceeds Jetty's 2048-byte {@code
- *       minGzipSize}, so a plain start, {@code solr create} and {@code solr post} of the example
- *       docs stand in.
- *   <li>The first two tests also assert the status, and the second and third that the negotiated
- *       encoding really was gzip — the claim their names make.
- * </ul>
+ * <p>{@code solr start -e films} is deliberately not used: on Windows {@code
+ * RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the spawned node's
+ * environment, so the node carries neither the harness' process-scan marker nor {@code
+ * SOLR_PID_DIR} and cannot be discovered or stopped (SOLR-18650). A plain start, {@code solr
+ * create} and {@code solr post} of the example docs give these tests what they need: a collection
+ * whose query response exceeds Jetty's 2048-byte {@code minGzipSize}.
  */
 public class CompressionTest extends SolrShellTestCase {
 
@@ -50,7 +38,7 @@ public class CompressionTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file, which started the films example purely to have documents to query.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
     classCli.run("solr create -c " + COLLECTION + " -d _default");
     // Filtered to xml, json and csv so the Extract handler is not invoked. 45 documents, whose

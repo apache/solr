@@ -22,13 +22,8 @@ import org.junit.Test;
 /**
  * Port of {@code test_healthcheck.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on. The
- * original starts Solr inside each test rather than in {@code setup_file} — one node in cloud mode,
- * one user-managed — so each test here starts its own too; the harness stops it when the test ends,
- * which is the original's {@code teardown}. Where it differs: BATS wiped {@code SOLR_HOME} before
- * every test, while here the whole class shares one, so the cloud test deletes its collection
- * again; and the two {@code refute_output 'error'} checks also assert the exit status, which an
- * output-only refutation would not notice.
+ * <p>Each test starts its own node — one in cloud mode, one user-managed — and the cloud test
+ * deletes its collection again, the class sharing one {@code SOLR_HOME}.
  */
 public class HealthcheckTest extends SolrShellTestCase {
 
@@ -37,23 +32,22 @@ public class HealthcheckTest extends SolrShellTestCase {
     run("solr start");
     run("solr create -c healthcheck_test -d _default");
 
-    // Local. Strengthened: the original only refuted "error", which an empty output satisfies
-    // without the healthcheck having run.
+    // Local. An empty output would satisfy a bare notContains("error").
     run("solr healthcheck -c healthcheck_test").assertNotContains("error");
 
     // Remote
     run("solr healthcheck -c healthcheck_test --solr-connection http://localhost:${SOLR_PORT}/solr")
         .assertNotContains("error");
 
-    // Not in the original: SOLR_HOME is class-scoped here, so the collection has to go again
-    // before the user-managed test starts a node over the same home.
+    // SOLR_HOME is class-scoped, so the collection has to go again before the user-managed test
+    // starts a node over the same home.
     run("solr delete -c healthcheck_test");
   }
 
   @Test
   public void healthcheckErrorsOnStandaloneSolr() {
     run("solr start --user-managed");
-    // Strengthened: the test's claim is that it errors, so the status is part of it.
+    // The test's claim is that it errors, so the status is part of it.
     runFail("solr healthcheck -c healthcheck_test")
         .assertContains("Healthcheck tool only works in Solr Cloud mode");
   }

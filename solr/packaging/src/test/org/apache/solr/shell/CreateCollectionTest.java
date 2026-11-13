@@ -25,18 +25,14 @@ import org.junit.Test;
 /**
  * Port of {@code test_create_collection.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: the original leaned on a {@code delete_all_collections} teardown to reuse one
- * {@code COLL_NAME} everywhere, so each test here names its own collection instead; the config-set
- * copy uses {@link #copy} and the session's work directory rather than {@code cp -r} and {@code
- * BATS_TEST_TMPDIR}; and the invalid-config-dir path is matched with either separator, because the
- * tool echoes it back through {@code Path}, which normalizes it on Windows.
+ * <p>The invalid-config-dir path is matched with either separator: the tool echoes it back through
+ * {@code Path}, which normalizes it on Windows.
  */
 public class CreateCollectionTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
   }
 

@@ -22,10 +22,8 @@ import org.junit.Test;
 /**
  * Port of {@code test_assert.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on. The
- * original starts Solr inside each test rather than in {@code setup_file} — one node user-managed,
- * one in cloud mode — so each test here starts its own too; the harness stops it when the test
- * ends, which is the original's {@code teardown}.
+ * <p>Each test starts its own node — one user-managed, one in cloud mode — and the harness stops it
+ * when the test ends.
  */
 public class AssertTest extends SolrShellTestCase {
 
@@ -50,8 +48,7 @@ public class AssertTest extends SolrShellTestCase {
     run("solr start");
     run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
 
-    // Strengthened: the original only refuted "ERROR", which an empty output satisfies without
-    // the assert having done anything.
+    // An empty output would satisfy a bare notContains("ERROR"), so the status is asserted too.
     run("solr assert --cloud http://localhost:${SOLR_PORT}").assertNotContains("ERROR");
 
     runFail("solr assert --not-cloud http://localhost:${SOLR_PORT}/solr")

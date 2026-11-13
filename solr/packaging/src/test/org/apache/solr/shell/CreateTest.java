@@ -22,12 +22,9 @@ import org.junit.Test;
 /**
  * Port of {@code test_create.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: BATS wiped {@code SOLR_HOME} before every test, while here the whole class
- * shares one. The original used the same name in both tests, which is safe only in one of the two
- * orders the runner may pick — so each test gets its own name, and the user-managed test also
- * deletes the core it created, since a core directory left behind is discovered by the other test's
- * node and fails to load.
+ * <p>Each test names its own core or collection, and the user-managed test deletes the core it
+ * created: the class shares one {@code SOLR_HOME}, and a core directory left behind is discovered
+ * by the other test's node and fails to load.
  */
 public class CreateTest extends SolrShellTestCase {
 
@@ -36,8 +33,8 @@ public class CreateTest extends SolrShellTestCase {
     run("solr start --user-managed");
     run("solr create -c core_non_cloud").assertContains("Created new core 'core_non_cloud'");
 
-    // Not in the original: SOLR_HOME is class-scoped here, so the core has to go again, or the
-    // cloud-mode test's node would discover a user-managed core directory it cannot load.
+    // SOLR_HOME is class-scoped, so the core has to go again, or the cloud-mode test's node
+    // discovers a user-managed core directory it cannot load.
     run("solr delete -c core_non_cloud");
   }
 

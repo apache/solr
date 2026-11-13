@@ -22,12 +22,8 @@ import org.junit.Test;
 /**
  * Port of {@code test_placement_plugin.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: the second test uses its own collection name because the class shares one
- * {@code SOLR_HOME} (and so one ZooKeeper data directory) rather than wiping it per test; {@code
- * assert_file_contains} becomes {@link #readLinesMatching} on the log file resolved in Java, since
- * the harness does not expand {@code ${SOLR_LOGS_DIR}} inside a path; and {@code solr create} also
- * asserts its exit status.
+ * <p>Each test names its own collection, the class sharing one {@code SOLR_HOME} and so one
+ * ZooKeeper data directory.
  */
 public class PlacementPluginTest extends SolrShellTestCase {
 
@@ -51,8 +47,8 @@ public class PlacementPluginTest extends SolrShellTestCase {
     env("SOLR_PLACEMENTPLUGIN_DEFAULT", "random");
     run("solr start");
     run("solr assert --cloud http://localhost:${SOLR_PORT} --timeout 3000");
-    // COLL_NAME2, not the original's COLL_NAME: the collection the other test created is still in
-    // ZooKeeper, which BATS avoided by wiping SOLR_HOME before every test.
+    // Its own name: the collection the other test created is still in ZooKeeper, SOLR_HOME being
+    // wiped per class rather than per test.
     run("solr create -c COLL_NAME2");
     assertTrue(collectionExists("COLL_NAME2"));
     assertFalse(

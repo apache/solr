@@ -24,16 +24,13 @@ import org.junit.Test;
 /**
  * Port of {@code test_example.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: {@code curl} becomes {@link #http}, and the example is given {@code --solr-home
- * ${SOLR_HOME}} so that it writes its node directories into this class's own {@code SOLR_HOME}
- * instead of {@code ${SOLR_TIP}/example/cloud}, which is shared with every class running
- * concurrently. The BATS {@code test_stream.bats} passed {@code --solr-home} for the same reason,
- * though its port no longer uses an example at all.
+ * <p>The example is given {@code --solr-home ${SOLR_HOME}} so that it writes its node directories
+ * into this class's own {@code SOLR_HOME} rather than {@code ${SOLR_TIP}/example/cloud}, which is
+ * shared with every class running concurrently.
  *
  * <p><b>Please keep the {@code solr start -e} invocation below.</b> {@code CompressionTest}, {@code
- * SnapshotsTest} and {@code StreamTest} all replaced theirs with {@code solr start} plus {@code
- * create} and {@code post}, the example having been only a convenient way to get a populated
+ * SnapshotsTest} and {@code StreamTest} use a plain {@code solr start} plus {@code create} and
+ * {@code post} instead, the example having been only a convenient way to get a populated
  * collection. Driving {@code RunExampleTool} from the command line is what this suite is
  * <em>for</em>, and it is now the only shell suite that does it at all.
  */
@@ -46,7 +43,7 @@ public class ExampleTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The two nodes live for the whole class and are stopped automatically; the
+    // The two nodes live for the whole class and are stopped automatically; the
     // example data lands under SOLR_HOME, which the next class wipes.
     classCli.run(
         "solr start -e cloud --no-prompt --jvm-opts \"-Dcustom.prop=helloworld\""

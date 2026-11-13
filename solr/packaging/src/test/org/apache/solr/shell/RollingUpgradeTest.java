@@ -62,37 +62,17 @@ import org.testcontainers.utility.DockerImageName;
  * Docker- and network-using test out of ordinary builds — which is why there is no {@code @Nightly}
  * as well.
  *
- * <p>Kept close to the original, including the order of the steps and the text each asserts on.
- * {@code docker} command lines become Testcontainers calls, so nothing is shell-specific and no
- * {@code @EnabledOnShell} is needed. A {@code @ClassRule} is not an option here: replacing a
- * running node with one on the new image mid-test <em>is</em> the thing under test.
+ * <p>A {@code @ClassRule} is not an option here: replacing a running node with one on the new image
+ * mid-test <em>is</em> the thing under test.
  *
  * <p>8983-8985 and 9983 below are container ports on a private Docker network, not host ports: this
  * class binds none of the four ports it owns, and Testcontainers' published wait-strategy port is
  * chosen by Docker, so a class running in parallel cannot collide with it.
  *
- * <p>Where it differs:
- *
- * <ul>
- *   <li>{@code docker run} becomes a {@link GenericContainer}, and {@code docker exec} {@link
- *       GenericContainer#execInContainer}, so an argument needs no shell quoting — which is what
- *       lets the inline JSON update body be written as-is;
- *   <li>containers take Testcontainers' generated names and carry {@code solr-node1..3} as network
- *       aliases, so a leftover container cannot make this run fail to create one. The volumes get a
- *       per-run suffix rather than the original's bare {@code solr-dataN}, a Docker volume being
- *       global to the daemon, and are removed before use as well as after;
- *   <li>{@code docker pull} and {@code docker image inspect} are gone; the pull policy sits on the
- *       container instead, keeping the original's always-re-pull of the begin image and preference
- *       for a local end image. An unresolvable image now fails rather than skips;
- *   <li>the teardown's {@code docker logs} and {@code ps aux} artifacts are written from Java, and
- *       {@code docker inspect}'s state is reduced to the id and image name logged on failure;
- *       {@code date -Iseconds} is gone with the {@code --since} it scoped;
- *   <li>{@code jq} becomes a regex over the JSON response, for one number out of each of two
- *       responses;
- *   <li>three of the original's {@code assert_success} lines sat after a bare {@code docker exec}
- *       and so re-asserted a {@code run curl} from much earlier in the test; here every step
- *       asserts its own exit status.
- * </ul>
+ * <p>Containers take Testcontainers' generated names and carry {@code solr-node1..3} as network
+ * aliases, so a leftover container cannot make this run fail to create one. The volumes get a
+ * per-run suffix, a Docker volume being global to the daemon, and are removed before use as well as
+ * after.
  */
 // ThreadLeakFilters are not additive, so SolrTestCase's own two are repeated here.
 @ThreadLeakFilters(
@@ -124,7 +104,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
     }
   }
 
-  /** The original's {@code -m 200m} heap in a {@code --memory=400m} container. */
+  /** A 200m heap in a 400m container. */
   private static final long MEMORY_LIMIT_BYTES = 400L * 1024 * 1024;
 
   private static final String HEAP = "200m";
@@ -155,7 +135,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
       List<Node> nodes = List.of(node1, node2, node3);
       try {
         // A volume is global to the Docker daemon, so data a killed run left behind would make the
-        // upgrade start from the wrong index. The original only removed them afterwards.
+        // upgrade start from the wrong index.
         nodes.forEach(Node::removeVolume);
 
         // Starting solr-node1 with embedded ZooKeeper
@@ -242,7 +222,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
    * directory name.
    *
    * <p>Neither end is checked for availability: a missing image should fail loudly where a
-   * container needs it, not skip as the original did.
+   * container needs it, rather than skipping.
    */
   private void resolveImages() throws IOException {
     int previousMajor = SolrVersion.LATEST.getMajorVersion() - 1;
@@ -257,9 +237,9 @@ public class RollingUpgradeTest extends SolrShellTestCase {
 
   /**
    * The begin image is always re-pulled, so the test tracks the latest release of the previous
-   * major as the original did. The end image keeps Testcontainers' default policy, which pulls only
-   * when the image is not already local: the one the Gradle task just built therefore never leaves
-   * the machine, while a hand-set {@code SOLR_END_IMAGE} naming a published image still resolves.
+   * major. The end image keeps Testcontainers' default policy, which pulls only when the image is
+   * not already local: the one the Gradle task just built therefore never leaves the machine, while
+   * a hand-set {@code SOLR_END_IMAGE} naming a published image still resolves.
    */
   private ImagePullPolicy pullPolicyFor(String image) {
     return image.equals(beginImage) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy();
@@ -279,7 +259,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
         () -> node.exec("solr", "healthcheck", "-c", "test-collection").getExitCode() == 0);
   }
 
-  /** Port of the original's {@code teardown}: diagnostics, then artifacts, then removal. */
+  /** Diagnostics, then artifacts, then removal. */
   private void teardown(List<Node> nodes, boolean failed) {
     for (Node node : nodes) {
       if (node.container == null || !node.container.isRunning()) {
@@ -355,7 +335,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
 
     Node(int number, Network network, String runId) {
       this.name = "solr-node" + number;
-      // Per run, unlike the original's bare solr-dataN: a Docker volume is global to the daemon, so
+      // Per run: a Docker volume is global to the daemon, so
       // two runs on one machine would otherwise wipe each other's data mid-upgrade.
       this.volume = "solr-data" + number + "-" + runId;
       this.port = 8982 + number;
@@ -453,9 +433,7 @@ public class RollingUpgradeTest extends SolrShellTestCase {
       }
     }
 
-    /**
-     * Testcontainers' stop() also removes the container, as the original's {@code docker rm} did.
-     */
+    /** Testcontainers' stop() also removes the container. */
     void stop() {
       if (container != null) {
         container.stop();

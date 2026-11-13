@@ -20,19 +20,12 @@ package org.apache.solr.shell;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Port of {@code test_status.bats}.
- *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Nothing in the original needs a shell construct, so the port runs on both shells. Where it
- * differs: the multiple-connection-options case also asserts the non-zero exit that "prevented"
- * implies, which the original left unchecked.
- */
+/** Port of {@code test_status.bats}. */
 public class StatusTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
   }
 
@@ -53,7 +46,7 @@ public class StatusTest extends SolrShellTestCase {
 
   @Test
   public void multipleConnectionOptionsArePrevented() {
-    // Strengthened: "prevented" means the command refuses, so the status is part of the claim.
+    // "prevented" means the command refuses, so the status is part of the claim.
     runFail("solr status --port ${SOLR_PORT} --solr-url http://localhost:${SOLR_PORT}")
         .assertMatches("(-s|solr-url).*(mutually exclusive|already been selected)");
   }

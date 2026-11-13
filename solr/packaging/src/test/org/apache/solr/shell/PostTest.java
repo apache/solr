@@ -25,10 +25,8 @@ import org.junit.Test;
 /**
  * Port of {@code test_post.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: {@code curl} becomes {@link #http}, whose result carries the same fluent
- * assertions a command result does, and the two tests that need a pipe or an embedded newline say
- * so explicitly rather than relying on bash syntax inside a shared command line.
+ * <p>The two tests that need a pipe or an embedded newline say so explicitly rather than relying on
+ * bash syntax inside a shared command line.
  */
 public class PostTest extends SolrShellTestCase {
 
@@ -212,7 +210,7 @@ public class PostTest extends SolrShellTestCase {
             "--mode",
             "args",
             "{'delete': {'query': '*:*'}}"))
-        // Strengthened: without the status, a post that failed and printed nothing recognisable
+        // Without the status, a post that failed and printed nothing recognisable
         // would satisfy the refutation.
 
         .assertNotContains("\"status\":0");
@@ -235,7 +233,7 @@ public class PostTest extends SolrShellTestCase {
   @Test
   @EnabledOnShell(Shell.BASH) // An argument containing a newline is not expressible on cmd.exe.
   public void argsModeWithACsvBodyContainingANewline() {
-    // The BATS original used bash's $'id,value\nROW1,0.47' quoting. In the argv form the newline is
+    // In the argv form the newline is
     // simply part of the Java string and the harness quotes it for the shell.
     run("solr create -c test_args_csv -d _default");
     run(List.of(

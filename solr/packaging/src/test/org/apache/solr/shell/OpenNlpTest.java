@@ -24,22 +24,9 @@ import org.junit.Test;
 /**
  * Port of {@code test_opennlp.bats}.
  *
- * <p>Kept close to the original, including the order of the steps and the text each asserts on.
- * Where it differs:
- *
- * <ul>
- *   <li>the two {@code curl -o} downloads become {@link #download}, and land in the session's work
- *       directory rather than in {@code ${SOLR_TIP}/models/sentiment/} — the distribution is shared
- *       by every class running concurrently and must not be written to;
- *   <li>{@code ls -alh} over the module's lib directory becomes {@link #list}, so the "not the GPU
- *       build" claim is checked against the file names rather than against {@code ls} output;
- *   <li>the {@code curl} calls become {@link #httpPost}, {@link #httpPut} and {@link #http}, there
- *       being no curl on a stock Windows runner;
- *   <li>the two schema edits, which the original ran without looking at the outcome, assert HTTP
- *       200 and {@code "status":0}: everything after them is meaningless if a field is missing;
- *   <li>{@code solr start} and {@code solr assert --started}, likewise unchecked in the original,
- *       assert their exit status.
- * </ul>
+ * <p>The two model downloads land in the session's work directory rather than in {@code
+ * ${SOLR_TIP}/models/sentiment/}: the distribution is shared by every class running concurrently
+ * and must not be written to.
  */
 public class OpenNlpTest extends SolrShellTestCase {
 
@@ -55,7 +42,7 @@ public class OpenNlpTest extends SolrShellTestCase {
   // I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
   // like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
   @Test
-  // The original's 'bats test_tags=nightly': it downloads a 160MB ONNX sentiment model and its
+  // Nightly: it downloads a 160MB ONNX sentiment model and its
   // vocabulary from nightlies.apache.org, which an ordinary build has no business doing.
   @Nightly
   public void checkLifecycleOfSentimentClassification() {

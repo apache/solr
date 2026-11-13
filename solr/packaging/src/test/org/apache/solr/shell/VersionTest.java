@@ -19,13 +19,7 @@ package org.apache.solr.shell;
 
 import org.junit.Test;
 
-/**
- * Port of {@code test_version.bats}.
- *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on. The
- * original needs no running Solr, so there is no {@code @BeforeClass}; the clean {@code SOLR_HOME}
- * its {@code common_clean_setup} asked for is what the base class already gives every class.
- */
+/** Port of {@code test_version.bats}. */
 public class VersionTest extends SolrShellTestCase {
 
   @Test

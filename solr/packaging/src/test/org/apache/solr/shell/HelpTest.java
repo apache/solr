@@ -19,14 +19,7 @@ package org.apache.solr.shell;
 
 import org.junit.Test;
 
-/**
- * Port of {@code test_help.bats}.
- *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: the BATS {@code skip} guarding the not-yet-migrated {@code restart} help
- * becomes {@link EnabledOnCli}, and {@code run -1} becomes {@code runFail}. Nothing here starts
- * Solr, so there is no {@code setup_file} equivalent.
- */
+/** Port of {@code test_help.bats}. */
 public class HelpTest extends SolrShellTestCase {
 
   @Test

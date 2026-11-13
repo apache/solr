@@ -23,29 +23,22 @@ import org.junit.Test;
 /**
  * Port of {@code test_snapshots.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
+ * <p>{@code solr start -e films} is deliberately not used: on Windows {@code
+ * RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the spawned node's
+ * environment, so the node carries neither the harness' process-scan marker nor {@code
+ * SOLR_PID_DIR} and cannot be discovered or stopped (SOLR-18650). These tests only need a
+ * collection named {@code films} with documents in it, so a plain start plus {@code solr create}
+ * and {@code solr post} stand in.
  *
- * <ul>
- *   <li>The original's {@code solr start -e films} is deliberately not used: on Windows {@code
- *       RunExampleTool#startSolr} drops every {@code SOLR_*} variable from the spawned node's
- *       environment, so the node carries neither the harness' process-scan marker nor {@code
- *       SOLR_PID_DIR} and cannot be discovered or stopped — which would make this suite bash-only
- *       for a reason unrelated to what it tests ({@code CompressionTest} and {@code StreamTest}
- *       replace the same {@code setup_file} for the same reason). These tests only need a
- *       collection named {@code films} with documents in it, so a plain start plus {@code solr
- *       create} and {@code solr post} of the example documents stand in.
- *   <li>Every snapshot a test creates it also deletes, as the original does, but no two tests share
- *       a snapshot name: {@code SOLR_HOME} is wiped per class rather than per test, so a failure
- *       between a create and its delete would otherwise resurface as a second failure in the
- *       sibling test that reused the name.
- * </ul>
+ * <p>Every snapshot a test creates it also deletes, and no two tests share a snapshot name: {@code
+ * SOLR_HOME} is wiped per class rather than per test, so a failure between a create and its delete
+ * would otherwise resurface as a second failure in the sibling test that reused the name.
  */
 public class SnapshotsTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically.
+    // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start");
     classCli.run("solr create -c films -d _default");
     // Documents, so a snapshot references real segment files rather than an empty commit. The

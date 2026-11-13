@@ -27,13 +27,9 @@ import org.junit.Test;
 /**
  * Port of {@code test_start_solr.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on. The
- * original starts Solr inside every test rather than in {@code setup_file}, so each test here does
- * too; the harness stops what a test started, which is the original's {@code teardown}. Where it
- * differs: {@code curl} becomes {@link #http}, {@code cat} becomes {@link #read}, the {@code
- * timeout} utility becomes an explicit command timeout, {@code RMI_PORT} is a port this class owns
- * rather than the hardcoded 65535, and the stop-arg test is split per shell because the two scripts
- * reject the argument with different wording.
+ * <p>Each test starts its own node and the harness stops it. {@code RMI_PORT} is a port this class
+ * owns rather than a hardcoded one, and the stop-arg test is split per shell because the two
+ * scripts reject the argument with different wording.
  */
 public class StartSolrTest extends SolrShellTestCase {
 
@@ -47,7 +43,7 @@ public class StartSolrTest extends SolrShellTestCase {
     run("solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000");
     run("solr assert --not-cloud http://localhost:${SOLR2_PORT} --timeout 5000");
 
-    // The original wrapped this in 'bash -c ... 2>&1' only to merge the streams; the harness
+    // No 'bash -c ... 2>&1' is needed to merge the streams; the harness
     // already merges them.
     CommandResult stopped = run("solr stop --all").assertNotContains("forcefully killing");
     // The graceful-stop wording is bash's alone - solr.cmd says "Stopping Solr process N running
@@ -81,8 +77,8 @@ public class StartSolrTest extends SolrShellTestCase {
   // For start/stop/restart we parse the args separate from picking the command, which means you
   // don't get an error message for passing a start arg, like --jvm-opts, to a stop command. Make
   // sure that passing a non flag option (i.e. --jvm-opts "blah") doesn't hang the stop command:
-  // the harness kills a command that overruns its timeout and fails the test, which is what the
-  // original's 'timeout 2' did (and it no longer has to skip when that utility is missing).
+  // the harness kills a command that overruns its timeout and fails the test, which is what a
+  // 'timeout 2' would do, without having to skip when that utility is missing.
 
   @Test
   @EnabledOnShell(
@@ -102,8 +98,8 @@ public class StartSolrTest extends SolrShellTestCase {
   @Test
   public void solr16976SolrStartsWithRemoteJmxEnabled() {
     env("ENABLE_REMOTE_JMX_OPTS", "true");
-    // The original hardcoded 65535 so the default RMI_PORT (SOLR_PORT+10000) could not exceed the
-    // port range. A port this class owns does the same job and cannot collide with another class.
+    // A port this class owns: RMI_PORT defaults to SOLR_PORT+10000, which would leave the port
+    // range, and a hardcoded one would collide with another class.
     env("RMI_PORT", Integer.toString(ports().solr3()));
 
     run("solr start");

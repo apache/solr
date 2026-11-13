@@ -22,22 +22,16 @@ import org.junit.Test;
 /**
  * Port of {@code test_export.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: {@code ${BATS_TEST_TMPDIR}} becomes an {@code out} directory in the session's
- * own work directory (which is also its cwd, so the relative-path cases read as they did in bash);
- * {@code [ -e ... ]} becomes {@link #exists}; each {@code solr export} also asserts its exit
- * status, since a file-existence check alone would pass on a leftover file; and each test deletes
- * the collection it created, because the harness wipes {@code SOLR_HOME} once per class rather than
- * before every test and a stale core directory would be discovered by the other test's node.
- *
- * <p>Both tests build their own node, and neither uses {@code solr start -e}, so both run on
- * cmd.exe as well — see the comment at the fixture.
+ * <p>The {@code out} directory sits in the session's own work directory, which is also its cwd, so
+ * the relative-path cases read as they did in bash. Each test deletes the collection it created:
+ * {@code SOLR_HOME} is wiped once per class, and a stale core directory would be discovered by the
+ * other test's node.
  */
 public class ExportTest extends SolrShellTestCase {
 
   @Test
   public void checkExportCommand() {
-    // The original built this fixture with 'solr start -e techproducts', which would make the test
+    // Not 'solr start -e techproducts', which would make the test
     // bash-only (see SnapshotsTest). The subject here is 'solr export', so the fixture is built the
     // long way instead; ExampleTest is where 'solr start -e' is covered deliberately.
     run("solr start");
@@ -46,7 +40,7 @@ public class ExportTest extends SolrShellTestCase {
             + " -c techproducts \"${SOLR_TIP}/example/exampledocs\"")
         .assertNotContains("ERROR");
 
-    // Stands in for ${BATS_TEST_TMPDIR}: the --output cases need both a file prefix and a real
+    // The --output cases need both a file prefix and a real
     // directory below the session's work directory.
     mkdirs("out");
 
@@ -102,7 +96,7 @@ public class ExportTest extends SolrShellTestCase {
   public void exportFailsOnNonCloudMode() {
     run("solr start --user-managed");
     run("solr create -c COLL_NAME");
-    // Strengthened: "fails" is part of the claim, and the message check alone would pass even if
+    // "fails" is part of the claim, and the message check alone would pass even if
     // the command had done nothing.
     runFail("solr export --solr-url http://localhost:${SOLR_PORT} -c COLL_NAME")
         .assertNotContains("Export complete");

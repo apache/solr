@@ -27,28 +27,15 @@ import org.junit.Test;
 /**
  * Port of {@code test_auth.bats}. There are further auth tests in {@link SslTest}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
- *
- * <ul>
- *   <li>{@code curl} becomes {@link #http}, which now also carries credentials, {@code curl -u
- *       user:password --basic} being half of what this suite does.
- *   <li>{@code solr auth enable} rewrites the include file, by default the distribution's own and
- *       so shared with every concurrent class, so {@link #cleanSetup} points {@code SOLR_INCLUDE}
- *       at a private copy — as {@code SslTest} does.
- *   <li>The original's {@code setup} runs {@code solr auth disable} before every test, to undo what
- *       a previous test left in the include file and in ZooKeeper. Here the include file is a
- *       pristine copy per test and {@code SOLR_HOME} — which holds the embedded ZooKeeper's data —
- *       is wiped per test, so there is nothing to disable.
- *   <li>The two {@code auth enable} calls the original lets succeed-or-fail silently are asserted
- *       to succeed.
- * </ul>
+ * <p>{@code solr auth enable} rewrites the include file, by default the distribution's own and so
+ * shared with every concurrent class, so {@link #cleanSetup} points {@code SOLR_INCLUDE} at a
+ * private copy — as {@code SslTest} does.
  */
 public class AuthTest extends SolrShellTestCase {
 
   @Before
   public void cleanSetup() throws IOException {
-    // BATS' common_clean_setup: every test here starts its own Solr, from a clean SOLR_HOME. The
+    // Every test starts its own Solr, from a clean SOLR_HOME. The
     // wipe also discards the embedded ZooKeeper's data, and with it any security.json.
     IOUtils.rm(harnessEnv.solrHome());
     Files.createDirectories(harnessEnv.logsDir());

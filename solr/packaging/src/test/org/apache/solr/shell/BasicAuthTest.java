@@ -28,31 +28,16 @@ import org.junit.Test;
 /**
  * Port of {@code test_basic_auth.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
- *
- * <ul>
- *   <li>The original's {@code setup()} ran before every test; the harness wipes {@code SOLR_HOME}
- *       once per class, so {@link #startSolrWithBasicAuth} does the rest. Each test gets its own
- *       node, embedded ZooKeeper data and {@code security.json}, which is what lets two tests share
- *       the collection name {@code COLL_NAME}.
- *   <li>The one-command {@code SOLR_INCLUDE=/force/credentials/to/be/supplied} prefix becomes an
- *       {@code env()} that stays set for the test, the harness environment being per-session rather
- *       than per-command, and points inside the work directory rather than at an absolute Unix
- *       path. That also keeps {@code solr auth disable} away from the distribution's own include
- *       file, which every test class shares.
- *   <li>{@code curl -I} becomes {@link #http}: its status is the original's {@code "HTTP/1.1 200"},
- *       and the header assertion is lower-cased because {@code java.net.http} lower-cases header
- *       names.
- *   <li>The second test's credential-less {@code run solr create -c COLL_NAME}, which the original
- *       leaves unasserted, asserts that it is refused.
- * </ul>
+ * <p>{@code SOLR_INCLUDE} points at a non-existent path inside the work directory, so {@code auth
+ * enable} writes neither an include file nor {@code basicAuth.conf} and every command has to supply
+ * the credentials itself. That also keeps {@code solr auth disable} away from the distribution's
+ * own include file, which every test class shares.
  */
 public class BasicAuthTest extends SolrShellTestCase {
 
   @Before
   public void startSolrWithBasicAuth() throws IOException {
-    // BATS' common_clean_setup: every test in this file starts its own Solr from a clean SOLR_HOME.
+    // Every test starts its own Solr from a clean SOLR_HOME.
     IOUtils.rm(harnessEnv.solrHome());
     Files.createDirectories(harnessEnv.logsDir());
 
@@ -73,7 +58,7 @@ public class BasicAuthTest extends SolrShellTestCase {
 
   @After
   public void disableBasicAuth() {
-    // BATS' teardown. Stopping the node is automatic; SOLR_INCLUDE still points at the path that
+    // Stopping the node is automatic; SOLR_INCLUDE still points at the path that
     // does not exist, so this only clears security.json out of ZooKeeper.
     run("solr auth disable -z localhost:${ZK_PORT}");
   }
@@ -108,16 +93,15 @@ public class BasicAuthTest extends SolrShellTestCase {
 
   @Test
   public void postPostlogsAndExportWithBasicAuth() {
-    // Strengthened: the original ignores this line's outcome, but without credentials the create
+    // Without credentials the create
     // has to be refused.
     runFail("solr create -c COLL_NAME");
     run("solr create -u name:password -c COLL_NAME")
         .assertContains("Created collection 'COLL_NAME'");
 
     // Test post
-    // --name COLL_NAME, not the BATS original's 'monitors': no test ever created that collection,
-    // so every document 404'd. It passed anyway because the status was ignored and `solr post`
-    // prints "1 files indexed." even when the collection does not exist (recorded separately).
+    // Posts to the collection this test created. Naming a collection nothing creates makes every
+    // document 404 while `solr post` still prints "1 files indexed." - recorded separately.
     run("solr post -u name:password -t application/xml --solr-url"
             + " http://localhost:${SOLR_PORT} --name COLL_NAME"
             + " \"${SOLR_TIP}/example/exampledocs/monitor.xml\"")
@@ -128,7 +112,7 @@ public class BasicAuthTest extends SolrShellTestCase {
             + " --name COLL_NAME --rootdir \"${SOLR_LOGS_DIR}/solr.log\"")
         .assertContains("Committed");
 
-    // Test export (commented out in the original too)
+    // Test export (disabled)
     // run("solr export -u name:password --solr-url http://localhost:${SOLR_PORT}"
     //         + " --name COLL_NAME --query \"*:*\" --output \"export-output\"")
     //     .assertContains("Export complete");

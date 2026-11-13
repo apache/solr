@@ -29,28 +29,20 @@ import org.junit.Test;
 /**
  * Port of {@code test_ssl.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs:
+ * <p>{@link #https} trusts the keystore directly, so there is no PEM conversion and no {@code
+ * openssl} — which is what lets most of this suite run on Windows. {@code keytool} is invoked by
+ * absolute path from the test JVM's {@code java.home}, the Gradle test environment not guaranteeing
+ * it on {@code PATH}, and the mTLS tests use its own {@code -file}/{@code -infile}/{@code -outfile}
+ * options rather than a pipe.
  *
- * <ul>
- *   <li>{@code curl --cacert} becomes {@link #https}, which trusts the keystore directly — so the
- *       {@code openssl} step that converted it to a PEM for curl is gone, and with it the only
- *       reason most of this suite could not run on Windows.
- *   <li>{@code keytool} is invoked by absolute path from the test JVM's {@code java.home}: the
- *       Gradle test environment does not guarantee it on {@code PATH}.
- *   <li>The {@code keytool ... | keytool -gencert > file} pipes of the mTLS tests use keytool's own
- *       {@code -file}/{@code -infile}/{@code -outfile} options instead, a pipe being bash-only.
- *   <li>The original wipes {@code SOLR_HOME} before every test; the harness does it once per class,
- *       so {@link #wipeSolrHomeBeforeEachTest} does the rest — without it the collection named
- *       {@code test} would survive into the next test.
- *   <li>The two {@code curl --resolve} lines of the peer-name test have no cross-shell equivalent —
- *       no JDK HTTP client can send a {@code Host} header for a name it has not resolved — so they
- *       live in a bash-only companion test, {@link #useDifferentHostnameWithCurlResolve}.
- *   <li>{@code solr auth enable} appends to the include file, by default the distribution's own and
- *       so shared with every test class, hence {@code SOLR_INCLUDE} pointing at a private copy.
- *   <li>The original's subshells, which restore an environment variable on exit, become explicit
- *       re-assignments at the same points.
- * </ul>
+ * <p>{@code solr auth enable} appends to the include file, by default the distribution's own and so
+ * shared with every test class, hence {@code SOLR_INCLUDE} pointing at a private copy. {@link
+ * #wipeSolrHomeBeforeEachTest} wipes {@code SOLR_HOME} per test, which the harness does only per
+ * class — without it the collection named {@code test} would survive into the next test.
+ *
+ * <p>No JDK HTTP client can send a {@code Host} header for a name it has not resolved, so the
+ * {@code curl --resolve} peer-name case lives in a bash-only companion test, {@link
+ * #useDifferentHostnameWithCurlResolve}.
  */
 public class SslTest extends SolrShellTestCase {
 
@@ -62,7 +54,7 @@ public class SslTest extends SolrShellTestCase {
 
   @Before
   public void wipeSolrHomeBeforeEachTest() throws IOException {
-    // BATS' common_setup: every test in this file starts its own Solr, from a clean SOLR_HOME.
+    // Every test starts its own Solr, from a clean SOLR_HOME.
     IOUtils.rm(harnessEnv.solrHome());
     Files.createDirectories(harnessEnv.logsDir());
   }
@@ -123,7 +115,7 @@ public class SslTest extends SolrShellTestCase {
     run("solr api --solr-url \"https://localhost:${SOLR_PORT}/solr/test/select?q=*:*\"")
         .assertContains("\"numFound\":0");
 
-    // Trusting the certificate is not enough: its names do not cover localhost. The original
+    // Trusting the certificate is not enough: its names do not cover localhost. This
     // asserted curl's wording for this; here it is the TLS stack's own, the same text the
     // --check-peer-name assertion below looks for.
     https("/solr/test/select?q=*:*")
@@ -132,7 +124,7 @@ public class SslTest extends SolrShellTestCase {
         .assertConnectionFailed()
         .assertContains("No subject alternative DNS name matching localhost found");
 
-    // The original's 'curl -k'. java.net.http has no per-request way to turn hostname
+    // java.net.http has no per-request way to turn hostname
     // verification off, so the request addresses the node by the IP address the certificate
     // does cover, which makes the same point: the connection itself is fine.
     https("/solr/test/select?q=*:*")
@@ -258,7 +250,7 @@ public class SslTest extends SolrShellTestCase {
         .get()
         .assertContains("Error 401 Authentication");
 
-    // BATS' teardown ran this for every test; only this one has anything to disable.
+    // Only this test has anything to disable.
     run("solr auth disable");
   }
 
@@ -411,7 +403,7 @@ public class SslTest extends SolrShellTestCase {
         .assertConnectionFailed()
         .assertMatches("(?s).*(SSLHandshakeException|SSLException|fatal alert).*");
 
-    // The original's subshells end here, restoring the four server variables and the client
+    // The four server variables and the client
     // keystore for what follows.
     env("SOLR_SSL_CLIENT_KEY_STORE", path("ssl/client/solr-client.keystore.p12").toString());
     env("SOLR_SSL_CLIENT_KEY_STORE_PASSWORD", "client-key");
@@ -425,7 +417,7 @@ public class SslTest extends SolrShellTestCase {
     env("SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION", "true");
     run("solr start -z localhost:${ZK_PORT} -p ${SOLR3_PORT}");
 
-    // The original slept here, because it cannot connect to the node to check it is up. Its
+    // A sleep would do, there being no way to connect to the node to check it is up. Its
     // registration in ZooKeeper is visible from a node we can talk to, so that is what we wait
     // for instead.
     awaitOrFail(
@@ -540,7 +532,7 @@ public class SslTest extends SolrShellTestCase {
 
   @Test
   public void testKeystoreReload() {
-    // cert and keystore 1, cert and keystore 2. The original also exported each as a PEM with
+    // cert and keystore 1, cert and keystore 2. No PEM export is needed with
     // openssl; nothing in the test used them.
     createKeystore("cert1", "cert1", "localhost", "127.0.0.1");
     Path cert2 = createKeystore("cert2", "cert2", "localhost", "127.0.0.1");
@@ -561,7 +553,7 @@ public class SslTest extends SolrShellTestCase {
     // server1 will run on $SOLR_PORT and will use server1.keystore
     env("SOLR_SSL_KEY_STORE", server1.toString());
     env("SOLR_SSL_TRUST_STORE", server1.toString());
-    // The original used socketTimeout=5000. It only has to be short enough that a request to a node
+    // It only has to be short enough that a request to a node
     // serving the wrong certificate gives up quickly, and 5s is not enough to create a collection
     // across two nodes while the other suites have the machine busy.
     run("solr start --jvm-opts \"" + RELOAD_JVM_OPTS + "\"");
@@ -675,8 +667,8 @@ public class SslTest extends SolrShellTestCase {
   // --------------------------------------------------------------- keystore generation
 
   /**
-   * Port of the {@code keytool -genkeypair} block the original opens each test with, writing into
-   * an {@code ssl} directory of the session's own work directory.
+   * The {@code keytool -genkeypair} block each test opens with, writing into an {@code ssl}
+   * directory of the session's own work directory.
    */
   private Path createKeystore(String name, String alias, String dnsName, String ip) {
     mkdirs("ssl");
@@ -857,7 +849,7 @@ public class SslTest extends SolrShellTestCase {
         + ", OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country";
   }
 
-  /** The session's {@code SOLR_OPTS}, which the original appends to and which may be unset. */
+  /** The session's {@code SOLR_OPTS}, which is appended to and which may be unset. */
   private String solrOpts() {
     String value = env("SOLR_OPTS");
     return value == null ? "" : value;

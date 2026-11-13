@@ -26,19 +26,15 @@ import org.junit.Test;
 /**
  * Port of {@code test_modules.bats}.
  *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Three things differ, each for the reason the comment at the site gives: both tests clean up the
- * collection they created, because {@code SOLR_HOME} is class-scoped here rather than wiped between
- * tests; the config set BATS named by a path relative to {@code solr/packaging} is resolved
- * absolutely; and the {@code solr.include} file is written in the syntax of the shell that will
- * read it.
+ * <p>Both tests clean up the collection they created, {@code SOLR_HOME} being class-scoped, and the
+ * {@code solr.include} file is written in the syntax of the shell that will read it.
  */
 public class ModulesTest extends SolrShellTestCase {
 
   @Test
   public void sqlModule() {
     run("solr start -Dsolr.modules=sql");
-    // Renamed from the original's COLL_NAME, which no assertion here depends on, so that this test
+    // Its own name, which no assertion here depends on, so that this test
     // and the next cannot collide in the SOLR_HOME the whole class shares.
     run("solr create -c sql_coll");
     run("solr api --solr-url \"http://localhost:${SOLR_PORT}/solr/sql_coll/sql"
@@ -48,14 +44,14 @@ public class ModulesTest extends SolrShellTestCase {
         .assertContains("\"RESPONSE_TIME\":")
         .assertNotContains("\"EXCEPTION\"");
 
-    // BATS' per-test teardown. Without it the collection is still in this class's SOLR_HOME when
+    // Without this the collection is still in this class's SOLR_HOME when
     // the next test's node starts, which runs with a different set of modules.
     run("solr delete -c sql_coll --delete-config");
   }
 
   @Test
   public void icuCollationInAnalysisExtrasModule() {
-    // bin/solr sources SOLR_INCLUDE while bin\solr.cmd CALLs it, so BATS' single line has to be
+    // bin/solr sources SOLR_INCLUDE while bin\solr.cmd CALLs it, so the line has to be
     // written in the syntax — and under the extension — of the shell that will read it.
     boolean cmd = cli.shell() == Shell.CMD;
     Path solrIncludeFile =

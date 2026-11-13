@@ -20,18 +20,12 @@ package org.apache.solr.shell;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Port of {@code test_postlogs.bats}.
- *
- * <p>Kept close to the original, including the order of the tests and the text each asserts on.
- * Where it differs: {@code curl} becomes {@link #http}, and that request also asserts a 200, since
- * {@code refute_output --partial '"numFound":0'} is satisfied by any error response.
- */
+/** Port of {@code test_postlogs.bats}. */
 public class PostlogsTest extends SolrShellTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // BATS' setup_file. The node lives for the whole class and is stopped automatically, and its
+    // The node lives for the whole class and is stopped automatically, and its
     // own solr.log under ${SOLR_LOGS_DIR} is what the test indexes.
     classCli.run("solr start");
   }
