@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,6 +74,12 @@ public class SimpleOrderedMapTest extends SolrTestCase {
 
     // One structural comparison covers size, order, keys, values and nesting.
     assertEquals(original, deserialized);
+  }
+
+  @Test
+  public void testSerialVersionUID() {
+    assertEquals(
+        -8705511030983987520L, ObjectStreamClass.lookup(SimpleOrderedMap.class).getSerialVersionUID());
   }
 
   @Test
@@ -266,6 +273,10 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertThrows(UnsupportedOperationException.class, () -> copy.add("three", 3));
     assertThrows(UnsupportedOperationException.class, () -> copy.remove("one"));
     assertThrows(UnsupportedOperationException.class, () -> copy.setVal(0, 11));
+    Map<String, Integer> mapCopy = (SimpleOrderedMap<Integer>) copy;
+    assertThrows(UnsupportedOperationException.class, () -> mapCopy.put("one", 11));
+    assertThrows(
+        UnsupportedOperationException.class, () -> mapCopy.entrySet().iterator().next().setValue(11));
 
     map.put("three", 3);
     assertEquals("copy must not see later changes to the original", 2, copy.size());
