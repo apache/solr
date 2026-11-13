@@ -62,6 +62,9 @@ dependencies {
     exclude group: 'joda-time', module: 'joda-time'
     // Duplicates jakarta.activation-api; the client only uses saaj-impl's MimeUtility.decodeText
     exclude group: 'com.sun.activation', module: 'jakarta.activation'
+    // saaj-impl's SOAP dependencies, which MimeUtility.decodeText does not reach
+    exclude group: 'jakarta.xml.soap', module: 'jakarta.xml.soap-api'
+    exclude group: 'org.jvnet.staxex', module: 'stax-ex'
   }
   // The encryption client logs through commons-logging, which is globally excluded
   runtimeOnly libs.slf4j.jcloverslf4j
