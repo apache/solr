@@ -60,6 +60,8 @@ dependencies {
   testImplementation project(':solr:test-framework')
   // puts the /sql handler on the in-JVM server classpath so the SQL screen works
   testRuntimeOnly project(':solr:modules:sql')
+  testImplementation libs.apache.log4j.api
+  testImplementation libs.apache.log4j.core
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.eclipse.jetty.ee10.servlet
   testImplementation libs.jakarta.servlet.api

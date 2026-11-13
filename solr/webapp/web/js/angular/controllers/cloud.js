@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler, NodeTarget) {
+    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, NodeRequests, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler, NodeTarget) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $location, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget);
+            nodesSubController($scope, $location, $timeout, $q, ClusterV2, CollectionsV2, NodeRequests, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -115,7 +115,9 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $location, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget) {
+var nodesSubController = function($scope, $location, $timeout, $q, ClusterV2, CollectionsV2, NodeRequests, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget) {
+  var systemRequestGeneration = 0;
+  $scope.$on('$destroy', function() { systemRequestGeneration++; });
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -290,6 +292,7 @@ var nodesSubController = function($scope, $location, $timeout, ClusterV2, Collec
     It is also called whenever a filter or paging action is executed
    */
   $scope.reload = function() {
+    var requestGeneration = ++systemRequestGeneration;
     var nodes = $scope.nodes;
     var node_keys = Object.keys(nodes);
     var hosts = $scope.hosts;
@@ -391,50 +394,45 @@ var nodesSubController = function($scope, $location, $timeout, ClusterV2, Collec
      Fetch system info for all selected nodes
      Pick the data we want to display and add it to the node-centric data structure
       */
-    SystemV2.getNodeSystemInfo({"nodes": liveNodesToShow.join(',')}, function (error, data, response) {
-      if (error) {
-        console.error('Failed to fetch node system info:', error);
-        ApiErrorHandler.handle(response);
-        return;
-      }
-      $timeout(function() {
-        var systemResponse = response.body;
-        for (var node in systemResponse) {
-          if (node in nodes) {
-            var s = systemResponse[node];
-            nodes[node]['system'] = s;
-            var memTotal = s.system.totalPhysicalMemorySize;
-            var memFree = s.system.freePhysicalMemorySize;
-            var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
-            nodes[node]['memUsedPct'] = memPercentage;
-            nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
-            nodes[node]['memTotal'] = bytesToSize(memTotal);
-            nodes[node]['memFree'] = bytesToSize(memFree);
-            nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
+    liveNodesToShow.forEach(function(node) {
+      delete nodes[node].systemError;
+      NodeRequests.get('/api/node/system', node).then(function(response) {
+        if (requestGeneration !== systemRequestGeneration) return;
+        var s = response.data;
+        nodes[node]['system'] = s;
+        var memTotal = s.system.totalPhysicalMemorySize;
+        var memFree = s.system.freePhysicalMemorySize;
+        var memPercentage = Math.floor((memTotal - memFree) / memTotal * 100);
+        nodes[node]['memUsedPct'] = memPercentage;
+        nodes[node]['memUsedPctStyle'] = styleForPct(memPercentage);
+        nodes[node]['memTotal'] = bytesToSize(memTotal);
+        nodes[node]['memFree'] = bytesToSize(memFree);
+        nodes[node]['memUsed'] = bytesToSize(memTotal - memFree);
 
-            var heapMax = s.jvm.memory.raw.max;
-            var heapTotal = s.jvm.memory.raw.total;
-            var heapFree = s.jvm.memory.raw.free;
-            var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
-            nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
-            nodes[node]['heapUsedPct'] = heapPercentage;
-            nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
-            nodes[node]['heapMax'] = bytesToSize(heapMax);
-            nodes[node]['heapTotal'] = bytesToSize(heapTotal);
-            nodes[node]['heapFree'] = bytesToSize(heapFree);
+        var heapMax = s.jvm.memory.raw.max;
+        var heapTotal = s.jvm.memory.raw.total;
+        var heapFree = s.jvm.memory.raw.free;
+        var heapPercentage = Math.floor((heapTotal - heapFree) / heapMax * 100);
+        nodes[node]['heapUsed'] = bytesToSize(heapTotal - heapFree);
+        nodes[node]['heapUsedPct'] = heapPercentage;
+        nodes[node]['heapUsedPctStyle'] = styleForPct(heapPercentage);
+        nodes[node]['heapMax'] = bytesToSize(heapMax);
+        nodes[node]['heapTotal'] = bytesToSize(heapTotal);
+        nodes[node]['heapFree'] = bytesToSize(heapFree);
 
-            var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
-            nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
-            nodes[node]['jvmUptimeSec'] = jvmUptime;
+        var jvmUptime = s.jvm.jmx.upTimeMS / 1000; // Seconds
+        nodes[node]['jvmUptime'] = secondsForHumans(jvmUptime);
+        nodes[node]['jvmUptimeSec'] = jvmUptime;
 
-            nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
-            nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
-            nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
-            nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
-            nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
-            nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
-          }
-        }
+        nodes[node]['uptime'] = (s.system.uptime || "unknown").replace(/.*up (.*?,.*?),.*/, "$1");
+        nodes[node]['loadAvg'] = Math.round(s.system.systemLoadAverage * 100) / 100;
+        nodes[node]['cpuPct'] = Math.ceil(s.system.processCpuLoad * 100);
+        nodes[node]['cpuPctStyle'] = styleForPct(Math.ceil(s.system.processCpuLoad));
+        nodes[node]['maxFileDescriptorCount'] = s.system.maxFileDescriptorCount;
+        nodes[node]['openFileDescriptorCount'] = s.system.openFileDescriptorCount;
+      }, function(response) {
+        if (requestGeneration !== systemRequestGeneration) return;
+        nodes[node].systemError = response.status || 'connection failed';
       });
     });
 
@@ -447,6 +445,7 @@ var nodesSubController = function($scope, $location, $timeout, ClusterV2, Collec
     // Create array of promises (one per node)
     var metricsPromises = [];
     liveNodesToShow.forEach(function(node) {
+      delete nodes[node].metricsError;
       var promise = Metrics.get({
         node: node,
         name: metricsNameParam
@@ -460,6 +459,7 @@ var nodesSubController = function($scope, $location, $timeout, ClusterV2, Collec
           };
         },
         function(error) {
+          nodes[node].metricsError = error.status || 'connection failed';
           // Failure - log and return error marker
           console.error('Failed to fetch metrics from node ' + node + ':', error);
           return {
@@ -473,7 +473,7 @@ var nodesSubController = function($scope, $location, $timeout, ClusterV2, Collec
     });
 
     // Wait for all requests to complete (success or failure)
-    Promise.all(metricsPromises).then(function(results) {
+    $q.all(metricsPromises).then(function(results) {
       // Separate successful and failed results
       var successfulResults = results.filter(function(r) { return r.success; });
       var failedResults = results.filter(function(r) { return !r.success; });
@@ -501,6 +501,7 @@ var nodesSubController = function($scope, $location, $timeout, ClusterV2, Collec
       }
 
       // Now process the merged metrics the same way as before
+      $scope.metricsError = false;
       for (var i = 0; i < nodesToShow.length; i++) {
           var node = nodesToShow[i];
           if (!nodes[node]) continue;

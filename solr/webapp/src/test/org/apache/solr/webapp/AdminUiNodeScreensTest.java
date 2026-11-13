@@ -22,6 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
 /**
@@ -79,6 +80,236 @@ public class AdminUiNodeScreensTest extends AdminUiTestBase {
       waitForPageContains(":" + jetty.getLocalPort());
     }
     assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testCloudNodesUseRequestSpecificTargets() throws Exception {
+    openPage("", By.id("index"));
+    startNodeRequestCapture();
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    try {
+      driver.get(baseUrl + "/index.html#/~cloud?view=nodes");
+      waitFor(By.id("nodes-table"));
+      List<String> nodes =
+          cluster.getJettySolrRunners().stream().map(jetty -> jetty.getNodeName()).toList();
+      waitUntil(
+          "system information has returned for each node",
+          () ->
+              Boolean.TRUE.equals(
+                  js.executeScript(
+                      """
+                      var scope = angular.element(document.getElementById('nodes-content')).scope();
+                      if (!scope || !scope.nodes) return false;
+                      return arguments[0].every(function(node) {
+                        return scope.nodes[node] && scope.nodes[node].system;
+                      });
+                      """,
+                      nodes)));
+      waitUntil(
+          "metrics requests have been sent for each node",
+          () -> capturedNodeRequests("admin/metrics").size() >= nodes.size());
+      for (String node : nodes) {
+        assertEquals(
+            node,
+            js.executeScript(
+                """
+                var scope = angular.element(document.getElementById('nodes-content')).scope();
+                return scope.nodes[arguments[0]].system.node;
+                """,
+                node));
+        for (String path : List.of("/api/node/system", "admin/metrics")) {
+          assertTrue(
+              "Missing target header for " + node + " at " + path,
+              capturedNodeRequests(path).stream().anyMatch(r -> node.equals(r.get("target"))));
+          assertTrue(
+              "Legacy node selectors must not be sent at " + path,
+              capturedNodeRequests(path).stream()
+                  .noneMatch(r -> r.get("url").toString().matches(".*[?&]nodes?=.*")));
+        }
+      }
+      assertNoSevereConsoleErrors();
+    } finally {
+      stopNodeRequestCapture();
+    }
+  }
+
+  @Test
+  public void testSelectedLocalNodeReadsRemainPinned() throws Exception {
+    String localNode = cluster.getJettySolrRunner(0).getNodeName();
+    openPage("", By.id("index"));
+    waitForTextContains(By.cssSelector("#content #index .node dd"), localNode);
+    startNodeRequestCapture();
+    try {
+      String[][] pages = {
+        {"~java-properties", "java-properties", "/api/node/properties"},
+        {"~threads", "thread-dump", "/api/node/threads"}
+      };
+      for (String[] page : pages) {
+        driver.get(baseUrl + "/index.html#/" + page[0]);
+        waitFor(By.id(page[1]));
+        waitUntil(
+            "the selected-local request was sent at " + page[2],
+            () -> !capturedNodeRequests(page[2]).isEmpty());
+        assertTrue(
+            "The selected node must be pinned even when it served the UI at " + page[2],
+            capturedNodeRequests(page[2]).stream()
+                .allMatch(r -> localNode.equals(r.get("target"))));
+      }
+      waitUntil(
+          "the selected-local core-menu request was sent",
+          () -> !capturedNodeRequests("/api/cores").isEmpty());
+      assertTrue(
+          "Core-menu reads must stay pinned to the selected local node",
+          capturedNodeRequests("/api/cores").stream()
+              .allMatch(r -> localNode.equals(r.get("target"))));
+      assertNoSevereConsoleErrors();
+    } finally {
+      stopNodeRequestCapture();
+    }
+  }
+
+  @Test
+  public void testCloudNodesIgnoreOutOfOrderSystemInfo() throws Exception {
+    openPage("~cloud?view=nodes", By.id("nodes-table"));
+    String node = cluster.getJettySolrRunner(0).getNodeName();
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    waitUntil(
+        "initial system information is available",
+        () ->
+            Boolean.TRUE.equals(
+                js.executeScript(
+                    "var s = angular.element(document.getElementById('nodes-content')).scope();"
+                        + " return !!(s.nodes[arguments[0]] && s.nodes[arguments[0]].system);",
+                    node)));
+    try {
+      js.executeScript(
+          """
+          var scope = angular.element(document.getElementById('nodes-content')).scope();
+          var injector = angular.element(document.body).injector();
+          var service = injector.get('NodeRequests');
+          var q = injector.get('$q');
+          var node = arguments[0];
+          var state = {service: service, original: service.get, scope: scope,
+                       node: node, data: angular.copy(scope.nodes[node].system)};
+          window.systemOrderTest = state;
+          service.get = function(url, target) {
+            if (url === '/api/node/system' && target === node) {
+              state.calls++;
+              if (state.calls === 1) return state.old.promise;
+              var data = angular.copy(state.data);
+              data.reviewMarker = 'new';
+              return q.when({data: data});
+            }
+            return state.original.apply(service, arguments);
+          };
+          state.start = function() {
+            state.calls = 0;
+            state.old = q.defer();
+            scope.$apply(function() { scope.reload(); scope.reload(); });
+          };
+          state.start();
+          """,
+          node);
+      waitUntil(
+          "newer system response is displayed",
+          () ->
+              Boolean.TRUE.equals(
+                  js.executeScript(
+                      "return window.systemOrderTest.scope.nodes[arguments[0]].system.reviewMarker"
+                          + " === 'new';",
+                      node)));
+      js.executeScript(
+          """
+          var state = window.systemOrderTest;
+          state.scope.$apply(function() { state.old.reject({status: 503}); });
+          """);
+      assertNull(
+          js.executeScript(
+              "return window.systemOrderTest.scope.nodes[arguments[0]].systemError || null;",
+              node));
+
+      js.executeScript(
+          """
+          var state = window.systemOrderTest;
+          state.start();
+          var oldData = angular.copy(state.data);
+          oldData.reviewMarker = 'old';
+          state.scope.$apply(function() { state.old.resolve({data: oldData}); });
+          """);
+      assertEquals(
+          "new",
+          js.executeScript(
+              "return window.systemOrderTest.scope.nodes[arguments[0]].system.reviewMarker;",
+              node));
+      assertNoSevereConsoleErrors();
+    } finally {
+      js.executeScript(
+          """
+          if (window.systemOrderTest) {
+            window.systemOrderTest.service.get = window.systemOrderTest.original;
+            delete window.systemOrderTest;
+          }
+          """);
+    }
+  }
+
+  @Test
+  public void testCloudNodesRetainHealthyDataWhenSystemInfoFails() throws Exception {
+    openPage("", By.id("index"));
+    String localNode = cluster.getJettySolrRunner(0).getNodeName();
+    String remoteNode = cluster.getJettySolrRunner(1).getNodeName();
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    try {
+      js.executeScript(
+          """
+          var injector = angular.element(document.body).injector();
+          var service = injector.get('NodeRequests');
+          window.failedNodeRequest = {service: service, original: service.get};
+          var remoteNode = arguments[0];
+          service.get = function(url, node) {
+            if (url === '/api/node/system' && node === remoteNode) {
+              window.failedNodeRequest.triggered = true;
+              return injector.get('$q').reject({status: 503});
+            }
+            return window.failedNodeRequest.original.apply(service, arguments);
+          };
+          """,
+          remoteNode);
+      driver.get(baseUrl + "/index.html#/~cloud?view=nodes");
+      waitFor(By.id("nodes-table"));
+      waitUntil(
+          "the healthy node has data and the failed node request was attempted",
+          () ->
+              Boolean.TRUE.equals(
+                  js.executeScript(
+                      """
+                      var scope = angular.element(document.getElementById('nodes-content')).scope();
+                      return window.failedNodeRequest.triggered === true
+                        && scope && scope.nodes && scope.nodes[arguments[0]]
+                        && !!scope.nodes[arguments[0]].system;
+                      """,
+                      localNode)));
+      assertEquals(
+          localNode,
+          js.executeScript(
+              "return angular.element(document.getElementById('nodes-content')).scope()"
+                  + ".nodes[arguments[0]].system.node;",
+              localNode));
+      assertTrue(
+          "The failed node should show its own error without removing healthy rows",
+          driver.findElements(By.cssSelector("#nodes-table .node-error")).stream()
+              .anyMatch(e -> e.getText().contains("503")));
+      assertEquals(2, driver.findElements(By.cssSelector("#nodes-table .node-name")).size());
+      assertNoSevereConsoleErrors();
+    } finally {
+      js.executeScript(
+          """
+          if (window.failedNodeRequest) {
+            window.failedNodeRequest.service.get = window.failedNodeRequest.original;
+            delete window.failedNodeRequest;
+          }
+          """);
+    }
   }
 
   @Test
