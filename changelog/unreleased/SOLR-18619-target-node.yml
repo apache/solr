@@ -1,0 +1,7 @@
+title: Admin UI uses request-specific node targeting for metrics, system information, and log messages, with an optional all-nodes log view and visible per-node failures.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18619
+    url: https://issues.apache.org/jira/browse/SOLR-18619

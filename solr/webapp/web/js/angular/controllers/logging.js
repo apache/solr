@@ -24,47 +24,101 @@ var format_time_content = function( time, timeZone ) {
 }
 
 solrAdminApp.controller('LoggingController',
-  function($scope, $timeout, $cookies, LoggingV2, Constants, ApiErrorHandler, NodeTarget){
+  function($scope, $rootScope, $q, $timeout, $cookies, NodeRequests, Constants, NodeTarget){
     $scope.resetMenu("logging", Constants.IS_ROOT_PAGE);
     $scope.timezone = $cookies.logging_timezone || "Local";
+    $scope.logView = {allNodes: false};
+    $scope.failedLogNodes = [];
+    $rootScope.allLogNodes = false;
+    var generation = 0;
+    var destroyed = false;
+
     $scope.refresh = function() {
-      if (NodeTarget.needsSelection()) {
-        $timeout.cancel($scope.timeout);
+      var requestGeneration = ++generation;
+      $rootScope.allLogNodes = !!($scope.isCloudEnabled && $scope.logView.allNodes);
+      $timeout.cancel($scope.timeout);
+      if (NodeTarget.needsSelection() && !$scope.logView.allNodes) {
         return;
       }
-      LoggingV2.fetchLocalLogMessages(NodeTarget.withNodes({since: 0}), function(error, data, response) {
-        $timeout(function() {
-          if (error) { ApiErrorHandler.handle(response); return; }
-          var payload = NodeTarget.unwrap(data, response) || {};
-          $scope.since = new Date();
-          $scope.sinceDisplay = format_time_content($scope.since, "Local");
-          var events = payload.history || [];
-          for (var i=0; i<events.length; i++) {
-            var event = events[i];
-            var time = new Date(event.time);
-            event.local_time = format_time_content(time, "Local");
-            event.utc_time = format_time_content(time, "UTC");
-            event.loggerBase = event.logger.split( '.' ).pop();
-
-            if( !event.trace ) {
-              var lines = event.message.split( "\n" );
-              if( lines.length > 1) {
-                event.trace = event.message;
-                event.message = lines[0];
-              }
-            }
-            event.message = event.message.replace(/,/g, ',&#8203;');
-            event.showTrace = false;
-          }
-          $scope.events = events;
-          $scope.watcher = payload.watcher;
+      var targets;
+      if (!$scope.isCloudEnabled) {
+        targets = $q.when([null]);
+      } else if ($scope.logView.allNodes) {
+        targets = NodeRequests.get('/api/cluster/nodes').then(function(response) {
+          return response.data.nodes || [];
         });
+      } else {
+        targets = $q.when([NodeTarget.state.selectedNode]);
+      }
+      targets.then(function(nodes) {
+        return $q.all(nodes.map(function(node) {
+          return NodeRequests.get('/api/node/logging/messages', node, {since: 0}).then(
+            function(response) { return {node: node, data: response.data}; },
+            function(response) { return {node: node, error: response}; }
+          );
+        }));
+      }).then(function(results) {
+        if (destroyed || requestGeneration !== generation) {
+          return;
+        }
+        $scope.logDiscoveryError = false;
+        $scope.failedLogNodes = [];
+        $scope.since = new Date();
+        $scope.sinceDisplay = format_time_content($scope.since, "Local");
+        var events = [];
+        var watchers = [];
+        results.forEach(function(result) {
+          if (result.error) {
+            $scope.failedLogNodes.push(result.node || 'this node');
+            return;
+          }
+          var payload = result.data || {};
+          if (payload.watcher && watchers.indexOf(payload.watcher) === -1) {
+            watchers.push(payload.watcher);
+          }
+          (payload.history || []).forEach(function(event) {
+            var copy = angular.copy(event);
+            copy.node = result.node;
+            events.push(copy);
+          });
+        });
+        events.sort(function(a, b) { return new Date(a.time) - new Date(b.time); });
+        for (var i=0; i<events.length; i++) {
+          var event = events[i];
+          var time = new Date(event.time);
+          event.local_time = format_time_content(time, "Local");
+          event.utc_time = format_time_content(time, "UTC");
+          event.loggerBase = event.logger.split( '.' ).pop();
+
+          if( !event.trace ) {
+            var lines = event.message.split( "\n" );
+            if( lines.length > 1) {
+              event.trace = event.message;
+              event.message = lines[0];
+            }
+          }
+          event.message = event.message.replace(/,/g, ',&#8203;');
+          event.showTrace = false;
+        }
+        $scope.events = events;
+        $scope.watcher = watchers.join(', ');
+      }, function() {
+        if (!destroyed && requestGeneration === generation) {
+          $scope.logDiscoveryError = true;
+          $scope.events = [];
+          $scope.failedLogNodes = [];
+        }
+      }).finally(function() {
+        if (!destroyed && requestGeneration === generation && !$scope.stopped) {
+          $scope.timeout = $timeout($scope.refresh, 10000);
+        }
       });
-      $timeout.cancel($scope.timeout);
-      $scope.timeout = $timeout($scope.refresh, 10000);
     };
     $scope.$on('$destroy', function() {
+      destroyed = true;
+      generation++;
       $timeout.cancel($scope.timeout);
+      $rootScope.allLogNodes = false;
     });
     NodeTarget.whenReady($scope.refresh, $scope);
     $scope.toggleRefresh = function() {
@@ -73,7 +127,7 @@ solrAdminApp.controller('LoggingController',
         $timeout.cancel($scope.timeout);
       } else {
         $scope.stopped = false;
-        $scope.timeout = $timeout($scope.refresh, 10000);
+        $scope.refresh();
       }
     };
     $scope.toggleTimezone = function() {

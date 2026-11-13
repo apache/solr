@@ -21,20 +21,24 @@ var solrAdminServices = angular.module('solrAdminServices', ['ngResource']);
 // ApiClient.instance is shared across every *V2 factory below.
 solrApi.ApiClient.instance.cache = false;
 
-solrAdminServices.factory('Metrics',
-  ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
-    return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
-      get: {
-        method: 'GET',
-        transformResponse: function(data) {
-          // Parse the merged Prometheus text response
-          try {
-            return {metrics: PrometheusParser.parse(data)};
-          } catch (e) {
-            return {metrics: {}, error: e.message};
-          }
+solrAdminServices.factory('NodeRequests',
+  ['$http', function($http) {
+    return {
+      get: function(url, node, params, raw) {
+        var config = {params: angular.copy(params || {}), headers: {}, cache: false};
+        if (node) {
+          config.headers['X-Solr-targetNode'] = node;
         }
-      },
+        if (raw) {
+          config.transformResponse = [angular.identity];
+        }
+        return $http.get(url, config);
+      }
+    };
+  }])
+.factory('Metrics',
+  ['$resource', 'PrometheusParser', 'NodeRequests', function($resource, PrometheusParser, NodeRequests) {
+    var resource = $resource('admin/metrics', {"wt":"prometheus", "_":Date.now()}, {
       "raw": {
         method: 'GET',
         params: {wt: 'prometheus', core: '@core'},
@@ -43,6 +47,19 @@ solrAdminServices.factory('Metrics',
         }
       }
     });
+    resource.get = function(params) {
+      var query = angular.extend({wt: 'prometheus', _: Date.now()}, params || {});
+      var node = query.node;
+      delete query.node;
+      return {$promise: NodeRequests.get('admin/metrics', node, query, true).then(function(response) {
+        try {
+          return {metrics: PrometheusParser.parse(response.data)};
+        } catch (e) {
+          return {metrics: {}, error: e.message};
+        }
+      })};
+    };
+    return resource;
   }])
 .factory('ApiErrorHandler',
     ['$rootScope', '$location', '$timeout', function($rootScope, $location, $timeout) {
@@ -124,7 +141,7 @@ solrAdminServices.factory('Metrics',
 
       function withNodes(opts) {
         opts = opts || {};
-        if (isRemote()) {
+        if (state.localNode && state.selectedNode) {
           pendingTarget = state.selectedNode;
         }
         return opts;

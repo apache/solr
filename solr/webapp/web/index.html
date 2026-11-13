@@ -114,7 +114,7 @@ limitations under the License.
       <a ng-href="{{ isCloudEnabled ? '#/~cloud?view=nodes' : '#/' }}" id="solr"><span>Apache SOLR</span></a>
 
       <div id="selected-node-badge"
-           ng-show="!http401 && isCloudEnabled && liveNodes.length > 1 && selectedNode && isNodeScopedPage"
+           ng-show="!http401 && isCloudEnabled && liveNodes.length > 1 && selectedNode && isNodeScopedPage && !allLogNodes"
            ng-class="{remote: viewingRemoteNode}"
            title="{{ selectedNode }}">
         <span class="badge-label">Node</span>
@@ -163,11 +163,11 @@ limitations under the License.
 
       <div id="content-wrapper">
         <div id="select-node-prompt" class="header-message"
-             ng-show="!http401 && needsNodeSelection && isNodeScopedPage" ng-cloak>
+             ng-show="!http401 && needsNodeSelection && isNodeScopedPage && !allLogNodes" ng-cloak>
           <h2>Select a node</h2>
           <p>Choose a live node from the Node Selector.</p>
         </div>
-        <div ng-view id="content" ng-hide="needsNodeSelection && isNodeScopedPage">
+        <div ng-view id="content" ng-hide="needsNodeSelection && isNodeScopedPage && !allLogNodes">
 
         </div>
       </div>

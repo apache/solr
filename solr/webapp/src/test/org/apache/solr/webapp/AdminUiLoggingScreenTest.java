@@ -23,6 +23,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,139 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
     waitForPageContains("org.apache.solr");
     waitFor(By.cssSelector("#loggingtree .jstree-anchor"));
     assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testSelectedLogMessagesUseTargetHeader() throws Exception {
+    openPage("", By.id("index"));
+    String localNode = cluster.getJettySolrRunner(0).getNodeName();
+    startNodeRequestCapture();
+    try {
+      driver.get(baseUrl + "/index.html#/~logging");
+      waitFor(By.id("viewer"));
+      waitUntil(
+          "the selected-node log request was sent",
+          () -> !capturedNodeRequests("/api/node/logging/messages").isEmpty());
+      Map<String, Object> request = capturedNodeRequests("/api/node/logging/messages").get(0);
+      assertEquals(localNode, request.get("target"));
+      assertFalse(request.get("url").toString().matches(".*[?&]nodes?=.*"));
+      assertFalse(driver.findElement(By.id("log-all-nodes")).isSelected());
+      assertNoSevereConsoleErrors();
+    } finally {
+      stopNodeRequestCapture();
+    }
+  }
+
+  @Test
+  public void testAllNodeLogRequestsUseIndependentHeaders() throws Exception {
+    openPage("~logging", By.id("viewer"));
+    click(By.id("refresh-toggle"));
+    startNodeRequestCapture();
+    try {
+      click(By.id("log-all-nodes"));
+      waitUntil(
+          "one log request was sent per live node",
+          () -> capturedNodeRequests("/api/node/logging/messages").size() >= 2);
+      List<Map<String, Object>> requests = capturedNodeRequests("/api/node/logging/messages");
+      assertEquals(2, requests.size());
+      for (var jetty : cluster.getJettySolrRunners()) {
+        assertTrue(requests.stream().anyMatch(r -> jetty.getNodeName().equals(r.get("target"))));
+      }
+      assertTrue(
+          requests.stream().noneMatch(r -> r.get("url").toString().matches(".*[?&]nodes?=.*")));
+      assertEquals(1, capturedNodeRequests("/api/cluster/nodes").size());
+      assertNull(capturedNodeRequests("/api/cluster/nodes").get(0).get("target"));
+      assertFalse(driver.findElement(By.id("selected-node-badge")).isDisplayed());
+      assertNoSevereConsoleErrors();
+    } finally {
+      stopNodeRequestCapture();
+    }
+  }
+
+  @Test
+  public void testAllNodeLogPartialFailureAndRecovery() throws Exception {
+    openPage("~logging", By.id("viewer"));
+    click(By.id("refresh-toggle"));
+    String localNode = cluster.getJettySolrRunner(0).getNodeName();
+    String remoteNode = cluster.getJettySolrRunner(1).getNodeName();
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    try {
+      js.executeScript(
+          """
+          var injector = angular.element(document.body).injector();
+          var service = injector.get('NodeRequests');
+          var remoteNode = arguments[0];
+          var state = {service: service, original: service.get, recover: false, allFailed: false};
+          window.logRequestState = state;
+          service.get = function(url, node) {
+            if (url === '/api/node/logging/messages') {
+              if (state.allFailed || (node === remoteNode && !state.recover)) {
+                return injector.get('$q').reject({status: 503});
+              }
+              return injector.get('$q').when({data: {watcher: 'test', history: [{
+                time: 1, level: 'WARN', core: '', logger: 'test.node',
+                message: node === remoteNode ? 'recovered log probe' : 'healthy log probe'
+              }]}});
+            }
+            return state.original.apply(service, arguments);
+          };
+          """,
+          remoteNode);
+      click(By.id("log-all-nodes"));
+      waitForPageContains("healthy log probe");
+      assertTrue(
+          "The failed node must be named beside the retained healthy messages",
+          driver.findElements(By.id("log-node-errors")).stream()
+              .anyMatch(e -> e.getText().contains(remoteNode)));
+      assertTrue(
+          driver.findElements(By.cssSelector("#viewer td.node")).stream()
+              .anyMatch(e -> e.getText().equals(localNode)));
+      assertFalse(driver.getPageSource().contains("recovered log probe"));
+      js.executeScript(
+          """
+          window.logRequestState.recover = true;
+          var scope = angular.element(document.getElementById('viewer')).scope();
+          scope.$apply(function() { scope.refresh(); });
+          """);
+      waitForPageContains("recovered log probe");
+      assertTrue(driver.findElements(By.id("log-node-errors")).isEmpty());
+      for (String node : List.of(localNode, remoteNode)) {
+        assertTrue(
+            driver.findElements(By.cssSelector("#viewer td.node")).stream()
+                .anyMatch(e -> e.getText().equals(node)));
+      }
+      js.executeScript(
+          """
+          window.logRequestState.allFailed = true;
+          var scope = angular.element(document.getElementById('viewer')).scope();
+          scope.$apply(function() { scope.refresh(); });
+          """);
+      waitUntil(
+          "both failed nodes have settled",
+          () ->
+              Boolean.TRUE.equals(
+                  js.executeScript(
+                      "return angular.element(document.getElementById('viewer')).scope()"
+                          + ".failedLogNodes.length === 2;")));
+      assertEquals(
+          0L,
+          js.executeScript(
+              "return angular.element(document.getElementById('viewer')).scope().events.length;"));
+      for (String node : List.of(localNode, remoteNode)) {
+        assertTrue(
+            driver.findElements(By.id("log-node-errors")).stream()
+                .anyMatch(e -> e.getText().contains(node)));
+      }
+      assertNoSevereConsoleErrors();
+    } finally {
+      js.executeScript(
+          """
+          if (window.logRequestState) {
+            window.logRequestState.service.get = window.logRequestState.original;
+            delete window.logRequestState;
+          }
+          """);
+    }
   }
 
   @Test
