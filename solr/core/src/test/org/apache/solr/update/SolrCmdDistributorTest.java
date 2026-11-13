@@ -354,6 +354,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     testMinRfOnRetries(NodeType.FORWARD);
     testMinRfOnRetries(NodeType.STANDARD);
     testDistribOpenSearcher();
+    testFailedAddKeepsItsDocumentWhenTheCommandIsReused();
     testReqShouldRetryNoRetries();
     testReqShouldRetryMaxRetries();
     testReqShouldRetryBadRequest();
@@ -540,6 +541,36 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       assertEquals(7, retries.get());
 
       assertEquals(1, cmdDistrib.getErrors().size());
+    }
+  }
+
+  private void testFailedAddKeepsItsDocumentWhenTheCommandIsReused() throws Exception {
+    final MockStreamingSolrClients streamingClients =
+        new MockStreamingSolrClients(updateShardHandler);
+    try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
+      streamingClients.setExp(Exp.CONNECT_EXCEPTION);
+      final var solrClient1 = clients.getFirst();
+      ZkNodeProps nodeProps =
+          new ZkNodeProps(
+              ZkStateReader.BASE_URL_PROP,
+              solrClient1.getBaseURL(),
+              ZkStateReader.CORE_NAME_PROP,
+              solrClient1.getDefaultCollection());
+      Node node = new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 0);
+
+      final int id = uniqueId.incrementAndGet();
+      AddUpdateCommand cmd = new AddUpdateCommand(null);
+      cmd.solrDoc = sdoc("id", id);
+      cmdDistrib.distribAdd(cmd, List.of(node), new ModifiableSolrParams());
+      // the javabin loader clears and refills one command per document
+      cmd.clear();
+      cmdDistrib.finish();
+
+      List<SolrError> errors = cmdDistrib.getErrors();
+      assertEquals(1, errors.size());
+      AddUpdateCommand failed = (AddUpdateCommand) errors.get(0).req.cmd;
+      assertNotNull("failed request lost its document", failed.solrDoc);
+      assertEquals(String.valueOf(id), String.valueOf(failed.solrDoc.getFieldValue("id")));
     }
   }
 
