@@ -59,6 +59,9 @@ public class ZkContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /** System property indicating this node should launch its own embedded ZooKeeper. */
+  public static final String ZK_SERVER_ENABLED_PROP = "solr.zookeeper.server.enabled";
+
   protected ZkController zkController;
   private SolrZkServer zkServer;
 
@@ -70,7 +73,7 @@ public class ZkContainer {
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
-    boolean zkRun = EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
+    boolean zkRun = EnvUtils.getPropertyAsBool(ZK_SERVER_ENABLED_PROP, false);
 
     if (zkRun && config == null)
       throw new SolrException(
