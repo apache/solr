@@ -559,8 +559,14 @@ public abstract class HttpSolrClient extends SolrClient {
     }
 
     /**
-     * The max time a connection can be idle (that is, without traffic of bytes in either
-     * direction). Sometimes called a "socket timeout". Note: not applicable to the JDK HttpClient.
+     * The max time to wait for the server to send something: the response headers, or the next
+     * bytes of the response body. Sometimes called a "socket timeout". It does not limit a request
+     * that keeps receiving data, such as a long streaming response; see {@link
+     * #withRequestTimeout(long, TimeUnit)} for that. Defaults to {@link
+     * SolrHttpConstants#DEFAULT_SO_TIMEOUT}; a non-positive value means the default.
+     *
+     * <p>The JDK HttpClient only applies this to waiting for the response headers, and only when no
+     * request timeout is set.
      */
     @SuppressWarnings("unchecked")
     public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
@@ -574,7 +580,10 @@ public abstract class HttpSolrClient extends SolrClient {
           : SolrHttpConstants.DEFAULT_SO_TIMEOUT;
     }
 
-    /** The max time a connection can take to connect to destinations. */
+    /**
+     * The max time to establish a connection to the server. Defaults to {@link
+     * SolrHttpConstants#DEFAULT_CONNECT_TIMEOUT}; a non-positive value means the default.
+     */
     @SuppressWarnings("unchecked")
     public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
       this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
@@ -587,17 +596,22 @@ public abstract class HttpSolrClient extends SolrClient {
           : SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
     }
 
-    /** Set a timeout for requests to receive a response. */
+    /**
+     * The max total time for a request, from sending it until the response has been fully received.
+     * None by default, nor if non-positive, since it would cut off long streaming responses (e.g.
+     * streaming expressions); the idle timeout still detects an unresponsive server.
+     *
+     * <p>The JDK HttpClient only applies this to waiting for the response headers.
+     */
     @SuppressWarnings("unchecked")
     public B withRequestTimeout(long requestTimeout, TimeUnit unit) {
       this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
       return (B) this;
     }
 
+    /** The request timeout in milliseconds, or 0 for none. */
     public long getRequestTimeoutMillis() {
-      return requestTimeoutMillis != null && requestTimeoutMillis > 0
-          ? requestTimeoutMillis
-          : getIdleTimeoutMillis();
+      return requestTimeoutMillis != null && requestTimeoutMillis > 0 ? requestTimeoutMillis : 0;
     }
 
     /**
