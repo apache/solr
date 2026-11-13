@@ -825,36 +825,37 @@ IF "%SOLR_STOP_WAIT%"=="" (
 )
 IF "%SOLR_PORT_LISTEN%"=="" (
   IF "%STOP_ALL%"=="1" (
-    REM Discover local processes once, stopping ZooKeeper hosts last.
+    REM Stop all running Solr instances
     set found_it=0
-    set "STOP_DISCOVERY_OK="
-    for /f "usebackq tokens=1,2" %%i in (`powershell.exe -NoProfile -NonInteractive -Command "$ErrorActionPreference = 'Stop'; try { $listeners = @{}; netstat -aon | ForEach-Object { if ($_ -match '^\s*TCP\s+(\S+)\s+\S+:0\s+\S+\s+(\d+)\s*$') { $listeners[$Matches[1]] = $Matches[2] } }; $nodes = @(foreach ($file in Get-ChildItem -LiteralPath (Join-Path $env:SOLR_TIP 'bin') -Filter 'solr-*.port') { $port = (Get-Content -LiteralPath $file.FullName -Raw).Trim(); $processId = $listeners[$env:SOLR_HOST_BIND + ':' + $port]; if ($processId -and $processId -ne '0') { $process = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $processId); if ([string]::IsNullOrEmpty($process.CommandLine)) { throw 'Cannot read process command line' }; [pscustomobject]@{ Port = $port; ProcessId = $processId; ZooKeeper = $process.CommandLine.Contains('-Dsolr.zookeeper.server.enabled=true') } } }); 'ready 0'; $nodes | Sort-Object ZooKeeper | ForEach-Object { $_.Port + ' ' + $_.ProcessId } } catch { exit 1 }" 2^>nul`) do (
-      IF "%%i"=="ready" (
-        set "STOP_DISCOVERY_OK=1"
-      ) ELSE (
-        set "SOME_SOLR_PORT=%%i"
-        set found_it=1
-        @echo Stopping Solr process %%j running on port !SOME_SOLR_PORT!
-        IF "%STOP_PORT%"=="" (
-          set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
-        ) else (
-          set LOCAL_STOP_PORT=%STOP_PORT%
-        )
-        "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-        del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
-        REM wait for the process to terminate
-        CALL :wait_for_process_exit %%j !SOLR_STOP_WAIT!
-        REM Kill it if it is still running after the graceful shutdown
-        IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
-          qprocess "%%j" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%j && taskkill /f /PID %%j
-        ) else (
-          qprocess "%%j" >nul 2>nul && taskkill /f /PID %%j
+    for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+      set SOME_SOLR_PORT=
+      For /F "delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+      if NOT "!SOME_SOLR_PORT!"=="" (
+        for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
+          @REM j is the ip:port and k is the pid
+          IF NOT "%%k"=="0" (
+            IF "%%j"=="%SOLR_HOST_BIND%:!SOME_SOLR_PORT!" (
+              set found_it=1
+              @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
+              IF "%STOP_PORT%"=="" (
+                set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
+              ) else (
+                set LOCAL_STOP_PORT=%STOP_PORT%
+              )
+              "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+              del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
+              REM wait for the process to terminate
+              CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
+              REM Kill it if it is still running after the graceful shutdown
+              IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+                qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
+              ) else (
+                qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
+              )
+            )
+          )
         )
       )
-    )
-    IF NOT DEFINED STOP_DISCOVERY_OK (
-      set "SCRIPT_ERROR=Cannot discover local Solr processes. Windows PowerShell and readable process command lines are required."
-      goto err
     )
     if "!found_it!"=="0" echo No Solr nodes found to stop.
   ) ELSE (
@@ -1141,6 +1142,7 @@ IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2
 
 REM This should be the last thing added to START_OPTS, so that users can override as much as possible
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+
 cd /d "%SOLR_SERVER_DIR%"
 
 IF NOT EXIST "%SOLR_LOGS_DIR%" (
