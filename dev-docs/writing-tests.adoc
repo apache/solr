@@ -157,7 +157,7 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 
 `./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the module-specific test tasks are here:
 
-* `./gradlew -p solr/packaging catsTests` builds the distribution first, then runs CATS — on Windows, the same suites under `cmd.exe`. `catsTestsAll` adds the rolling-upgrade suite, building a Solr image from your working tree first; `catsTestsDockerBuild` runs that suite alone. See `solr/packaging/README.md` for the variants, the parallelism and the output layout.
+* `./gradlew -p solr/packaging catsTests` builds the distribution first, then runs CATS — on Windows, the same suites under `cmd.exe`. `catsTestsAll` adds the rolling-upgrade suite, building a Solr image from your working tree first; `catsTestsDockerBuild` runs that suite alone. See `solr/packaging/README.md` for the task variants.
 * `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant.
 * `./gradlew -p solr/docker testDocker` builds the image from your tree and runs the bash cases against it; `-Psolr.docker.tests.include`/`-Psolr.docker.tests.exclude` select them.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
