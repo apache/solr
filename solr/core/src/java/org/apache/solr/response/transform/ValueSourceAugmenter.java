@@ -35,14 +35,17 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Add values from a ValueSource (function query etc)
+ * Adds the value of a {@link ValueSource} (e.g. a function query in {@code fl}) to each document.
  *
- * <p>NOT really sure how or if this could work...
+ * <p>Values for up to {@code preFetchDocs} (default 1000) documents of the {@code DocList} are
+ * computed up front in docid order; any others are computed on demand.
  *
  * @since solr 4.0
  */
 public class ValueSourceAugmenter extends DocTransformer {
   private static final Object NULL_SENTINEL = new Object();
+  private static final String PREFETCH_DOCS_PARAM = "preFetchDocs";
+  private static final int DEFAULT_MAX_PREFETCH_SIZE = 1000;
   public final String name;
   public final QParser qparser;
   public final ValueSource valueSource;
@@ -52,8 +55,25 @@ public class ValueSourceAugmenter extends DocTransformer {
     this.name = name;
     this.qparser = qparser;
     this.valueSource = valueSource;
-    String maxPrefetchSizeRaw = qparser.getParam("preFetchDocs");
-    this.maxPrefetchSize = maxPrefetchSizeRaw != null ? Integer.parseInt(maxPrefetchSizeRaw) : 1000;
+    this.maxPrefetchSize = parseMaxPrefetchSize(qparser);
+  }
+
+  private static int parseMaxPrefetchSize(QParser qparser) {
+    String raw = qparser != null ? qparser.getParam(PREFETCH_DOCS_PARAM) : null;
+    if (raw == null) {
+      return DEFAULT_MAX_PREFETCH_SIZE;
+    }
+    try {
+      int value = Integer.parseInt(raw);
+      if (value >= 0) {
+        return value;
+      }
+    } catch (NumberFormatException e) {
+      // fall through
+    }
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        PREFETCH_DOCS_PARAM + " must be a non-negative integer: " + raw);
   }
 
   @Override
@@ -63,7 +83,9 @@ public class ValueSourceAugmenter extends DocTransformer {
 
   @Override
   public void setContext(ResultContext context) {
+    cachedValuesById = null; // drop any values cached against a previous context/searcher
     super.setContext(context);
+    int docid = -1; // the doc being prefetched, named in the error message
     try {
       searcher = context.getSearcher();
       readerContexts = searcher.getIndexReader().leaves();
@@ -111,7 +133,8 @@ public class ValueSourceAugmenter extends DocTransformer {
       FunctionValues values = null;
       int docBase = -1;
       int nextDocBase = 0; // i.e. this segment's maxDoc
-      for (int docid : ids) {
+      for (int id : ids) {
+        docid = id;
         if (docid >= nextDocBase) {
           int idx = ReaderUtil.subIndex(docid, readerContexts);
           LeafReaderContext rcontext = readerContexts.get(idx);
@@ -133,7 +156,11 @@ public class ValueSourceAugmenter extends DocTransformer {
       fcontext.remove("scorer"); // remove ours; it was there only for prefetching
     } catch (IOException e) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "exception for valuesource " + valueSource, e);
+          SolrException.ErrorCode.SERVER_ERROR,
+          (docid < 0 ? "exception" : "exception at docid " + docid)
+              + " for valuesource "
+              + valueSource,
+          e);
     }
   }
 

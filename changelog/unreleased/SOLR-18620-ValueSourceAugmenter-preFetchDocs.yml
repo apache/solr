@@ -1,0 +1,9 @@
+title: An invalid preFetchDocs param (non-numeric or negative) now returns a 400 error instead of a 500.
+type: fixed
+authors:
+  - name: Ian Springer
+links:
+  - name: SOLR-18620
+    url: https://issues.apache.org/jira/browse/SOLR-18620
+  - name: PR#5290
+    url: https://github.com/apache/solr/pull/5290
