@@ -83,7 +83,7 @@ Randomize when the input space is large and uniform, correctness does not depend
 
 == @Rule and lifecycle
 
-`SolrTestCase` already installs, for every subclass: `SystemPropertiesRestoreRule` at both class and method scope, `LogLevelTestRule` (honours `@LogLevel`), `RevertDefaultThreadHandlerRule`, `QueryLimitsTestInjectionRule`, an `ObjectReleaseTracker` check, `@ThreadLeakFilters` with `SolrIgnoredThreadsFilter` + `QuickPatchThreadsFilter`, `@ThreadLeakLingering(linger = 1000)`, and `@SuppressSysoutChecks` (which is why Solr tests may log freely to the console). Do not re-add any of it, and do not restore system properties by hand.
+`SolrTestCase` installs many rules for every subclass; `solrClassRules` and `solrTestRules` in the class itself are the list. Two consequences worth knowing: system properties are restored at both class and method scope, so a test never has to clear what it set; and `@LogLevel("org.apache.solr.cloud=DEBUG")` on a class or a method works out of the box, which is how you turn logging up for one test without touching a logger.
 
 Do:
 
