@@ -24,6 +24,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.response.ResultContext;
@@ -34,6 +35,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
@@ -41,19 +43,37 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
   private static final int MAX_PREFETCH_SIZE = 1000;
   private static final int NUM_DOCS = MAX_PREFETCH_SIZE + 10;
 
+  /** Commit this often while indexing so the index has several segments. */
+  private static final int DOCS_PER_COMMIT = 300;
+
   /** No returned doc has a foo value that differs from its id. */
   private static final String FOO_MATCHES_ID =
       "count(//result/doc[str[@name='foo'] != str[@name='id']])=0";
 
+  /** No returned doc has a foo value that differs from its val_i_p. */
+  private static final String FOO_MATCHES_VAL =
+      "count(//result/doc[int[@name='foo'] != int[@name='val_i_p']])=0";
+
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // Keep every flushed segment so the index spans several segments.
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema.xml");
 
-    // Index enough documents to exceed the prefetch limit
+    // Index enough documents to exceed the prefetch limit. val_i_p descends as the docid
+    // ascends, so sorting on it returns docs in reverse docid order across segments.
     for (int i = 0; i < NUM_DOCS; i++) {
-      assertU(adoc("id", Integer.toString(i)));
+      assertU(adoc("id", Integer.toString(i), "val_i_p", Integer.toString(NUM_DOCS - i)));
+      if ((i + 1) % DOCS_PER_COMMIT == 0) {
+        assertU(commit());
+      }
     }
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
   }
 
   public void testWithScoreBelowPrefetchLimit() {
@@ -63,7 +83,7 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
             "q", "*:*",
             "fl", "id,foo:field(id),score",
             "rows", String.valueOf(MAX_PREFETCH_SIZE)),
-        "//result[@numFound='" + (MAX_PREFETCH_SIZE + 10) + "']",
+        "//result[@numFound='" + NUM_DOCS + "']",
         "//result/doc/float[@name='score']",
         "count(//result/doc/str[@name='foo'])=" + MAX_PREFETCH_SIZE,
         FOO_MATCHES_ID);
@@ -75,10 +95,10 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
         req(
             "q", "*:*",
             "fl", "id,foo:field(id),score",
-            "rows", String.valueOf(MAX_PREFETCH_SIZE + 10)),
-        "//result[@numFound='" + (MAX_PREFETCH_SIZE + 10) + "']",
+            "rows", String.valueOf(NUM_DOCS)),
+        "//result[@numFound='" + NUM_DOCS + "']",
         "//result/doc/float[@name='score']",
-        "count(//result/doc/str[@name='foo'])=" + (MAX_PREFETCH_SIZE + 10),
+        "count(//result/doc/str[@name='foo'])=" + NUM_DOCS,
         FOO_MATCHES_ID);
   }
 
@@ -88,12 +108,40 @@ public class TestValueSourceAugmenterPrefetchLimit extends SolrTestCaseJ4 {
         req(
             "q", "*:*",
             "fl", "id,foo:field(id),score",
-            "rows", String.valueOf(MAX_PREFETCH_SIZE + 10),
+            "rows", String.valueOf(NUM_DOCS),
             "preFetchDocs", "2000"), // Set to 2000
-        "//result[@numFound='" + (MAX_PREFETCH_SIZE + 10) + "']",
+        "//result[@numFound='" + NUM_DOCS + "']",
         "//result/doc/float[@name='score']",
-        "count(//result/doc/str[@name='foo'])=" + (MAX_PREFETCH_SIZE + 10),
+        "count(//result/doc/str[@name='foo'])=" + NUM_DOCS,
         FOO_MATCHES_ID);
+  }
+
+  /**
+   * The production case: results that are not in docid order, over several segments, with a
+   * forward-only docValues function. The prefetch must sort the docids and switch segments as it
+   * crosses each docBase, or the per-segment FunctionValues reject out-of-order docs.
+   */
+  public void testOutOfDocIdOrderAcrossSegments() throws Exception {
+    int numSegments =
+        h.getCore().withSearcher(searcher -> searcher.getIndexReader().leaves().size());
+    assertTrue("expected a multi-segment index, got " + numSegments, numSegments > 1);
+
+    // both inside the prefetch limit and past it (where the per-doc fallback takes over)
+    for (int rows : new int[] {500, NUM_DOCS}) {
+      assertQ(
+          "sort=val_i_p asc returns docs in reverse docid order, rows=" + rows,
+          req(
+              "q", "*:*",
+              "sort", "val_i_p asc",
+              "rows", String.valueOf(rows),
+              "fl", "id,val_i_p,foo:field(val_i_p)"),
+          "//result[@numFound='" + NUM_DOCS + "']",
+          "count(//result/doc)=" + rows,
+          "//result/doc[1]/str[@name='id'][.='" + (NUM_DOCS - 1) + "']",
+          "//result/doc[1]/int[@name='val_i_p'][.='1']",
+          "count(//result/doc/int[@name='foo'])=" + rows,
+          FOO_MATCHES_VAL);
+    }
   }
 
   public void testPreFetchDocsZeroComputesEveryValueOnDemand() {
