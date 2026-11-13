@@ -1009,12 +1009,10 @@ public class RunExampleTool extends ToolBase {
     echo(
         "HTTP accounts: admin (administration), index (indexing/search), search (search only)."
             + " Password: "
-            + password
-            + ".");
+            + password);
     echo(
         "ZooKeeper accounts: zk-admin (all), zk-readonly (metadata read only). Password: "
-            + password
-            + ".");
+            + password);
     echo("Configuration: " + secureExampleDisplayArgument(include.toString()));
     echo(
         "Check status: SOLR_INCLUDE='"
