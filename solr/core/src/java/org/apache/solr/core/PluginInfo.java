@@ -246,7 +246,7 @@ public class PluginInfo implements MapWriter {
   }
 
   public static final PluginInfo EMPTY_INFO =
-      new PluginInfo("", Map.of(), new SimpleOrderedMap<>(), List.of());
+      new PluginInfo("", Map.of(), new NamedList<>(), List.of());
 
   private static final HashSet<String> NL_TAGS =
       new HashSet<>(asList("lst", "arr", "bool", "str", "int", "long", "float", "double"));
