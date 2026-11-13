@@ -41,6 +41,11 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | The original bash `bin/solr` tests. `./gradlew integrationTests`.
 | seconds to minutes, sequential
 | Deprecated in favour of CATS, which runs the same coverage on both shells. Bash-only; never ran on Windows.
+
+| `solr/docker/tests/cases/*`
+| Bash cases that `docker run` the Solr image built from this tree: entrypoint, `docker-entrypoint-initdb.d` scripts, `/var/solr` volume handling and permissions, core precreation, non-root and random UIDs, log4j config. `./gradlew -p solr/docker testDocker`, helpers in `tests/shared.sh`.
+| image build + containers
+| Current, bash-only. For the image's own contract, not for Solr behaviour.
 |===
 
 `configureCluster(n)` starts `n` Jetty servers and an embedded ZooKeeper in the test JVM before your first assertion, and every collection then goes through the real Collections API with real leader election — which is why `SolrCloudTestCase` is not the default, and why most cluster-test flakiness is a missing `waitForState`.
@@ -56,6 +61,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 * Needs a real external service, not a mock — pick from the above as usual, then add a Testcontainers `@ClassRule`; see below.
 * In the Admin UI's JavaScript or templates — `AdminUiTestBase`. Test the APIs it calls separately; keep the browser test to what the browser renders.
 * Tempted to add a `.bats` file — don't. Write it as a `SolrShellTestCase`. Touch the `.bats` files only to keep them working until they are ported.
+* In the Docker image — its entrypoint, init scripts, volume or permission handling, the `SOLR_*` variables it honours — a case under `solr/docker/tests/cases/`, not a CATS suite.
 
 == Randomized testing
 
@@ -153,6 +159,7 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 
 * `./gradlew -p solr/packaging catsTests` builds the distribution first, then runs CATS — on Windows, the same suites under `cmd.exe`. `catsTestsAll` adds the rolling-upgrade suite, building a Solr image from your working tree first; `catsTestsDockerBuild` runs that suite alone. See `solr/packaging/README.md` for the variants, the parallelism and the output layout.
 * `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant.
+* `./gradlew -p solr/docker testDocker` builds the image from your tree and runs the bash cases against it; `-Psolr.docker.tests.include`/`-Psolr.docker.tests.exclude` select them.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
 * Neither `solr/packaging` test task is part of `check` — both need an unpacked distribution. The harness' own unit tests, under the same task name in `solr/test-framework`, are. The browser tests are in `check` but stay skipped until their test group is enabled.
 
