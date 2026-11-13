@@ -111,6 +111,15 @@ teardown() {
   assert_success
   assert_output --partial 'collections'
 
+  # The Admin UI's ZK status page (ZookeeperStatusHandler) talks to ZooKeeper over a raw
+  # socket with four-letter-word commands, separately from the SolrZkClient used above;
+  # confirm it also works against the now TLS-only embedded ZooKeeper.
+  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user "admin:$password" "https://localhost:$SOLR_PORT/solr/admin/zookeeper/status?wt=json"
+  assert_success
+  assert_output --partial '"ok":true'
+  assert_output --partial '"status":"green"'
+
   # bin/solr writes SOLR_ZK_TLS_OPTS into the include file automatically (because
   # SOLR_SSL_ENABLED=true and node 1 started its own embedded ZooKeeper); read it back
   # rather than hardcoding its keystore/password-file paths here.
