@@ -542,6 +542,6 @@ public class PackageTool extends ToolBase {
   @Override
   public int callTool() throws Exception {
     spec.commandLine().usage(CLIO.getOutStream());
-    return 0;
+    return 2;
   }
 }

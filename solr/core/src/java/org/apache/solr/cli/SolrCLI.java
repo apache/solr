@@ -119,13 +119,14 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 
   /**
-   * Invoked by picocli when {@code bin/solr} is run without a subcommand. Prints usage and exits
-   * non-zero, matching what the commons-cli path does for a missing command.
+   * Invoked by picocli when {@code bin/solr} is run without a subcommand. Prints usage and exits 2,
+   * matching picocli's default for a missing required subcommand and {@code solr nosuchcommand}. An
+   * explicit {@code --help} is handled by {@link HelpMixin} and exits 0.
    */
   @Override
   public Integer call() {
     spec.commandLine().usage(spec.commandLine().getOut());
-    return 1;
+    return 2;
   }
 
   @SuppressForbidden(reason = "SolrCLI is a CLI entry point; System.exit is required here")
@@ -151,9 +152,8 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   }
 
   /**
-   * The {@code bin/solr} script invokes the tool with a single empty argument when it wants the
-   * top-level help (see the {@code --help} handling in {@code bin/solr}). picocli would treat that
-   * empty string as an unknown subcommand, so drop it.
+   * Drops a leading empty argument. Kept for back-compat with older {@code bin/solr} scripts that
+   * sent {@code ""} for top-level help; current scripts pass {@code --help} instead.
    */
   @VisibleForTesting
   static String[] stripEmptyLeadingArg(String[] args) {
@@ -230,10 +230,16 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
         args == null || args.length == 0 || args[0] == null || args[0].trim().isEmpty();
     final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
-    if (hasNoCommand || isHelpCommand) {
+    if (isHelpCommand) {
       printHelp();
-      runtime.exit(1);
+      runtime.exit(0);
     }
+    if (hasNoCommand) {
+      printHelp();
+      runtime.exit(2);
+    }
+
+    boolean missingSubcommand = false;
 
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run, printing the CLIENT version
@@ -248,6 +254,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
       if (args.length == 1) {
         // remap our arguments to invoke the ZK tool help.
         args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+        missingSubcommand = true;
       } else if (args.length == 2) {
         if (Arrays.asList("-h", "--help").contains(args[1])) {
           // remap our arguments to invoke the ZK tool help.
@@ -280,7 +287,11 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
       runtime.exit(1);
     }
     CommandLine cli = parseCmdLine(tool, args);
-    return tool.runTool(cli);
+    int status = tool.runTool(cli);
+    if (missingSubcommand) {
+      runtime.exit(2);
+    }
+    return status;
   }
 
   public static Tool findTool(String[] args, ToolRuntime runtime) throws Exception {
