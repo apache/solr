@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
@@ -127,6 +128,31 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     assertEquals(commitName, meta.getName());
     assertEquals(CollectionSnapshotMetaData.SnapshotStatus.Successful, meta.getStatus());
     assertEquals(expectedCoresWithSnapshot, meta.getReplicaSnapshots().size());
+    var jetty =
+        cluster.getJettySolrRunners().stream().filter(j -> j.isRunning()).findFirst().orElseThrow();
+    for (String jsonNl : new String[] {"", "&json.nl=arrarr"}) {
+      String url =
+          jetty.getBaseUrl()
+              + "/admin/collections?action=LISTSNAPSHOTS&collection="
+              + collectionName
+              + "&wt=json"
+              + jsonNl;
+      var response = jetty.getSolrClient().getHttpClient().GET(url);
+      assertEquals(200, response.getStatus());
+      Map<?, ?> json = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+      assertTrue(json.get("snapshots") instanceof Map);
+      Map<?, ?> snapshots = (Map<?, ?>) json.get("snapshots");
+      assertTrue(snapshots.get(commitName) instanceof Map);
+      Map<?, ?> snapshot = (Map<?, ?>) snapshots.get(commitName);
+      assertEquals(commitName, snapshot.get("name"));
+      assertTrue(snapshot.get("replicas") instanceof Map);
+      Map<?, ?> replicas = (Map<?, ?>) snapshot.get("replicas");
+      assertEquals(expectedCoresWithSnapshot, replicas.size());
+      for (Object replica : replicas.values()) {
+        assertTrue(replica instanceof Map);
+        assertNotNull(((Map<?, ?>) replica).get("core"));
+      }
+    }
     Map<String, CoreSnapshotMetaData> snapshotByCoreName =
         meta.getReplicaSnapshots().stream()
             .collect(Collectors.toMap(CoreSnapshotMetaData::getCoreName, Function.identity()));
