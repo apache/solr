@@ -219,6 +219,28 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void deleteReplicaByCountFollowsAliases() throws Exception {
+    final String collectionName = "deleteByCountAlias";
+    final String aliasName = "deleteByCountAliasName";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 3)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 6);
+    CollectionAdminRequest.createAlias(aliasName, collectionName).process(cluster.getSolrClient());
+
+    CollectionAdminRequest.DeleteReplica forShard =
+        CollectionAdminRequest.deleteReplicasFromShard(aliasName, "shard1", 1);
+    forShard.setFollowAliases(true);
+    forShard.process(cluster.getSolrClient());
+    waitForState("Expected one replica deleted from shard1", collectionName, clusterShape(2, 5));
+
+    CollectionAdminRequest.DeleteReplica forAllShards =
+        CollectionAdminRequest.deleteReplicasFromAllShards(aliasName, 1);
+    forAllShards.setFollowAliases(true);
+    forAllShards.process(cluster.getSolrClient());
+    waitForState("Expected one replica deleted per shard", collectionName, clusterShape(2, 3));
+  }
+
+  @Test
   public void deleteReplicaFromClusterState() throws Exception {
     final String collectionName = "deleteFromClusterStateCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
