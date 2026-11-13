@@ -1,0 +1,7 @@
+title: S3BackupRepository can now encrypt backup files on the Solr node before uploading them, using an AWS KMS key (s3.encryption.kms.keyId) or a local AES key file (s3.encryption.aes.keyFile). Off by default.
+type: added
+authors:
+  - name: adam-spencer
+links:
+  - name: SOLR-15680
+    url: https://issues.apache.org/jira/browse/SOLR-15680
