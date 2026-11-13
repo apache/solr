@@ -156,17 +156,20 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void flatAlgorithm_buildKnnVectorsFormat_shouldReturnScalarQuantizedFormat()
+  public void flatAlgorithm_buildKnnVectorsFormat_shouldReturnScalarQuantizedFormatFor()
       throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");
       IndexSchema schema = h.getCore().getLatestSchema();
 
-      SchemaField vector = schema.getField("vector_sq_flat");
-      ScalarQuantizedDenseVectorField type = (ScalarQuantizedDenseVectorField) vector.getType();
+      SchemaField vectorField = schema.getField("vector_sq_flat");
+      ScalarQuantizedDenseVectorField type =
+          (ScalarQuantizedDenseVectorField) vectorField.getType();
 
       assertThat(
-          type.buildKnnVectorsFormat() instanceof Lucene104ScalarQuantizedVectorsFormat, is(true));
+          type.buildKnnVectorsFormatFor(vectorField)
+              instanceof Lucene104ScalarQuantizedVectorsFormat,
+          is(true));
     } finally {
       deleteCore();
     }
