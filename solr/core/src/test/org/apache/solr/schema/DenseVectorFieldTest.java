@@ -1314,7 +1314,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void fieldDefinition_useRawVectorsAsStoredOnNonVector_shouldThrowException()
+  public void fieldDefinition_useRawVectorsAsStoredOnNonVectorFieldType_shouldThrowException()
       throws Exception {
     for (var fieldType : List.of("string", "boolean", "pint", "plong", "pfloat", "pdouble")) {
       System.setProperty("solr.tests.rawvectors.invalidFieldType", fieldType);

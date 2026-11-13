@@ -463,8 +463,9 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public final KnnVectorsFormat buildKnnVectorsFormatFor(SchemaField field) {
-    boolean isNotIndexedButWeWantVectorValues = !field.indexed() && field.useRawVectorsAsStored();
-    if (isNotIndexedButWeWantVectorValues) {
+    boolean isNotIndexedButWeWantRawVectorsAsStored =
+        !field.indexed() && field.useRawVectorsAsStored();
+    if (isNotIndexedButWeWantRawVectorsAsStored) {
       return new Solr101FlatVectorFormat();
     }
     return buildIndexedKnnVectorsFormat();

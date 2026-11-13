@@ -156,7 +156,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void flatAlgorithm_buildKnnVectorsFormat_shouldReturnScalarQuantizedFormatFor()
+  public void flatAlgorithm_buildKnnVectorsFormat_shouldReturnScalarQuantizedFormat()
       throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-flat-scalarQuantized.xml");

@@ -81,6 +81,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -619,8 +620,7 @@ public class RealTimeGetComponent extends SearchComponent {
   private static SolrDocument fetchSolrDoc(
       SolrIndexSearcher searcher, int docId, ReturnFields returnFields) throws IOException {
     final SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-    final SolrReturnFields solrReturnFields = (SolrReturnFields) returnFields;
-    final SolrDocument solrDoc = docFetcher.solrDoc(docId, solrReturnFields);
+    final SolrDocument solrDoc = docFetcher.solrDoc(docId, (SolrReturnFields) returnFields);
     removeCopyFieldTargets(solrDoc, searcher.getSchema());
     final DocTransformer transformer = returnFields.getTransformer();
     if (transformer != null) {
@@ -886,7 +886,7 @@ public class RealTimeGetComponent extends SearchComponent {
       if (sf != null) {
         if ((!sf.hasDocValues() && !sf.stored() && !sf.useRawVectorsAsStored())
             || schema.isCopyFieldTarget(sf)) continue;
-        if (sf.useRawVectorsAsStored()) {
+        if (sf.getType() instanceof DenseVectorField) {
           out.setField(fname, new ArrayList<>());
         }
       }

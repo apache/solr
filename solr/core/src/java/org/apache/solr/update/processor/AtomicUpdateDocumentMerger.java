@@ -17,9 +17,11 @@
 package org.apache.solr.update.processor;
 
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.schema.IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -37,6 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -52,12 +55,14 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.CopyField;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumericValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.vector.DenseVectorParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +72,9 @@ import org.slf4j.LoggerFactory;
 public class AtomicUpdateDocumentMerger {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Set<String> MULTIVALUED_VECTOR_OPERATIONS =
+      Set.of("set", "add", "remove", "add-distinct");
 
   protected final IndexSchema schema;
   protected final SchemaField idField;
@@ -155,6 +163,17 @@ public class AtomicUpdateDocumentMerger {
       final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
       Object val = sif.getValue();
+      SchemaField field = schema.getFieldOrNull(sif.getName());
+      if (val instanceof Map
+          && field != null
+          && field.multiValued()
+          && field.getType() instanceof DenseVectorField vectorField
+          && ((Map<?, ?>) val).values().stream().noneMatch(AtomicUpdateDocumentMerger::isChildDoc)
+          && !toDoc.containsKey(IndexSchema.NEST_PATH_FIELD_NAME)
+          && !toDoc.containsKey(IndexSchema.NEST_PARENT_FIELD_NAME)) {
+        mergeMultivaluedVectorField(toDoc, sif.getName(), vectorField, (Map<String, Object>) val);
+        continue;
+      }
       if (val instanceof Map) {
         for (Entry<String, Object> entry : ((Map<String, Object>) val).entrySet()) {
           String key = entry.getKey();
@@ -198,6 +217,180 @@ public class AtomicUpdateDocumentMerger {
     }
 
     return toDoc;
+  }
+
+  private void mergeMultivaluedVectorField(
+      SolrInputDocument toDoc,
+      String fieldName,
+      DenseVectorField vectorField,
+      Map<String, Object> operations) {
+    List<List<Number>> vectors = new ArrayList<>();
+    Collection<Object> values = toDoc.getFieldValues(fieldName);
+    if (values != null) {
+      for (Object value : values) {
+        vectors.add(
+            value instanceof SolrInputDocument child
+                ? readAtomicVectorChild(fieldName, vectorField, child)
+                : parseAtomicVector(fieldName, vectorField, value));
+      }
+    }
+
+    Collection<Object> nestedVectors = toDoc.getFieldValues(NESTED_VECTORS_PSEUDO_FIELD_NAME);
+    List<SolrInputDocument> remainingChildren = new ArrayList<>();
+    if (nestedVectors != null) {
+      for (Object value : nestedVectors) {
+        SolrInputDocument child = (SolrInputDocument) value;
+        if (child.containsKey(fieldName)) {
+          vectors.add(readAtomicVectorChild(fieldName, vectorField, child));
+        } else {
+          remainingChildren.add(child);
+        }
+      }
+    }
+
+    for (var entry : operations.entrySet()) {
+      String operation = entry.getKey();
+      if (!MULTIVALUED_VECTOR_OPERATIONS.contains(operation)) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Operation '"
+                + operation
+                + "' is not supported for multivalued dense vector field '"
+                + fieldName
+                + "'");
+      }
+      Object operand = entry.getValue();
+      List<List<Number>> operands = new ArrayList<>();
+      if (!(operation.equals("set") && operand == null)) {
+        if (!(operand instanceof Collection<?> inputVectors)) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "Expected a list of vectors for multivalued dense vector field '" + fieldName + "'");
+        }
+        for (Object inputVector : inputVectors) {
+          operands.add(parseAtomicVector(fieldName, vectorField, inputVector));
+        }
+      }
+
+      switch (operation) {
+        case "set" -> {
+          vectors.clear();
+          vectors.addAll(operands);
+        }
+        case "add" -> vectors.addAll(operands);
+        case "remove" -> {
+          for (List<Number> vector : operands) {
+            int index = indexOfVector(vectors, vector);
+            if (index >= 0) {
+              vectors.remove(index);
+            }
+          }
+        }
+        case "add-distinct" -> {
+          for (List<Number> vector : operands) {
+            if (indexOfVector(vectors, vector) < 0) {
+              vectors.add(vector);
+            }
+          }
+        }
+      }
+    }
+
+    toDoc.setField(fieldName, vectors);
+    if (nestedVectors != null) {
+      if (remainingChildren.isEmpty()) {
+        toDoc.removeField(NESTED_VECTORS_PSEUDO_FIELD_NAME);
+      } else {
+        toDoc.setField(NESTED_VECTORS_PSEUDO_FIELD_NAME, remainingChildren);
+      }
+    }
+  }
+
+  private static List<Number> readAtomicVectorChild(
+      String fieldName, DenseVectorField vectorField, SolrInputDocument child) {
+    Object value = child.getField(fieldName).getValue();
+    if (value instanceof Number || value instanceof CharSequence) {
+      value = List.of(value);
+    }
+    return parseAtomicVector(fieldName, vectorField, value);
+  }
+
+  private static List<Number> parseAtomicVector(
+      String fieldName, DenseVectorField vectorField, Object value) {
+    try {
+      List<?> inputVector;
+      if (value instanceof List<?> list) {
+        inputVector = list;
+      } else if (value != null && value.getClass().isArray()) {
+        int length = Array.getLength(value);
+        List<Object> arrayValues = new ArrayList<>(length);
+        for (int i = 0; i < length; i++) {
+          arrayValues.add(Array.get(value, i));
+        }
+        inputVector = arrayValues;
+      } else {
+        throw new IllegalArgumentException("each vector must be a list or an array of coordinates");
+      }
+      List<String> coordinates = new ArrayList<>(inputVector.size());
+      for (Object coordinate : inputVector) {
+        if (!(coordinate instanceof Number) && !(coordinate instanceof CharSequence)) {
+          throw new IllegalArgumentException("coordinates must be numbers or numeric strings");
+        }
+        if (vectorField.getVectorEncoding() == VectorEncoding.BYTE
+            && coordinate instanceof Number number) {
+          double numeric = number.doubleValue();
+          if (!Double.isFinite(numeric)
+              || numeric < Byte.MIN_VALUE
+              || numeric > Byte.MAX_VALUE
+              || numeric != Math.rint(numeric)) {
+            throw new IllegalArgumentException(
+                "BYTE coordinates must be integers from -128 to 127");
+          }
+          coordinates.add(Integer.toString((int) numeric));
+        } else {
+          coordinates.add(coordinate.toString());
+        }
+      }
+
+      DenseVectorParser parser =
+          vectorField.getVectorBuilder(coordinates, DenseVectorParser.BuilderPhase.INDEX);
+      List<Number> vector = new ArrayList<>(vectorField.getDimension());
+      switch (vectorField.getVectorEncoding()) {
+        case FLOAT32 -> {
+          for (float coordinate : parser.getFloatVector()) {
+            if (!Float.isFinite(coordinate)) {
+              throw new IllegalArgumentException("FLOAT32 coordinates must be finite");
+            }
+            vector.add(coordinate);
+          }
+        }
+        case BYTE -> {
+          for (byte coordinate : parser.getByteVector()) {
+            vector.add((int) coordinate);
+          }
+        }
+      }
+      return vector;
+    } catch (RuntimeException e) {
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Invalid vector for field '" + fieldName + "': " + e.getMessage(),
+          e);
+    }
+  }
+
+  private static int indexOfVector(List<List<Number>> vectors, List<Number> candidate) {
+    for (int i = 0; i < vectors.size(); i++) {
+      List<Number> vector = vectors.get(i);
+      boolean matches = vector.size() == candidate.size();
+      for (int j = 0; matches && j < vector.size(); j++) {
+        matches = vector.get(j).doubleValue() == candidate.get(j).doubleValue();
+      }
+      if (matches) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private static String getID(SolrInputDocument doc, IndexSchema schema) {

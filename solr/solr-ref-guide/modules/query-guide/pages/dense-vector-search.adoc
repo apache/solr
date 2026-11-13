@@ -211,6 +211,22 @@ RealTime Get also returns vectors from uncommitted updates.
 The `fl` parameter controls which fields are returned, including explicit field names, wildcards, and aliases.
 Raw vector values are also preserved when atomic updates change other fields in the document.
 
+Multivalued dense vector fields support atomic `set`, `add`, `remove`, and `add-distinct` updates on the parent document.
+Each value is a whole vector: supply a list of vectors, even when updating only one vector.
+`add` preserves duplicates; `add-distinct` compares coordinates at the field's vector encoding precision.
+`remove` removes one matching occurrence for each vector supplied.
+Use `set: null` or `set: []` to remove all vectors from a field.
+
+[source,json]
+----
+[
+  {
+    "id": "1",
+    "vector_multivalued": {"add-distinct": [[1.0, 2.0, 3.0, 4.0]]}
+  }
+]
+----
+
 Reading raw vector values has a different access cost from reading stored fields.
 If your application frequently returns vectors, for example with `fl=*`, benchmark the retrieval workload before choosing between the two options.
 

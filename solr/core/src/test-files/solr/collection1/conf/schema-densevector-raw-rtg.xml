@@ -50,5 +50,30 @@
   <field name="vector_single_value_float_1d" type="raw_float_1d" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
   <field name="vector_single_value_byte_1d" type="raw_byte_1d" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
 
+  <fieldType name="raw_field_default" class="solr.DenseVectorField" vectorDimension="4"/>
+  <fieldType name="raw_scalar" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine" useRawVectorsAsStored="true"/>
+  <fieldType name="raw_binary" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4" useRawVectorsAsStored="true"/>
+  <fieldType name="raw_flat" class="solr.DenseVectorField" vectorDimension="4" knnAlgorithm="flat" useRawVectorsAsStored="true"/>
+  <fieldType name="raw_scalar_flat" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" knnAlgorithm="flat" similarityFunction="cosine" useRawVectorsAsStored="true"/>
+  <fieldType name="raw_flat_byte" class="solr.DenseVectorField" vectorDimension="4" knnAlgorithm="flat" vectorEncoding="BYTE" useRawVectorsAsStored="true"/>
+
+  <field name="field_opt_in" type="raw_field_default" indexed="true" stored="false" useRawVectorsAsStored="true"/>
+  <field name="field_opt_out" type="raw_float" indexed="true" stored="false" useRawVectorsAsStored="false"/>
+  <field name="field_opt_out_stored" type="raw_float" indexed="true" stored="true" useRawVectorsAsStored="false"/>
+  <dynamicField name="raw_dynamic_*" type="raw_float" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <field name="raw_copy_source" type="raw_float" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <field name="raw_copy_target" type="raw_float" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <copyField source="raw_copy_source" dest="raw_copy_target"/>
+  <field name="vector_scalar" type="raw_scalar" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <field name="vector_binary" type="raw_binary" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <field name="vector_flat" type="raw_flat" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <field name="vector_scalar_flat" type="raw_scalar_flat" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+  <field name="vector_flat_byte" type="raw_flat_byte" indexed="${tests.rawvectors.indexed:true}" stored="${tests.rawvectors.stored:false}"/>
+
+  <field name="legacy_float" type="raw_float" indexed="true" stored="true" useRawVectorsAsStored="false" multiValued="true"/>
+  <field name="legacy_float_1d" type="raw_float_1d" indexed="true" stored="true" useRawVectorsAsStored="false" multiValued="true"/>
+  <field name="legacy_byte" type="raw_byte" indexed="true" stored="true" useRawVectorsAsStored="false" multiValued="true"/>
+  <field name="legacy_byte_1d" type="raw_byte_1d" indexed="true" stored="true" useRawVectorsAsStored="false" multiValued="true"/>
+
   <uniqueKey>id</uniqueKey>
 </schema>
