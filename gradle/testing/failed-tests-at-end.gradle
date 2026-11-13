@@ -30,8 +30,8 @@ def genFailInfo(def task, TestDescriptor desc) {
   }
   def logName = buildinfra.getOutputLogName(desc.parent ?: desc)
   def output = file("${task.testOutputsDir}/${logName}")
-  // task.path, not "${project.path}:test": a failure in catsTests, integrationTests or a beast
-  // run would otherwise print a reproduce line naming a task the test does not belong to.
+  // task.path, not "${project.path}:test": a failure in a Test task that is not named 'test',
+  // such as catsTests, would otherwise print a reproduce line naming a task it never ran under.
   def repro = "./gradlew ${task.path} --tests \"${name}\" ${task.project.testOptionsForReproduceLine}"
   return ["name": name, "project": "${task.project.path}", "historyUrl": historyUrl, "output":
       output, "reproduce": repro]
