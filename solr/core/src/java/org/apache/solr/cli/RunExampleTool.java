@@ -38,7 +38,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -50,7 +54,6 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -88,6 +91,19 @@ public class RunExampleTool extends ToolBase {
       "%d is too small! " + PROMPT_FOR_NUMBER_IN_RANGE;
   private static final String PROMPT_NUMBER_TOO_LARGE =
       "%d is too large! " + PROMPT_FOR_NUMBER_IN_RANGE;
+
+  /** Recommended/default number of nodes forming the cloud example's embedded ZK ensemble. */
+  private static final int ZK_QUORUM_RECOMMENDED_SIZE = 3;
+
+  private static final int ZK_ENSEMBLE_MIN_SIZE = 1;
+  private static final int ZK_ENSEMBLE_MAX_SIZE = 7;
+  private static final int ZK_ADDITIONAL_NODES_MAX = 3;
+
+  private static final String ZK_QUORUM_ROLE_ARG =
+      "-Dsolr.node.roles=data:on,overseer:allowed,zookeeper_quorum:on";
+
+  /** How long to wait for all cloud example nodes to become live before giving up. */
+  private static final long WAIT_FOR_LIVE_NODES_TIMEOUT_MS = 60_000L;
 
   /**
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
@@ -310,7 +326,8 @@ public class RunExampleTool extends ToolBase {
    *
    * @param scriptInputs comma-separated answers to the example's prompts, or null to run the
    *     interactive session instead
-   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null
+   * @param zkHost ZooKeeper connection string resolved from option or sysprop, or null; for the
+   *     cloud example, null means "form our own embedded ZK quorum" rather than connect to one
    * @param basePort first node port; remaining nodes use basePort+1..+3 unless prompted otherwise
    */
   record CloudExampleParams(
@@ -1372,14 +1389,15 @@ public class RunExampleTool extends ToolBase {
 
     usingScriptInputs = params.scriptInputs() != null;
     boolean prompt = !params.noPrompt();
-    int numNodes = 2;
-    int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
+    // Default to an embedded ZK quorum; an explicit -z/--zk-host means the caller already has a
+    // ZooKeeper to connect to, so there's nothing to form.
+    boolean zkQuorum = params.zkHost() == null;
+    int quorumSize = ZK_QUORUM_RECOMMENDED_SIZE; // only meaningful when zkQuorum is true
+    int numNodes = zkQuorum ? quorumSize : 2;
+    int minNodes = 1;
+    int maxNodes = 4;
     int defaultPort = params.basePort();
-    if (defaultPort != 8983) {
-      // Override the old default port numbers if user has started the example overriding
-      // SOLR_PORT_LISTEN
-      cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
-    }
+    int[] cloudPorts;
 
     echo("\nWelcome to the SolrCloud example!\n");
 
@@ -1402,17 +1420,59 @@ public class RunExampleTool extends ToolBase {
             "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
       }
 
-      // get the number of nodes to start
-      numNodes =
-          promptForInt(
-              readInput,
-              "To begin, how many Solr nodes would you like to run in your local cluster? (specify 1-4 nodes) [2]: ",
-              "a number",
-              numNodes,
-              1,
-              4);
+      if (zkQuorum) {
+        quorumSize =
+            promptForInt(
+                readInput,
+                String.format(
+                    Locale.ROOT,
+                    "How many nodes should form the embedded ZooKeeper ensemble?"
+                        + " [%d]: ",
+                    ZK_QUORUM_RECOMMENDED_SIZE),
+                "a number",
+                ZK_QUORUM_RECOMMENDED_SIZE,
+                ZK_ENSEMBLE_MIN_SIZE,
+                ZK_ENSEMBLE_MAX_SIZE);
 
-      echo("Ok, let's start up " + numNodes + " Solr nodes for your example SolrCloud cluster.");
+        int additionalNodes =
+            promptForInt(
+                readInput,
+                "How many additional Solr nodes do you want? (these just connect to the"
+                    + " ensemble) [0]: ",
+                "a number",
+                0,
+                0,
+                ZK_ADDITIONAL_NODES_MAX);
+
+        numNodes = quorumSize + additionalNodes;
+
+        echo(
+            "Ok, let's start up "
+                + numNodes
+                + " Solr nodes for your example SolrCloud cluster, with the first "
+                + quorumSize
+                + " forming an embedded ZooKeeper quorum.");
+      } else {
+        // get the number of nodes to start
+        numNodes =
+            promptForInt(
+                readInput,
+                String.format(
+                    Locale.ROOT,
+                    "To begin, how many Solr nodes would you like to run in your local cluster?"
+                        + " (specify %d-%d nodes) [%d]: ",
+                    minNodes,
+                    maxNodes,
+                    numNodes),
+                "a number",
+                numNodes,
+                minNodes,
+                maxNodes);
+
+        echo("Ok, let's start up " + numNodes + " Solr nodes for your example SolrCloud cluster.");
+      }
+
+      cloudPorts = buildCloudPorts(zkQuorum, defaultPort, numNodes);
 
       // get the ports for each port
       for (int n = 0; n < numNodes; n++) {
@@ -1435,7 +1495,17 @@ public class RunExampleTool extends ToolBase {
         echoIfVerbose("Using port " + port + " for node " + (n + 1));
       }
     } else {
-      echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");
+      cloudPorts = buildCloudPorts(zkQuorum, defaultPort, numNodes);
+      if (zkQuorum) {
+        echo(
+            "Starting up "
+                + numNodes
+                + " Solr nodes for your example SolrCloud cluster, with the first "
+                + quorumSize
+                + " forming an embedded ZooKeeper quorum.\n");
+      } else {
+        echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");
+      }
     }
 
     // setup a unique solr.solr.home directory for each node
@@ -1452,38 +1522,102 @@ public class RunExampleTool extends ToolBase {
 
     // deal with extra args passed to the script to run the example
     String zkHost = params.zkHost();
+    Map<String, Object> nodeStatus;
+    int firstPlainNode; // 0-based index of the first node that just connects, no special role
 
-    // start the first node (most likely with embedded ZK)
-    Map<String, Object> nodeStatus =
-        startSolr(node1Dir.resolve("solr"), true, params.start(), cloudPorts[0], zkHost, 30);
-
-    if (zkHost == null) {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> cloudStatus = (Map<String, Object>) nodeStatus.get("cloud");
-      if (cloudStatus != null) {
-        String zookeeper = (String) cloudStatus.get("ZooKeeper");
-        if (zookeeper != null) zkHost = zookeeper;
+    if (zkQuorum) {
+      // The quorum members all need the full ensemble connection string up front, so build it
+      // before starting any of them.
+      StringBuilder zkHostBuilder = new StringBuilder();
+      for (int n = 0; n < quorumSize; n++) {
+        if (n > 0) zkHostBuilder.append(",");
+        zkHostBuilder.append("localhost:").append(cloudPorts[n] + 1000);
       }
-      if (zkHost == null)
-        throw new Exception("Could not get the ZooKeeper connection string for node1!");
+      zkHost = zkHostBuilder.toString();
+      String quorumZkHost = zkHost;
+
+      echo(
+          "\nStarting the first "
+              + quorumSize
+              + " nodes together as an embedded ZooKeeper quorum (zkHost="
+              + quorumZkHost
+              + ") ...");
+
+      // The quorum members must be started concurrently: each one blocks on connecting to the ZK
+      // ensemble it's helping to form, which only becomes reachable once a majority are up.
+      StartSolrParams quorumStart = withExtraArg(params.start(), ZK_QUORUM_ROLE_ARG);
+      List<Callable<Map<String, Object>>> quorumStartups = new ArrayList<>();
+      for (int n = 0; n < quorumSize; n++) {
+        Path nodeDir =
+            (n == 0)
+                ? node1Dir.resolve("solr")
+                : solrHomeDir.resolve("node" + (n + 1)).resolve("solr");
+        int nodePort = cloudPorts[n];
+        quorumStartups.add(
+            () ->
+                startSolr(
+                    new DefaultExecutor.Builder<>().get(),
+                    nodeDir,
+                    true,
+                    quorumStart,
+                    nodePort,
+                    quorumZkHost,
+                    30));
+      }
+
+      ExecutorService quorumExecutor = Executors.newFixedThreadPool(quorumSize);
+      List<Future<Map<String, Object>>> futures;
+      try {
+        futures = quorumExecutor.invokeAll(quorumStartups);
+      } finally {
+        quorumExecutor.shutdown();
+      }
+      nodeStatus = getQuorumStartupResult(futures, 0);
+      for (int n = 1; n < futures.size(); n++) {
+        getQuorumStartupResult(futures, n);
+      }
+
+      firstPlainNode = quorumSize;
+    } else {
+      // start the first node (most likely with embedded ZK)
+      nodeStatus =
+          startSolr(node1Dir.resolve("solr"), true, params.start(), cloudPorts[0], zkHost, 30);
+
+      if (zkHost == null) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> cloudStatus = (Map<String, Object>) nodeStatus.get("cloud");
+        if (cloudStatus != null) {
+          String zookeeper = (String) cloudStatus.get("ZooKeeper");
+          if (zookeeper != null) zkHost = zookeeper;
+        }
+        if (zkHost == null)
+          throw new Exception("Could not get the ZooKeeper connection string for node1!");
+      }
+
+      firstPlainNode = 1;
     }
 
-    if (numNodes > 1) {
-      // start the other nodes
-      for (int n = 1; n < numNodes; n++)
-        startSolr(
-            solrHomeDir.resolve("node" + (n + 1)).resolve("solr"),
-            true,
-            params.start(),
-            cloudPorts[n],
-            zkHost,
-            30);
-    }
+    // start any remaining nodes as plain members connecting to the now-formed ensemble
+    for (int n = firstPlainNode; n < numNodes; n++)
+      startSolr(
+          solrHomeDir.resolve("node" + (n + 1)).resolve("solr"),
+          true,
+          params.start(),
+          cloudPorts[n],
+          zkHost,
+          30);
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
-    // wait until live nodes == numNodes
-    waitToSeeLiveNodes(zkHost, numNodes);
+    // wait until live nodes == numNodes; same check as `bin/solr assert --cloud-nodes`
+    new AssertTool(runtime)
+        .runAssert(
+            new AssertTool.AssertParams(
+                null,
+                WAIT_FOR_LIVE_NODES_TIMEOUT_MS,
+                false,
+                null,
+                List.of(new AssertTool.Assertion.CloudNodes(zkHost, numNodes))));
 
     // create the collection
     String collectionName =
@@ -1493,49 +1627,73 @@ public class RunExampleTool extends ToolBase {
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
 
-  /** wait until the number of live nodes == numNodes. */
-  protected void waitToSeeLiveNodes(String zkHost, int numNodes) {
-    // honours a chroot inside zkHost, e.g. zk1:2181/solr
-    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(zkHost).build()) {
-      Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
-      int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
-      long timeoutNanos = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-      long pollIntervalMs = 2000;
-
-      while (System.nanoTime() < timeoutNanos && numLiveNodes < numNodes) {
-        echo(
-            "\nWaiting up to "
-                + 10
-                + " seconds to see "
-                + (numNodes - numLiveNodes)
-                + " more nodes join the SolrCloud cluster ...");
-
-        try {
-          TimeUnit.MILLISECONDS.sleep(pollIntervalMs);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          break;
-        }
-
-        liveNodes = cloudClient.getClusterState().getLiveNodes();
-        numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
+  /** Computes the Solr ports to use for each node of the cloud example. */
+  private static int[] buildCloudPorts(boolean zkQuorum, int defaultPort, int count) {
+    int[] ports = new int[count];
+    if (zkQuorum) {
+      // Each quorum node also claims solrPort + 1000/1010/1020 for its embedded ZK's
+      // client/quorum/leader ports. Spacing nodes 100 ports apart keeps every node's whole
+      // port cluster clear of every other node's, for any reasonable node count.
+      for (int n = 0; n < count; n++) {
+        ports[n] = defaultPort + (n * 100);
       }
-      if (numLiveNodes < numNodes) {
-        echo(
-            "\nWARNING: Only "
-                + numLiveNodes
-                + " of "
-                + numNodes
-                + " are active in the cluster after "
-                + 10
-                + " seconds! Please check the solr.log for each node to look for errors.\n");
+    } else if (defaultPort == 8983) {
+      int[] classicPorts = {8983, 7574, 8984, 7575};
+      System.arraycopy(classicPorts, 0, ports, 0, count);
+    } else {
+      // Override the old default port numbers if user has started the example overriding
+      // SOLR_PORT_LISTEN
+      for (int n = 0; n < count; n++) {
+        ports[n] = defaultPort + n;
       }
-    } catch (Exception exc) {
-      CLIO.err("Failed to see if " + numNodes + " joined the SolrCloud cluster due to: " + exc);
+    }
+    return ports;
+  }
+
+  /** Returns a copy of {@code params} with {@code extraArg} appended to its extra arguments. */
+  private static StartSolrParams withExtraArg(StartSolrParams params, String extraArg) {
+    List<String> extraArgs = new ArrayList<>(params.extraArgs());
+    extraArgs.add(extraArg);
+    return new StartSolrParams(
+        params.example(),
+        params.host(),
+        params.memory(),
+        params.jvmOpts(),
+        params.force(),
+        params.credentials(),
+        extraArgs);
+  }
+
+  /** Unwraps and surfaces the result/failure of one of the parallel ZK quorum node startups. */
+  private static Map<String, Object> getQuorumStartupResult(
+      List<Future<Map<String, Object>>> futures, int index) throws Exception {
+    try {
+      return futures.get(index).get();
+    } catch (ExecutionException ee) {
+      Throwable cause = ee.getCause();
+      throw (cause instanceof Exception) ? (Exception) cause : ee;
     }
   }
 
   Map<String, Object> startSolr(
+      Path solrHomeDir,
+      boolean cloudMode,
+      StartSolrParams params,
+      int port,
+      String zkHost,
+      int maxWaitSecs)
+      throws Exception {
+    return startSolr(executor, solrHomeDir, cloudMode, params, port, zkHost, maxWaitSecs);
+  }
+
+  /**
+   * Like {@link #startSolr(Path, boolean, StartSolrParams, int, String, int)}, but with an
+   * explicit {@link Executor}. {@link org.apache.commons.exec.DefaultExecutor} isn't safe to reuse
+   * across concurrent {@code execute} calls, so callers starting multiple nodes in parallel (e.g.
+   * ZK quorum members) must each pass their own instance rather than share {@link #executor}.
+   */
+  Map<String, Object> startSolr(
+      Executor execUsed,
       Path solrHomeDir,
       boolean cloudMode,
       StartSolrParams params,
@@ -1634,7 +1792,7 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      executor.execute(startCmd, startEnv, handler);
+      execUsed.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
         handler.waitFor(Duration.ofSeconds(3));
@@ -1651,7 +1809,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       try {
-        int code = executor.execute(startCmd);
+        int code = execUsed.execute(startCmd);
         if (code != 0) throw new Exception("Failed to start Solr using command: " + cmdStr);
       } catch (ExecuteException e) {
         throw new Exception("Failed to start Solr using command: " + cmdStr + " Exception : " + e);
@@ -1812,8 +1970,26 @@ public class RunExampleTool extends ToolBase {
           "--solr-url", solrUrl
         };
 
-    CreateTool createTool = new CreateTool(runtime);
-    int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
+    // A freshly-formed cluster (especially an embedded ZK quorum, which needs leader election
+    // across separate JVMs plus Overseer election on top of that) can still be settling in by the
+    // time we get here despite waitToSeeLiveNodes, so retry a few times before giving up.
+    int attempts = 3;
+    int createCode;
+    do {
+      CreateTool createTool = new CreateTool(runtime);
+      createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
+      if (createCode == 0) break;
+      attempts--;
+      if (attempts > 0) {
+        echo("\nRetrying collection creation, cluster may still be settling in ...");
+        try {
+          TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
+    } while (attempts > 0);
 
     if (createCode != 0)
       throw new Exception(

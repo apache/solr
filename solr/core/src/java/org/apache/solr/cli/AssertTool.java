@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -30,6 +31,7 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -51,7 +53,11 @@ import org.slf4j.LoggerFactory;
       "  bin/solr assert --started http://localhost:8983 --timeout 5000",
       "",
       "  # Assert we are not running as root",
-      "  bin/solr assert --not-root"
+      "  bin/solr assert --not-root",
+      "",
+      "  # Assert a 3-node SolrCloud/ZooKeeper ensemble is fully up before continuing",
+      "  bin/solr assert --cloud-nodes 3 -z localhost:9983,localhost:9993,localhost:10003 --timeout"
+          + " 60000"
     })
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -205,6 +211,22 @@ public class AssertTool extends ToolBase {
    *     field.
    */
   @Deprecated
+  private static final Option CLOUD_NODES_OPTION =
+      Option.builder()
+          .desc(
+              "Asserts that at least <N> Solr nodes are live in the SolrCloud cluster reachable via"
+                  + " -z/--zk-host. Default timeout is 1000ms.")
+          .longOpt("cloud-nodes")
+          .hasArg()
+          .type(Integer.class)
+          .argName("N")
+          .get();
+
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option MESSAGE_OPTION =
       Option.builder()
           .desc("Exception message to be used in place of the default error message.")
@@ -266,6 +288,9 @@ public class AssertTool extends ToolBase {
 
     /** Asserts that Solr on the given URL is NOT running in cloud mode. */
     record NotCloudMode(String url) implements Assertion {}
+
+    /** Asserts that at least {@code expectedNodes} nodes are live in the SolrCloud cluster. */
+    record CloudNodes(String zkHost, int expectedNodes) implements Assertion {}
   }
 
   /**
@@ -362,6 +387,20 @@ public class AssertTool extends ToolBase {
   private CloudOptions cloudOptions;
 
   @picocli.CommandLine.Option(
+      names = "--cloud-nodes",
+      paramLabel = "N",
+      description =
+          "Asserts that at least <N> Solr nodes are live in the SolrCloud cluster reachable via"
+              + " -z/--zk-host. Default timeout is 1000ms.")
+  private Integer cloudNodesOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-z", "--zk-host"},
+      paramLabel = "HOST",
+      description = "Zookeeper connection string; required when using --cloud-nodes.")
+  private String zkHostOpt;
+
+  @picocli.CommandLine.Option(
       names = "--message",
       paramLabel = "message",
       description = "Exception message to be used in place of the default error message.")
@@ -402,6 +441,8 @@ public class AssertTool extends ToolBase {
         .addOption(SAME_USER_OPTION)
         .addOptionGroup(DIRECTORY_OPTION)
         .addOptionGroup(CLOUD_OPTION)
+        .addOption(CLOUD_NODES_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(MESSAGE_OPTION)
         .addOption(TIMEOUT_OPTION)
         .addOption(EXIT_CODE_OPTION)
@@ -480,6 +521,14 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
       assertions.add(new Assertion.NotCloudMode(cli.getOptionValue(IS_NOT_CLOUD_OPTION)));
     }
+    if (cli.hasOption(CLOUD_NODES_OPTION)) {
+      String zkHost =
+          CLIUtils.getCliOptionOrPropValue(
+              cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", CommonCLIOptions.DefaultValues.ZK_HOST);
+      assertions.add(
+          new Assertion.CloudNodes(
+              zkHost, Integer.parseInt(cli.getOptionValue(CLOUD_NODES_OPTION))));
+    }
     return runAssert(
         new AssertParams(
             cli.getOptionValue(MESSAGE_OPTION),
@@ -517,6 +566,8 @@ public class AssertTool extends ToolBase {
                 assertSolrRunningInCloudMode(CLIUtils.normalizeSolrUrl(url), credentials);
             case Assertion.NotCloudMode(String url) ->
                 assertSolrNotRunningInCloudMode(CLIUtils.normalizeSolrUrl(url), credentials);
+            case Assertion.CloudNodes(String zkHost, int expectedNodes) ->
+                assertCloudNodes(zkHost, expectedNodes);
           };
     }
     return ret;
@@ -607,6 +658,49 @@ public class AssertTool extends ToolBase {
       return exitOrException("Solr is not running in standalone mode on " + url);
     }
     return 0;
+  }
+
+  /**
+   * Polls the SolrCloud cluster reachable via {@code zkHost} until at least {@code expectedNodes}
+   * are live, or {@link #timeoutMs} elapses. Forming a fresh embedded ZK ensemble (leader election
+   * across separate JVMs, then Overseer election on top of that) can take noticeably longer than a
+   * single-node embedded ZK, so callers checking that should pass a generous timeout.
+   */
+  public int assertCloudNodes(String zkHost, int expectedNodes) throws Exception {
+    long timeoutNanos =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
+    int numLiveNodes = 0;
+    try (CloudSolrClient cloudClient = new CloudSolrClient.Builder(zkHost).build()) {
+      while (true) {
+        Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
+        numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
+        if (numLiveNodes >= expectedNodes) {
+          return 0;
+        }
+        if (System.nanoTime() >= timeoutNanos) {
+          break;
+        }
+        try {
+          TimeUnit.MILLISECONDS.sleep(2000L);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
+    } catch (Exception exc) {
+      return exitOrException(
+          "Failed to check live nodes via ZooKeeper " + zkHost + " due to: " + exc);
+    }
+    return exitOrException(
+        "Only "
+            + numLiveNodes
+            + " of "
+            + expectedNodes
+            + " expected Solr nodes are live in the cluster at "
+            + zkHost
+            + " after "
+            + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+            + " seconds");
   }
 
   public int sameUser(String directory) throws Exception {
@@ -720,6 +814,10 @@ public class AssertTool extends ToolBase {
     }
     if (cloudOptions != null && cloudOptions.notCloudUrl != null) {
       assertions.add(new Assertion.NotCloudMode(cloudOptions.notCloudUrl));
+    }
+    if (cloudNodesOpt != null) {
+      String zkHost = zkHostOpt != null ? zkHostOpt : CommonCLIOptions.DefaultValues.ZK_HOST;
+      assertions.add(new Assertion.CloudNodes(zkHost, cloudNodesOpt));
     }
 
     try {
