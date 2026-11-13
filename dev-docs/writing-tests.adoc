@@ -90,7 +90,8 @@ Do:
 * Use a `TestRule` rather than `@After` when cleanup must know whether the test failed. Worked example: `SolrShellTestCase.shellSessionRule` snapshots `SOLR_HOME` and the command transcript on a throwable, before the harness stops the node. A rule also sees the `Description`, which is how `@EnabledOnShell`/`@EnabledOnCli` skip individual CATS tests.
 * Prefer a `@ClassRule` `ExternalResource` over `@BeforeClass`/`@AfterClass` pairs for anything that must be closed — that is what `SolrJettyTestRule` and `EmbeddedSolrServerTestRule` are.
 * In `SolrCloudTestCase`, configure the cluster in `@BeforeClass`; the base class's `@AfterClass` shuts it down. For per-test isolation use `@After cluster.deleteAllCollections()` (which removes aliases too), not a cluster per method.
-* Call `super.setUp()`/`super.tearDown()` if you override them, and use `createTempDir()` for scratch space.
+* Call `super.setUp()`/`super.tearDown()` if you override them.
+* Use `createTempDir()` for scratch space.
 * Mute expected ERRORs: `try (ErrorLogMuter errors = ErrorLogMuter.substring("...")) { ... }`.
 
 Don't:
