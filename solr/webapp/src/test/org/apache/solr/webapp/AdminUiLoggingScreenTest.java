@@ -17,9 +17,14 @@
 package org.apache.solr.webapp;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.message.SimpleMessage;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.logging.log4j2.Log4j2Watcher;
 import org.junit.Assume;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -123,6 +128,66 @@ public class AdminUiLoggingScreenTest extends AdminUiTestBase {
     } finally {
       stopNodeRequestCapture();
     }
+  }
+
+  @Test
+  public void testAllNodeLogsRenderRealNodeEvents() throws Exception {
+    openPage("~logging", By.id("viewer"));
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    waitUntil(
+        "the initial selected-node log request has settled",
+        () ->
+            Boolean.TRUE.equals(
+                js.executeScript(
+                    "return !!angular.element(document.getElementById('viewer')).scope().since;")));
+    click(By.id("refresh-toggle"));
+
+    // Each in-JVM node owns its watcher history, even when Log4j's appender is shared.
+    // Seed the histories directly; the browser still reads both real APIs through the proxy.
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      var jetty = cluster.getJettySolrRunner(i);
+      var watcher = jetty.getCoreContainer().getLogging();
+      assertTrue("Expected an active Log4j watcher", watcher instanceof Log4j2Watcher);
+      assertTrue("The watcher must retain events", watcher.getHistorySize() > 0);
+      long timestamp = Instant.now().toEpochMilli();
+      String message = "SOLR-18619 real aggregate probe " + i;
+      ((Log4j2Watcher) watcher)
+          .add(
+              Log4jLogEvent.newBuilder()
+                  .setLoggerName("org.apache.solr.webapp.aggregateTest")
+                  .setLevel(Level.WARN)
+                  .setMessage(new SimpleMessage(message))
+                  .setTimeMillis(timestamp)
+                  .build(),
+              timestamp);
+    }
+
+    js.executeScript(
+        "var s = angular.element(document.getElementById('viewer')).scope();"
+            + " s.$apply(function() { s.since = null; });");
+    click(By.id("log-all-nodes"));
+    waitUntil(
+        "the aggregate log requests have settled",
+        () ->
+            Boolean.TRUE.equals(
+                js.executeScript(
+                    "var s = angular.element(document.getElementById('viewer')).scope();"
+                        + " return !!s.since && s.logView.allNodes;")));
+    assertTrue(
+        "Both node requests must succeed", driver.findElements(By.id("log-node-errors")).isEmpty());
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      String node = cluster.getJettySolrRunner(i).getNodeName();
+      String message = "SOLR-18619 real aggregate probe " + i;
+      assertTrue(
+          "Expected the real event from " + node + " with its node label",
+          driver.findElements(By.cssSelector("#viewer tbody tr")).stream()
+              .anyMatch(
+                  row ->
+                      row.getText().contains(message)
+                          && row.findElements(By.cssSelector("td.node")).stream()
+                              .anyMatch(cell -> node.equals(cell.getText()))));
+    }
+    assertNoSevereConsoleErrors();
   }
 
   @Test
