@@ -30,7 +30,7 @@ public class OverseerStatusTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(2).withOverseer(true).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -46,13 +46,10 @@ public class OverseerStatusTest extends SolrCloudTestCase {
 
     NamedList<Object> resp =
         new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
-    // When running with Distributed Collection API, no real data in Overseer status, but the
-    // Collection API call shouldn't fail
-    if (new CollectionAdminRequest.RequestApiDistributedProcessing()
-        .process(cluster.getSolrClient())
-        .getIsCollectionApiDistributed()) {
-      return;
-    }
+    assertFalse(
+        new CollectionAdminRequest.RequestApiDistributedProcessing()
+            .process(cluster.getSolrClient())
+            .getIsCollectionApiDistributed());
     for (String jsonNl : new String[] {"", "&json.nl=arrarr"}) {
       var jetty = cluster.getRandomJetty(random());
       String url =

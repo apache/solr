@@ -17,12 +17,14 @@
 package org.apache.solr.core.snapshots;
 
 import java.util.Collection;
+import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,6 +42,42 @@ public class TestSolrCloudSnapshotInactiveShard extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+  }
+
+  @Test
+  public void testListSnapshotJsonFormat() throws Exception {
+    String collection = "snapshotJsonFormat";
+    String snapshotName = "snapshot1";
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 1).process(client);
+    cluster.waitForActiveCollection(collection, 1, 1);
+    client.commit(collection);
+    new CollectionAdminRequest.CreateSnapshot(collection, snapshotName).process(client);
+
+    JettySolrRunner jetty =
+        cluster.getJettySolrRunners().stream().filter(j -> j.isRunning()).findFirst().orElseThrow();
+    for (String jsonNl : new String[] {"", "&json.nl=arrarr"}) {
+      String url =
+          jetty.getBaseUrl()
+              + "/admin/collections?action=LISTSNAPSHOTS&collection="
+              + collection
+              + "&wt=json"
+              + jsonNl;
+      var response = jetty.getSolrClient().getHttpClient().GET(url);
+      assertEquals(200, response.getStatus());
+      Map<?, ?> json = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+      assertTrue(json.get("snapshots") instanceof Map);
+      Map<?, ?> snapshots = (Map<?, ?>) json.get("snapshots");
+      assertTrue(snapshots.get(snapshotName) instanceof Map);
+      Map<?, ?> snapshot = (Map<?, ?>) snapshots.get(snapshotName);
+      assertEquals(snapshotName, snapshot.get("name"));
+      assertTrue(snapshot.get("replicas") instanceof Map);
+      Map<?, ?> replicas = (Map<?, ?>) snapshot.get("replicas");
+      assertEquals(1, replicas.size());
+      Object replica = replicas.values().iterator().next();
+      assertTrue(replica instanceof Map);
+      assertNotNull(((Map<?, ?>) replica).get("core"));
+    }
   }
 
   @Test
