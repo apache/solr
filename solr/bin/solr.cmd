@@ -32,8 +32,7 @@ pushd %SOLR_TIP%
 set SOLR_TIP=%CD%
 popd
 
-REM Where the per-node files recording running Solr instances live. Same variable and default as
-REM bin/solr and as SolrProcessManager's solr.pid.dir.
+REM Where the per-node files recording running Solr instances live
 IF NOT DEFINED SOLR_PID_DIR set "SOLR_PID_DIR=%SOLR_TIP%\bin"
 
 REM Used to report errors before exiting the script
