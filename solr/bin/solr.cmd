@@ -32,13 +32,7 @@ pushd %SOLR_TIP%
 set SOLR_TIP=%CD%
 popd
 
-REM Where the per-node files recording running Solr instances live. Same variable and default as
-REM bin/solr and as SolrProcessManager's solr.pid.dir; solr.cmd was the only one of the three
-REM ignoring SOLR_PID_DIR and hardcoding this directory.
-REM
-REM TODO: Split out into its own JIRA and PR. It stands alone as a parity fix, and is here only so
-REM the test harness can be shown working on Windows: 'stop --all' walks this directory, so without
-REM a per-class value one test class would stop another's nodes.
+REM Where the per-node files recording running Solr instances live
 IF NOT DEFINED SOLR_PID_DIR set "SOLR_PID_DIR=%SOLR_TIP%\bin"
 
 REM Used to report errors before exiting the script
