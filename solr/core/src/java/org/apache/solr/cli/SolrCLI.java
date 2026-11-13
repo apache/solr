@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
     subcommands = {
       StartCommand.class,
       StopCommand.class,
+      RestartCommand.class,
       StatusTool.class,
       VersionTool.class,
       ZkTool.class,
@@ -139,7 +140,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    if (EnvUtils.getPropertyAsBool("solr.picocli", false)) {
+    if (EnvUtils.getPropertyAsBool("solr.picocli", true)) {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
@@ -210,7 +211,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
             .getCommandSpec()
             .usageMessage()
             .footer(
-                "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html");
+                "\nFor a full CLI reference, see https://solr.apache.org/guide/solr/latest/deployment-guide/cli/index.html");
       }
       propagateCommandSettings(subcommand);
     }

@@ -175,7 +175,7 @@ class SubQueryAugmenter extends DocTransformer {
 
     @Override
     public boolean wantsScores() {
-      return justWantAllFields.wantsScore();
+      return justWantAllFields.returnsScore();
     }
 
     @Override

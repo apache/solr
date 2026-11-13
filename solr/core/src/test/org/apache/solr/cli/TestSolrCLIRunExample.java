@@ -327,10 +327,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     for (int pass = 0; pass < 2; pass++) {
       // need a port to start the example server on
-      int bindPort;
-      try (ServerSocket socket = new ServerSocket(0)) {
-        bindPort = socket.getLocalPort();
-      }
+      int bindPort = pickFreePort();
 
       log.info("Selected port {} to start {} example Solr instance on ...", bindPort, exampleName);
 
@@ -359,9 +356,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
         if (status == -1) {
           // maybe it's the port, try again
-          try (ServerSocket socket = new ServerSocket(0)) {
-            bindPort = socket.getLocalPort();
-          }
+          bindPort = pickFreePort();
           Thread.sleep(100);
           status = runTool(tool, toolArgs);
         }
@@ -435,10 +430,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--example-dir", solrExampleDir.toString()
         };
 
-    int bindPort;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     String collectionName = "testCloudExamplePrompt";
 
@@ -539,10 +531,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrExampleDir = createTempDir();
     Path solrServerDir = solrHomeDir.getParent();
 
-    int bindPort = -1;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     String collectionName = "testCloudExampleWithScriptInputs";
 
@@ -645,10 +634,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrServerDir = solrHomeDir.getParent();
 
     // need a port to start the example server on
-    int bindPort;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     Path toExecute = Path.of(solrExampleDir.toString(), "failExecuteScript");
     try {
@@ -672,5 +658,117 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
     int code = runTool(tool, toolArgs);
     assertEquals("Execution should have failed with return code 1", 1, code);
+  }
+
+  @Test
+  public void testMissingDefaultExampleDirectoryExplainsSlimDistribution() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.initDirs(solrServerDir.toString(), null, null, null, "techproducts"));
+
+    assertEquals(
+        "The default example directory does not exist or is not a directory. "
+            + "This is expected when using the slim Solr distribution, which does not include "
+            + "examples. Use the full Solr distribution to run examples, or check that your "
+            + "full installation is complete.",
+        exception.getMessage());
+  }
+
+  @Test
+  public void testMissingDefaultExampleDirectoryExplainsSlimDistributionForFilms()
+      throws Exception {
+    Path solrServerDir = createTestServerDir();
+    String[] toolArgs =
+        new String[] {"--example", "films", "--server-dir", solrServerDir.toString()};
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertEquals(
+        "The default example directory does not exist or is not a directory. "
+            + "This is expected when using the slim Solr distribution, which does not include "
+            + "examples. Use the full Solr distribution to run examples, or check that your "
+            + "full installation is complete.",
+        exception.getMessage());
+  }
+
+  @Test
+  public void testExplicitMissingExampleDirectoryRemainsInvalid() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    Path missingExampleDir = solrServerDir.getParent().resolve("custom-example");
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                tool.initDirs(
+                    solrServerDir.toString(),
+                    null,
+                    missingExampleDir.toString(),
+                    null,
+                    "techproducts"));
+
+    assertTrue(
+        exception.getMessage(),
+        exception.getMessage().startsWith("Value of --example-dir option is invalid! "));
+    assertTrue(exception.getMessage().contains(missingExampleDir.toAbsolutePath().toString()));
+  }
+
+  @Test
+  public void testUnsupportedExampleWithExampleDirectoryPresent() throws Exception {
+    Path solrServerDir = createTestServerDir();
+    Path exampleDir = Files.createDirectory(solrServerDir.getParent().resolve("example"));
+    Path solrHomeDir = createTempDir();
+    String unsupportedExample = "not-an-example";
+    String[] toolArgs =
+        new String[] {
+          "--example", unsupportedExample,
+          "--server-dir", solrServerDir.toString(),
+          "--solr-home", solrHomeDir.toString()
+        };
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertEquals(
+        "Unsupported example "
+            + unsupportedExample
+            + "! Please choose one of: cloud, secure, schemaless, techproducts, or films",
+        exception.getMessage());
+  }
+
+  private Path createTestServerDir() throws IOException {
+    Path installDir = createTempDir();
+    Path serverDir = Files.createDirectory(installDir.resolve("server"));
+    Path solrScript = installDir.resolve("bin").resolve(CLIUtils.isWindows() ? "solr.cmd" : "solr");
+    Files.createDirectories(solrScript.getParent());
+    Files.createFile(solrScript);
+    return serverDir;
+  }
+
+  /** Picks a free port, staying under 64536 so port + 1000 (embedded ZooKeeper) stays valid. */
+  private static int pickFreePort() throws IOException {
+    int port;
+    do {
+      try (ServerSocket socket = new ServerSocket(0)) {
+        port = socket.getLocalPort();
+      }
+    } while (port > 64535);
+    return port;
   }
 }

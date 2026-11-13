@@ -1,0 +1,44 @@
+/*
+ * Apache Solr Release Notes - minimal alternate stylesheet.
+ * Browser default typography, only enough rules to keep the structure readable.
+ */
+
+ul.sections,
+ul.changes {
+  list-style: disc;
+}
+
+li.bulleted-list {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+li {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.brand-logo {
+  height: 3em;
+}
+
+/* The dark palette only exists in the Fancy stylesheet */
+.theme-toggle {
+  display: none;
+}
+
+.masthead-nav > a {
+  text-transform: uppercase;
+}
+
+.count:before {
+  content: "(";
+}
+
+.count:after {
+  content: ")";
+}
+
+span.attrib {
+  color: #6f6b66;
+}

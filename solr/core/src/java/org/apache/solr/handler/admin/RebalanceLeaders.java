@@ -122,7 +122,7 @@ class RebalanceLeaders {
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
-  void execute() throws KeeperException, InterruptedException {
+  void execute() throws Exception {
     DocCollection dc = checkParams();
 
     int max = req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE);
@@ -471,8 +471,7 @@ class RebalanceLeaders {
   // mean failure!
   //
 
-  private boolean waitAsyncRequests(final int maxWaitSecs, Boolean waitForAll)
-      throws KeeperException, InterruptedException {
+  private boolean waitAsyncRequests(final int maxWaitSecs, Boolean waitForAll) throws Exception {
 
     if (asyncRequests.size() == 0) {
       return true;
@@ -482,15 +481,7 @@ class RebalanceLeaders {
       Iterator<String> iter = asyncRequests.iterator();
       boolean foundChange = false;
       while (iter.hasNext()) {
-        String asyncId = iter.next();
-        if (coreContainer.getZkController().getOverseerFailureMap().contains(asyncId)) {
-          coreContainer.getZkController().getOverseerFailureMap().remove(asyncId);
-          coreContainer.getZkController().clearAsyncId(asyncId);
-          iter.remove();
-          foundChange = true;
-        } else if (coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId)) {
-          coreContainer.getZkController().getOverseerCompletedMap().remove(asyncId);
-          coreContainer.getZkController().clearAsyncId(asyncId);
+        if (coreContainer.getZkController().removeStoredAsyncResponse(iter.next())) {
           iter.remove();
           foundChange = true;
         }

@@ -43,7 +43,7 @@ If you load the module in your IDE, the IDE may create a new gradle wrapper unde
 gradlew/gradle.bat files under `ui/`. In this case make sure the wrapper is on the same version as the root project
 (see `gradle/wrapper/gradle-wrapper.properties`) to avoid any build issues later on CI.
 
-To build and run the desktop client simply run from the root directory `./gradlew -p :desktopApp:run`, or if you
+To build and run the desktop client simply run from the root directory `./gradlew -p ui :desktopApp:run`, or if you
 loaded the module separately from inside `ui/` (new root) `./gradlew :desktopApp:run`.
 
 The desktop app is running a standalone client and therefore need a solr instance / backend to connect with.
@@ -59,7 +59,7 @@ or build from source by setting `solr.ui.buildFromSource=true`. Once the Solr pr
 Various references are included in the webapp for already migrated pages.
 
 > Note that the standalone WebAssembly app executed via
-> `./gradlew :webApp:wasmJsBrowserRun` runs on port `8080` and will run
+> `./gradlew :webApp:wasmJsBrowserDevelopmentRun` runs on port `8080` and will run
 > into CORS exceptions. Therefore, the usage of it for development is
 > discouraged.
 >

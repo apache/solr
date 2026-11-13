@@ -28,6 +28,11 @@ limitations under the License.
 
             <ul class="data" ngShow="system">
 
+              <li class="node" ng-show="system.node"><dl class="clearfix">
+                <dt><span>Node</span></dt>
+                  <dd>{{system.node}}</dd>
+              </dl></li>
+
               <li class="start_time"><dl class="clearfix">
                 <dt><span>Start</span></dt>
                   <dd class="timeago">{{system.jvm.jmx.startTime | timeago}}</dd>

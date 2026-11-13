@@ -112,6 +112,7 @@ public class ExecutorUtil {
    * detail on the waiting can be found in {@link #awaitTermination(ExecutorService)}.
    *
    * @param pool The ExecutorService to shut down and wait on
+   * @throws ExecutorTerminationTimeoutException if the pool does not terminate after both waits
    */
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
@@ -119,6 +120,11 @@ public class ExecutorUtil {
     awaitTermination(pool);
   }
 
+  /**
+   * Interrupt the pool's tasks and wait for termination.
+   *
+   * @throws ExecutorTerminationTimeoutException if the pool does not terminate after both waits
+   */
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdownNow(); // Disable new tasks from being submitted; interrupt existing tasks
@@ -130,6 +136,7 @@ public class ExecutorUtil {
    * shutdown the remaining threads and wait another 60 seconds.
    *
    * @param pool the ExecutorService to wait on
+   * @throws ExecutorTerminationTimeoutException if the pool does not terminate after both waits
    */
   public static void awaitTermination(ExecutorService pool) {
     awaitTermination(pool, 60, TimeUnit.SECONDS);
@@ -146,7 +153,8 @@ public class ExecutorUtil {
         if (!pool.awaitTermination(timeout, unit)) {
           String executorDetails = describeExecutorForLogging(pool);
           log.error("Threads from pool did not forcefully stop. {}", executorDetails);
-          throw new RuntimeException("Timeout waiting for pool to shutdown. " + executorDetails);
+          throw new ExecutorTerminationTimeoutException(
+              "Timeout waiting for pool to shutdown. " + executorDetails);
         }
       }
     } catch (InterruptedException ie) {
@@ -154,6 +162,13 @@ public class ExecutorUtil {
       pool.shutdownNow();
       // Preserve interrupt status
       Thread.currentThread().interrupt();
+    }
+  }
+
+  /** The executor did not terminate within either the graceful or forced shutdown wait. */
+  public static final class ExecutorTerminationTimeoutException extends RuntimeException {
+    private ExecutorTerminationTimeoutException(String message) {
+      super(message);
     }
   }
 

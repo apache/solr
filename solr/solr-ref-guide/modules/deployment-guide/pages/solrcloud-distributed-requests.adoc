@@ -25,7 +25,7 @@ The chosen replica acts as an aggregator: it creates internal requests to random
 In a SolrCloud cluster each individual node load balances read requests across all the replicas in a collection.
 You may still need a load balancer on the 'outside' that talks to the cluster.
 Or you need a client which understands how to read and interact with Solr's metadata in ZooKeeper and only requests the ZooKeeper ensemble's address to discover which nodes should receive requests.
-Solr provides a smart Java SolrJ client called {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient] which is capable of this.
+Solr provides a smart Java SolrJ client called {solr-solrj-javadocs}/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient] which is capable of this.
 
 Even if some nodes in the cluster are offline or unreachable, a Solr node will be able to correctly respond to a search request as long as it can communicate with at least one replica of every shard, or one replica of every _relevant_ shard if the user limited the search via the `shards` or `\_route_` parameters.
 The more replicas there are of every shard, the more likely that the Solr cluster will be able to handle search results in the event of node failures.
@@ -296,6 +296,29 @@ See xref:solrcloud-shards-indexing.adoc#document-routing[Document Routing] for m
 ----
 http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!
 http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!,user2!
+----
+
+== Routing a Request to a Specific Node
+
+Any request, including node-level APIs such as `/solr/admin/info/system` or `/api/node/system`, can be sent to a specific node by setting the `X-Solr-targetNode` HTTP header.
+The node that receives the request proxies it to the named node, which processes it and returns the response.
+This is useful when Solr is reached through a load balancer, where you can't otherwise choose which node handles a request.
+
+The value is a node name as it appears in `live_nodes` (for example, `solr2.example.com:8983_solr`).
+A value without a `.` or `:` is treated as a hostname in the same domain and on the same port as the receiving node; for example, `solr2` sent to `solr1.example.com:8983_solr` targets `solr2.example.com:8983_solr`.
+If the named node isn't live, the request fails with a 400 error.
+If it names the receiving node, the request is processed there without proxying.
+
+[source,bash]
+----
+curl -H "X-Solr-targetNode: solr2.example.com:8983_solr" "http://lb.example.com:8983/solr/admin/info/system"
+----
+
+For `GET` requests, the target node can alternatively be given as a query parameter of the same name, which is convenient in a browser:
+
+[source,plain]
+----
+http://lb.example.com:8983/solr/admin/info/system?X-Solr-targetNode=solr2.example.com:8983_solr
 ----
 
 == Near Real Time (NRT) Use Cases

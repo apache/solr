@@ -31,7 +31,7 @@ import java.util.Arrays;
  * @see ShardBackupMetadata
  */
 public class ShardBackupId {
-  private static final String FILENAME_SUFFIX = ".json";
+  public static final String FILENAME_SUFFIX = ".json";
   private final String shardName;
   private final BackupId containingBackupId;
 
