@@ -46,6 +46,6 @@ public class ZkTool implements Callable<Integer> {
   @Override
   public Integer call() {
     spec.commandLine().usage(CLIO.getOutStream());
-    return 0;
+    return 2;
   }
 }
