@@ -188,6 +188,11 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
   }
 
+  /** Returns the plugin configured for the given scheme, or null. */
+  public AuthenticationPlugin getPlugin(String scheme) {
+    return pluginMap.get(scheme.toLowerCase(Locale.ROOT));
+  }
+
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     for (AuthenticationPlugin plugin : pluginMap.values()) {
