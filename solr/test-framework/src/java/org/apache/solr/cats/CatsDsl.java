@@ -181,6 +181,10 @@ public interface CatsDsl {
     return cli().copy(from, to);
   }
 
+  default Path move(String from, String to) {
+    return cli().move(from, to);
+  }
+
   default List<Path> list(String dir) {
     return cli().list(dir);
   }

@@ -344,6 +344,19 @@ public class CliSession implements AutoCloseable {
     }
   }
 
+  /** Port of {@code mv}: moves or renames a file or a directory, replacing an existing target. */
+  public Path move(String from, String to) {
+    Path source = path(from);
+    Path target = path(to);
+    try {
+      Files.createDirectories(target.getParent());
+      Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return target;
+  }
+
   /** Port of {@code cp} and {@code cp -r}: copies a file, or a directory tree, recursively. */
   public Path copy(String from, String to) {
     Path source = path(from);
@@ -686,8 +699,8 @@ public class CliSession implements AutoCloseable {
           Map.entry("fgrep", "assertContains(), or linesMatching()"),
           Map.entry("awk", "fields(lineIndex) on the result"),
           Map.entry("cut", "fields(lineIndex) on the result"),
-          Map.entry("sed", "firstMatch(regex) on the result, or plain Java on output()"),
-          Map.entry("tr", "plain Java on output()"),
+          Map.entry("sed", "firstMatch(regex) on the result, or work on output() in Java"),
+          Map.entry("tr", "work on output() in Java"),
           Map.entry("wc", "lineCount() on the result"),
           Map.entry("head", "firstLines(n) on the result"),
           Map.entry("tail", "lastLines(n) on the result"),
@@ -695,11 +708,11 @@ public class CliSession implements AutoCloseable {
           Map.entry("uniq", "de-duplicate the result's lines() in Java"),
           Map.entry("cat", "read(path)"),
           Map.entry("ls", "list(dir) or list(dir, glob)"),
-          Map.entry("find", "list(dir, glob)"),
+          Map.entry("find", "list(dir, glob), with a glob such as \"**/*.xml\""),
           Map.entry("rm", "rm(path)"),
           Map.entry("rmdir", "rm(path)"),
           Map.entry("cp", "copy(from, to)"),
-          Map.entry("mv", "Files.move(path(from), path(to))"),
+          Map.entry("mv", "move(from, to)"),
           Map.entry("mkdir", "mkdirs(path)"),
           Map.entry("touch", "touch(path)"),
           Map.entry("diff", "compare read(a) and read(b) in Java"),

@@ -28,11 +28,11 @@ A line whose command is one of these is rejected, because `cmd.exe` has no equiv
 
 | `grep`, `egrep`, `fgrep` | `assertContains`, `assertMatches`, `linesMatching()` on the result
 | `awk`, `cut` | `fields(lineIndex)`
-| `sed` | `firstMatch(regex)`, or plain Java on `output()`
+| `sed` | `firstMatch(regex)`, or work on `output()` in Java
 | `wc`, `head`, `tail` | `lineCount()`, `firstLines(n)`, `lastLines(n)`
-| `sort`, `uniq`, `tr`, `xargs` | plain Java over `lines()`
-| `cat`, `ls`, `find` | `read(path)`, `list(dir)`, `list(dir, glob)`
-| `rm`, `cp`, `mv`, `mkdir`, `touch` | `rm`, `copy`, `Files.move`, `mkdirs`, `touch`
+| `sort`, `uniq`, `tr`, `xargs` | work on `lines()` in Java
+| `cat`, `ls`, `find` | `read(path)`, `list(dir)`, `list(dir, glob)` with a glob such as `**/*.xml`
+| `rm`, `cp`, `mv`, `mkdir`, `touch` | `rm`, `copy`, `move`, `mkdirs`, `touch`
 | `curl`, `wget`, `jq` | `http(pathAndQuery)`, which needs no external tool
 | `sleep` | `awaitOrFail(what, timeout, interval, condition)`
 | `ps`, `pgrep`, `kill`, `pkill`, `lsof` | the harness tracks and stops what a test started

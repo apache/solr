@@ -210,6 +210,16 @@ public class CliSessionTest {
   }
 
   @Test
+  public void moveRenamesAndReplaces() {
+    session.write("a.txt", "first");
+    session.write("b.txt", "second");
+    Path moved = session.move("a.txt", "b.txt");
+    assertFalse(session.exists("a.txt"));
+    assertEquals("first", session.read("b.txt"));
+    assertEquals(session.path("b.txt"), moved);
+  }
+
+  @Test
   public void harnessVariablesArePresent() {
     session.run("echo ${MYTOOL_HOME}").assertExitCode(0).assertExact(env.workDir().toString());
   }
