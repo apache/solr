@@ -164,8 +164,8 @@ If set to `true`, Solr will overwrite an existing configset with the same name (
 |===
 When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded.
 
-When uploading an entire configset, the body of the request should be a zip file that contains the configset.
-The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
+Configsets can be uploadeded in two different ways: by providing compressed "zip" content in the request body, or by finding the configset using a "backup repository" (see below).
+With the "zip" approach, the zip file/content must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
 Here is an example on how to create the zip file named "myconfig.zip" and upload it as a configset named "myConfigSet":
 
@@ -209,6 +209,55 @@ This behavior can be disabled with the parameter `overwrite=false`, in which cas
 ====
 ======
 
+[[configsets-upload-repository]]
+=== Upload from a Backup Repository
+
+Configsets can also be uploaded to Solr using a xref:deployment-guide:backup-restore.adoc#backuprestore-storage-repositories[backup repository] (such as S3 or GCS), with `solrconfig.xml` at its top level.
+Uploads using this "backup repository" approach must specify two additional parameters as coordinates for finding the configset files:
+
+`repository`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the backup repository. Required if `location` is given.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The directory in the repository that holds the configset's files. Required if `repository` is given.
+
+Providing both a request body and `repository`/`location` is an error.
+The `overwrite` and `cleanup` parameters work the same way as for zip uploads.
+
+[tabs#uploadconfigsetrepo]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl -X POST "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet&repository=s3&location=/configsets/myconfig"
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X PUT "http://localhost:8983/api/configsets/myConfigSet?repository=s3&location=/configsets/myconfig"
+----
+====
+======
+
+
 [[configsets-upload-file]]
 == Update a Single File in a Configset
 
@@ -235,6 +284,10 @@ s|Required |Default: none
 +
 The path to the file within the configset, specified as part of the URL path (e.g., `solrconfig.xml` or `lang/stopwords_en.txt`).
 For nested paths, use slashes as shown in the examples below.
+
+As when xref:#configsets-upload-repository[uploading a whole configset], the file can instead be read from a backup repository.
+Pass the `repository` and `location` request parameters, where `location` is the path of a single file in the repository, and send no request body.
+Both parameters are required if either is given.
 
 Here is an example on how to upload a single file to a configset named "myConfigSet":
 
