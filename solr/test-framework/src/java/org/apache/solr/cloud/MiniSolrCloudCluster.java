@@ -175,7 +175,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
    */
   public MiniSolrCloudCluster(int numServers, Path baseDir, JettyConfig jettyConfig)
       throws Exception {
-    this(numServers, baseDir, DEFAULT_CLOUD_SOLR_XML, jettyConfig, null, false);
+    this(numServers, baseDir, DEFAULT_CLOUD_SOLR_XML, jettyConfig, (ZkTestServer) null, false);
   }
 
   /**
@@ -189,7 +189,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
    */
   public MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig)
       throws Exception {
-    this(numServers, baseDir, solrXml, jettyConfig, null, false);
+    this(numServers, baseDir, solrXml, jettyConfig, (ZkTestServer) null, false);
   }
 
   /**
@@ -316,7 +316,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
    * @param solrXml solr.xml file content
    * @param jettyConfig Jetty configuration
    * @param securityJson Optional security.json configuration
-   * @param trackJettyMetrics whether to track Jetty metrics
    * @throws Exception if there was an error starting the cluster
    */
   MiniSolrCloudCluster(
@@ -325,7 +324,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
       String solrXml,
       JettyConfig jettyConfig,
       Optional<String> securityJson,
-      boolean trackJettyMetrics,
       boolean useEmbeddedZkQuorum)
       throws Exception {
 
@@ -341,7 +339,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
     this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
-    this.trackJettyMetrics = trackJettyMetrics;
     this.externalZkServer = true; // No ZkTestServer in quorum mode
     this.zkServer = null; // No single ZK server
 
@@ -393,9 +390,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
             JettyConfig newConfig = JettyConfig.builder(jettyConfig).setPort(solrPort).build();
 
             JettySolrRunner jetty =
-                !trackJettyMetrics
-                    ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
-                    : new JettySolrRunnerWithMetrics(runnerPath.toString(), nodeProps, newConfig);
+                new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
 
             int zkPort = solrPort + 1000;
             log.info("Starting {} on port {} with ZK on port {}", nodeName, solrPort, zkPort);
@@ -467,7 +462,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
       }
     }
 
-    solrClient = buildSolrClientForQuorum(this.zkHost);
+    solrClient = newSolrClient(null);
 
     if (numServers > 0) {
       waitForAllNodes(numServers, 60);
@@ -586,13 +581,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
       return zkHost; // Quorum mode
     }
     return zkServer.getZkAddress(); // Standard mode
-  }
-
-  private CloudSolrClient buildSolrClientForQuorum(String zkHost) {
-    return new CloudLegacySolrClient.Builder(List.of(zkHost), Optional.empty())
-        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .build();
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds)
