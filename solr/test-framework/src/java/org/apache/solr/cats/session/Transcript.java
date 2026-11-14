@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
@@ -43,7 +42,7 @@ import org.apache.solr.cats.exec.CommandResult;
  *
  * <pre>
  * # CATS transcript: MytoolTest.startsAndLists
- * # started: 2026-11-14T13:05:22+01:00  shell: bash
+ * # started: 2026-11-14T12:05:22Z  shell: bash
  *
  * $ export MYTOOL_PORT=46894
  * $ mytool start
@@ -66,8 +65,8 @@ public final class Transcript implements CommandHistory {
 
   private static final String CATS = "# CATS: ";
 
-  private static final DateTimeFormatter TIMESTAMP =
-      DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
+  /** UTC, because a test JVM's default zone may be anything the test runner randomised it to. */
+  private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ISO_INSTANT;
 
   private final Path file;
   private final StringBuilder buffer = new StringBuilder();
