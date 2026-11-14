@@ -196,11 +196,10 @@ public class CliSessionTest {
 
   @Test
   public void runResolvesEveryVariableSpelling() {
-    // All three mean "the environment variable", resolved by the harness before any shell sees it.
+    // Both mean "the environment variable", resolved by the harness before any shell sees it.
     String admin = String.valueOf(env.ports().at(3));
     session.run("echo ${MYTOOL_ADMIN_PORT}").assertExact(admin);
     session.run("echo $MYTOOL_ADMIN_PORT").assertExact(admin);
-    session.run("echo {{MYTOOL_ADMIN_PORT}}").assertExact(admin);
   }
 
   @Test
@@ -245,7 +244,7 @@ public class CliSessionTest {
 
   @Test
   public void unknownVariableFailsRatherThanExpandingToNothing() {
-    for (String spelling : List.of("${NO_SUCH_VAR}", "$NO_SUCH_VAR", "{{NO_SUCH_VAR}}")) {
+    for (String spelling : List.of("${NO_SUCH_VAR}", "$NO_SUCH_VAR")) {
       AssertionError failure =
           assertThrows(AssertionError.class, () -> session.run("echo " + spelling));
       assertTrue(failure.getMessage(), failure.getMessage().contains("Unknown variable"));
@@ -278,15 +277,6 @@ public class CliSessionTest {
     AssertionError failure =
         assertThrows(AssertionError.class, () -> session.run("echo " + awkward));
     assertTrue(failure.getMessage(), failure.getMessage().contains("Unknown variable"));
-  }
-
-  @Test
-  @EnabledOnShell(BASH) // About bash's brace expansion specifically.
-  public void bashLeavesDoubleBracesAlone() {
-    // Guards the choice of delimiter. 'not-a-var' is not a legal placeholder name, so the harness
-    // passes it through untouched and bash gets to see it — unquoted, with brace expansion live.
-    // Bash only expands braces containing a comma or '..', so it arrives verbatim.
-    session.run("echo {{not-a-var}}").assertExact("{{not-a-var}}");
   }
 
   @Test

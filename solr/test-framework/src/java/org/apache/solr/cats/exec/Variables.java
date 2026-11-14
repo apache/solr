@@ -25,10 +25,10 @@ import java.util.regex.Pattern;
 /**
  * Variable references in the text a test writes, resolved by the harness rather than by a shell.
  *
- * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} all name an environment variable, and mean
- * the same wherever a test writes them — in a command line and in an assertion's expected text
- * alike — which is what lets one line of test text work on every shell. See {@code
- * CliSession#run(String)} for why the harness resolves them rather than the shell.
+ * <p>{@code ${NAME}} and {@code $NAME} both name an environment variable, and mean the same
+ * wherever a test writes them — in a command line and in an assertion's expected text alike — which
+ * is what lets one line of test text work on every shell. See {@code CliSession#run(String)} for
+ * why the harness resolves them rather than the shell.
  */
 public final class Variables {
 
@@ -38,10 +38,7 @@ public final class Variables {
    * <p>{@code $'..'}, {@code $1} and a bare {@code $} do not match and are left for the shell.
    */
   public static final Pattern ANY =
-      Pattern.compile(
-          "\\{\\{([A-Za-z_][A-Za-z0-9_]*)}}"
-              + "|\\$\\{([A-Za-z_][A-Za-z0-9_]*)}"
-              + "|\\$([A-Za-z_][A-Za-z0-9_]*)");
+      Pattern.compile("\\$\\{([A-Za-z_][A-Za-z0-9_]*)}|\\$([A-Za-z_][A-Za-z0-9_]*)");
 
   /**
    * The cmd.exe spelling. Never resolved, because {@code %} is also {@link String#format}'s, but

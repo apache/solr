@@ -473,15 +473,14 @@ public class CliSession implements AutoCloseable {
    *   run("mytool start -p $SECOND_PORT");
    * </pre>
    *
-   * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} resolve against the session environment,
-   * substituted by the <em>harness</em> rather than the shell — which is what makes one line work
-   * on both, since bash expands {@code $NAME} and cmd.exe wants {@code %NAME%}. Resolving in Java
-   * also fails the test on an unknown name instead of quietly substituting the empty string, and
-   * lets the transcript record the real command. Reading {@code $NAME} as an environment variable
-   * is sound because a {@code run} line has no shell state of its own: one process per command, so
-   * no locals or positional parameters. {@code %NAME%} is rejected rather than substituted, {@code
-   * %} being {@link String#format}'s; {@code $'..'}, {@code $1} and a bare {@code $} are left for
-   * the shell.
+   * <p>{@code ${NAME}} and {@code $NAME} resolve against the session environment, substituted by
+   * the <em>harness</em> rather than the shell — which is what makes one line work on both, since
+   * bash expands {@code $NAME} and cmd.exe wants {@code %NAME%}. Resolving in Java also fails the
+   * test on an unknown name instead of quietly substituting the empty string, and lets the
+   * transcript record the real command. Reading {@code $NAME} as an environment variable is sound
+   * because a {@code run} line has no shell state of its own: one process per command, so no locals
+   * or positional parameters. {@code %NAME%} is rejected rather than substituted, {@code %} being
+   * {@link String#format}'s; {@code $'..'}, {@code $1} and a bare {@code $} are left for the shell.
    *
    * <p>A Java value is simply concatenated — {@code run("mytool start -p " + myPort)}. Sharp edge:
    * that happens before the harness resolves the line, so a value containing {@code ${...}} is
