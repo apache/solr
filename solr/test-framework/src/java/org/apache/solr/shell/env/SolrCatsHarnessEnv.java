@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.cats.env.CatsHarnessEnv;
 import org.apache.solr.cats.env.PortBlock;
+import org.apache.solr.cats.exec.CatsFiles;
 import org.apache.solr.cli.SolrProcessManager;
 import org.apache.solr.shell.exec.SolrProgram;
 
@@ -128,6 +129,21 @@ public final class SolrCatsHarnessEnv extends CatsHarnessEnv {
   }
 
   /**
+   * Wipes {@code SOLR_HOME} for a test that starts its own node from nothing, and puts back what
+   * the harness keeps there: the logs directory and the embedded ZooKeeper config of {@link
+   * #prepareWorkDir()}.
+   */
+  public void resetSolrHome() {
+    try {
+      CatsFiles.rm(solrHome());
+      Files.createDirectories(logsDir());
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not reset " + solrHome(), e);
+    }
+    prepareWorkDir();
+  }
+
+  /**
    * Writes the class's {@code zoo.cfg} into {@code SOLR_HOME}, so that the embedded ZooKeeper
    * listens on the port this class was given rather than on {@code SOLR_PORT + 1000}.
    *
@@ -135,7 +151,8 @@ public final class SolrCatsHarnessEnv extends CatsHarnessEnv {
    * derives the port when it finds none, so a copy of the distribution's own file with {@code
    * clientPort} filled in is enough — no setting to pass, and nothing derived. It has to be inside
    * {@code SOLR_HOME}: the node runs under the security manager, whose policy grants it no read
-   * anywhere else. A test that wipes {@code SOLR_HOME} itself must therefore call this again.
+   * anywhere else. A test that wipes {@code SOLR_HOME} itself does so through {@link
+   * #resetSolrHome()}, which writes it again.
    *
    * <p>Once SOLR-7596 lands, the exported {@code SOLR_ZOOKEEPER_EMBEDDED_PORT} says the same thing
    * and this can go.

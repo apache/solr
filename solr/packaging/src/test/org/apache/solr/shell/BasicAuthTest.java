@@ -18,9 +18,7 @@
 package org.apache.solr.shell;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import org.apache.lucene.util.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,10 +36,7 @@ public class BasicAuthTest extends SolrCatsTestCase {
   @Before
   public void startSolrWithBasicAuth() throws IOException {
     // Every test starts its own Solr from a clean SOLR_HOME.
-    IOUtils.rm(harnessEnv.solrHome());
-    Files.createDirectories(harnessEnv.logsDir());
-    // The wipe takes the zoo.cfg naming this class's embedded ZooKeeper port with it.
-    harnessEnv.prepareWorkDir();
+    harnessEnv.resetSolrHome();
 
     run("solr start -Dsolr.packages.enabled=true");
 

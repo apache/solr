@@ -20,10 +20,8 @@ package org.apache.solr.shell;
 import static org.apache.solr.cats.EnabledOnShell.BASH;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cats.EnabledOnShell;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,10 +55,7 @@ public class SslTest extends SolrCatsTestCase {
   @Before
   public void wipeSolrHomeBeforeEachTest() throws IOException {
     // Every test starts its own Solr, from a clean SOLR_HOME.
-    IOUtils.rm(harnessEnv.solrHome());
-    Files.createDirectories(harnessEnv.logsDir());
-    // The wipe takes the zoo.cfg naming this class's embedded ZooKeeper port with it.
-    harnessEnv.prepareWorkDir();
+    harnessEnv.resetSolrHome();
   }
 
   @Test
