@@ -22,7 +22,6 @@
 = bin/solr healthcheck
 :page-toclevels: 2
 
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
