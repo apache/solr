@@ -472,6 +472,68 @@ public class MiniSolrCloudCluster implements SolrBackend {
   }
 
   /**
+   * Adds one more node to an already-running embedded-ZK-quorum cluster, with the
+   * zookeeper_quorum role, so it attempts to join the existing ensemble via dynamic
+   * reconfiguration rather than cold-bootstrapping alongside the original members (see {@code
+   * ZkContainer#tryJoinExistingEnsemble}). Only valid for a cluster created via {@link
+   * Builder#withEmbeddedZkQuorum()}.
+   *
+   * <p>The new node is given the original members' zkHost plus its own entry; the cluster's own
+   * {@link #getZkAddress()} is left pointing at the original members only, which remain valid
+   * ensemble members regardless -- growing the ensemble doesn't invalidate them.
+   *
+   * @return the newly started node
+   */
+  public JettySolrRunner addEmbeddedZkQuorumNode() throws Exception {
+    if (zkHost == null) {
+      throw new IllegalStateException(
+          "addEmbeddedZkQuorumNode() only applies to a cluster created with"
+              + " Builder#withEmbeddedZkQuorum()");
+    }
+
+    int solrPort = reservePortPairs(1)[0];
+    int zkPort = solrPort + 1000;
+    String extendedZkHost = zkHost + ",127.0.0.1:" + zkPort;
+    String nodeName = newNodeName();
+
+    Path runnerPath = createInstancePath(nodeName);
+    Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+
+    Properties nodeProps = new Properties();
+    nodeProps.setProperty("zkHost", extendedZkHost);
+    nodeProps.setProperty("hostPort", String.valueOf(solrPort));
+
+    JettyConfig newConfig = JettyConfig.builder(jettyConfig).setPort(solrPort).build();
+    JettySolrRunner jetty = new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
+
+    log.info(
+        "Adding node {} to running embedded-ZK-quorum cluster on port {} (ZK {}), joining via {}",
+        nodeName,
+        solrPort,
+        zkPort,
+        extendedZkHost);
+    try {
+      jetty.start();
+    } catch (Exception e) {
+      // A rejected join (e.g. NewConfigNoQuorum) can leave this jetty's CoreContainer partially
+      // initialized; make sure its resources are released before propagating the failure,
+      // rather than leaving the caller to guess whether there's anything left to clean up.
+      try {
+        jetty.stop();
+      } catch (Exception stopFailure) {
+        e.addSuppressed(stopFailure);
+      }
+      throw e;
+    }
+
+    jettys.add(jetty);
+    synchronized (startupWait) {
+      startupWait.notifyAll();
+    }
+    return jetty;
+  }
+
+  /**
    * Reserves port pairs for embedded ZK quorum mode. For each node, we need both a Solr port and a
    * ZK port (Solr port + 1000). This method ensures both ports in each pair are available before
    * returning.

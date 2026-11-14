@@ -29,16 +29,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.ZkContainer;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -376,6 +386,156 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
       } finally {
         privateCluster.shutdown();
       }
+    }
+  }
+
+  /**
+   * Tests what happens when the ZK leader a new node is joining through dies partway through the
+   * join. {@code ZkContainer#tryJoinExistingEnsemble} gives the ZK client every other peer at
+   * once so it can fail over to a surviving member mid-handshake, but ZK itself still refuses to
+   * approve growing the ensemble (3 members -&gt; 4, needing 3 synced) when that would leave
+   * fewer synced members (2 survivors) than the new, larger quorum requires --
+   * NewConfigNoQuorum. That's correct, safe behavior, not a bug.
+   *
+   * <p>This test verifies the join fails cleanly (not by hanging) when that happens, and that the
+   * 2 survivors stay healthy and keep serving throughout.
+   *
+   * <p>Manually confirmed (not asserted by this test, to avoid stacking a second deliberate
+   * startup failure in the same run -- see below): a <em>retry</em> fails too, for a different
+   * and more fundamental reason. Nothing ever issues a corresponding "leave" when a member is
+   * stopped, so the dead former leader is still a voting member of the ensemble's dynamic config;
+   * the retry's "add a new member" request is still evaluated against that stale view (2 live + 1
+   * permanently dead), needing 3 synced members where only 2 exist -- the same
+   * NewConfigNoQuorum rejection, now for a reason no amount of waiting fixes. Joining currently
+   * can't repair a degraded ensemble until its dead member is first formally removed, which this
+   * feature doesn't yet do -- a real, separate follow-up item, not a bug in this join path.
+   *
+   * <p>Uses {@link ZkContainer#testing_beforeReconfigure}, a test-only hook that pauses the
+   * joining node right before its {@code reconfigure()} call, to deterministically land the
+   * leader's death inside that exact window -- there's no way to do this reliably from outside
+   * via timing alone.
+   *
+   * <p>This test creates its own private cluster to avoid interfering with other tests.
+   *
+   * <p><b>The join/reconfigure logic under test behaves exactly as expected (verified by the
+   * assertions below)</b> -- what's blocking this test is a separate, pre-existing issue:
+   * deliberately failing a node's CoreContainer startup (as ZK's NewConfigNoQuorum rejection does
+   * here) leaves several threads (e.g. {@code httpShardExecutor}, {@code h2sc}) running forever,
+   * tripping randomizedtesting's thread-leak check at the suite level. This isn't specific to the
+   * embedded-ZK-quorum feature -- it's a general gap in how Solr's startup-failure path cleans up
+   * after itself -- so it's tracked here rather than fixed as part of this test.
+   */
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18094")
+  @Test
+  public void testJoinFailsCleanlyWhenLeaderDiesMidReconfigure() throws Exception {
+    final String collectionName = "join_vs_leader_failure";
+    final int initialDocs = 5;
+    final int docsWithSurvivors = 5;
+
+    Path configPath = TEST_PATH().resolve("collection1").resolve("conf");
+    MiniSolrCloudCluster privateCluster =
+        configureCluster(NUM_NODES).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
+
+    final CountDownLatch readyToKillLeader = new CountDownLatch(1);
+    final CountDownLatch leaderKilled = new CountDownLatch(1);
+    ZkContainer.testing_beforeReconfigure =
+        () -> {
+          readyToKillLeader.countDown();
+          try {
+            assertTrue(
+                "main test thread did not signal that the leader was killed in time",
+                leaderKilled.await(30, TimeUnit.SECONDS));
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        };
+
+    try {
+      privateCluster.waitForAllNodes(60);
+
+      CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 3)
+          .process(privateCluster.getSolrClient());
+      privateCluster.waitForActiveCollection(collectionName, 1, 3);
+
+      try (CloudSolrClient client = privateCluster.getSolrClient(collectionName)) {
+        indexDocuments(client, 0, initialDocs, "initial");
+        privateCluster.waitForDocCount(
+            collectionName, initialDocs, "initial documents", 120, TimeUnit.SECONDS);
+
+        List<JettySolrRunner> originalJettys = privateCluster.getJettySolrRunners();
+        int leaderIndex = findZkLeaderIndex(originalJettys, 30);
+        assertTrue("Could not find the ZK leader before joining a new node", leaderIndex >= 0);
+        JettySolrRunner leaderJetty = originalJettys.get(leaderIndex);
+
+        ExecutorService joinExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("join-test");
+        try {
+          Future<JettySolrRunner> joinFuture =
+              joinExecutor.submit(privateCluster::addEmbeddedZkQuorumNode);
+
+          assertTrue(
+              "Joining node never reached the reconfigure() hook",
+              readyToKillLeader.await(60, TimeUnit.SECONDS));
+
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Killing the current ZK leader ({}) while a join is in flight against it",
+                leaderJetty.getNodeName());
+          }
+          privateCluster.stopJettySolrRunner(leaderJetty);
+          leaderKilled.countDown();
+
+          try {
+            joinFuture.get(90, TimeUnit.SECONDS);
+            fail(
+                "Expected the join to be rejected by ZK (NewConfigNoQuorum): growing the"
+                    + " ensemble to 4 members while simultaneously losing one of the original 3"
+                    + " would leave fewer synced members than the new quorum requires");
+          } catch (ExecutionException e) {
+            if (log.isInfoEnabled()) {
+              log.info("Join failed as expected while the leader was down: {}", e.getCause());
+            }
+          }
+        } finally {
+          ExecutorUtil.shutdownAndAwaitTermination(joinExecutor);
+        }
+
+        // The 2 survivors should remain a healthy, serving quorum throughout.
+        privateCluster.waitForLiveNodes(2, 120);
+        indexDocuments(client, initialDocs, docsWithSurvivors, "while_leader_down");
+        privateCluster.waitForDocCount(
+            collectionName,
+            initialDocs + docsWithSurvivors,
+            "documents with only the 2 survivors",
+            120,
+            TimeUnit.SECONDS);
+      }
+    } finally {
+      ZkContainer.testing_beforeReconfigure = null;
+      try {
+        CollectionAdminRequest.deleteCollection(collectionName)
+            .process(privateCluster.getSolrClient());
+      } catch (Exception ignored) {
+        // best-effort cleanup
+      }
+      privateCluster.shutdown();
+
+      // This test deliberately drives 2 node startups into a CoreContainer-init failure
+      // (processCoreCreateException path), which is a known, pre-existing gap where
+      // SolrMetricsContext/HTTP-client resources tied to the failed core aren't fully released
+      // (see the same workaround in MissingSegmentRecoveryTest). Explicitly release them here
+      // rather than let an unrelated test fail later on ObjectReleaseTracker's running tally.
+      releaseLeakedObjects(SolrMetricsContext.class);
+      releaseLeakedObjects(HttpJettySolrClient.class);
+      releaseLeakedObjects(LBJettySolrClient.class);
+    }
+  }
+
+  private void releaseLeakedObjects(Class<?> clazz) {
+    for (Object leaked : ObjectReleaseTracker.getTrackedObjectsOfType(clazz)) {
+      if (log.isWarnEnabled()) {
+        log.warn("Explicitly releasing leaked {} to suppress ObjectReleaseTracker error", clazz);
+      }
+      ObjectReleaseTracker.release(leaked);
     }
   }
 

@@ -236,26 +236,26 @@ public class ZkContainer {
       // If any OTHER peer in zkHost is already a genuinely serving ensemble member, we're
       // joining an ensemble that's already up and running (e.g. growing it later) rather than
       // cold-bootstrapping a brand-new one alongside our peers (the typical case when all nodes
-      // in zkHost start up together). Detection and join are done as a single atomic attempt per
-      // peer -- a cold-starting sibling may have its ZK port open yet still be alone and unable
-      // to serve requests (no leader elected among its own static peers yet), so a plain "is the
-      // port open" probe can't reliably tell bootstrap and join apart; only a successful
-      // getConfig() call (which requires a functioning, leader-having server) can.
+      // in zkHost start up together). Detection and join are a single atomic attempt against
+      // every other peer at once -- a cold-starting sibling may have its ZK port open yet still
+      // be alone and unable to serve requests (no leader elected among its own static peers
+      // yet), so a plain "is the port open" probe can't reliably tell bootstrap and join apart;
+      // only a successful getConfig() call (which requires a functioning, leader-having server)
+      // can. Giving the ZK client every other peer at once (rather than trying one at a time
+      // ourselves) also means it transparently fails over to another live member if the one it
+      // first connects to dies mid-join.
       final ZkQuorumPeer self = peers.get(myId - 1);
+      final List<ZkQuorumPeer> otherPeers = new ArrayList<>();
+      for (ZkQuorumPeer peer : peers) {
+        if (!peer.isSelf()) {
+          otherPeers.add(peer);
+        }
+      }
 
       try {
         Files.createDirectories(zkDataDir);
 
-        ZkJoinResult joined = null;
-        for (ZkQuorumPeer peer : peers) {
-          if (peer.isSelf()) {
-            continue;
-          }
-          joined = tryJoinExistingEnsemble(peer, self);
-          if (joined != null) {
-            break;
-          }
-        }
+        ZkJoinResult joined = tryJoinExistingEnsemble(otherPeers, self);
 
         if (joined != null) {
           zooCfgContents = zooCfgContents + joined.serverLines();
@@ -495,19 +495,38 @@ public class ZkContainer {
   private record ZkJoinResult(int myId, String serverLines) {}
 
   /**
-   * Attempts, in one atomic step, to detect whether {@code contact} is a genuinely live,
-   * already-serving ensemble member and, if so, join it by asking it (via dynamic
-   * reconfiguration) to add us as a new voting member. Returns {@code null} if {@code contact}
-   * isn't reachable, or is reachable but not actually serving yet (e.g. a sibling that's itself
-   * mid cold-bootstrap, with no leader elected among its own static peers) -- the caller should
-   * treat that the same as "no live ensemble to join" and fall back to cold-bootstrapping
-   * alongside every peer in zkHost instead. Requires the existing ensemble's members to have been
-   * started with {@code reconfigEnabled=true} (the default for quorum nodes started by this
-   * class).
+   * Test-only hook invoked just before the {@code reconfigure()} call that actually adds us as a
+   * new ensemble member -- e.g. to kill whichever peer we're connected to at that exact moment,
+   * and verify the ZK client fails over to another live member instead of the join simply
+   * hanging or failing. No-op (default {@code null}) outside of tests.
    */
-  private ZkJoinResult tryJoinExistingEnsemble(ZkQuorumPeer contact, ZkQuorumPeer self)
+  public static volatile Runnable testing_beforeReconfigure;
+
+  /**
+   * Attempts, in one atomic step, to detect whether any of {@code otherPeers} is part of a
+   * genuinely live, already-serving ensemble and, if so, join it by asking it (via dynamic
+   * reconfiguration) to add us as a new voting member. Returns {@code null} if none of
+   * {@code otherPeers} is reachable, or reachable but not actually serving yet (e.g. a sibling
+   * that's itself mid cold-bootstrap, with no leader elected among its own static peers) -- the
+   * caller should treat that the same as "no live ensemble to join" and fall back to
+   * cold-bootstrapping alongside every peer in zkHost instead. Requires the existing ensemble's
+   * members to have been started with {@code reconfigEnabled=true} (the default for quorum nodes
+   * started by this class).
+   *
+   * <p>{@code otherPeers} is given to the ZK client as a single multi-host connect string rather
+   * than tried one at a time ourselves, so the client's own built-in failover transparently picks
+   * another live member if the one it first connects to dies partway through the join.
+   */
+  private ZkJoinResult tryJoinExistingEnsemble(List<ZkQuorumPeer> otherPeers, ZkQuorumPeer self)
       throws Exception {
-    final String connectString = contact.host() + ":" + contact.clientPort();
+    final StringBuilder connectStringBuilder = new StringBuilder();
+    for (ZkQuorumPeer peer : otherPeers) {
+      if (connectStringBuilder.length() > 0) {
+        connectStringBuilder.append(',');
+      }
+      connectStringBuilder.append(peer.host()).append(':').append(peer.clientPort());
+    }
+    final String connectString = connectStringBuilder.toString();
     final CountDownLatch connected = new CountDownLatch(1);
     final ZooKeeperAdmin admin =
         new ZooKeeperAdmin(
@@ -576,6 +595,9 @@ public class ZkContainer {
               + self.clientPort();
 
       log.info("Joining existing ZK ensemble at {} as server.{}", connectString, newId);
+      if (testing_beforeReconfigure != null) {
+        testing_beforeReconfigure.run();
+      }
       final byte[] merged = admin.reconfigure(List.of(joiningServer), null, null, -1, new Stat());
       return new ZkJoinResult(newId, extractServerLines(new String(merged, StandardCharsets.UTF_8)));
     } finally {
