@@ -33,6 +33,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -147,9 +148,9 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public void complete() throws IOException {
-      NamedList<Double> analytics = new NamedList<>();
-      NamedList<Integer> topFreq = new NamedList<>();
-      NamedList<Integer> allFreq = new NamedList<>();
+      NamedList<Double> analytics = new SimpleOrderedMap<>();
+      NamedList<Integer> topFreq = new SimpleOrderedMap<>();
+      NamedList<Integer> allFreq = new SimpleOrderedMap<>();
 
       rb.rsp.add("featuredTerms", analytics);
       rb.rsp.add("docFreq", topFreq);

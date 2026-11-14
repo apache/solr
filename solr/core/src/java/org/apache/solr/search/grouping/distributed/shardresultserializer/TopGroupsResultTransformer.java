@@ -39,6 +39,7 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.FieldType;
@@ -229,7 +230,7 @@ public class TopGroupsResultTransformer
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (GroupDocs<BytesRef> searchGroup : data.groups) {
-      NamedList<Object> groupResult = new NamedList<>();
+      NamedList<Object> groupResult = new SimpleOrderedMap<>();
       assert searchGroup.totalHits().relation() == TotalHits.Relation.EQUAL_TO;
       groupResult.add("totalHits", searchGroup.totalHits().value());
       if (!Float.isNaN(searchGroup.maxScore())) {
@@ -239,7 +240,7 @@ public class TopGroupsResultTransformer
       SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
       List<NamedList<Object>> documents = new ArrayList<>();
       for (int i = 0; i < searchGroup.scoreDocs().length; i++) {
-        NamedList<Object> document = new NamedList<>();
+        NamedList<Object> document = new SimpleOrderedMap<>();
         documents.add(document);
 
         Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs()[i].doc, docFetcher);
@@ -284,7 +285,7 @@ public class TopGroupsResultTransformer
   }
 
   protected NamedList<Object> serializeTopDocs(QueryCommandResult result) throws IOException {
-    NamedList<Object> queryResult = new NamedList<>();
+    NamedList<Object> queryResult = new SimpleOrderedMap<>();
     queryResult.add("matches", result.getMatches());
     TopDocs topDocs = result.getTopDocs();
     assert topDocs.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
@@ -301,7 +302,7 @@ public class TopGroupsResultTransformer
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (ScoreDoc scoreDoc : result.getTopDocs().scoreDocs) {
-      NamedList<Object> document = new NamedList<>();
+      NamedList<Object> document = new SimpleOrderedMap<>();
       documents.add(document);
 
       Document doc = retrieveDocument(uniqueField, scoreDoc.doc, docFetcher);

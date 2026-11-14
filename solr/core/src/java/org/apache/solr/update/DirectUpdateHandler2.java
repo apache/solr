@@ -49,6 +49,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -1126,7 +1127,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     commit(new CommitUpdateCommand(cmd.req, false));
     SolrIndexSplitter splitter = new SolrIndexSplitter(cmd);
     splitCommands.inc();
-    NamedList<Object> results = new NamedList<>();
+    NamedList<Object> results = new SimpleOrderedMap<>();
     try {
       splitter.split(results);
       cmd.rsp.addResponse(results);

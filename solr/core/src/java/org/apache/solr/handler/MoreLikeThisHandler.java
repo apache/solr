@@ -49,6 +49,7 @@ import org.apache.solr.common.params.MoreLikeThisParams.TermStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.api.MoreLikeThisAPI;
 import org.apache.solr.handler.component.DebugComponent;
@@ -203,7 +204,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         final List<InterestingTerm> interesting =
             mlt.getInterestingTerms(mlt.getBoostedMLTQuery(), mlt.mlt.getMaxQueryTerms());
         if (termStyle == TermStyle.DETAILS) {
-          NamedList<Float> it = new NamedList<>();
+          NamedList<Float> it = new SimpleOrderedMap<>();
           for (InterestingTerm t : interesting) {
             it.add(t.term.toString(), t.boost);
           }
