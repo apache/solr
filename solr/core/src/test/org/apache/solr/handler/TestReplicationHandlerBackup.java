@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -39,6 +40,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -105,6 +107,36 @@ public class TestReplicationHandlerBackup extends SolrTestCaseJ4 {
       leaderJetty = null;
     }
     leader = null;
+  }
+
+  @Test
+  public void testDeleteBackupJsonFormat() throws Exception {
+    String name = "jsonformat";
+    Path backup = Path.of(leader.getDataDir(), "snapshot." + name);
+    Files.createDirectory(backup);
+    runBackupCommand(leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" + name);
+    new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication")
+        .waitForBackupDeletionSuccess(name, 30);
+    assertFalse(Files.exists(backup));
+
+    for (String jsonNl : new String[] {"", "&json.nl=arrarr"}) {
+      String url =
+          leaderJetty.getBaseUrl()
+              + "/"
+              + DEFAULT_TEST_CORENAME
+              + "/replication?command=details&wt=json"
+              + jsonNl;
+      var response = leaderJetty.getSolrClient().getHttpClient().GET(url);
+      assertEquals(200, response.getStatus());
+      Map<?, ?> json = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+      Map<?, ?> details = (Map<?, ?>) json.get("details");
+      assertTrue(details.get("backup") instanceof Map);
+      Map<?, ?> backupDetails = (Map<?, ?>) details.get("backup");
+      assertEquals(name, backupDetails.get("snapshotName"));
+      assertEquals("success", backupDetails.get("status"));
+      assertNotNull(backupDetails.get("startTime"));
+      assertNotNull(backupDetails.get("endTime"));
+    }
   }
 
   @Test

@@ -132,7 +132,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         backupPaths.getShardBackupMetadataDir(), purgeGraph.shardBackupMetadataDeletes);
     repository.delete(backupPath, purgeGraph.backupIdDeletes);
 
-    NamedList<Integer> details = new NamedList<>();
+    NamedList<Integer> details = new SimpleOrderedMap<>();
     details.add("numBackupIds", purgeGraph.backupIdDeletes.size());
     details.add("numShardBackupIds", purgeGraph.shardBackupMetadataDeletes.size());
     details.add("numIndexFiles", purgeGraph.indexFileDeletes.size());

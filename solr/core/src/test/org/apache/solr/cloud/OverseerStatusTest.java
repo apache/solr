@@ -16,11 +16,13 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.Map;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,7 +30,10 @@ public class OverseerStatusTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(2)
+        .withOverseer(true)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
   }
 
   @Test
@@ -44,12 +49,22 @@ public class OverseerStatusTest extends SolrCloudTestCase {
 
     NamedList<Object> resp =
         new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
-    // When running with Distributed Collection API, no real data in Overseer status, but the
-    // Collection API call shouldn't fail
-    if (new CollectionAdminRequest.RequestApiDistributedProcessing()
-        .process(cluster.getSolrClient())
-        .getIsCollectionApiDistributed()) {
-      return;
+    assertFalse(
+        new CollectionAdminRequest.RequestApiDistributedProcessing()
+            .process(cluster.getSolrClient())
+            .getIsCollectionApiDistributed());
+    for (String jsonNl : new String[] {"", "&json.nl=arrarr"}) {
+      var jetty = cluster.getRandomJetty(random());
+      String url = jetty.getBaseUrl() + "/admin/collections?action=OVERSEERSTATUS&wt=json" + jsonNl;
+      var response = jetty.getSolrClient().getHttpClient().GET(url);
+      assertEquals(200, response.getStatus());
+      Map<?, ?> json = (Map<?, ?>) Utils.fromJSONString(response.getContentAsString());
+      assertTrue(json.get("overseer_operations") instanceof Map);
+      assertTrue(json.get("collection_operations") instanceof Map);
+      Map<?, ?> operations = (Map<?, ?>) json.get("collection_operations");
+      assertTrue(operations.get("create") instanceof Map);
+      assertEquals(
+          1L, ((Number) ((Map<?, ?>) operations.get("create")).get("requests")).longValue());
     }
     NamedList<Object> collection_operations = (NamedList<Object>) resp.get("collection_operations");
     NamedList<Object> overseer_operations = (NamedList<Object>) resp.get("overseer_operations");

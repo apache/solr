@@ -1441,7 +1441,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
     if (!enableFollower && !enableLeader) {
       enableLeader = true;
-      leader = new NamedList<>();
+      leader = new SimpleOrderedMap<>();
     }
 
     if (enableLeader) {
