@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,11 +41,6 @@ public class SolrZkServerTest extends SolrTestCase {
   @Before
   public void createConfHome() throws Exception {
     confHome = createTempDir("zkConf");
-  }
-
-  @After
-  public void clearEmbeddedZkPort() {
-    System.clearProperty(SolrZkServer.EMBEDDED_ZK_PORT_PROPERTY);
   }
 
   @Test
