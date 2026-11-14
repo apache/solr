@@ -108,8 +108,7 @@ allprojects {prj ->
     // Disable sysout signatures for these projects.
     if (prj.path in [
         ":solr:solr-ref-guide",
-        ":solr:test-framework",
-        ":solr:test-framework-cats"
+        ":solr:test-framework"
     ]) {
       forbiddenApisMain.bundledSignatures -= [
           'jdk-system-out'

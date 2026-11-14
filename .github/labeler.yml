@@ -177,7 +177,7 @@ tests:
           - '**/src/test/**'
           - '**/src/test-files/**'
           # The CATS harness library is test infrastructure, but ships in src/java.
-          - solr/test-framework-cats/src/java/**
+          - solr/test-framework/src/java/org/apache/solr/cats/**
           - solr/test-framework/src/java/org/apache/solr/shell/**
 
 # Add category labels loosely based on java packages

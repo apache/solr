@@ -13,7 +13,9 @@ on:
       - 'solr/packaging/src/**'
       - 'solr/packaging/build.gradle'
       - 'solr/core/src/java/org/apache/solr/cli/**'
-      - 'solr/test-framework-cats/**'
+      - 'solr/test-framework/src/java/org/apache/solr/cats/**'
+      - 'solr/test-framework/src/test/org/apache/solr/cats/**'
+      - 'solr/test-framework/src/test-files/cats/**'
       - 'solr/test-framework/src/java/org/apache/solr/shell/**'
       - 'solr/test-framework/src/test/org/apache/solr/shell/**'
 
@@ -62,10 +64,10 @@ jobs:
 
     - uses: ./.github/actions/prepare-for-build
 
-    # The harness' own unit tests. No distribution needed, so this fails fast if the library itself
+    # The harness' own unit tests. No distribution needed, so this fails fast if the harness itself
     # is broken. Run on both platforms: many of these cases exercise the cmd.exe half of it.
-    - name: Test the CATS harness library
-      run: ${{ matrix.gradlew }} -p solr/test-framework-cats catsTests
+    - name: Test the CATS harness
+      run: ${{ matrix.gradlew }} -p solr/test-framework test --tests "org.apache.solr.cats.*"
 
     - name: Test bin/solr with CATS
       run: ${{ matrix.gradlew }} -p solr/packaging catsTests

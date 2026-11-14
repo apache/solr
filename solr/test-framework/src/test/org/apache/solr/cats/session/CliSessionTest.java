@@ -58,10 +58,10 @@ import org.junit.rules.TestName;
  * Unit tests for the harness itself — {@code env}, {@code cd}, {@code run}, {@code runWithStdin},
  * variable resolution, quoting, timeouts.
  *
- * <p>Deliberately uses shell built-ins and the stand-in program under {@code src/test-files}, so it
- * needs nothing installed and runs in a couple of seconds. It runs on whichever shell the platform
- * uses, which is how the {@code Shells.CMD} half of the harness gets covered at all; the handful of
- * cases that really are one shell's carry {@link EnabledOnShell}.
+ * <p>Deliberately uses shell built-ins and the stand-in program under {@code src/test-files/cats},
+ * so it needs nothing installed and runs in a couple of seconds. It runs on whichever shell the
+ * platform uses, which is how the {@code Shells.CMD} half of the harness gets covered at all; the
+ * handful of cases that really are one shell's carry {@link EnabledOnShell}.
  */
 public class CliSessionTest {
 
@@ -140,14 +140,14 @@ public class CliSessionTest {
   }
 
   /**
-   * Installs the stand-in program from {@code src/test-files} in the launcher directory, under the
-   * name this platform's shell resolves from the bare word {@code mytool}.
+   * Installs the stand-in program from {@code src/test-files/cats} in the launcher directory, under
+   * the name this platform's shell resolves from the bare word {@code mytool}.
    */
   private static void installStandInProgram(Path launcherDir) throws IOException {
     boolean cmd = "cmd".equals(Shells.current().id());
     String fixture = cmd ? "mytool.cmd" : "mytool.sh";
     Path installed = launcherDir.resolve(cmd ? "mytool.cmd" : "mytool");
-    try (InputStream in = CliSessionTest.class.getResourceAsStream("/" + fixture)) {
+    try (InputStream in = CliSessionTest.class.getResourceAsStream("/cats/" + fixture)) {
       assertNotNull(fixture + " must be on the test classpath", in);
       Files.copy(in, installed);
     }

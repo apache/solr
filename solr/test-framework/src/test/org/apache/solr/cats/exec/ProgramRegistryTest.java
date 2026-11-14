@@ -48,7 +48,7 @@ public class ProgramRegistryTest {
     boolean cmd = "cmd".equals(Shells.current().id());
     String fixture = cmd ? "mytool.cmd" : "mytool.sh";
     tool = tmp.resolve(cmd ? "mytool.cmd" : "mytool");
-    try (InputStream in = ProgramRegistryTest.class.getResourceAsStream("/" + fixture)) {
+    try (InputStream in = ProgramRegistryTest.class.getResourceAsStream("/cats/" + fixture)) {
       assertNotNull(fixture + " must be on the test classpath", in);
       Files.copy(in, tool);
     }

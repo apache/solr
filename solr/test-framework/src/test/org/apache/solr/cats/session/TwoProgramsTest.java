@@ -210,8 +210,8 @@ public class TwoProgramsTest implements CatsDsl {
   }
 
   /**
-   * Installs one of the stand-in programs from {@code src/test-files} into an installation of its
-   * own, under the name this platform's shell resolves from the bare word.
+   * Installs one of the stand-in programs from {@code src/test-files/cats} into an installation of
+   * its own, under the name this platform's shell resolves from the bare word.
    */
   private static Path install(String name, Path installDir) {
     boolean cmd = "cmd".equals(Shells.current().id());
@@ -219,7 +219,7 @@ public class TwoProgramsTest implements CatsDsl {
     try {
       Path launcherDir = Files.createDirectories(installDir.resolve("bin"));
       Path installed = launcherDir.resolve(cmd ? name + ".cmd" : name);
-      try (InputStream in = TwoProgramsTest.class.getResourceAsStream("/" + fixture)) {
+      try (InputStream in = TwoProgramsTest.class.getResourceAsStream("/cats/" + fixture)) {
         if (in == null) {
           throw new IllegalStateException(fixture + " must be on the test classpath");
         }

@@ -15,5 +15,12 @@
  * limitations under the License.
  */
 
-/** CATS, the cross-platform harness for testing command line programs */
+/**
+ * CATS, the cross-platform harness for testing command line programs.
+ *
+ * <p>This package and its subpackages are generic. Keep them that way: nothing in them may name
+ * Solr, its scripts, its ports or its files, and they depend on nothing beyond the JRE, JUnit and
+ * slf4j. Whatever is specific to the program under test belongs in a layer on top, which for Solr
+ * is {@code org.apache.solr.shell}.
+ */
 package org.apache.solr.cats;

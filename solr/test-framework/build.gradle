@@ -31,7 +31,6 @@ dependencies {
 
   api project(':solr:core')
   api project(':solr:solrj-jetty')
-  api project(':solr:test-framework-cats')
 
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
