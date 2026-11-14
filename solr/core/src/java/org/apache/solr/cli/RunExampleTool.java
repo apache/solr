@@ -41,7 +41,6 @@ import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -56,6 +55,8 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.noggit.CharArr;
@@ -1577,7 +1578,9 @@ public class RunExampleTool extends ToolBase {
                     30));
       }
 
-      ExecutorService quorumExecutor = Executors.newFixedThreadPool(quorumSize);
+      ExecutorService quorumExecutor =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              quorumSize, new SolrNamedThreadFactory("solrcli-quorum-startup"));
       List<Future<Map<String, Object>>> futures;
       try {
         futures = quorumExecutor.invokeAll(quorumStartups);
@@ -1656,8 +1659,8 @@ public class RunExampleTool extends ToolBase {
                   null,
                   WAIT_FOR_LIVE_NODES_TIMEOUT_MS,
                   false,
-                  null,
-                  List.of(new AssertTool.Assertion.CloudNodes(zkHost, numNodes))));
+                  params.start().credentials(),
+                  List.of(new AssertTool.Assertion.CloudNodes(solrUrl, numNodes))));
     } catch (AssertTool.AssertionFailureException afe) {
       echo(
           "\nWARNING: "

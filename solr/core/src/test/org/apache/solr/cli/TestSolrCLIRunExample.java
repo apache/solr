@@ -425,9 +425,14 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     String[] toolArgs =
         new String[] {
-          "--example", "cloud",
-          "--server-dir", solrServerDir.toString(),
-          "--example-dir", solrExampleDir.toString()
+          "--example",
+          "cloud",
+          "--zk-host",
+          "localhost:1",
+          "--server-dir",
+          solrServerDir.toString(),
+          "--example-dir",
+          solrExampleDir.toString()
         };
 
     int bindPort = pickFreePort();
@@ -435,7 +440,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String collectionName = "testCloudExamplePrompt";
 
     // this test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
-    // and the need for setting the host and port system properties ...
+    // and the need for setting the host and port system properties. The executor supplies its own
+    // ZooKeeper, so the external connection string is only passed to the mocked start command.
     String userInput = "1\n" + bindPort + "\n" + collectionName + "\n2\n2\n_default\n";
 
     // simulate user input from stdin
@@ -543,6 +549,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         new String[] {
           "--example",
           "cloud",
+          "--zk-host",
+          "localhost:1",
           "--server-dir",
           solrServerDir.toString(),
           "--example-dir",

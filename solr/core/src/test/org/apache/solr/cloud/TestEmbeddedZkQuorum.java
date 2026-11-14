@@ -486,7 +486,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
                     + " would leave fewer synced members than the new quorum requires");
           } catch (ExecutionException e) {
             if (log.isInfoEnabled()) {
-              log.info("Join failed as expected while the leader was down: {}", e.getCause());
+              log.info("Join failed as expected while the leader was down", e);
             }
           }
         } finally {
