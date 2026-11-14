@@ -1,0 +1,115 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.shell;
+
+import org.junit.Test;
+
+/** Port of {@code test_help.bats}. */
+public class HelpTest extends SolrCatsTestCase {
+
+  @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18649")
+  public void solrHelpFlagPrintsHelp() {
+    run("solr --help")
+        .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void solrWithNoFlagsPrintsHelp() {
+    runFail("solr")
+        .assertExitCode(1)
+        .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void startHelpFlagPrintsHelp() {
+    run("solr start --help")
+        .assertContains(forCli("Usage: solr start", "usage: bin/solr start"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void startHFlagPrintsHelp() {
+    run("solr start -h")
+        .assertContains(forCli("Usage: solr start", "usage: bin/solr start"))
+        .assertNotContains("ERROR: Hostname is required when using the -h option!");
+  }
+
+  @Test
+  public void stopHelpFlagPrintsHelp() {
+    run("solr stop --help")
+        .assertContains(forCli("Usage: solr stop", "usage: bin/solr stop"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void restartHelpFlagPrintsHelp() {
+    run("solr restart --help")
+        .assertContains(forCli("Usage: solr restart", "usage: bin/solr restart"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void statusHelpFlagPrintsHelp() {
+    run("solr status --help").assertContains("usage: bin/solr status").assertNotContains("ERROR");
+  }
+
+  @Test
+  public void healthcheckHelpFlagPrintsHelp() {
+    run("solr healthcheck --help")
+        .assertContains("usage: bin/solr healthcheck")
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void createHelpFlagPrintsHelp() {
+    run("solr create --help").assertContains("usage: bin/solr create").assertNotContains("ERROR");
+  }
+
+  @Test
+  public void deleteHelpFlagPrintsHelp() {
+    run("solr delete -h").assertContains("usage: bin/solr delete").assertNotContains("ERROR");
+  }
+
+  @Test
+  public void zkHelpFlagPrintsHelp() {
+    run("solr zk --help")
+        .assertContains("usage:")
+        .assertContains(forCli("bin/solr zk ls", "usage: bin/solr zk"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void authHelpFlagPrintsHelp() {
+    run("solr auth --help")
+        .assertContains(forCli("bin/solr auth enable", "usage: bin/solr auth"))
+        .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void assertHelpFlagPrintsHelp() {
+    run("solr assert --help").assertContains("usage: bin/solr assert").assertNotContains("ERROR");
+  }
+
+  @Test
+  public void postHelpFlagPrintsHelp() {
+    run("solr post --help").assertContains("usage: bin/solr post").assertNotContains("ERROR");
+  }
+}

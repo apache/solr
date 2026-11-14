@@ -30,7 +30,7 @@ examples:
 bats-tests:
   - changed-files:
       - any-glob-to-any-file:
-          - solr/packaging/tests/**
+          - solr/packaging/test/**
 
 # Add 'docker' label for changes to docker
 docker:
@@ -176,6 +176,9 @@ tests:
       - any-glob-to-any-file:
           - '**/src/test/**'
           - '**/src/test-files/**'
+          # The CATS harness library is test infrastructure, but ships in src/java.
+          - solr/test-framework/src/java/org/apache/solr/cats/**
+          - solr/test-framework/src/java/org/apache/solr/shell/**
 
 # Add category labels loosely based on java packages
 # Add 'api' label

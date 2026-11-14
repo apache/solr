@@ -1,17 +1,13 @@
-name: Solr Script Tests
+# DEPRECATED, and manual-only: the BATS suites it runs are deprecated as of Solr 10.2, and every
+# .bats file has a ported counterpart under solr/packaging/src/test/org/apache/solr/shell run by
+# cats-test.yml, which also covers bin/solr.cmd. This workflow goes away with the .bats files.
+name: Solr Script Tests (BATS, deprecated)
 
 on:
-  pull_request:
-    branches:
-      - '*'
-    paths:
-      - '.github/workflows/bin-solr-test.yml'
-      - 'solr/bin/**'
-      - 'solr/packaging/**'
-      - 'solr/core/src/java/org/apache/solr/cli/**'
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

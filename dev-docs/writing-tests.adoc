@@ -1,0 +1,177 @@
+= Writing Tests for Solr
+:toc: left
+:toclevels: 2
+
+Which kind of test to write, and the lifecycle conventions they all share. Building and running the suite is covered in xref:solr-source-code.adoc[Working With Solr Source Code]; `./gradlew helpTests` covers running them.
+
+The rule: *write the cheapest kind of test that can actually catch the bug.*
+
+== Test types
+
+[cols="1,2,1,1", options="header"]
+|===
+| Base class | Covers | Cost | Status
+
+| `SolrTestCase`
+| Plain unit tests. Add `@ClassRule SolrJettyTestRule` (or `EmbeddedSolrServerTestRule`) when you need a live node.
+| ms to seconds
+| Current. The default — extend this unless you need more.
+
+| `SolrCloudTestCase`
+| In-JVM `MiniSolrCloudCluster`: N Jetty nodes plus a `ZkTestServer`. Routing, replication, recovery, Collections API, cluster state.
+| seconds to minutes
+| Current, but not a default.
+
+| `SolrCatsTestCase`
+| CATS — Cross-platform Automated Testing System: a real, unpacked Solr distribution driven through `bin/solr` and `bin\solr.cmd` as subprocesses under the platform's own shell. The only harness that runs an installation the way a user gets one, so a classpath, Jetty configuration or file layout problem reproduces here and nowhere else. Harness in `solr/test-framework/src/java/org/apache/solr/cats/`, a generic, Solr-free core, with the Solr layer on top in `solr/test-framework/src/java/org/apache/solr/shell/`; suites in `solr/packaging/src/test/`.
+| seconds to minutes
+| Current. New CLI coverage goes here.
+
+| `AdminUiTestBase`
+| AngularJS Admin UI in headless Chrome via Selenium, against a 2-node cluster whose Jetty nodes also serve the UI. In `solr/webapp/src/test/org/apache/solr/webapp/`.
+| cluster + a browser
+| Current, opt-in with `-Ptests.selenium=true`. See link:admin-ui-tests.md[admin-ui-tests.md].
+
+| `SolrTestCaseJ4`
+| Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. The base of most Solr tests, directly or via `SolrCloudTestCase`.
+| as `SolrTestCase`
+| Deprecated. Not in new tests.
+
+| BATS, `solr/packaging/test/*.bats`
+| The original bash `bin/solr` tests. `./gradlew integrationTests`.
+| seconds to minutes, sequential
+| Deprecated in favour of CATS, which runs the same coverage on both shells. Bash-only; never ran on Windows.
+
+| `solr/docker/tests/cases/*`
+| Bash cases that `docker run` the Solr image built from this tree: entrypoint, `docker-entrypoint-initdb.d` scripts, `/var/solr` volume handling and permissions, core precreation, non-root and random UIDs, log4j config. `./gradlew -p solr/docker testDocker`, helpers in `tests/shared.sh`.
+| image build + containers
+| Current, bash-only. For the image's own contract, not for Solr behaviour.
+|===
+
+`configureCluster(n)` starts `n` Jetty servers and an embedded ZooKeeper in the test JVM before your first assertion, and every collection then goes through the real Collections API with real leader election — which is why `SolrCloudTestCase` is not the default, and why most cluster-test flakiness is a missing `waitForState`.
+
+`SolrTestCaseJ4` is not annotated `@Deprecated` — too much extends it for that to be useful — but it is on the way out. Keep editing existing J4 tests in place; do not convert them as a side effect of an unrelated fix. New classes extend `SolrTestCase` and build documents and params from plain SolrJ types.
+
+== Choosing a test type
+
+* Plain class, parser, config object, response writer, utility — `SolrTestCase`, no server.
+* Needs a live Solr, one node — `SolrTestCase` + `SolrJettyTestRule`, or `EmbeddedSolrServerTestRule` if the HTTP layer is not part of the test.
+* Only reproduces across nodes, or involves ZooKeeper, routing, replication, recovery or the Collections API — `SolrCloudTestCase`, with the lowest node count that still shows the bug.
+* In `bin/solr`, `bin/solr.cmd`, `solr.in.sh`/`solr.in.cmd`, CLI parsing, output or exit codes — `SolrCatsTestCase`. Also the only place a packaging problem reproduces: a jar missing from the classpath, a Jetty setting, a file in the wrong place, or a Windows-only script bug. The `SolrTestCase` hierarchy builds no installation, so none of those are visible to it.
+* Needs a real external service, not a mock — pick from the above as usual, then add a Testcontainers `@ClassRule`; see below.
+* In the Admin UI's JavaScript or templates — `AdminUiTestBase`. Test the APIs it calls separately; keep the browser test to what the browser renders.
+* Tempted to add a `.bats` file — don't. Write it as a `SolrCatsTestCase`. Touch the `.bats` files only to keep them working until they are ported.
+* In the Docker image — its entrypoint, init scripts, volume or permission handling, the `SOLR_*` variables it honours — a case under `solr/docker/tests/cases/`, not a CATS suite.
+
+== Randomized testing
+
+Every test that extends `SolrTestCase` runs under randomizedtesting's `RandomizedRunner`, inherited from `LuceneTestCase`. One master seed per run drives every `random()` call, so a failure is reproducible from the seed the runner prints.
+
+The framework already varies Lucene codec and postings format, directory implementation, merge policy, locale, time zone, and the order of test methods — so no test may depend on method order, on the default locale, or on the default time zone. SSL is randomized too, but only for `SolrTestCaseJ4` subclasses, which is where `@RandomizeSSL` sits; opt out with `@SuppressSSL`.
+
+What to use:
+
+* `random()` — the per-test `Random`. Never `new Random()` or `Math.random()`: an unseeded source makes the failure unreproducible.
+* `atLeast(n)` — `n * RANDOM_MULTIPLIER`, plus up to 50% random fudge. The normal way to size a loop.
+* `rarely()` / `usually()` — take an unusual branch about 1% of the time (5% in nightly runs).
+* `TestUtil.randomSimpleString(random())` and its neighbours for field values.
+
+`RANDOM_MULTIPLIER` is 2 in a nightly run and 1 otherwise, so `atLeast` and `rarely` scale themselves; read `TEST_NIGHTLY` directly only to skip or resize work those two cannot express.
+
+Never commit `@Seed`: it pins the master seed and throws away the coverage you just added. `@Repeat` is for chasing a rare seed while you work, not for keeping.
+
+Randomize when the input space is large and uniform, correctness does not depend on the particular value — field values, document and shard counts, the order of unrelated operations — and you can state the property without reimplementing the logic: a round trip, an invariant, or a comparison against a simpler reference or a control core.
+
+== @Rule and lifecycle
+
+`SolrTestCase` installs many rules for every subclass; `solrClassRules` and `solrTestRules` in the class itself are the list. Two consequences worth knowing: system properties are restored at both class and method scope, so a test never has to clear what it set; and `@LogLevel("org.apache.solr.cloud=DEBUG")` on a class or a method works out of the box, which is how you turn logging up for one test without touching a logger.
+
+Do:
+
+* Reach for an existing `@ClassRule` before writing a `@BeforeClass`/`@AfterClass` pair: `SolrJettyTestRule` and `EmbeddedSolrServerTestRule` already start and close a node for you.
+* In `SolrCloudTestCase`, configure the cluster in `@BeforeClass`; the base class's `@AfterClass` shuts it down. For per-test isolation use `@After cluster.deleteAllCollections()` (which removes aliases too), not a cluster per method.
+* Call `super.setUp()`/`super.tearDown()` if you override them.
+* Use `createTempDir()` for scratch space.
+* Mute expected ERRORs: `try (ErrorLogMuter errors = ErrorLogMuter.substring("...")) { ... }`.
+
+Don't:
+
+* Don't set up in a `static` initializer — runners may load all test classes long before a suite runs.
+* Don't assume `@AfterClass` sees a complete fixture: JUnit 4 runs it even when `@BeforeClass` threw or raised an assumption failure.
+* Don't add a thread to `SolrIgnoredThreadsFilter` instead of fixing the leak; anything listed there must be completely stateless. `@ThreadLeakLingering` is resolved the same way, so a subclass declaration replaces the inherited 1000 rather than raising it — and is for a slow-but-correct shutdown only.
+* Don't redeclare `@ThreadLeakFilters` without repeating the inherited filters — the annotation is not additive. `AdminUiTestBase` shows the correct form.
+* Don't leak tracked objects. `ObjectReleaseTracker` is asserted empty only when the suite passed, so `ObjectTracker found N object(s) that were not released` means your test left a `SolrCore`, `SolrIndexSearcher`, `Directory` or similar open.
+
+Annotations:
+
+These are Lucene annotations wired up as randomizedtesting *test groups*, disabled by default, so annotating a test with one stops it running in ordinary builds and in PR CI:
+
+* `@Nightly` — correct, but too slow to run every time.
+* `@AwaitsFix(bugUrl = "...")` — known-broken, and the required bug URL is what keeps it discoverable. Prefer it to `@Ignore`, which is plain JUnit and invisible to group filters; use `@Ignore` only where nothing is broken, such as an abstract base the runner would otherwise pick up.
+* `@LuceneTestCase.Monster(value)` — needs unusual disk or RAM.
+
+There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@AwaitsFix`. Read solr-source-code.adoc's guidance on frequently-failing tests before disabling anything.
+
+== Containers for external services
+
+When a test needs a real instance of something Solr talks to, start it with Testcontainers from a JUnit rule rather than by hand. Examples in tree, all an `ExternalResource` declared as `@ClassRule`: `TikaServerContainerRule` (extraction), `KafkaContainerRule` (cross-dc-manager), `S3MockContainerRule` (s3-repository). `TikaServerExtractionBackendTest` is the one to copy.
+
+* `@ClassRule`, not `@Rule` — a container pull and start is far too expensive per method.
+* `Assume.assumeTrue(.., DockerClientFactory.instance().isDockerAvailable())` in `before()`, so the test skips where Docker is absent instead of failing.
+* `.waitingFor(Wait.forListeningPort())`, so there is no polling loop and no sleep.
+* `getMappedPort(n)` for the address. Never publish a fixed host port: it collides with whatever else the machine is running, and with another test class in a parallel build.
+
+== Waiting, not sleeping
+
+A fixed `Thread.sleep` is paid on every run and still flakes under load, because the thing you are waiting for is slower on a busy machine, not faster. Wait for the condition instead:
+
+* Best: have the other side signal. Complete a `CompletableFuture` when it reaches the point you care about and `get(timeout)` it from the test thread.
+* If you must poll, use the wait your harness already has — `TimeOut#waitFor` (solr-core), `cluster.waitForState(..)` in `SolrCloudTestCase`, `awaitOrFail(..)` in `SolrCatsTestCase` — rather than a hand-rolled loop.
+* Derive a timeout from whatever it bounds, and name it: `ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2`, not a bare `2, SECONDS`.
+
+A sleep you cannot replace is worth a comment saying what it is waiting for, because it usually marks a missing signal in the code under test rather than in the test.
+
+== Worked examples
+
+`SolrTestCase`::
+`solr/core/src/test/org/apache/solr/core/backup/BackupIdTest.java` — no server, no rules.
++
+`solr/core/src/test/org/apache/solr/handler/admin/api/NodeThreadsAPITest.java` — the live-node shape without J4: `@ClassRule SolrJettyTestRule` + `startSolr(createTempDir())`, driven through the generated SolrJ client.
+
+`SolrCloudTestCase`::
+`solr/core/src/test/org/apache/solr/HelloWorldSolrCloudTestCase.java` — written as a teaching template, instructions in its javadoc.
++
+`solr/core/src/test/org/apache/solr/cloud/CollectionStateZnodeTest.java` — the real minimal shape, with `@After deleteAllCollections()` and both `waitForState` forms.
+
+`SolrCatsTestCase`::
+`solr/packaging/src/test/org/apache/solr/shell/ZkTest.java` — canonical BATS port: `classCli.run(...)` for a class-lifetime node, fluent `run(...).assertContains(...)`, `${SOLR_PORT}` expansion, portable stand-ins for `touch` and `curl`.
++
+`solr/packaging/src/test/org/apache/solr/shell/PostTest.java` — same, plus `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations.
++
+The generic core is `org.apache.solr.cats` in `solr/test-framework`, with the Solr layer the suites extend alongside it in `org.apache.solr.shell`; xref:cats.adoc[cats.adoc] documents both.
+
+`AdminUiTestBase`::
+`solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — one screen; the version and JVM values are compared against live `/admin/info/system` JSON rather than against constants.
++
+`solr/webapp/src/test/org/apache/solr/webapp/AdminUiSmokeTest.java` — walks the node-, cloud-, collection- and core-level screens, asserting each renders with no severe console errors.
+
+== Running what you just wrote
+
+`./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the module-specific test tasks are here:
+
+* `./gradlew -p solr/packaging catsTests` builds the distribution first, then runs CATS — on Windows, the same suites under `cmd.exe`. See `solr/packaging/README.md` for the task variants.
+* `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`.
+* `./gradlew -p solr/docker testDocker` builds the image from your tree and runs the bash cases against it; `-Psolr.docker.tests.include`/`-Psolr.docker.tests.exclude` select them.
+* `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
+* Neither `solr/packaging` nor `solr/docker` test tasks are part of `check` — they need an unpacked distribution or a built image. The harness' own unit tests are — run them with `./gradlew -p solr/test-framework test --tests "org.apache.solr.cats.*"`. The browser tests are in `check` but stay skipped until their test group is enabled.
+
+When one fails, start with the artifacts rather than the stack trace: `SolrCatsTestCase` prints the path to a `SOLR_HOME` snapshot holding `transcript.log`, every command it ran with its output; `AdminUiTestBase` saves `screenshot.png`, `page.html` and `console.log`.
+
+== See also
+
+* `solr/test-framework/README.md` — what the framework provides and how to depend on it.
+* `solr/packaging/README.md` — the distribution, CATS and the BATS suites it is replacing.
+* xref:cats.adoc[cats.adoc] — the CATS harness in detail: its vocabulary, portability rails and the Solr layer on top.
+* link:admin-ui-tests.md[admin-ui-tests.md] — how the browser suite works and what it skips.
+* `./gradlew helpTests` (`dev-docs/gradle-help/tests.txt`) — the guide to running tests. `./gradlew -p solr/core testOpts` lists every test property with its default and current value.
+* xref:solr-source-code.adoc[solr-source-code.adoc] — building, and what to do about a test that only fails for you.
