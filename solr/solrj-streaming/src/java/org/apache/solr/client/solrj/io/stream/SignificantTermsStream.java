@@ -281,8 +281,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (NamedList<?> fullResp :
-            callShards(getShards(solrConnection, collection, streamContext))) {
+        List<String> shardUrls = getShards(solrConnection, collection, streamContext);
+        if (shardUrls.isEmpty()) {
+          throw new IllegalArgumentException(
+              "No shards for collection "
+                  + collection
+                  + ". Check the manual shards entry in the stream context or the replica state.");
+        }
+        for (NamedList<?> fullResp : callShards(shardUrls)) {
           Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})

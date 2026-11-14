@@ -290,6 +290,9 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       Object pushStream = ((Expressible) tupleStream).toExpression(streamFactory);
 
       List<String> shardUrls = getShards(this.solrConnection, this.collection, this.streamContext);
+      if (shardUrls.isEmpty()) {
+        throw new IOException("No shards available for collection " + this.collection);
+      }
 
       for (int w = 0; w < workers; w++) {
         ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
