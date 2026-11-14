@@ -19,12 +19,18 @@ package org.apache.solr.common.util;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
+import java.io.Closeable;
+import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Test;
 
 public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
@@ -80,6 +86,140 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.track(new Object() {});
     String message = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
     assertThat(message, containsString("[Object]"));
+  }
+
+  @Test
+  public void testTryCloseAutoCloseable() {
+    AtomicInteger closeCount = new AtomicInteger();
+    AutoCloseable closeable =
+        new AutoCloseable() {
+          @Override
+          public void close() {
+            closeCount.incrementAndGet();
+            ObjectReleaseTracker.release(this);
+          }
+        };
+
+    try {
+      ObjectReleaseTracker.track(closeable);
+      assertFalse(closeable instanceof Closeable);
+
+      ObjectReleaseTracker.tryClose();
+
+      assertEquals(1, closeCount.get());
+      assertFalse(ObjectReleaseTracker.OBJECTS.containsKey(closeable));
+    } finally {
+      ObjectReleaseTracker.clear();
+    }
+  }
+
+  @Test
+  public void testTryCloseContinuesAfterAutoCloseableFailure() {
+    AtomicInteger failedCloseCount = new AtomicInteger();
+    AutoCloseable failingCloseable =
+        new AutoCloseable() {
+          @Override
+          public void close() {
+            failedCloseCount.incrementAndGet();
+            ObjectReleaseTracker.release(this);
+            throw new IllegalStateException("expected close failure");
+          }
+        };
+    AtomicInteger successfulCloseCount = new AtomicInteger();
+    AutoCloseable successfulCloseable =
+        new AutoCloseable() {
+          @Override
+          public void close() {
+            successfulCloseCount.incrementAndGet();
+            ObjectReleaseTracker.release(this);
+          }
+        };
+
+    try {
+      ObjectReleaseTracker.track(failingCloseable);
+      ObjectReleaseTracker.track(successfulCloseable);
+
+      ObjectReleaseTracker.tryClose();
+
+      assertEquals(1, failedCloseCount.get());
+      assertEquals(1, successfulCloseCount.get());
+    } finally {
+      ObjectReleaseTracker.clear();
+    }
+  }
+
+  @Test
+  public void testTryCloseSolrMetricsContextClosesRegisteredResources() {
+    AtomicInteger closeCount = new AtomicInteger();
+    SolrMetricsContext metricsContext = new SolrMetricsContext(null, "test");
+
+    try {
+      metricsContext.registerCloseable(closeCount::incrementAndGet);
+
+      ObjectReleaseTracker.tryClose();
+
+      assertEquals(1, closeCount.get());
+      assertFalse(ObjectReleaseTracker.OBJECTS.containsKey(metricsContext));
+    } finally {
+      ObjectReleaseTracker.clear();
+    }
+  }
+
+  @Test
+  public void testTryCloseNestedAutoCloseables() {
+    AtomicBoolean childClosed = new AtomicBoolean();
+    AtomicInteger childCloseCount = new AtomicInteger();
+    AtomicReference<AutoCloseable> childRef = new AtomicReference<>();
+    AutoCloseable child =
+        () -> {
+          if (childClosed.compareAndSet(false, true)) {
+            childCloseCount.incrementAndGet();
+            ObjectReleaseTracker.release(childRef.get());
+          }
+        };
+    childRef.set(child);
+
+    AtomicInteger parentCloseCount = new AtomicInteger();
+    AtomicReference<AutoCloseable> parentRef = new AtomicReference<>();
+    AutoCloseable parent =
+        () -> {
+          parentCloseCount.incrementAndGet();
+          child.close();
+          ObjectReleaseTracker.release(parentRef.get());
+        };
+    parentRef.set(parent);
+
+    try {
+      ObjectReleaseTracker.track(parent);
+      ObjectReleaseTracker.track(child);
+
+      ObjectReleaseTracker.tryClose();
+
+      assertEquals(1, parentCloseCount.get());
+      assertTrue(childClosed.get());
+      assertEquals(1, childCloseCount.get());
+      assertFalse(ObjectReleaseTracker.OBJECTS.containsKey(parent));
+      assertFalse(ObjectReleaseTracker.OBJECTS.containsKey(child));
+    } finally {
+      ObjectReleaseTracker.clear();
+    }
+  }
+
+  @Test
+  public void testTryCloseUsesExecutorServiceShutdownPath() {
+    TrackingExecutorService executor = new TrackingExecutorService();
+
+    try {
+      ObjectReleaseTracker.track(executor);
+
+      ObjectReleaseTracker.tryClose();
+
+      assertTrue(executor.isShutdown());
+      assertTrue(executor.isTerminated());
+      assertEquals(0, executor.closeCount);
+    } finally {
+      ObjectReleaseTracker.clear();
+    }
   }
 
   @Test
@@ -155,5 +295,48 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
 
     es.shutdown();
     assertTrue(es.awaitTermination(1, TimeUnit.SECONDS));
+  }
+
+  private static class TrackingExecutorService extends AbstractExecutorService
+      implements AutoCloseable {
+    private boolean shutdown;
+    private boolean terminated;
+    private int closeCount;
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+      terminated = true;
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown = true;
+      terminated = true;
+      return List.of();
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return terminated;
+    }
+
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return terminated;
+    }
+
+    @Override
+    public void execute(Runnable command) {}
+
+    @Override
+    public void close() {
+      closeCount++;
+    }
   }
 }

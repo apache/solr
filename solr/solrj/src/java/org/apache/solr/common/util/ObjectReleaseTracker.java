@@ -128,6 +128,12 @@ public class ObjectReleaseTracker {
         } catch (Throwable t) {
           log.error("", t);
         }
+      } else if (object instanceof AutoCloseable) {
+        try {
+          ((AutoCloseable) object).close();
+        } catch (Throwable t) {
+          log.error("", t);
+        }
       }
     }
   }
