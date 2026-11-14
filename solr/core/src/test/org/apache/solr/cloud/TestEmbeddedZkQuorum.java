@@ -25,8 +25,10 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
@@ -320,6 +322,64 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   }
 
   /**
+   * Stress-tests the race between a node deciding to cold-bootstrap alongside its peers versus
+   * joining an already-running ensemble (see {@code ZkContainer#tryJoinExistingEnsemble}): every
+   * node in a fresh quorum starts concurrently, and under unlucky timing one node could mistake
+   * a sibling's barely-open port for an already-serving ensemble to join, instead of
+   * bootstrapping together with it -- which would fragment the 3 nodes across two different
+   * ensemble views instead of one.
+   *
+   * <p>Repeats a full cold start from scratch many times (rather than relying on any single run's
+   * scheduling luck) and asserts every single one converges to exactly one 3-member quorum: a
+   * leader with 2 synced followers, never a node stuck alone or a split ensemble.
+   */
+  @Test
+  public void testRepeatedColdBootstrapConvergesConsistently() throws Exception {
+    final int iterations = 8;
+    Path configPath = TEST_PATH().resolve("collection1").resolve("conf");
+
+    for (int iter = 0; iter < iterations; iter++) {
+      MiniSolrCloudCluster privateCluster =
+          configureCluster(NUM_NODES)
+              .addConfig("conf1", configPath)
+              .withEmbeddedZkQuorum()
+              .build();
+      try {
+        privateCluster.waitForAllNodes(60);
+
+        List<JettySolrRunner> jettys = privateCluster.getJettySolrRunners();
+        assertEquals(
+            "iteration " + iter + ": expected " + NUM_NODES + " nodes",
+            NUM_NODES,
+            jettys.size());
+
+        int leaderIndex = findZkLeaderIndex(jettys, 30);
+        assertTrue(
+            "iteration "
+                + iter
+                + ": no ZK leader found among "
+                + NUM_NODES
+                + " freshly cold-started nodes",
+            leaderIndex >= 0);
+
+        int syncedFollowers = zkSyncedFollowerCount(jettys.get(leaderIndex).getLocalPort() + 1000);
+        assertEquals(
+            "iteration "
+                + iter
+                + ": leader should have "
+                + (NUM_NODES - 1)
+                + " synced followers in a single "
+                + NUM_NODES
+                + "-member quorum, not a split ensemble or a node left stuck alone",
+            NUM_NODES - 1,
+            syncedFollowers);
+      } finally {
+        privateCluster.shutdown();
+      }
+    }
+  }
+
+  /**
    * Tests ZK quorum loss and recovery when majority of nodes fail.
    *
    * <p>This test verifies that:
@@ -475,6 +535,31 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
    * zk_server_state, or {@code null} if the port isn't reachable/serving yet.
    */
   private static String zkServerState(int zkPort) {
+    return mntr(zkPort).get("zk_server_state");
+  }
+
+  /**
+   * Issues the ZK "mntr" four-letter word against {@code zkPort} and returns the value of
+   * zk_synced_followers (only meaningful on the leader), or -1 if absent/unparseable.
+   */
+  private static int zkSyncedFollowerCount(int zkPort) {
+    String value = mntr(zkPort).get("zk_synced_followers");
+    if (value == null) {
+      return -1;
+    }
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      return -1;
+    }
+  }
+
+  /**
+   * Issues the ZK "mntr" four-letter word against {@code zkPort} and returns its key/value pairs,
+   * or an empty map if the port isn't reachable/serving yet.
+   */
+  private static Map<String, String> mntr(int zkPort) {
+    Map<String, String> values = new HashMap<>();
     try (Socket socket = new Socket()) {
       socket.connect(new InetSocketAddress("127.0.0.1", zkPort), 1000);
       socket.getOutputStream().write("mntr\n".getBytes(StandardCharsets.UTF_8));
@@ -484,14 +569,15 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
               new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
         String line;
         while ((line = reader.readLine()) != null) {
-          if (line.startsWith("zk_server_state")) {
-            return line.substring(line.lastIndexOf('\t') + 1).trim();
+          int tab = line.indexOf('\t');
+          if (tab > 0) {
+            values.put(line.substring(0, tab), line.substring(tab + 1).trim());
           }
         }
       }
     } catch (IOException e) {
       // Not reachable / not serving yet -- treated the same as "no answer" by the caller.
     }
-    return null;
+    return values;
   }
 }
