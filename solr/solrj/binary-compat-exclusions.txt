@@ -1,0 +1,49 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Intentional binary-incompatible SolrJ changes, excused for the
+# binary compatibility check in gradle/validation/binary-compat.gradle
+# (SOLR-18617). The check compares the built jars against the previous
+# release (10.1.0 unless the solrj.binaryCompat.baselineVersion
+# property says otherwise) and fails on any binary-incompatible change
+# that no entry here covers. An entry that covers no current change
+# draws a warning, so stale entries get noticed instead of rotting
+# silently.
+#
+# One entry per line, four fields separated by ';':
+#
+#   <fully qualified class> ; <japicmp change type, or *> ;
+#       <member name substring, or *> ; <ticket and reason>
+#
+# The ticket and reason field is required: an intentional break is a
+# decision, and the entry is where the decision is recorded. Change
+# types are the japicmp names, for example CLASS_REMOVED,
+# METHOD_REMOVED, FIELD_REMOVED, CONSTRUCTOR_REMOVED,
+# METHOD_RETURN_TYPE_CHANGED or FIELD_TYPE_CHANGED.
+
+# Changes other tickets landed on this line after 10.1.0 that the
+# current baseline comparison reports. Entries for breaks that an
+# earlier release already contains are not carried here: against the
+# current baseline they match no change, and the stale-entry warnings
+# would fire on every run. When the baseline moves to a new release,
+# add the entries for breaks accepted since that release.
+org.apache.solr.client.api.endpoint.ListCollectionsApi ; METHOD_REMOVED ; listCollections ; SOLR-18450: GET /api/cluster relocated under /api/collections
+org.apache.solr.client.api.endpoint.NodeLoggingApis ; METHOD_REMOVED ; modifyLocalLogLevel ; SOLR-15823: v2 logging broadcast reshaped the endpoint signature
+org.apache.solr.client.solrj.impl.HttpSolrClient ; METHOD_REMOVED ; isMultipart ; SOLR-18351: ContentStream replacement changed isMultipart to take a RequestWriter.ContentWriter
+org.apache.solr.client.solrj.impl.HttpJdkSolrClient ; METHOD_REMOVED_IN_SUPERCLASS ; * ; SOLR-18351: the isMultipart signature change in the HttpSolrClient superclass
+org.apache.solr.common.util.CommandOperation ; METHOD_REMOVED ; readCommands ; SOLR-18351: ContentStream replacement removed the stream-reading entry point
+org.apache.solr.client.solrj.request.ApiMapping ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.solrj.request.ApiMapping$CommandMeta ; * ; * ; PR #5242: ApiMapping removed as unused
+org.apache.solr.client.solrj.request.ApiMapping$V2EndPoint ; * ; * ; PR #5242: ApiMapping removed as unused
