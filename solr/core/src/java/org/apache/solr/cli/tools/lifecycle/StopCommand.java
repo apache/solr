@@ -14,26 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli;
+package org.apache.solr.cli.tools.lifecycle;
 
+import org.apache.solr.cli.HelpMixin;
 import picocli.CommandLine;
 
 /**
- * This class is currently only used for printing CLI usage. The restart logic is currently handled
- * in the start script, which parses the same options as {@code start} plus the stop key.
+ * This class is currently only used for printing CLI usage. The stop logic is currently handled in
+ * start script.
  */
 @CommandLine.Command(
-    name = "restart",
-    description = "Restarts Solr.",
+    name = "stop",
+    description = "Stops Solr.",
     footerHeading = "%nExamples:%n",
     footer = {
-      "  # Restart Solr running on the default port",
-      "  bin/solr restart",
+      "  # Stop Solr running on the default port",
+      "  bin/solr stop -p 8983",
       "",
-      "  # Restart Solr running on a custom port with 2g heap",
-      "  bin/solr restart -p 8984 -m 2g"
+      "  # Stop all running Solr instances on this host",
+      "  bin/solr stop --all"
     })
-public class RestartCommand extends StartCommand {
+public class StopCommand {
+
+  @CommandLine.Mixin
+  HelpMixin helpMixin;
+
+  @CommandLine.Option(
+      names = {"-p", "--port"},
+      description =
+          "Specify the port the Solr HTTP listener is bound to.\n"
+              + "The STOP_PORT is derived as ($SOLR_PORT-1000).")
+  String port;
 
   @CommandLine.Option(
       names = {"-k", "--key"},
@@ -41,9 +52,13 @@ public class RestartCommand extends StartCommand {
       defaultValue = "solrrocks")
   String key;
 
-  /** The bin/solr script performs the restart; this command only documents its options. */
-  @Override
-  public Integer call() {
-    return 0;
-  }
+  @CommandLine.Option(
+      names = "--all",
+      description = "Find and stop all running Solr servers on this host")
+  boolean all;
+
+  @CommandLine.Option(
+      names = {"--verbose"},
+      description = "Enable verbose mode.")
+  boolean verbose;
 }
