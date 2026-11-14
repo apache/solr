@@ -56,6 +56,30 @@ teardown() {
 
 }
 
+@test "SOLR-9714 each node is stopped on its own stop port" {
+  local stop_port_1=$((SOLR_PORT - 2000))
+  local stop_port_2=$((SOLR_PORT - 2001))
+
+  STOP_PORT=${stop_port_1} solr start -p ${SOLR_PORT}
+  STOP_PORT=${stop_port_2} solr start -p ${SOLR2_PORT}
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
+
+  # STOP_PORT is not set for the stop commands below, and neither node listens on the
+  # derived ($SOLR_PORT-1000) port, so a graceful stop only works if each node's own
+  # stop port is discovered.
+  run bash -c "SOLR_STOP_WAIT=20 solr stop -p ${SOLR2_PORT} 2>&1"
+  assert_success
+  refute_output --partial 'forcefully killing'
+  solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+
+  run bash -c "SOLR_STOP_WAIT=20 solr stop --all 2>&1"
+  assert_success
+  refute_output --partial 'forcefully killing'
+  solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000
+}
+
 @test "check stop command doesn't hang" {
   # for start/stop/restart we parse the args separate from picking the command
   # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.

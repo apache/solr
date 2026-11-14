@@ -123,6 +123,11 @@ REM set SOLR_LOGS_REQUESTLOG_ENABLED=true
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT_LISTEN=8983
 
+REM Sets the Jetty stop port this node listens on for the graceful stop command,
+REM default is SOLR_PORT_LISTEN-1000. Nodes are stopped on the stop port they were
+REM started with, so each node on a host can have its own.
+REM set STOP_PORT=7983
+
 REM Sets the network interface the Solr binds to. To prevent administrators from
 REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
 REM Administrators should think carefully about their deployment environment and

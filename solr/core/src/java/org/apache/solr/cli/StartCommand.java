@@ -60,7 +60,7 @@ public class StartCommand implements Callable<Integer> {
   @CommandLine.Option(
       names = {"-p", "--port"},
       description =
-          "Specify the Solr HTTP port; default is 8983. STOP_PORT=($SOLR_PORT-1000), RMI_PORT=($SOLR_PORT+10000)")
+          "Specify the Solr HTTP port; default is 8983. STOP_PORT=($SOLR_PORT-1000) unless STOP_PORT is set, RMI_PORT=($SOLR_PORT+10000)")
   String port;
 
   @CommandLine.Option(
@@ -181,7 +181,8 @@ public class StartCommand implements Callable<Integer> {
               Specify the port to start the Solr HTTP listener on; default is 8983.
               The specified port (SOLR_PORT) will also be used to determine the stop port:
               STOP_PORT=($SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=($SOLR_PORT+10000).
-              For instance, if you set -p 8985, then STOP_PORT=7985 and RMI_PORT=18985
+              For instance, if you set -p 8985, then STOP_PORT=7985 and RMI_PORT=18985.
+              Set STOP_PORT to give this node an explicit stop port instead.
 
           --server-dir <dir>
               Specify the Solr server directory; defaults to server

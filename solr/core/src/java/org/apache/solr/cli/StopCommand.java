@@ -41,7 +41,7 @@ public class StopCommand {
       names = {"-p", "--port"},
       description =
           "Specify the port the Solr HTTP listener is bound to.\n"
-              + "The STOP_PORT is derived as ($SOLR_PORT-1000).")
+              + "The stop port is read from the running node; it is STOP_PORT if that was set when the node was started, else ($SOLR_PORT-1000).")
   String port;
 
   @CommandLine.Option(

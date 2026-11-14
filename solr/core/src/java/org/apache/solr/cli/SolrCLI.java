@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
     subcommands = {
       StartCommand.class,
       StopCommand.class,
+      StopPortTool.class,
       RestartCommand.class,
       StatusTool.class,
       VersionTool.class,
@@ -355,6 +356,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   private static Tool newTool(String toolType, ToolRuntime runtime) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool(runtime);
     else if ("status".equals(toolType)) return new StatusTool(runtime);
+    else if ("stop-port".equals(toolType)) return new StopPortTool(runtime);
     else if ("api".equals(toolType)) return new ApiTool(runtime);
     else if ("create".equals(toolType)) return new CreateTool(runtime);
     else if ("delete".equals(toolType)) return new DeleteTool(runtime);

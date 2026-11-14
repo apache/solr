@@ -162,6 +162,7 @@ Specify the port to start the Solr HTTP listener on; with the classic default po
 The specified port (SOLR_PORT) will also be used to determine the stop port.
 The stop port is defined as STOP_PORT=($SOLR_PORT-1000) and JMX RMI listen port is defined as RMI_PORT=($SOLR_PORT+10000).
 For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985.
+Set STOP_PORT to give this node an explicit stop port instead.
 If this is not specified, `8983` will be used.
 +
 *Example*: `bin/solr start -p 8655`

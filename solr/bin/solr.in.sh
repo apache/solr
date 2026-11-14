@@ -134,6 +134,11 @@
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT_LISTEN=8983
 
+# Sets the Jetty stop port this node listens on for the graceful stop command,
+# default is SOLR_PORT_LISTEN-1000. Nodes are stopped on the stop port they were
+# started with, so each node on a host can have its own.
+#STOP_PORT=7983
+
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64

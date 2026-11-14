@@ -47,6 +47,11 @@ import org.slf4j.LoggerFactory;
 public class SolrProcessManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /** The stop port {@code bin/solr} derives from the listen port unless STOP_PORT is set. */
+  private static final int DEFAULT_STOP_PORT_OFFSET = 1000;
+
+  private static final String STOP_PORT_ARG = "-DSTOP.PORT=";
+
   private final Map<Long, SolrProcess> pidProcessMap;
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
@@ -70,9 +75,11 @@ public class SolrProcessManager {
             .collect(
                 Collectors.toUnmodifiableMap(
                     ProcessHandle::pid,
-                    ph ->
-                        new SolrProcess(
-                            ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
+                    ph -> {
+                      int port = parsePortFromProcess(ph).orElseThrow();
+                      return new SolrProcess(
+                          ph.pid(), port, parseStopPortFromProcess(ph, port), isProcessSsl(ph));
+                    }));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
     String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
@@ -154,6 +161,24 @@ public class SolrProcessManager {
     return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
   }
 
+  /**
+   * Finds the Jetty stop port of a running node from its {@code -DSTOP.PORT} argument, falling back
+   * to the port that {@code bin/solr} derives when nothing was configured.
+   */
+  private int parseStopPortFromProcess(ProcessHandle ph, int port) {
+    for (String arg : arguments(ph)) {
+      int idx = arg.indexOf(STOP_PORT_ARG);
+      if (idx >= 0) {
+        try {
+          return Integer.parseInt(arg.substring(idx + STOP_PORT_ARG.length()));
+        } catch (NumberFormatException e) {
+          log.warn("Ignoring unparseable {} of process {}", arg, ph.pid());
+        }
+      }
+    }
+    return port - DEFAULT_STOP_PORT_OFFSET;
+  }
+
   private boolean isProcessSsl(ProcessHandle ph) {
     return arguments(ph).stream()
         .anyMatch(
@@ -230,7 +255,7 @@ public class SolrProcessManager {
   }
 
   /** Represents a running Solr process */
-  public record SolrProcess(long pid, int port, boolean isHttps) {
+  public record SolrProcess(long pid, int port, int stopPort, boolean isHttps) {
 
     public String getLocalUrl() {
       return String.format(Locale.ROOT, "%s://localhost:%s/solr", isHttps ? "https" : "http", port);

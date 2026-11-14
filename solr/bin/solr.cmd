@@ -306,6 +306,7 @@ goto err
 @echo                   The specified port (SOLR_PORT_LISTEN) will also be used to determine the stop port
 @echo                   STOP_PORT=(%%SOLR_PORT_LISTEN%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT_LISTEN%%+10000).
 @echo                   For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985
+@echo                   Set STOP_PORT to give this node an explicit stop port instead
 @echo.
 @echo   --server-dir dir Specify the Solr server directory; defaults to server
 @echo.
@@ -840,12 +841,8 @@ IF "%SOLR_PORT_LISTEN%"=="" (
             IF "%%j"=="%SOLR_HOST_BIND%:!SOME_SOLR_PORT!" (
               set found_it=1
               @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
-              IF "%STOP_PORT%"=="" (
-                set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
-              ) else (
-                set LOCAL_STOP_PORT=%STOP_PORT%
-              )
-              "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+              CALL :resolve_stop_port !SOME_SOLR_PORT!
+              "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!RESOLVED_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
               del "%SOLR_PID_DIR%"\solr-!SOME_SOLR_PORT!.port
               REM wait for the process to terminate
               CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
@@ -873,8 +870,8 @@ IF "%SOLR_PORT_LISTEN%"=="" (
       IF "%%M"=="%SOLR_HOST_BIND%:%SOLR_PORT_LISTEN%" (
         set found_it=1
         @echo Stopping Solr process %%N running on port %SOLR_PORT_LISTEN%
-        IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT_LISTEN% - 1000
-        "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+        CALL :resolve_stop_port %SOLR_PORT_LISTEN%
+        "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!RESOLVED_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
         del "%SOLR_PID_DIR%"\solr-%SOLR_PORT_LISTEN%.port
         REM wait for the process to terminate
         CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
@@ -1290,6 +1287,15 @@ REM Safe echo which does not mess with () in strings
 set "eout=%1"
 set eout=%eout:"=%
 echo !eout!
+GOTO :eof
+
+:resolve_stop_port
+  REM Each node knows its own stop port, so read it back from the running process
+  set RESOLVED_STOP_PORT=
+  for /f "usebackq delims=" %%s in (`""%JAVA%" %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" org.apache.solr.cli.SolrCLI stop-port -p %1 2^>nul ^| findstr /r "^[0-9][0-9]*$""`) do set RESOLVED_STOP_PORT=%%s
+  IF "!RESOLVED_STOP_PORT!"=="" (
+    IF "%STOP_PORT%"=="" (set /A "RESOLVED_STOP_PORT=%1 - 1000") ELSE (set RESOLVED_STOP_PORT=%STOP_PORT%)
+  )
 GOTO :eof
 
 :wait_for_process_exit
