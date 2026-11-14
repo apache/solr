@@ -110,10 +110,16 @@ Ports, discovery and stopping belong to the program, not to the harness, and a l
 ----
 public class MytoolServer implements ProgramUnderTest {
 
-  /** Two ports per test class: the API and the admin endpoint. Stride 4 keeps blocks disjoint. */
+  /** Two ports per test class: the API and the admin endpoint, in that order. */
   @Override
-  public PortLayout portLayout() {
-    return new PortLayout(4, new int[] {0, 1}, 20_000, 30_000, 200, 0);
+  public int portCount() {
+    return 2;
+  }
+
+  /** The API one, where a port-less `http(path)` goes. */
+  @Override
+  public int primaryPort() {
+    return 0;
   }
 
   /** The processes whose command line carries this run's marker, found however the platform allows. */
@@ -145,7 +151,11 @@ public class MytoolServer implements ProgramUnderTest {
 }
 ----
 
-`PortLayout` is the shape of a block — the stride between blocks, the offsets within one, the range of bases a run may start from, how many blocks it may hand out, and which offset is *primary*, the one a port-less `http(path)` goes to. `PortLayout.NONE` is the default, and a program with no primary port gets a clear failure from `http(path)` rather than a silent guess. `PortBlock.at(i)` addresses the ports; naming their roles is the project's job, in a small view over the block, so that a test reads `ports().api()` rather than `ports().at(0)`.
+A program says *how many* ports it needs, and the harness hands each test class that many consecutive ones, disjoint from every other class's. There is nothing else to declare: no stride, no offsets, no base range. `primaryPort()` is the index of the one a port-less `http(path)` goes to; the defaults are 0 ports and no primary, so a program with no primary gets a clear failure from `http(path)` rather than a silent guess.
+
+Count every port the program will occupy, including any it derives from one it was given — a stop port at `P-1000`, say. The core knows nothing of such arithmetic, so a derived port that is not asked for here is not reserved, and another class may be handed it.
+
+`PortBlock.at(i)` addresses the ports; naming their roles is the project's job, in a small view over the block, so that a test reads `ports().api()` rather than `ports().at(0)`. Where a port has to be *written* rather than passed — one the program only reads from a file below its own home — `prepareWorkDir()` on the environment is called once per class, after the work directory has been wiped and before anything runs in it.
 
 The variables the program reads are named in one place, a `CatsHarnessEnv` subclass:
 
@@ -185,7 +195,7 @@ The two halves meet in `CatsSessionRule`, which resolves the environment per cla
 
 == One program per environment
 
-*Exactly one `ProgramUnderTest` per `CatsHarnessEnv`.* The program is consulted by the lifecycle and never per command: `launcherDir` when `PATH` is assembled, `portLayout` when the class claims its block, `running` / `stopCommand` / `staleStateFiles` in the leak checks and the teardown, `traits` once. A `run()` is a line in a shell whose environment was fixed when the session was built, so "which program does `run()` pick" is a question that cannot arise. A program that is both a server and its own client CLI is still one program: one installation, one launcher directory, one layout.
+*Exactly one `ProgramUnderTest` per `CatsHarnessEnv`.* The program is consulted by the lifecycle and never per command: `launcherDir` when `PATH` is assembled, `portCount` when the class claims its ports, `running` / `stopCommand` / `staleStateFiles` in the leak checks and the teardown, `traits` once. A `run()` is a line in a shell whose environment was fixed when the session was built, so "which program does `run()` pick" is a question that cannot arise. A program that is both a server and its own client CLI is still one program: one installation, one launcher directory, one block of ports.
 
 A fixture is not a program under test, and needs no `ProgramUnderTest`: a container the test starts, a web root served to the program with `serveHttp` — nothing about them is discovered, stopped or port-allocated by the harness, so there is nothing for a program to declare.
 
@@ -238,7 +248,7 @@ The harness' own settings are read from the environment first, then from the sys
 
 | `CATS_SHELL` / `cats.shell` | `cmd` on Windows, `bash` elsewhere | the shell id every command goes through
 | `CATS_TIMEOUT` / `cats.timeout` | 300 (seconds) | the run-wide default a command is given to finish in
-| `CATS_PORT_BASE` / `cats.port.base` | random per run | where this run's port blocks start, so a failing run can be replayed on the same ports
+| `CATS_PORT_BASE` / `cats.port.base` | random in 20 000–25 999 | the first port this run hands out, so a failing run can be replayed on the same ports. The harness never hands out a port at or above 31 000, which is under every platform's ephemeral floor
 | `CATS_OUTPUT_DIR` / `cats.output.dir` | a temporary directory | where every scope writes: its work directory, its transcript, the failure snapshots
 | `CATS_INSTALL_DIR` / `cats.install.dir` | none | the installation under test, when the program is not already on `PATH`
 | `CATS_MARKER` / `cats.marker` | derived per class | the command-line marker this run's processes carry
@@ -355,7 +365,7 @@ public void createsCollection() {
 
 What it adds beyond the DSL:
 
-* `ports()`, narrowed to `SolrPorts`: `solr()`, `solr2()`, `solr3()`, `zk()` over the class's port block, which is a `PortBlock` view giving the block's four ports the names the BATS suites used.
+* `ports()`, narrowed to `SolrPorts`: `solr()`, `solr2()`, `solr3()`, `zk()`, `stop()`, `stop2()`, `stop3()` — a `PortBlock` view putting Solr's names on the seven consecutive ports the class owns, the first four being those the BATS suites used.
 * `collectionExists`, `configExists`, `deleteAllCollections`, `shutdownAll`, `dumpSolrLog` — delegating to `SolrCliHelpers`, which is `CatsCliHelpers` plus those five.
 * `forCli(commonsCliText, picocliText)`, the wording for the command-line implementation this run targets.
 
@@ -365,10 +375,17 @@ What it adds beyond the DSL:
 
 === SolrProgram
 
-The `ProgramUnderTest` implementation — how the generic harness learns the Solr facts it cannot guess: the port layout (the node port `P`, two more for the multi-node suites, embedded ZooKeeper on `P+1000`, stride 4, bases 20 000–30 000), node discovery by command-line marker through `SolrProcessManager`, `solr stop -p <port>` for a graceful stop, and `solr-<port>.pid` / `.port` as the stale files to delete after a force-kill.
+The `ProgramUnderTest` implementation — how the generic harness learns the Solr facts it cannot guess: that a class needs seven ports, that the first is the primary one, node discovery by command-line marker through `SolrProcessManager`, `solr stop -p <port>` for a graceful stop, and `solr-<port>.pid` / `.port` as the stale files to delete after a force-kill.
+
+Seven, because a class drives up to three nodes, each of which occupies a node port and a stop port, plus the embedded ZooKeeper the first one runs. Four of the seven are passed to `bin/solr` today:
+
+* The three node ports, as `SOLR_PORT` / `SOLR_PORT_LISTEN`, `SOLR2_PORT` and `SOLR3_PORT`.
+* The ZooKeeper port, by way of a `${SOLR_HOME}/zoo.cfg` the harness writes with `clientPort` set to it, in `SolrCatsHarnessEnv.prepareWorkDir()`. `SolrZkServer` reads that file before falling back to `solrPort + 1000`, so the embedded server lands on the port the class was actually given. It has to be inside `SOLR_HOME`, because the node runs under the security manager and the policy grants it no read anywhere else; `AuthTest`, `BasicAuthTest` and `SslTest` wipe `SOLR_HOME` between tests to discard the cluster state, and so call `prepareWorkDir()` again afterwards. Once SOLR-7596 adds `solr.zookeeper.embedded.port` the file can go; the matching `SOLR_ZOOKEEPER_EMBEDDED_PORT` is already exported, and `EnvUtils` will turn it into the property. One consequence: two nodes of one class share that `SOLR_HOME`, so the second joins the first with `-z localhost:${ZK_PORT}` rather than running a ZooKeeper of its own.
+
+The three stop ports are allocated and named — `SOLR_STOP_PORT`, `SOLR2_STOP_PORT`, `SOLR3_STOP_PORT` — but nothing passes them yet. `bin/solr` takes one `STOP_PORT` per invocation, so a single variable would be shared by every node of a class and used by `stop --all` for all of them; a stop port per node is SOLR-9714. Until then the scripts derive `P-1000` themselves, and `RunExampleTool` likewise picks `P+1000` for the example's own ZooKeeper. Neither derivation can reach another class: blocks are seven consecutive ports from one run-wide base, so a port 1000 below or above one of class `i`'s lands in class `j`'s block only when `7|i-j|` falls within 6 of 1000 — 142 or 143 blocks apart, where a run has tens of classes. `SecureExampleTest` is the one suite that has to point `ZK_PORT` at the example's derived port, because the example gives each node a `SOLR_HOME` of its own and so never reads the harness' `zoo.cfg`.
 
 === SolrCatsHarnessEnv
 
-`SolrCatsHarnessEnv` assembles the environment every spawned shell is given: `SOLR_TIP` (the unpacked distribution — required, with no fallback), a per-class `SOLR_HOME` wiped at setup, `SOLR_PID_DIR` inside it (which is what scopes `solr stop --all` to this class and away from your own Solr), `SOLR_LOGS_DIR`, `SOLR_PORT`/`SOLR_PORT_LISTEN`/`SOLR2_PORT`/`SOLR3_PORT`/`ZK_PORT` from the claimed block, `SOLR_ULIMIT_CHECKS=false`, the two-channel process-scan marker (`SOLR_PROCESS_SCAN_MARKER` for the CLI's JVM, `SOLR_OPTS_INTERNAL` for the node's command line), and `TEST_OUTPUT_DIR`/`TEST_FAILURE_DIR`. `SOLR_HOME` is also what gets snapshotted into `$TEST_FAILURE_DIR/<Class>-<method>/` when a test fails, alongside the transcript.
+`SolrCatsHarnessEnv` assembles the environment every spawned shell is given: `SOLR_TIP` (the unpacked distribution — required, with no fallback), a per-class `SOLR_HOME` wiped at setup, `SOLR_PID_DIR` inside it (which is what scopes `solr stop --all` to this class and away from your own Solr), `SOLR_LOGS_DIR`, `SOLR_PORT`/`SOLR_PORT_LISTEN`/`SOLR2_PORT`/`SOLR3_PORT`/`ZK_PORT`/`SOLR_ZOOKEEPER_EMBEDDED_PORT`/`SOLR_STOP_PORT`/`SOLR2_STOP_PORT`/`SOLR3_STOP_PORT` from the claimed ports, `SOLR_ULIMIT_CHECKS=false`, the two-channel process-scan marker (`SOLR_PROCESS_SCAN_MARKER` for the CLI's JVM, `SOLR_OPTS_INTERNAL` for the node's command line), and `TEST_OUTPUT_DIR`/`TEST_FAILURE_DIR`. `SOLR_HOME` is also what gets snapshotted into `$TEST_FAILURE_DIR/<Class>-<method>/` when a test fails, alongside the transcript.
 
 Each value is read from the environment, then from the system property `solr.cli.<lowercase.dotted.name>`, then a fallback. That property is how an IDE run supplies one: build a distribution with `./gradlew -p solr/packaging dev`, then point a suite at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
