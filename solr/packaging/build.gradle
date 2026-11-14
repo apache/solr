@@ -372,9 +372,10 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   // ExtractionTest is the one suite that wants Docker: it pulls a Tika image rather than building
   // one, and skips when the daemon or the image is missing.
 
-  // Each class gets its own SOLR_HOME and port block (see HarnessEnv.forClass), so classes can run
-  // in parallel. Defaults to the build's tests.jvms, capped because the ceiling is memory not CPU:
-  // every fork may hold a Solr JVM plus embedded ZooKeeper. Override with -Pcats.tests.jvms.
+  // Each class gets its own SOLR_HOME and port block (see SolrCatsHarnessEnv.forClass), so classes
+  // can run in parallel. Defaults to the build's tests.jvms, capped because the ceiling is memory
+  // not CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with
+  // -Pcats.tests.jvms.
   // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
   task.maxParallelForks = (project.findProperty('cats.tests.jvms')
       ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer

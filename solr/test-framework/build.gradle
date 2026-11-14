@@ -31,6 +31,7 @@ dependencies {
 
   api project(':solr:core')
   api project(':solr:solrj-jetty')
+  api project(':solr:test-framework-cats')
 
   api libs.apache.lucene.testframework
   implementation libs.apache.lucene.core
@@ -91,34 +92,4 @@ dependencies {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
-}
-
-// The org.apache.solr.shell harness behind CATS - Cross-platform Automated Testing System -
-// spawns real shell processes, which the test security policy forbids (it grants 'execute' only
-// for java itself). So its own unit tests run from a task with the manager turned off, and are
-// kept out of 'test'. Same task name as the CATS suites in solr/packaging, so
-// './gradlew catsTests' from the root runs both.
-def shellTestPattern = 'org/apache/solr/shell/**'
-
-tasks.named('test') {
-  exclude shellTestPattern
-}
-
-tasks.register('catsTests', Test) {
-  group = 'verification'
-  description = 'Unit tests for the CATS harness itself. Needs no Solr distribution.'
-
-  testClassesDirs = sourceSets.test.output.classesDirs
-  classpath = sourceSets.test.runtimeClasspath
-  include shellTestPattern
-
-  doFirst {
-    systemProperties.remove('java.security.manager')
-  }
-}
-
-// Part of 'check', unlike the CLI suites in solr/packaging: these need no Solr distribution and run
-// in seconds, so a harness regression is caught without running the slow suites.
-tasks.named('check').configure {
-  dependsOn tasks.named('catsTests')
 }

@@ -26,7 +26,7 @@ public class HelpTest extends SolrShellTestCase {
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18649")
   public void solrHelpFlagPrintsHelp() {
     run("solr --help")
-        .assertContainsForCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr")
+        .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
         .assertNotContains("ERROR");
   }
 
@@ -34,35 +34,35 @@ public class HelpTest extends SolrShellTestCase {
   public void solrWithNoFlagsPrintsHelp() {
     runFail("solr")
         .assertExitCode(1)
-        .assertContainsForCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr")
+        .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
         .assertNotContains("ERROR");
   }
 
   @Test
   public void startHelpFlagPrintsHelp() {
     run("solr start --help")
-        .assertContainsForCli("Usage: solr start", "usage: bin/solr start")
+        .assertContains(forCli("Usage: solr start", "usage: bin/solr start"))
         .assertNotContains("ERROR");
   }
 
   @Test
   public void startHFlagPrintsHelp() {
     run("solr start -h")
-        .assertContainsForCli("Usage: solr start", "usage: bin/solr start")
+        .assertContains(forCli("Usage: solr start", "usage: bin/solr start"))
         .assertNotContains("ERROR: Hostname is required when using the -h option!");
   }
 
   @Test
   public void stopHelpFlagPrintsHelp() {
     run("solr stop --help")
-        .assertContainsForCli("Usage: solr stop", "usage: bin/solr stop")
+        .assertContains(forCli("Usage: solr stop", "usage: bin/solr stop"))
         .assertNotContains("ERROR");
   }
 
   @Test
   public void restartHelpFlagPrintsHelp() {
     run("solr restart --help")
-        .assertContainsForCli("Usage: solr restart", "usage: bin/solr restart")
+        .assertContains(forCli("Usage: solr restart", "usage: bin/solr restart"))
         .assertNotContains("ERROR");
   }
 
@@ -92,14 +92,14 @@ public class HelpTest extends SolrShellTestCase {
   public void zkHelpFlagPrintsHelp() {
     run("solr zk --help")
         .assertContains("usage:")
-        .assertContainsForCli("bin/solr zk ls", "usage: bin/solr zk")
+        .assertContains(forCli("bin/solr zk ls", "usage: bin/solr zk"))
         .assertNotContains("ERROR");
   }
 
   @Test
   public void authHelpFlagPrintsHelp() {
     run("solr auth --help")
-        .assertContainsForCli("bin/solr auth enable", "usage: bin/solr auth")
+        .assertContains(forCli("bin/solr auth enable", "usage: bin/solr auth"))
         .assertNotContains("ERROR");
   }
 

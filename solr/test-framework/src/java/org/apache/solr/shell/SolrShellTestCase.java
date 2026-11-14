@@ -31,17 +31,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.cli.SolrProcessManager.SolrProcess;
-import org.apache.solr.shell.env.HarnessEnv;
-import org.apache.solr.shell.env.PortBlocks;
-import org.apache.solr.shell.env.Ports;
-import org.apache.solr.shell.exec.CommandResult;
-import org.apache.solr.shell.exec.ProcessKill;
-import org.apache.solr.shell.exec.SolrNodes;
-import org.apache.solr.shell.session.CliSession;
-import org.apache.solr.shell.session.HttpsRequest;
+import org.apache.solr.cats.EnabledOnShell;
+import org.apache.solr.cats.ShellGate;
+import org.apache.solr.cats.env.CatsHarnessEnv;
+import org.apache.solr.cats.env.PortBlocks;
+import org.apache.solr.cats.exec.CatsFiles;
+import org.apache.solr.cats.exec.CommandResult;
+import org.apache.solr.cats.exec.ProcessKill;
+import org.apache.solr.cats.exec.RunningProgram;
+import org.apache.solr.cats.session.CatsCliHelpers;
+import org.apache.solr.cats.session.CliSession;
+import org.apache.solr.cats.session.HttpsRequest;
+import org.apache.solr.shell.env.SolrCatsHarnessEnv;
+import org.apache.solr.shell.env.SolrPorts;
+import org.apache.solr.shell.exec.SolrProgram;
 import org.apache.solr.shell.session.SolrCliHelpers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -80,8 +84,11 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   /** How long the post-flight check waits for the port block to come free. */
   private static final Duration LEAK_CHECK_TIMEOUT = Duration.ofSeconds(10);
 
+  /** The program every session here drives: how a node is found, stopped and cleaned up after. */
+  private static final SolrProgram PROGRAM = new SolrProgram();
+
   /** The resolved environment: distribution, {@code SOLR_HOME}, ports, base environment. */
-  protected static HarnessEnv harnessEnv;
+  protected static SolrCatsHarnessEnv harnessEnv;
 
   /** The class-scoped session. Solr started here lives for the whole class. */
   protected static CliSession classCli;
@@ -100,14 +107,13 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     requireShell(getTestClass().getAnnotation(EnabledOnShell.class));
     // Per class, not per JVM: directories and ports keyed to this class are what let classes run
     // concurrently in separate forks.
-    harnessEnv = HarnessEnv.forClass(getTestClass().getSimpleName());
+    harnessEnv = SolrCatsHarnessEnv.forClass(getTestClass().getSimpleName());
     requireCli(getTestClass().getAnnotation(EnabledOnCli.class));
-    CliSession.resetKnownNodes();
     // Order-independent: node discovery goes through the running process list, not through files
     // that the SOLR_HOME wipe could destroy.
     preFlightLeakCheck();
     cleanSolrHome();
-    classCli = CliSession.forScope(harnessEnv, getTestClass().getSimpleName());
+    classCli = CliSession.forScope(harnessEnv, PROGRAM, getTestClass().getSimpleName());
     if (log.isInfoEnabled()) {
       log.info(
           "Shell harness ready: SOLR_TIP={} SOLR_HOME={} ports={}",
@@ -191,27 +197,28 @@ public abstract class SolrShellTestCase extends SolrTestCase {
           };
 
   /** The ports this run owns. */
-  protected Ports ports() {
+  protected SolrPorts ports() {
     return harnessEnv.ports();
   }
 
-  /** The command-line implementation this run targets. */
-  protected static Cli cli() {
-    return harnessEnv.cli();
+  /** The named traits of this run: which CLI it targets. */
+  protected Map<String, String> traits() {
+    return cli.traits();
   }
 
-  /**
-   * Skips the test, or the class, when {@link EnabledOnCli} does not name the implementation this
-   * run targets.
-   */
+  /** The wording trait {@code name}'s value calls for in this run. */
+  protected String wordingFor(String name, Map<String, String> byValue) {
+    return cli.wordingFor(name, byValue);
+  }
+
+  /** The wording for the command-line implementation this run targets. */
+  // TODO: Remove this once the commons-cli cleanup happens.
+  protected String forCli(String commonsCliText, String picocliText) {
+    return wordingFor("cli", Map.of("commons-cli", commonsCliText, "picocli", picocliText));
+  }
+
   private static void requireCli(EnabledOnCli restriction) {
-    if (restriction == null) {
-      return;
-    }
-    List<Cli> allowed = List.of(restriction.value());
-    assumeTrue(
-        "Only runs on " + allowed + "; this run uses " + harnessEnv.cli(),
-        allowed.contains(harnessEnv.cli()));
+    CliGate.requireCli(harnessEnv.traits(), restriction);
   }
 
   private static void requireShell(EnabledOnShell restriction) {
@@ -253,8 +260,9 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     return cli.runSeparated(line);
   }
 
-  protected CommandResult script(String bashScript, String cmdScript) {
-    return cli.script(bashScript, cmdScript);
+  /** For a command that reads its input: the text goes in on standard input, not through a pipe. */
+  protected CommandResult runWithStdin(String stdin, String line) {
+    return cli.runWithStdin(stdin, line);
   }
 
   protected CommandResult lastResult() {
@@ -397,48 +405,48 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     cli.awaitOrFail(what, waitTimeout, interval, condition);
   }
 
-  protected SolrCliHelpers.HttpResult http(String pathAndQuery) {
+  protected CatsCliHelpers.HttpResult http(String pathAndQuery) {
     return cli.helpers().http(pathAndQuery);
   }
 
-  protected SolrCliHelpers.HttpResult http(int port, String pathAndQuery) {
+  protected CatsCliHelpers.HttpResult http(int port, String pathAndQuery) {
     return cli.helpers().http(port, pathAndQuery);
   }
 
-  protected SolrCliHelpers.HttpResult http(
+  protected CatsCliHelpers.HttpResult http(
       String pathAndQuery, Map<String, String> requestHeaders) {
     return cli.helpers().http(pathAndQuery, requestHeaders);
   }
 
-  protected SolrCliHelpers.HttpResult http(
+  protected CatsCliHelpers.HttpResult http(
       int port, String pathAndQuery, Map<String, String> requestHeaders) {
     return cli.helpers().http(port, pathAndQuery, requestHeaders);
   }
 
-  protected SolrCliHelpers.HttpResult http(String pathAndQuery, String user, String password) {
+  protected CatsCliHelpers.HttpResult http(String pathAndQuery, String user, String password) {
     return cli.helpers().http(pathAndQuery, user, password);
   }
 
-  protected SolrCliHelpers.HttpResult http(
+  protected CatsCliHelpers.HttpResult http(
       int port, String pathAndQuery, String user, String password) {
     return cli.helpers().http(port, pathAndQuery, user, password);
   }
 
-  protected SolrCliHelpers.HttpResult httpPost(
+  protected CatsCliHelpers.HttpResult httpPost(
       String pathAndQuery, String contentType, String body) {
     return cli.helpers().httpPost(pathAndQuery, contentType, body);
   }
 
-  protected SolrCliHelpers.HttpResult httpPost(
+  protected CatsCliHelpers.HttpResult httpPost(
       int port, String pathAndQuery, String contentType, String body) {
     return cli.helpers().httpPost(port, pathAndQuery, contentType, body);
   }
 
-  protected SolrCliHelpers.HttpResult httpPut(String pathAndQuery, String contentType, Path file) {
+  protected CatsCliHelpers.HttpResult httpPut(String pathAndQuery, String contentType, Path file) {
     return cli.helpers().httpPut(pathAndQuery, contentType, file);
   }
 
-  protected SolrCliHelpers.HttpResult httpPut(
+  protected CatsCliHelpers.HttpResult httpPut(
       int port, String pathAndQuery, String contentType, Path file) {
     return cli.helpers().httpPut(port, pathAndQuery, contentType, file);
   }
@@ -451,24 +459,29 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     return cli.helpers().https(port, pathAndQuery);
   }
 
+  /** The Solr half of the helpers, which the generic session does not hand back. */
+  private SolrCliHelpers solrHelpers() {
+    return new SolrCliHelpers(cli);
+  }
+
   protected boolean collectionExists(String collection) {
-    return cli.helpers().collectionExists(collection);
+    return solrHelpers().collectionExists(collection);
   }
 
   protected boolean configExists(String configName) {
-    return cli.helpers().configExists(configName);
+    return solrHelpers().configExists(configName);
   }
 
   protected void deleteAllCollections() {
-    cli.helpers().deleteAllCollections();
+    solrHelpers().deleteAllCollections();
   }
 
   protected void shutdownAll() {
-    cli.helpers().shutdownAll();
+    solrHelpers().shutdownAll();
   }
 
   protected void dumpSolrLog() {
-    cli.helpers().dumpSolrLog();
+    solrHelpers().dumpSolrLog();
   }
 
   // ---------------------------------------------------------------- lifecycle internals
@@ -476,7 +489,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
   private static void cleanSolrHome() throws IOException {
     Path solrHome = harnessEnv.solrHome();
     if (Files.isDirectory(solrHome)) {
-      IOUtils.rm(solrHome);
+      CatsFiles.rm(solrHome);
     }
     Files.createDirectories(solrHome);
     Files.createDirectories(harnessEnv.logsDir());
@@ -494,8 +507,10 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     // from an earlier run of the same task — the span is fixed when the run claims its first
     // block, from a base that is random per run. So this is safe against a sibling class in this
     // run, and against another suite or checkout, whose marker prefix differs.
-    for (SolrProcess node : SolrNodes.running(harnessEnv.taskMarkerPrefix())) {
-      boolean ours = PortBlocks.belongsToThisRun(harnessEnv.testOutputDir(), node.port());
+    for (RunningProgram node : PROGRAM.running(harnessEnv.taskMarkerPrefix())) {
+      boolean ours =
+          PortBlocks.belongsToThisRun(
+              harnessEnv.testOutputDir(), node.port(), PROGRAM.portLayout());
       if (!ours || harnessEnv.ports().contains(node.port())) {
         log.warn(
             "Killing a Solr node left behind by an earlier run of this task: port {}, pid {}",
@@ -507,7 +522,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
     List<Integer> busy = new ArrayList<>();
     for (int port : harnessEnv.ports().all()) {
-      if (!HarnessEnv.isFree(port)) {
+      if (!CatsHarnessEnv.isFree(port)) {
         busy.add(port);
       }
     }
@@ -523,7 +538,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
 
     // Only a running node is a leak. A pid file left behind by a node that is already gone is
     // litter, and not this check's business — the process list is what matters.
-    for (SolrProcess node : SolrNodes.running(harnessEnv.marker())) {
+    for (RunningProgram node : PROGRAM.running(harnessEnv.marker())) {
       if (harnessEnv.ports().contains(node.port())) {
         leaks.add("Solr still running on port " + node.port() + " (pid " + node.pid() + ")");
         ProcessKill.killTree(node.pid(), Duration.ofSeconds(10));
@@ -535,7 +550,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
     do {
       busy = new ArrayList<>();
       for (int port : harnessEnv.ports().all()) {
-        if (!HarnessEnv.isFree(port)) {
+        if (!CatsHarnessEnv.isFree(port)) {
           busy.add(port);
         }
       }
@@ -569,7 +584,7 @@ public abstract class SolrShellTestCase extends SolrTestCase {
                 description.getTestClass().getSimpleName() + "-" + description.getMethodName());
     try {
       if (Files.exists(target)) {
-        IOUtils.rm(target);
+        CatsFiles.rm(target);
       }
       Files.createDirectories(target);
       copyRecursively(harnessEnv.solrHome(), target.resolve("solr-home"));

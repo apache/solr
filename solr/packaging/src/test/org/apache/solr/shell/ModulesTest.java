@@ -20,7 +20,6 @@ package org.apache.solr.shell;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import org.apache.solr.shell.exec.Shell;
 import org.junit.Test;
 
 /**
@@ -53,7 +52,7 @@ public class ModulesTest extends SolrShellTestCase {
   public void icuCollationInAnalysisExtrasModule() {
     // bin/solr sources SOLR_INCLUDE while bin\solr.cmd CALLs it, so the line has to be
     // written in the syntax — and under the extension — of the shell that will read it.
-    boolean cmd = cli.shell() == Shell.CMD;
+    boolean cmd = "cmd".equals(cli.shell().id());
     Path solrIncludeFile =
         write(
             cmd ? "solr.include.cmd" : "solr.include",

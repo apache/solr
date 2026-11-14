@@ -18,7 +18,7 @@
 package org.apache.solr.shell;
 
 import java.util.List;
-import org.apache.solr.shell.exec.Shell;
+import org.apache.solr.cats.EnabledOnShell;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,8 +40,8 @@ public class PostTest extends SolrShellTestCase {
   @Test
   public void checkHelpCommand() {
     runFail("solr post")
-        .assertContainsForCli(
-            "Missing required option: c", "Missing required option: '--name=name'");
+        .assertContains(
+            forCli("Missing required option: c", "Missing required option: '--name=name'"));
 
     run("solr post -h").assertContains("usage: bin/solr post").assertNotContains("ERROR");
     run("solr post --help").assertContains("usage: bin/solr post").assertNotContains("ERROR");
@@ -231,7 +231,7 @@ public class PostTest extends SolrShellTestCase {
   }
 
   @Test
-  @EnabledOnShell(Shell.BASH) // An argument containing a newline is not expressible on cmd.exe.
+  @EnabledOnShell("bash") // An argument containing a newline is not expressible on cmd.exe.
   public void argsModeWithACsvBodyContainingANewline() {
     // In the argv form the newline is
     // simply part of the Java string and the harness quotes it for the shell.
@@ -257,13 +257,10 @@ public class PostTest extends SolrShellTestCase {
   public void stdinMode() {
     run("solr create -c test_stdin -d _default").assertContains("Created collection 'test_stdin'");
 
-    // A pipe is the shell's own syntax, so this is one of the few places that needs a body per
-    // shell. BATS needed a helper function here for the same reason.
-    script(
-            "echo \"{'commit': {}}\" | solr post --solr-url http://localhost:{{SOLR_PORT}}"
-                + " -c test_stdin --mode stdin --type application/json --verbose",
-            "echo {'commit': {}} | solr post --solr-url http://localhost:{{SOLR_PORT}}"
-                + " -c test_stdin --mode stdin --type application/json --verbose")
+    runWithStdin(
+            "{'commit': {}}",
+            "solr post --solr-url http://localhost:${SOLR_PORT} -c test_stdin --mode stdin"
+                + " --type application/json --verbose")
         .assertContains("\"status\":0");
   }
 }

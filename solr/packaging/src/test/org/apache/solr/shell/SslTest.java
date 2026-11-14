@@ -22,7 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.shell.exec.Shell;
+import org.apache.solr.cats.EnabledOnShell;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -155,8 +155,7 @@ public class SslTest extends SolrShellTestCase {
   }
 
   @Test
-  @EnabledOnShell(
-      Shell.BASH) // curl --resolve has no cross-shell equivalent; see the class javadoc.
+  @EnabledOnShell("bash") // curl --resolve has no cross-shell equivalent; see the class javadoc.
   public void useDifferentHostnameWithCurlResolve() {
     Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
     Path pem = path("ssl/solr-ssl.pem");
@@ -220,7 +219,7 @@ public class SslTest extends SolrShellTestCase {
     // 'solr auth enable' writes into the include file, which by default is the one in the
     // distribution that every test class shares. A private copy keeps this test to itself.
     // The name has to keep its extension: bin\solr.cmd CALLs the include file.
-    String includeFile = cli.shell() == Shell.BASH ? "solr.in.sh" : "solr.in.cmd";
+    String includeFile = "bash".equals(cli.shell().id()) ? "solr.in.sh" : "solr.in.cmd";
     env(
         "SOLR_INCLUDE",
         copy(harnessEnv.solrTip().resolve("bin").resolve(includeFile).toString(), includeFile)

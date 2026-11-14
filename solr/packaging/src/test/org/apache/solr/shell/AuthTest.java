@@ -20,7 +20,6 @@ package org.apache.solr.shell;
 import java.io.IOException;
 import java.nio.file.Files;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.shell.exec.Shell;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +42,7 @@ public class AuthTest extends SolrShellTestCase {
     // 'solr auth enable' appends to the include file, which by default belongs to the distribution
     // every test class shares, so each test gets a private copy in its own work directory. The
     // name has to keep its extension: bin\solr.cmd CALLs the include file.
-    String includeFile = cli.shell() == Shell.BASH ? "solr.in.sh" : "solr.in.cmd";
+    String includeFile = "bash".equals(cli.shell().id()) ? "solr.in.sh" : "solr.in.cmd";
     env(
         "SOLR_INCLUDE",
         copy(harnessEnv.solrTip().resolve("bin").resolve(includeFile).toString(), includeFile)

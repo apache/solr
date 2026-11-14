@@ -28,25 +28,24 @@ import java.lang.annotation.Target;
  *
  * <p>For the handful of tests that cannot hold for both, usually because they assert on usage or
  * error wording the two phrase differently. Where only a word or two differs, prefer {@code
- * CommandResult.assertContainsForCli(commonsCliText, picocliText)}, which keeps one test covering
- * both.
+ * SolrShellTestCase.forCli(commonsCliText, picocliText)}, which keeps one test covering both.
  *
  * <pre>
  *   &#64;Test
- *   &#64;EnabledOnCli(Cli.PICOCLI)
+ *   &#64;EnabledOnCli("picocli")
  *   public void picocliRejectsMutuallyExclusiveOptions() { ... }
  * </pre>
  *
  * <p>On a class it skips before any Solr starts, so a {@code @BeforeClass} that starts a node costs
  * nothing on the other implementation.
  *
- * @see Cli
- * @see EnabledOnShell
+ * @see CliGate
+ * @see org.apache.solr.cats.EnabledOnShell
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EnabledOnCli {
 
-  /** The implementations this test is meant for. */
-  Cli[] value();
+  /** The implementations this test is meant for: {@code picocli}, {@code commons-cli}. */
+  String[] value();
 }

@@ -20,8 +20,8 @@ package org.apache.solr.shell;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import org.apache.solr.shell.exec.CommandResult;
-import org.apache.solr.shell.exec.Shell;
+import org.apache.solr.cats.EnabledOnShell;
+import org.apache.solr.cats.exec.CommandResult;
 import org.junit.Test;
 
 /**
@@ -49,7 +49,7 @@ public class StartSolrTest extends SolrShellTestCase {
     // The graceful-stop wording is bash's alone - solr.cmd says "Stopping Solr process N running
     // on port P" and never printed this - so only assert it where it exists. An earlier version of
     // this port asserted it on both shells, which is a test bug, not a script one.
-    if (cli.shell() == Shell.BASH) {
+    if ("bash".equals(cli.shell().id())) {
       stopped.assertContains("Sending stop command");
     }
 
@@ -81,15 +81,14 @@ public class StartSolrTest extends SolrShellTestCase {
   // 'timeout 2' would do, without having to skip when that utility is missing.
 
   @Test
-  @EnabledOnShell(
-      Shell.BASH) // bin/solr parses the start args for stop too, so it names the option.
+  @EnabledOnShell("bash") // bin/solr parses the start args for stop too, so it names the option.
   public void checkStopCommandDoesntHang() {
     runFail(Duration.ofSeconds(30), "solr stop --jvm-opts")
         .assertContains("ERROR: JVM options are required when using the --jvm-opts option!");
   }
 
   @Test
-  @EnabledOnShell(Shell.CMD) // solr.cmd skips the start args for stop and rejects it as unknown.
+  @EnabledOnShell("cmd") // solr.cmd skips the start args for stop and rejects it as unknown.
   public void checkStopCommandDoesntHangOnCmd() {
     run(Duration.ofSeconds(30), "solr stop --jvm-opts")
         .assertContains("Invalid command-line option: --jvm-opts");
