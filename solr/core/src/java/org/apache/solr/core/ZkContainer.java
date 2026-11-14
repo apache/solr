@@ -496,22 +496,21 @@ public class ZkContainer {
 
   /**
    * Test-only hook invoked just before the {@code reconfigure()} call that actually adds us as a
-   * new ensemble member -- e.g. to kill whichever peer we're connected to at that exact moment,
-   * and verify the ZK client fails over to another live member instead of the join simply
-   * hanging or failing. No-op (default {@code null}) outside of tests.
+   * new ensemble member -- e.g. to kill whichever peer we're connected to at that exact moment, and
+   * verify the ZK client fails over to another live member instead of the join simply hanging or
+   * failing. No-op (default {@code null}) outside of tests.
    */
   public static volatile Runnable testing_beforeReconfigure;
 
   /**
    * Attempts, in one atomic step, to detect whether any of {@code otherPeers} is part of a
    * genuinely live, already-serving ensemble and, if so, join it by asking it (via dynamic
-   * reconfiguration) to add us as a new voting member. Returns {@code null} if none of
-   * {@code otherPeers} is reachable, or reachable but not actually serving yet (e.g. a sibling
-   * that's itself mid cold-bootstrap, with no leader elected among its own static peers) -- the
-   * caller should treat that the same as "no live ensemble to join" and fall back to
-   * cold-bootstrapping alongside every peer in zkHost instead. Requires the existing ensemble's
-   * members to have been started with {@code reconfigEnabled=true} (the default for quorum nodes
-   * started by this class).
+   * reconfiguration) to add us as a new voting member. Returns {@code null} if none of {@code
+   * otherPeers} is reachable, or reachable but not actually serving yet (e.g. a sibling that's
+   * itself mid cold-bootstrap, with no leader elected among its own static peers) -- the caller
+   * should treat that the same as "no live ensemble to join" and fall back to cold-bootstrapping
+   * alongside every peer in zkHost instead. Requires the existing ensemble's members to have been
+   * started with {@code reconfigEnabled=true} (the default for quorum nodes started by this class).
    *
    * <p>{@code otherPeers} is given to the ZK client as a single multi-host connect string rather
    * than tried one at a time ourselves, so the client's own built-in failover transparently picks
@@ -599,7 +598,8 @@ public class ZkContainer {
         testing_beforeReconfigure.run();
       }
       final byte[] merged = admin.reconfigure(List.of(joiningServer), null, null, -1, new Stat());
-      return new ZkJoinResult(newId, extractServerLines(new String(merged, StandardCharsets.UTF_8)));
+      return new ZkJoinResult(
+          newId, extractServerLines(new String(merged, StandardCharsets.UTF_8)));
     } finally {
       try {
         admin.close();

@@ -1081,8 +1081,8 @@ public class RunExampleTool extends ToolBase {
   }
 
   /**
-   * Best-effort stop of a cloud example node, used to roll back siblings that started
-   * successfully when another member of the same concurrent quorum startup batch failed.
+   * Best-effort stop of a cloud example node, used to roll back siblings that started successfully
+   * when another member of the same concurrent quorum startup batch failed.
    */
   private void stopQuorumNode(int port) {
     try {
@@ -1439,8 +1439,7 @@ public class RunExampleTool extends ToolBase {
                 readInput,
                 String.format(
                     Locale.ROOT,
-                    "How many nodes should form the embedded ZooKeeper ensemble?"
-                        + " [%d]: ",
+                    "How many nodes should form the embedded ZooKeeper ensemble?" + " [%d]: ",
                     ZK_QUORUM_RECOMMENDED_SIZE),
                 "a number",
                 ZK_QUORUM_RECOMMENDED_SIZE,
@@ -1660,7 +1659,10 @@ public class RunExampleTool extends ToolBase {
                   null,
                   List.of(new AssertTool.Assertion.CloudNodes(zkHost, numNodes))));
     } catch (AssertTool.AssertionFailureException afe) {
-      echo("\nWARNING: " + afe.getMessage() + " Please check the solr.log for each node to look for errors.\n");
+      echo(
+          "\nWARNING: "
+              + afe.getMessage()
+              + " Please check the solr.log for each node to look for errors.\n");
     }
 
     // create the collection
@@ -1731,10 +1733,10 @@ public class RunExampleTool extends ToolBase {
   }
 
   /**
-   * Like {@link #startSolr(Path, boolean, StartSolrParams, int, String, int)}, but with an
-   * explicit {@link Executor}. {@link org.apache.commons.exec.DefaultExecutor} isn't safe to reuse
-   * across concurrent {@code execute} calls, so callers starting multiple nodes in parallel (e.g.
-   * ZK quorum members) must each pass their own instance rather than share {@link #executor}.
+   * Like {@link #startSolr(Path, boolean, StartSolrParams, int, String, int)}, but with an explicit
+   * {@link Executor}. {@link org.apache.commons.exec.DefaultExecutor} isn't safe to reuse across
+   * concurrent {@code execute} calls, so callers starting multiple nodes in parallel (e.g. ZK
+   * quorum members) must each pass their own instance rather than share {@link #executor}.
    */
   Map<String, Object> startSolr(
       Executor execUsed,

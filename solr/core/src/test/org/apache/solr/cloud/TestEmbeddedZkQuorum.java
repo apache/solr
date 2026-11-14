@@ -227,10 +227,10 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   }
 
   /**
-   * Tests ZK quorum resilience when the node that fails happens to be the current ZK
-   * ensemble LEADER, as opposed to an arbitrary follower (which {@link
-   * #testQuorumResilienceWithNodeFailure} already covers). Losing the leader forces a real
-   * leader election among the 2 survivors, not just a membership-count change.
+   * Tests ZK quorum resilience when the node that fails happens to be the current ZK ensemble
+   * LEADER, as opposed to an arbitrary follower (which {@link #testQuorumResilienceWithNodeFailure}
+   * already covers). Losing the leader forces a real leader election among the 2 survivors, not
+   * just a membership-count change.
    *
    * <p>This test verifies that:
    *
@@ -334,10 +334,10 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   /**
    * Stress-tests the race between a node deciding to cold-bootstrap alongside its peers versus
    * joining an already-running ensemble (see {@code ZkContainer#tryJoinExistingEnsemble}): every
-   * node in a fresh quorum starts concurrently, and under unlucky timing one node could mistake
-   * a sibling's barely-open port for an already-serving ensemble to join, instead of
-   * bootstrapping together with it -- which would fragment the 3 nodes across two different
-   * ensemble views instead of one.
+   * node in a fresh quorum starts concurrently, and under unlucky timing one node could mistake a
+   * sibling's barely-open port for an already-serving ensemble to join, instead of bootstrapping
+   * together with it -- which would fragment the 3 nodes across two different ensemble views
+   * instead of one.
    *
    * <p>Repeats a full cold start from scratch many times (rather than relying on any single run's
    * scheduling luck) and asserts every single one converges to exactly one 3-member quorum: a
@@ -350,18 +350,13 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
     for (int iter = 0; iter < iterations; iter++) {
       MiniSolrCloudCluster privateCluster =
-          configureCluster(NUM_NODES)
-              .addConfig("conf1", configPath)
-              .withEmbeddedZkQuorum()
-              .build();
+          configureCluster(NUM_NODES).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
       try {
         privateCluster.waitForAllNodes(60);
 
         List<JettySolrRunner> jettys = privateCluster.getJettySolrRunners();
         assertEquals(
-            "iteration " + iter + ": expected " + NUM_NODES + " nodes",
-            NUM_NODES,
-            jettys.size());
+            "iteration " + iter + ": expected " + NUM_NODES + " nodes", NUM_NODES, jettys.size());
 
         int leaderIndex = findZkLeaderIndex(jettys, 30);
         assertTrue(
@@ -391,29 +386,28 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
   /**
    * Tests what happens when the ZK leader a new node is joining through dies partway through the
-   * join. {@code ZkContainer#tryJoinExistingEnsemble} gives the ZK client every other peer at
-   * once so it can fail over to a surviving member mid-handshake, but ZK itself still refuses to
-   * approve growing the ensemble (3 members -&gt; 4, needing 3 synced) when that would leave
-   * fewer synced members (2 survivors) than the new, larger quorum requires --
-   * NewConfigNoQuorum. That's correct, safe behavior, not a bug.
+   * join. {@code ZkContainer#tryJoinExistingEnsemble} gives the ZK client every other peer at once
+   * so it can fail over to a surviving member mid-handshake, but ZK itself still refuses to approve
+   * growing the ensemble (3 members -&gt; 4, needing 3 synced) when that would leave fewer synced
+   * members (2 survivors) than the new, larger quorum requires -- NewConfigNoQuorum. That's
+   * correct, safe behavior, not a bug.
    *
-   * <p>This test verifies the join fails cleanly (not by hanging) when that happens, and that the
-   * 2 survivors stay healthy and keep serving throughout.
+   * <p>This test verifies the join fails cleanly (not by hanging) when that happens, and that the 2
+   * survivors stay healthy and keep serving throughout.
    *
-   * <p>Manually confirmed (not asserted by this test, to avoid stacking a second deliberate
-   * startup failure in the same run -- see below): a <em>retry</em> fails too, for a different
-   * and more fundamental reason. Nothing ever issues a corresponding "leave" when a member is
-   * stopped, so the dead former leader is still a voting member of the ensemble's dynamic config;
-   * the retry's "add a new member" request is still evaluated against that stale view (2 live + 1
-   * permanently dead), needing 3 synced members where only 2 exist -- the same
-   * NewConfigNoQuorum rejection, now for a reason no amount of waiting fixes. Joining currently
-   * can't repair a degraded ensemble until its dead member is first formally removed, which this
-   * feature doesn't yet do -- a real, separate follow-up item, not a bug in this join path.
+   * <p>Manually confirmed (not asserted by this test, to avoid stacking a second deliberate startup
+   * failure in the same run -- see below): a <em>retry</em> fails too, for a different and more
+   * fundamental reason. Nothing ever issues a corresponding "leave" when a member is stopped, so
+   * the dead former leader is still a voting member of the ensemble's dynamic config; the retry's
+   * "add a new member" request is still evaluated against that stale view (2 live + 1 permanently
+   * dead), needing 3 synced members where only 2 exist -- the same NewConfigNoQuorum rejection, now
+   * for a reason no amount of waiting fixes. Joining currently can't repair a degraded ensemble
+   * until its dead member is first formally removed, which this feature doesn't yet do -- a real,
+   * separate follow-up item, not a bug in this join path.
    *
-   * <p>Uses {@link ZkContainer#testing_beforeReconfigure}, a test-only hook that pauses the
-   * joining node right before its {@code reconfigure()} call, to deterministically land the
-   * leader's death inside that exact window -- there's no way to do this reliably from outside
-   * via timing alone.
+   * <p>Uses {@link ZkContainer#testing_beforeReconfigure}, a test-only hook that pauses the joining
+   * node right before its {@code reconfigure()} call, to deterministically land the leader's death
+   * inside that exact window -- there's no way to do this reliably from outside via timing alone.
    *
    * <p>This test creates its own private cluster to avoid interfering with other tests.
    *
@@ -663,10 +657,10 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   }
 
   /**
-   * Finds the index (into {@code jettys}) of whichever node is currently the embedded ZK
-   * ensemble leader, by probing each running node's ZK client port with the "mntr" four-letter
-   * word. Polls up to {@code timeoutSeconds} since a leader may still be mid-election (e.g. right
-   * after a prior leader was stopped).
+   * Finds the index (into {@code jettys}) of whichever node is currently the embedded ZK ensemble
+   * leader, by probing each running node's ZK client port with the "mntr" four-letter word. Polls
+   * up to {@code timeoutSeconds} since a leader may still be mid-election (e.g. right after a prior
+   * leader was stopped).
    *
    * @return the leader's index, or -1 if no leader is found within the timeout
    */

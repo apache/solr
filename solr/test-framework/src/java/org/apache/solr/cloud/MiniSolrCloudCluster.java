@@ -472,9 +472,9 @@ public class MiniSolrCloudCluster implements SolrBackend {
   }
 
   /**
-   * Adds one more node to an already-running embedded-ZK-quorum cluster, with the
-   * zookeeper_quorum role, so it attempts to join the existing ensemble via dynamic
-   * reconfiguration rather than cold-bootstrapping alongside the original members (see {@code
+   * Adds one more node to an already-running embedded-ZK-quorum cluster, with the zookeeper_quorum
+   * role, so it attempts to join the existing ensemble via dynamic reconfiguration rather than
+   * cold-bootstrapping alongside the original members (see {@code
    * ZkContainer#tryJoinExistingEnsemble}). Only valid for a cluster created via {@link
    * Builder#withEmbeddedZkQuorum()}.
    *
@@ -1111,8 +1111,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   @Override // SolrBackend
   public CloudSolrClient newSolrClient(String collection) {
-    return new CloudJettySolrClient.Builder(
-            new ZkClientClusterStateProvider(getZkAddress()))
+    return new CloudJettySolrClient.Builder(new ZkClientClusterStateProvider(getZkAddress()))
         .withDefaultCollection(collection)
         .withHttpClientBuilder(
             new HttpJettySolrClient.Builder()
@@ -1607,8 +1606,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
       if (useEmbeddedZkQuorum) {
         cluster =
-            new MiniSolrCloudCluster(
-                nodeCount, baseDir, solrXml, jettyConfig, securityJson, true);
+            new MiniSolrCloudCluster(nodeCount, baseDir, solrXml, jettyConfig, securityJson, true);
       } else {
         cluster =
             new MiniSolrCloudCluster(

@@ -524,7 +524,10 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption(CLOUD_NODES_OPTION)) {
       String zkHost =
           CLIUtils.getCliOptionOrPropValue(
-              cli, CommonCLIOptions.ZK_HOST_OPTION, "zkHost", CommonCLIOptions.DefaultValues.ZK_HOST);
+              cli,
+              CommonCLIOptions.ZK_HOST_OPTION,
+              "zkHost",
+              CommonCLIOptions.DefaultValues.ZK_HOST);
       assertions.add(
           new Assertion.CloudNodes(
               zkHost, Integer.parseInt(cli.getOptionValue(CLOUD_NODES_OPTION))));
