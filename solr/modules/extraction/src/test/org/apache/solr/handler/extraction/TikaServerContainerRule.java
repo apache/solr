@@ -17,11 +17,11 @@
 package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.util.TestcontainersUtil;
 import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -46,11 +46,7 @@ public class TikaServerContainerRule extends ExternalResource {
   @Override
   @SuppressWarnings("resource")
   protected void before() {
-    Assume.assumeFalse(
-        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
-    Assume.assumeTrue(
-        "Docker/Testcontainers not available; skipping test",
-        DockerClientFactory.instance().isDockerAvailable());
+    TestcontainersUtil.assumeContainerAvailable(TIKA_DOCKER_IMAGE);
 
     tika =
         new GenericContainer<>(TIKA_DOCKER_IMAGE)
