@@ -21,6 +21,7 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ import org.apache.solr.common.params.SolrParams;
  * elements.
  */
 public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
+
+  private static final long serialVersionUID = -8705511030983987520L;
 
   private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
 
@@ -92,6 +95,11 @@ public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<Strin
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<>(newList);
+  }
+
+  @Override
+  public SimpleOrderedMap<T> getImmutableCopy() {
+    return new SimpleOrderedMap<>(Collections.unmodifiableList(clone().nvPairs));
   }
 
   @SuppressWarnings("EqualsDoesntCheckParameterClass")
