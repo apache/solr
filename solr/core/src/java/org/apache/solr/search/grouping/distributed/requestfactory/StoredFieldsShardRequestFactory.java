@@ -31,6 +31,7 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
@@ -75,7 +76,7 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
 
       List<String> ids = new ArrayList<>(shardDocs.size());
       for (ShardDoc shardDoc : shardDocs) {
-        ids.add(shardDoc.id.toString());
+        ids.add(QueryComponent.idToString(shardDoc.id));
       }
       sreq.params.add(ShardParams.IDS, StrUtils.join(ids, ','));
       shardRequests[i++] = sreq;
