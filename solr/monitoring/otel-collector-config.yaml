@@ -1,0 +1,72 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# otel-collector-config.yaml — example OpenTelemetry Collector configuration for Solr,
+# to copy and adapt. Not a production setup.
+#
+# Receives Solr's OTLP push and re-exposes the metrics in Prometheus format on :9464,
+# under the same names /solr/admin/metrics produces, so the dashboard and alert rules
+# in this directory work against either. Also forwards the raw metrics and traces to an
+# Aspire Dashboard; drop the otlp/aspire parts if you have no Aspire.
+#
+# Requires the collector "contrib" distribution (otel/opentelemetry-collector-contrib).
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  transform:
+    metric_statements:
+      # Without SOLR-18594 Solr sends the SDK default, which becomes job="unknown_service:java"
+      - context: resource
+        statements:
+          - set(attributes["service.name"], "solr") where attributes["service.name"] == "unknown_service:java"
+      # Solr's endpoint adds no suffix for the dimensionless unit "1"; the collector appends "_ratio"
+      - context: metric
+        statements:
+          - set(unit, "") where unit == "1"
+  batch: {}
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:9464
+    send_timestamps: true
+    enable_open_metrics: true
+  # Aspire Dashboard (https://aspire.dev/dashboard/) shows the pushed data as-is
+  otlp/aspire:
+    endpoint: aspire-dashboard:18889
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [transform, batch]
+      exporters: [prometheus]
+    # Untransformed copies for Aspire; remove both pipelines if not using it.
+    metrics/aspire:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire]

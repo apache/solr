@@ -18,6 +18,9 @@
 # Used by docker-compose.yml in this directory. The job name must match the
 # mixin's solrSelector (job="solr" by default), or the generated dashboard and
 # alert rules will not match any series.
+#
+# Both collection routes are scraped at once: the nodes directly, and the OTel
+# collector they push to. See ../../otel-collector-config.yaml.
 
 global:
   scrape_interval: 15s
@@ -41,3 +44,18 @@ scrape_configs:
     scrape_interval: 15s
     static_configs:
       - targets: ['solr1:8983', 'solr2:8983']
+
+  # The same metrics after a round trip through the collector, under a separate job so
+  # the shipped dashboard and alert rules keep matching the direct scrape only. Compare
+  # the two to check the collector config reproduces Solr's metric names; see ../../README.md
+  - job_name: solr-otlp
+    # honor_labels keeps the instance label the collector derives from Solr's resource
+    # attributes; it also keeps the collector's job="solr", so force the job back here,
+    # or both routes would land in the same job and every rule would match twice.
+    honor_labels: true
+    metric_relabel_configs:
+      - target_label: job
+        replacement: solr-otlp
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['otel-collector:9464']
