@@ -72,7 +72,6 @@ Sections whose names never repeat are now built as a `SimpleOrderedMap` instead,
 Clients that read these sections with the default `json.nl=flat` (or with `arrarr` / `arrmap`) must now read a JSON object; clients using `json.nl=map` or XML see the same response shape.
 SolrJ's javabin decoder now returns `SimpleOrderedMap` instances for these sections instead of plain `NamedList` instances.
 Existing casts to `NamedList` remain valid, but code that depends on the concrete type or map behavior must account for the change.
-See https://issues.apache.org/jira/browse/SOLR-18196[SOLR-18196] for an existing Java serialization issue involving `SimpleOrderedMap`.
 The affected sections are:
 
 * `OVERSEERSTATUS`: `overseer_operations` and `collection_operations` are objects keyed by operation.
