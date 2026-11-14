@@ -4,7 +4,7 @@ title: >
   (SOLR_PORT-1000), but reads the stop port of the node being stopped, so `bin/solr stop`,
   `stop -p PORT` and `stop --all` work on hosts where nodes were started with different
   STOP_PORT values.
-type: fixed
+type: changed
 authors:
   - name: Jan Høydahl
 links:
