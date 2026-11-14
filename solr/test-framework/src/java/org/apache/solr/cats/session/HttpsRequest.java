@@ -58,6 +58,8 @@ public final class HttpsRequest {
   private String trustStorePassword;
   private String authorization;
   private String curlAuth;
+  private String contentType;
+  private String body;
   private final Map<String, String> vars;
   private final Set<String> echoedPrefixes;
   private final Transcript transcript;
@@ -116,6 +118,20 @@ public final class HttpsRequest {
    * HttpResult#assertConnectionFailed()} can assert on it and a failure message says why.
    */
   public HttpResult get() {
+    return send("GET", HttpRequest.BodyPublishers.noBody());
+  }
+
+  /**
+   * Sends the request as a POST with a text body: the port of {@code curl -H 'Content-Type:<type>'
+   * --data-binary '<body>'} over TLS. Same failure contract as {@link #get()}.
+   */
+  public HttpResult post(String contentType, String body) {
+    this.contentType = contentType;
+    this.body = body;
+    return send("POST", HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
+  }
+
+  private HttpResult send(String method, HttpRequest.BodyPublisher publisher) {
     String url = "https://" + host + ":" + port + pathAndQuery;
     HttpClient.Builder clientBuilder =
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10));
@@ -124,7 +140,12 @@ public final class HttpsRequest {
     }
     try (HttpClient client = clientBuilder.build()) {
       HttpRequest.Builder request =
-          HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30)).GET();
+          HttpRequest.newBuilder(URI.create(url))
+              .timeout(Duration.ofSeconds(30))
+              .method(method, publisher);
+      if (contentType != null) {
+        request.header("Content-Type", contentType);
+      }
       if (authorization != null) {
         request.header("Authorization", authorization);
       }
@@ -144,7 +165,7 @@ public final class HttpsRequest {
 
   /**
    * The curl command line this request ports back to, for the transcript: the {@code --cacert},
-   * {@code -u} and {@code --resolve} the builder's options stand for.
+   * {@code -u}, {@code --resolve} and {@code --data-binary} the builder's options stand for.
    */
   private String curl(String url) {
     StringBuilder curl = new StringBuilder("curl");
@@ -156,6 +177,10 @@ public final class HttpsRequest {
     }
     if (!"localhost".equals(host)) {
       curl.append(" --resolve ").append(shell.quoteForDisplay(host + ":" + port + ":127.0.0.1"));
+    }
+    if (body != null) {
+      curl.append(" -H ").append(shell.quoteForDisplay("Content-Type: " + contentType));
+      curl.append(" --data-binary ").append(shell.quoteForDisplay(body));
     }
     return curl.append(' ').append(shell.quoteForDisplay(url)).toString();
   }
