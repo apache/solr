@@ -79,7 +79,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
@@ -138,13 +137,13 @@ public class SchemaDesigner extends JerseyResource
 
   public static SchemaSuggester newSchemaSuggester() {
     DefaultSchemaSuggester suggester = new DefaultSchemaSuggester();
-    suggester.init(new NamedList<>());
+    suggester.init(new SimpleOrderedMap<>());
     return suggester;
   }
 
   public static SampleDocumentsLoader newSampleDocumentsLoader() {
     SampleDocumentsLoader loader = new DefaultSampleDocumentsLoader();
-    loader.init(new NamedList<>());
+    loader.init(new SimpleOrderedMap<>());
     return loader;
   }
 

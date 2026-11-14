@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +74,9 @@ public class ConfigSetProperties {
       }
       @SuppressWarnings("unchecked")
       Map<String, Object> map = (Map<String, Object>) object;
-      return new NamedList<>(map);
+      NamedList<Object> properties = new SimpleOrderedMap<>();
+      properties.addAll(map);
+      return properties;
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     }
