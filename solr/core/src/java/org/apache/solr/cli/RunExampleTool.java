@@ -1080,6 +1080,19 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
+  /**
+   * Best-effort stop of a cloud example node, used to roll back siblings that started
+   * successfully when another member of the same concurrent quorum startup batch failed.
+   */
+  private void stopQuorumNode(int port) {
+    try {
+      Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
+      runSecureCommand(environment, script, "stop", "-p", Integer.toString(port));
+    } catch (Exception e) {
+      echoIfVerbose("Failed to stop node on port " + port + " during cleanup: " + e);
+    }
+  }
+
   private static String secureExampleShellQuote(String value) {
     return "'" + value.replace("'", "'\\''") + "'";
   }
@@ -1522,7 +1535,7 @@ public class RunExampleTool extends ToolBase {
 
     // deal with extra args passed to the script to run the example
     String zkHost = params.zkHost();
-    Map<String, Object> nodeStatus;
+    Map<String, Object> nodeStatus = null;
     int firstPlainNode; // 0-based index of the first node that just connects, no special role
 
     if (zkQuorum) {
@@ -1572,9 +1585,33 @@ public class RunExampleTool extends ToolBase {
       } finally {
         quorumExecutor.shutdown();
       }
-      nodeStatus = getQuorumStartupResult(futures, 0);
-      for (int n = 1; n < futures.size(); n++) {
-        getQuorumStartupResult(futures, n);
+
+      // One member failing to start doesn't stop its siblings (each runs in its own future), so
+      // collect every outcome before deciding whether to fail -- any sibling that did start
+      // successfully needs to be stopped, or it's left running as an orphaned background
+      // process that a retry would then port-conflict with.
+      List<Integer> startedPorts = new ArrayList<>();
+      Exception firstFailure = null;
+      for (int n = 0; n < futures.size(); n++) {
+        try {
+          Map<String, Object> result = getQuorumStartupResult(futures, n);
+          if (n == 0) {
+            nodeStatus = result;
+          }
+          startedPorts.add(cloudPorts[n]);
+        } catch (Exception e) {
+          if (firstFailure == null) {
+            firstFailure = e;
+          } else {
+            firstFailure.addSuppressed(e);
+          }
+        }
+      }
+      if (firstFailure != null) {
+        for (int startedPort : startedPorts) {
+          stopQuorumNode(startedPort);
+        }
+        throw firstFailure;
       }
 
       firstPlainNode = quorumSize;
@@ -1609,15 +1646,22 @@ public class RunExampleTool extends ToolBase {
 
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
-    // wait until live nodes == numNodes; same check as `bin/solr assert --cloud-nodes`
-    new AssertTool(runtime)
-        .runAssert(
-            new AssertTool.AssertParams(
-                null,
-                WAIT_FOR_LIVE_NODES_TIMEOUT_MS,
-                false,
-                null,
-                List.of(new AssertTool.Assertion.CloudNodes(zkHost, numNodes))));
+    // wait until live nodes == numNodes; same check as `bin/solr assert --cloud-nodes`. A
+    // node joining the cluster can be slower than usual (e.g. forming a fresh multi-node
+    // quorum), so a timeout here is just a warning, not fatal -- collection creation below
+    // retries on its own if the cluster is still settling in.
+    try {
+      new AssertTool(runtime)
+          .runAssert(
+              new AssertTool.AssertParams(
+                  null,
+                  WAIT_FOR_LIVE_NODES_TIMEOUT_MS,
+                  false,
+                  null,
+                  List.of(new AssertTool.Assertion.CloudNodes(zkHost, numNodes))));
+    } catch (AssertTool.AssertionFailureException afe) {
+      echo("\nWARNING: " + afe.getMessage() + " Please check the solr.log for each node to look for errors.\n");
+    }
 
     // create the collection
     String collectionName =

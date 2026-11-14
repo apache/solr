@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,7 +136,21 @@ public class ZkContainer {
       // posture to this one ZK-managed node too, rather than adding real security. This must be
       // set on every quorum member from its own startup — it's a JVM-wide, read-once-at-class-load
       // property, so a node that booted before this was set can't pick it up without restarting.
-      System.getProperties().putIfAbsent("zookeeper.skipACL", "yes");
+      Object skipAclPrev = System.getProperties().putIfAbsent("zookeeper.skipACL", "yes");
+      if (skipAclPrev == null) {
+        log.warn(
+            "Setting system property zookeeper.skipACL=yes for the lifetime of this JVM so"
+                + " dynamic ZK reconfiguration (used when another node later joins this quorum)"
+                + " can succeed. This disables ACL enforcement for ANY ZooKeeper server or client"
+                + " sharing this JVM, not just this quorum node -- avoid running other"
+                + " security-sensitive ZK usage in the same process.");
+      } else if (!"yes".equals(skipAclPrev)) {
+        log.warn(
+            "zookeeper.skipACL is already set to '{}' (not 'yes'); dynamic reconfiguration for"
+                + " this quorum will fail with NoAuthException if another node later tries to"
+                + " join it.",
+            skipAclPrev);
+      }
 
       // ZooKeeperServerEmbedded being used under the covers.
       // When running multiple quorum nodes on the same machine sharing a solrHome,
@@ -171,7 +183,11 @@ public class ZkContainer {
           zooCfgTemplate
               .replace("@@DATA_DIR@@", zkDataDir.toString())
               .replace("@@ZK_CLIENT_PORT@@", String.valueOf(zkPort));
-      final String[] zkHosts = config.getZkHost().split(",");
+      // A chroot (if any) is appended once to the whole connect string, e.g.
+      // "host1:9983,host2:9983,host3:9983/solr" — strip it before splitting into per-host
+      // entries, matching the stripChroot() behavior of the SolrZkServer this replaces.
+      final String zkHostNoChroot = stripChroot(config.getZkHost());
+      final String[] zkHosts = zkHostNoChroot.split(",");
       // TODO: myId detection uses exact string matching between config.getHost() and the host
       // portion of zkHost entries. This fails when zkHost uses "localhost" but Solr is
       // configured with "127.0.0.1" (or vice versa). Consider resolving hostnames/IPs before
@@ -181,13 +197,13 @@ public class ZkContainer {
         log.info(
             "Trying to match {} against zkHostString {} to determine myid",
             targetConnStringSection,
-            config.getZkHost());
+            zkHostNoChroot);
       }
 
       final List<ZkQuorumPeer> peers = new ArrayList<>();
       int myId = -1;
       for (int i = 0; i < zkHosts.length; i++) {
-        final String host = zkHosts[i];
+        final String host = zkHosts[i].trim();
         final var hostComponents = host.split(":");
         if (hostComponents.length < 2) {
           throw new IllegalStateException(
@@ -217,23 +233,31 @@ public class ZkContainer {
             "Unable to determine ZK 'myid' for target " + targetConnStringSection);
       }
 
-      // If any OTHER peer in zkHost is already serving, we're joining an ensemble that's already
-      // up and running (e.g. growing it later) rather than cold-bootstrapping a brand-new one
-      // alongside our peers (the typical case when all nodes in zkHost start up together).
+      // If any OTHER peer in zkHost is already a genuinely serving ensemble member, we're
+      // joining an ensemble that's already up and running (e.g. growing it later) rather than
+      // cold-bootstrapping a brand-new one alongside our peers (the typical case when all nodes
+      // in zkHost start up together). Detection and join are done as a single atomic attempt per
+      // peer -- a cold-starting sibling may have its ZK port open yet still be alone and unable
+      // to serve requests (no leader elected among its own static peers yet), so a plain "is the
+      // port open" probe can't reliably tell bootstrap and join apart; only a successful
+      // getConfig() call (which requires a functioning, leader-having server) can.
       final ZkQuorumPeer self = peers.get(myId - 1);
-      ZkQuorumPeer reachablePeer = null;
-      for (ZkQuorumPeer peer : peers) {
-        if (!peer.isSelf()
-            && isZkPeerReachable(peer.host(), peer.clientPort(), ZK_JOIN_PROBE_TIMEOUT_MS)) {
-          reachablePeer = peer;
-          break;
-        }
-      }
 
       try {
         Files.createDirectories(zkDataDir);
-        if (reachablePeer != null) {
-          ZkJoinResult joined = joinExistingEnsemble(reachablePeer, self);
+
+        ZkJoinResult joined = null;
+        for (ZkQuorumPeer peer : peers) {
+          if (peer.isSelf()) {
+            continue;
+          }
+          joined = tryJoinExistingEnsemble(peer, self);
+          if (joined != null) {
+            break;
+          }
+        }
+
+        if (joined != null) {
           zooCfgContents = zooCfgContents + joined.serverLines();
           myId = joined.myId();
         } else {
@@ -455,6 +479,14 @@ public class ZkContainer {
     log.info("Started embedded ZooKeeper server on port {}", port);
   }
 
+  /** Strips a trailing chroot (e.g. "host:2181/solr" -&gt; "host:2181") from a zkHost string. */
+  private static String stripChroot(String zkHost) {
+    if (zkHost == null || zkHost.trim().isEmpty() || zkHost.lastIndexOf('/') < 0) {
+      return zkHost;
+    }
+    return zkHost.substring(0, zkHost.lastIndexOf('/'));
+  }
+
   /** One entry parsed out of the quorum's zkHost connection string. */
   private record ZkQuorumPeer(
       String host, int clientPort, int quorumPort, int leaderPort, boolean isSelf) {}
@@ -462,43 +494,68 @@ public class ZkContainer {
   /** Outcome of joining an already-running ensemble via dynamic reconfiguration. */
   private record ZkJoinResult(int myId, String serverLines) {}
 
-  /** Quick TCP probe used to tell whether a zkHost peer is already serving. */
-  private static boolean isZkPeerReachable(String host, int port, long timeoutMs) {
-    try (Socket socket = new Socket()) {
-      socket.connect(new InetSocketAddress(host, port), (int) timeoutMs);
-      return true;
-    } catch (IOException e) {
-      return false;
-    }
-  }
-
   /**
-   * Joins an already-running ZK ensemble by asking one of its live members (via dynamic
-   * reconfiguration) to add us as a new voting member, rather than assuming we're cold-starting
-   * alongside every other peer in zkHost. Requires the existing ensemble's members to have been
+   * Attempts, in one atomic step, to detect whether {@code contact} is a genuinely live,
+   * already-serving ensemble member and, if so, join it by asking it (via dynamic
+   * reconfiguration) to add us as a new voting member. Returns {@code null} if {@code contact}
+   * isn't reachable, or is reachable but not actually serving yet (e.g. a sibling that's itself
+   * mid cold-bootstrap, with no leader elected among its own static peers) -- the caller should
+   * treat that the same as "no live ensemble to join" and fall back to cold-bootstrapping
+   * alongside every peer in zkHost instead. Requires the existing ensemble's members to have been
    * started with {@code reconfigEnabled=true} (the default for quorum nodes started by this
    * class).
    */
-  private ZkJoinResult joinExistingEnsemble(ZkQuorumPeer contact, ZkQuorumPeer self)
+  private ZkJoinResult tryJoinExistingEnsemble(ZkQuorumPeer contact, ZkQuorumPeer self)
       throws Exception {
     final String connectString = contact.host() + ":" + contact.clientPort();
     final CountDownLatch connected = new CountDownLatch(1);
     final ZooKeeperAdmin admin =
         new ZooKeeperAdmin(
             connectString,
-            (int) ZK_JOIN_CONNECT_TIMEOUT_MS,
+            (int) ZK_JOIN_CONNECT_TIMEOUT_MS, // ZK session timeout, once connected
             event -> {
               if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                 connected.countDown();
               }
             });
     try {
-      if (!connected.await(ZK_JOIN_CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-        throw new IOException("Timed out connecting to existing ZK ensemble at " + connectString);
+      // Bound how long we wait to find out whether this peer is reachable at all right now --
+      // kept short so cold-bootstrap (where siblings aren't up yet) isn't needlessly delayed; a
+      // genuinely live ensemble member will typically respond almost immediately.
+      if (!connected.await(ZK_JOIN_PROBE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+        return null;
       }
 
-      final String currentConfig =
-          new String(admin.getConfig(false, new Stat()), StandardCharsets.UTF_8);
+      final String currentConfig;
+      try {
+        currentConfig = new String(admin.getConfig(false, new Stat()), StandardCharsets.UTF_8);
+      } catch (Exception e) {
+        // Connected, but couldn't read the dynamic config -- most likely this peer is itself
+        // mid cold-bootstrap and hasn't elected a leader yet, so it can't service requests.
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Peer {} is reachable but not serving yet, not joining it: {}",
+              connectString,
+              e.toString());
+        }
+        return null;
+      }
+
+      // If we're already a member of this ensemble's current config -- e.g. restarting after
+      // being stopped, with the same host/ports as before -- just reconnect as that existing
+      // member rather than asking to be added as a new one. Asking to be added again is
+      // unnecessary (our identity hasn't changed) and can be flatly rejected by ZK with
+      // NewConfigNoQuorum if not enough of the other members happen to be synced at that exact
+      // moment to approve a membership change.
+      Integer existingId = findExistingServerId(currentConfig, self);
+      if (existingId != null) {
+        log.info(
+            "Rejoining existing ZK ensemble at {} as already-configured server.{}",
+            connectString,
+            existingId);
+        return new ZkJoinResult(existingId, extractServerLines(currentConfig));
+      }
+
       int maxId = 0;
       for (String line : currentConfig.split("\n")) {
         if (line.startsWith("server.")) {
@@ -520,14 +577,7 @@ public class ZkContainer {
 
       log.info("Joining existing ZK ensemble at {} as server.{}", connectString, newId);
       final byte[] merged = admin.reconfigure(List.of(joiningServer), null, null, -1, new Stat());
-
-      final StringBuilder serverLines = new StringBuilder();
-      for (String line : new String(merged, StandardCharsets.UTF_8).split("\n")) {
-        if (line.startsWith("server.")) {
-          serverLines.append(line).append('\n');
-        }
-      }
-      return new ZkJoinResult(newId, serverLines.toString());
+      return new ZkJoinResult(newId, extractServerLines(new String(merged, StandardCharsets.UTF_8)));
     } finally {
       try {
         admin.close();
@@ -535,6 +585,41 @@ public class ZkContainer {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  /**
+   * Returns the server id {@code self} is already configured under in a ZK dynamic-config string
+   * (matched by host/quorumPort/leaderPort), or {@code null} if it isn't a member yet.
+   */
+  private static Integer findExistingServerId(String config, ZkQuorumPeer self) {
+    final String hostAndPorts = self.host() + ":" + self.quorumPort() + ":" + self.leaderPort();
+    for (String line : config.split("\n")) {
+      if (!line.startsWith("server.")) {
+        continue;
+      }
+      int eq = line.indexOf('=');
+      if (eq < 0) {
+        continue;
+      }
+      // rhs is "host:quorumPort:leaderPort[:role];clientPort"
+      String hostPortsSection = line.substring(eq + 1).split(";", 2)[0];
+      if (hostPortsSection.equals(hostAndPorts)
+          || hostPortsSection.startsWith(hostAndPorts + ":")) {
+        return Integer.parseInt(line.substring(7, eq));
+      }
+    }
+    return null;
+  }
+
+  /** Extracts just the {@code server.N=...} lines from a ZK dynamic-config string. */
+  private static String extractServerLines(String config) {
+    StringBuilder serverLines = new StringBuilder();
+    for (String line : config.split("\n")) {
+      if (line.startsWith("server.")) {
+        serverLines.append(line).append('\n');
+      }
+    }
+    return serverLines.toString();
   }
 
   public static void ensureZkMaxCnxnsConfigured() {

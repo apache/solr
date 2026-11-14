@@ -1064,7 +1064,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
    * cluster.
    */
   public CloudSolrClient.Builder newSolrClientBuilder() {
-    return new CloudSolrClient.Builder(getZkServer().getZkAddress());
+    return new CloudSolrClient.Builder(getZkAddress());
   }
 
   public SolrZkClient getZkClient() {
@@ -1149,6 +1149,12 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   /** Make the zookeeper session on a particular jetty lose connection and expire */
   public void expireZkSession(JettySolrRunner jetty) {
+    if (zkServer == null) {
+      throw new UnsupportedOperationException(
+          "expireZkSession() is not supported in embedded ZK quorum mode: each node runs its own"
+              + " ZooKeeperServerEmbedded instead of sharing a single ZkTestServer, so there is no"
+              + " equivalent test hook to force-expire one node's session.");
+    }
     ChaosMonkey.expireSession(jetty, zkServer);
   }
 
