@@ -91,8 +91,9 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       return !(docA.orderInShard < docB.orderInShard);
     }
 
-    // run comparators
-    final int n = comparators.length;
+    // a leading _docid_ key has no order across shards, so the keys after it are not consulted:
+    // the shard name decides between shards and the shard's own order decides within it
+    final int n = this.fields[0].getType() == SortField.Type.DOC ? 0 : comparators.length;
     int c = 0;
     for (int i = 0; i < n && c == 0; i++) {
       c =
@@ -120,6 +121,10 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
         if (f1 > f2) return 1;
         return 0;
       };
+    } else if (type == SortField.Type.DOC) {
+      // doc ids are local to a shard and shards do not send them back; documents from the same
+      // shard keep their shard order and the shard name breaks ties between shards
+      return (o1, o2) -> 0;
     } else if (type == SortField.Type.REWRITEABLE) {
       try {
         sortField = sortField.rewrite(searcher);
