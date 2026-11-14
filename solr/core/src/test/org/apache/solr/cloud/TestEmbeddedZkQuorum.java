@@ -16,9 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -208,6 +215,111 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   }
 
   /**
+   * Tests ZK quorum resilience when the node that fails happens to be the current ZK
+   * ensemble LEADER, as opposed to an arbitrary follower (which {@link
+   * #testQuorumResilienceWithNodeFailure} already covers). Losing the leader forces a real
+   * leader election among the 2 survivors, not just a membership-count change.
+   *
+   * <p>This test verifies that:
+   *
+   * <ul>
+   *   <li>A new ZK leader is elected among the 2 surviving nodes
+   *   <li>The cluster continues to accept writes with 2 nodes while the former leader is down
+   *   <li>The former leader can rejoin the ensemble under its original identity (exercising the
+   *       same "reconnect as an already-configured member" path tested by {@link
+   *       #testQuorumResilienceWithNodeFailure}, but now rejoining an ensemble it used to lead)
+   * </ul>
+   *
+   * <p>This test creates its own private cluster to avoid interfering with other tests.
+   */
+  @Test
+  public void testZkLeaderFailover() throws Exception {
+    final String collectionName = "zk_leader_failover";
+    final int initialDocs = 5;
+    final int docsWhileDown = 5;
+    final int docsAfterRecovery = 5;
+
+    // Create a private cluster for this test
+    Path configPath = TEST_PATH().resolve("collection1").resolve("conf");
+    MiniSolrCloudCluster privateCluster =
+        configureCluster(NUM_NODES).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
+
+    try {
+      privateCluster.waitForAllNodes(60);
+
+      CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 3)
+          .process(privateCluster.getSolrClient());
+      privateCluster.waitForActiveCollection(collectionName, 1, 3);
+
+      try (CloudSolrClient client = privateCluster.getSolrClient(collectionName)) {
+        indexDocuments(client, 0, initialDocs, "initial");
+        privateCluster.waitForDocCount(
+            collectionName, initialDocs, "initial documents", 120, TimeUnit.SECONDS);
+
+        List<JettySolrRunner> jettys = privateCluster.getJettySolrRunners();
+        int leaderIndex = findZkLeaderIndex(jettys, 30);
+        assertTrue("Could not find a ZK leader among the 3 nodes", leaderIndex >= 0);
+        JettySolrRunner leaderJetty = jettys.get(leaderIndex);
+        String leaderNodeName = leaderJetty.getNodeName();
+        if (log.isInfoEnabled()) {
+          log.info("Stopping the current ZK leader ({}) to test leader failover", leaderNodeName);
+        }
+
+        privateCluster.stopJettySolrRunner(leaderJetty);
+
+        // The 2 survivors must elect a NEW leader among themselves to stay serving.
+        List<JettySolrRunner> survivors = new ArrayList<>();
+        for (JettySolrRunner jetty : jettys) {
+          if (jetty != leaderJetty) {
+            survivors.add(jetty);
+          }
+        }
+        int newLeaderIndex = findZkLeaderIndex(survivors, 60);
+        assertTrue(
+            "No new ZK leader was elected among the 2 surviving nodes after the old leader was"
+                + " stopped",
+            newLeaderIndex >= 0);
+
+        privateCluster.waitForLiveNodes(2, 120);
+        indexDocuments(client, initialDocs, docsWhileDown, "during_failover");
+        privateCluster.waitForDocCount(
+            collectionName,
+            initialDocs + docsWhileDown,
+            "documents while leader down",
+            120,
+            TimeUnit.SECONDS);
+
+        if (log.isInfoEnabled()) {
+          log.info("Restarting the former leader {} and verifying it rejoins", leaderNodeName);
+        }
+        privateCluster.startJettySolrRunner(leaderJetty, true);
+        privateCluster.waitForNode(leaderJetty, 120);
+        privateCluster.waitForLiveNodes(3, 120);
+        privateCluster.waitForActiveCollection(collectionName, 120, TimeUnit.SECONDS, 1, 3);
+
+        privateCluster.waitForDocCount(
+            collectionName,
+            initialDocs + docsWhileDown,
+            "documents after former leader rejoins",
+            120,
+            TimeUnit.SECONDS);
+
+        indexDocuments(client, initialDocs + docsWhileDown, docsAfterRecovery, "after_recovery");
+        privateCluster.waitForDocCount(
+            collectionName,
+            initialDocs + docsWhileDown + docsAfterRecovery,
+            "all documents",
+            120,
+            TimeUnit.SECONDS);
+      }
+    } finally {
+      CollectionAdminRequest.deleteCollection(collectionName)
+          .process(privateCluster.getSolrClient());
+      privateCluster.shutdown();
+    }
+  }
+
+  /**
    * Tests ZK quorum loss and recovery when majority of nodes fail.
    *
    * <p>This test verifies that:
@@ -328,5 +440,58 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
       client.add(doc);
     }
     client.commit();
+  }
+
+  /**
+   * Finds the index (into {@code jettys}) of whichever node is currently the embedded ZK
+   * ensemble leader, by probing each running node's ZK client port with the "mntr" four-letter
+   * word. Polls up to {@code timeoutSeconds} since a leader may still be mid-election (e.g. right
+   * after a prior leader was stopped).
+   *
+   * @return the leader's index, or -1 if no leader is found within the timeout
+   */
+  private static int findZkLeaderIndex(List<JettySolrRunner> jettys, int timeoutSeconds)
+      throws InterruptedException {
+    long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+    while (System.nanoTime() < deadlineNanos) {
+      for (int i = 0; i < jettys.size(); i++) {
+        JettySolrRunner jetty = jettys.get(i);
+        if (!jetty.isRunning()) {
+          continue;
+        }
+        // Mirrors MiniSolrCloudCluster's own embedded-ZK-quorum constructor, which always uses
+        // the default client-port offset (Solr port + 1000) when reserving ports for each node.
+        if ("leader".equals(zkServerState(jetty.getLocalPort() + 1000))) {
+          return i;
+        }
+      }
+      Thread.sleep(200);
+    }
+    return -1;
+  }
+
+  /**
+   * Issues the ZK "mntr" four-letter word against {@code zkPort} and returns the value of
+   * zk_server_state, or {@code null} if the port isn't reachable/serving yet.
+   */
+  private static String zkServerState(int zkPort) {
+    try (Socket socket = new Socket()) {
+      socket.connect(new InetSocketAddress("127.0.0.1", zkPort), 1000);
+      socket.getOutputStream().write("mntr\n".getBytes(StandardCharsets.UTF_8));
+      socket.getOutputStream().flush();
+      try (BufferedReader reader =
+          new BufferedReader(
+              new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          if (line.startsWith("zk_server_state")) {
+            return line.substring(line.lastIndexOf('\t') + 1).trim();
+          }
+        }
+      }
+    } catch (IOException e) {
+      // Not reachable / not serving yet -- treated the same as "no answer" by the caller.
+    }
+    return null;
   }
 }
