@@ -22,6 +22,11 @@ import static org.apache.solr.common.util.URLUtil.getNodeNameForBaseUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
@@ -29,6 +34,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,14 +46,24 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.cloud.overseer.ZkStateWriter;
+import org.apache.solr.cloud.overseer.ZkWriteCommand;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ZLibCompressor;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Matchers;
@@ -213,6 +229,79 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
       assertEquals(
           getCreationTimeFromClusterStatus("testGetClusterState2"),
           docCollection.getCreationTime());
+    }
+  }
+
+  @Test
+  public void testProviderRefreshesCollectionMissingFromLocalState() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("stale-state"));
+    server.run();
+    try (SolrZkClient zkClient = new SolrZkClient.Builder().withUrl(server.getZkAddress()).build();
+        ZkStateReader reader = new ZkStateReader(zkClient);
+        ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
+      ZkController.createClusterZkNodes(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats(), -1, new ZLibCompressor());
+      synchronized (reader.getUpdateLock()) {
+        assertNull(reader.getClusterState().getCollectionRef("new_collection"));
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/new_collection", true);
+        DocCollection state =
+            DocCollection.create(
+                "new_collection",
+                new HashMap<>(),
+                Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+                DocRouter.DEFAULT,
+                0,
+                Instant.now(),
+                PerReplicaStatesOps.getZkClientPrsSupplier(
+                    zkClient, DocCollection.getCollectionPath("new_collection")));
+        writer.enqueueUpdate(
+            reader.getClusterState(), List.of(new ZkWriteCommand("new_collection", state)), null);
+        writer.writePendingUpdates();
+
+        // The watcher cannot publish the new collection while this lock is held.
+        assertNull(reader.getClusterState().getCollectionRef("new_collection"));
+        ClusterState.CollectionRef refreshed = provider.getState("new_collection");
+        assertNotNull(refreshed);
+        assertEquals("new_collection", refreshed.get().getName());
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testProviderPropagatesCollectionReadFailures() throws Exception {
+    assumeWorkingMockito();
+    SolrZkClient zkClient = spy(cluster.getZkClient());
+    try (ZkStateReader reader = new ZkStateReader(zkClient);
+        ZkClientClusterStateProvider provider = new ZkClientClusterStateProvider(reader)) {
+      reader.createClusterStateWatchersAndUpdate();
+      KeeperException failure = new KeeperException.ConnectionLossException();
+      doThrow(failure)
+          .when(zkClient)
+          .getData(eq(DocCollection.getCollectionPath("missing")), isNull(), any(Stat.class));
+      SolrException readerError =
+          expectThrows(SolrException.class, () -> reader.forceUpdateCollection("missing"));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, readerError.code());
+      assertSame(failure, readerError.getCause());
+
+      SolrException error = expectThrows(SolrException.class, () -> provider.getState("missing"));
+      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, error.code());
+      assertSame(failure, error.getCause());
+
+      InterruptedException interrupted = new InterruptedException("interrupted");
+      doThrow(interrupted)
+          .when(zkClient)
+          .getData(eq(DocCollection.getCollectionPath("interrupted")), isNull(), any(Stat.class));
+      try {
+        error = expectThrows(SolrException.class, () -> provider.getState("interrupted"));
+        assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, error.code());
+        assertSame(interrupted, error.getCause());
+        assertTrue(Thread.currentThread().isInterrupted());
+      } finally {
+        Thread.interrupted();
+      }
     }
   }
 

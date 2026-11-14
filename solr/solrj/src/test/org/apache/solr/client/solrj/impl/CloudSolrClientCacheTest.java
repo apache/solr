@@ -20,6 +20,9 @@ package org.apache.solr.client.solrj.impl;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -135,6 +138,23 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       // Race: sometimes async completes fast enough for 2 fetches, sometimes only 1.
       int fetchCount = refs.get(collName).getCount();
       assertTrue("Expected 1 or 2 fetches, got " + fetchCount, fetchCount >= 1 && fetchCount <= 2);
+    }
+  }
+
+  public void testMissingCollectionIsCheckedOncePerRequest() throws Exception {
+    String collection = "gettingstarted";
+    Map<String, ClusterState.CollectionRef> refs = new HashMap<>();
+    try (ClusterStateProvider provider = spy(getStateProvider(Set.of(), refs));
+        RecordingCloudSolrClient client = new RecordingCloudSolrClient(provider, 2)) {
+      SolrException error =
+          expectThrows(
+              SolrException.class, () -> client.request(new DummyRequest(collection), collection));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, error.code());
+      verify(provider, times(1)).getState(collection);
+
+      refs.put(collection, new ClusterState.CollectionRef(loadCollection(collection, 1)));
+      assertNotNull(client.request(new DummyRequest(collection), collection));
+      verify(provider, times(2)).getState(collection);
     }
   }
 

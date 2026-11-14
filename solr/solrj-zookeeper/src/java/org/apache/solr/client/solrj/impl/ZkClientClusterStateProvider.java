@@ -80,11 +80,36 @@ public class ZkClientClusterStateProvider
 
   @Override
   public ClusterState.CollectionRef getState(String collection) {
-    ClusterState clusterState = getZkStateReader().getClusterState();
-    if (clusterState != null) {
-      return clusterState.getCollectionRef(collection);
-    } else {
+    ZkStateReader reader = getZkStateReader();
+    ClusterState clusterState = reader.getClusterState();
+    if (clusterState == null) {
       return null;
+    }
+    ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+    // Alias names are probed as collections before they are resolved. Avoid a ZooKeeper
+    // lookup for a known alias on every request.
+    if (ref != null || reader.getAliases().hasAlias(collection)) {
+      return ref;
+    }
+
+    try {
+      reader.forceUpdateCollection(collection);
+      return reader.getClusterState().getCollectionRef(collection);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), e);
+    } catch (KeeperException e) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), e);
+    } catch (SolrException e) {
+      Throwable cause = e.getCause();
+      if (e.code() == SolrException.ErrorCode.BAD_REQUEST.code
+          && (cause instanceof KeeperException || cause instanceof InterruptedException)) {
+        if (cause instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, e.toString(), cause);
+      }
+      throw e;
     }
   }
 
