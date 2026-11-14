@@ -1290,9 +1290,26 @@ echo !eout!
 GOTO :eof
 
 :resolve_stop_port
-  REM Each node knows its own stop port, so read it back from the running process
+  REM Each node knows its own stop port, so read it back from the running process.
+  REM The tool's output is captured through a temp file and not with a 'for /f' over its command
+  REM line: the quotes around -classpath are lost when the command is wrapped in backquotes, and
+  REM the class is then not found, which would leave every stop falling back to the derived port.
   set RESOLVED_STOP_PORT=
-  for /f "usebackq delims=" %%s in (`""%JAVA%" %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" org.apache.solr.cli.SolrCLI stop-port -p %1 2^>nul ^| findstr /r "^[0-9][0-9]*$""`) do set RESOLVED_STOP_PORT=%%s
+  set "STOP_PORT_ERR=nul"
+  IF "%verbose%"=="1" set "STOP_PORT_ERR=con"
+  set "STOP_PORT_OUT=%TEMP%\solr-stopport-%RANDOM%.txt"
+  "%JAVA%" %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    org.apache.solr.cli.SolrCLI status -p %1 --stop-port >"%STOP_PORT_OUT%" 2>%STOP_PORT_ERR%
+  IF EXIST "%STOP_PORT_OUT%" (
+    REM Iterating the file takes its last line, as 'tail -1' does in bin/solr.
+    for /f "usebackq delims=" %%s in ("%STOP_PORT_OUT%") do set "RESOLVED_STOP_PORT=%%~s"
+    del /q "%STOP_PORT_OUT%" >nul 2>nul
+  )
+  REM Only a bare number is an answer; anything else means the tool could not resolve the port.
+  echo(!RESOLVED_STOP_PORT!| findstr /r /c:"^[0-9][0-9]*$" >nul
+  IF ERRORLEVEL 1 set RESOLVED_STOP_PORT=
   IF "!RESOLVED_STOP_PORT!"=="" (
     IF "%STOP_PORT%"=="" (set /A "RESOLVED_STOP_PORT=%1 - 1000") ELSE (set RESOLVED_STOP_PORT=%STOP_PORT%)
   )
