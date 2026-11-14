@@ -931,15 +931,12 @@ public class CliSession implements AutoCloseable {
    * session, so cleanup stops exactly the ones this scope started.
    *
    * <p>Asked of the running process list rather than of state files, so it behaves the same on both
-   * platforms and sees a program started in the foreground. Filtered to this class's port block,
-   * because on the cmd side the underlying record is shared with every other class; a program with
-   * no ports is left to its marker alone.
+   * platforms and sees a program started in the foreground. The marker alone decides: a process a
+   * test started on a port outside the class's block is still the test's, and is stopped with the
+   * rest rather than left running because it sat on the wrong port.
    */
   private void claimNewProcesses() {
     for (RunningProcess process : program.running(harnessEnv.marker())) {
-      if (!process.ports().isEmpty() && !ours(process)) {
-        continue;
-      }
       if (!registry.recordIfNew(process)) {
         continue;
       }
@@ -966,11 +963,6 @@ public class CliSession implements AutoCloseable {
         log.info("Session '{}' now owns {}", name, process);
       }
     }
-  }
-
-  /** Whether any of a process' ports is one this scope claimed. */
-  private boolean ours(RunningProcess process) {
-    return process.ports().stream().anyMatch(port -> harnessEnv.ports().contains(port));
   }
 
   /**

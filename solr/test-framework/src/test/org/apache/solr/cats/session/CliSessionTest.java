@@ -642,12 +642,13 @@ public class CliSessionTest {
   }
 
   @Test
-  public void aProcessOutsideThisClassesPortBlockIsNobodysBusiness() {
-    // The record of running processes is shared with every other class on the cmd side, so the
-    // block is what tells this class's processes from a sibling's.
-    program.running = List.of(RunningProcess.of(90_000_004L, env.ports().at(0) + 500));
+  public void aProcessOutsideThisClassesPortBlockIsStillOwnedByItsMarker() {
+    // The marker is what tells this class's processes from a sibling's; a test that started one on
+    // a port of its own choosing still gets it stopped at the end.
+    RunningProcess elsewhere = RunningProcess.of(90_000_004L, env.ports().at(0) + 500);
+    program.running = List.of(elsewhere);
     session.run("echo elsewhere");
-    assertEquals(List.of(), session.ownedProcesses());
+    assertEquals(List.of(elsewhere), session.ownedProcesses());
   }
 
   @Test
