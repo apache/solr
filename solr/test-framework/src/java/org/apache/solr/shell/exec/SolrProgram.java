@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.solr.cats.env.PortLayout;
 import org.apache.solr.cats.exec.ProgramUnderTest;
 import org.apache.solr.cats.exec.RunningProcess;
 import org.apache.solr.cli.SolrProcessManager;
@@ -47,25 +46,20 @@ public final class SolrProgram implements ProgramUnderTest {
   public static final String MARKER_PREFIX = "solr-shell-test-";
 
   /**
-   * Solr's block: the node port {@code P}, two more for the multi-node suites, and embedded
-   * ZooKeeper on {@code P+1000} (see {@code SolrZkServer}).
-   *
-   * <p>A node on {@code P} also listens on {@code P-1000} for {@code solr stop} (see {@code
-   * bin/solr}), so a class really occupies {@code P-1000..P-998}, {@code P..P+2} and {@code
-   * P+1000..P+1002}. Those windows overlap between blocks, but the ports actually used do not:
-   * every block shifts all three groups by the same stride, so a collision needs {@code (j-i) *
-   * stride} to land on 1000 — which is why no more than 200 blocks are handed out per run.
-   *
-   * <p>The base range leaves room below for the {@code P-1000} stop ports, and stays under every
-   * platform's ephemeral floor — Linux 32768, macOS and Windows 49152 — or the OS hands a block's
-   * port to an outgoing connection and the pre-flight check fails.
+   * The ports one test class gets: the node port {@code P} and two more for the multi-node suites,
+   * plus one for embedded ZooKeeper — four consecutive ports, named by {@link
+   * org.apache.solr.shell.env.SolrPorts}.
    */
-  public static final PortLayout LAYOUT =
-      new PortLayout(4, new int[] {0, 1, 2, 1000}, 20_000, 30_000, 200, 0);
+  public static final int PORT_COUNT = 4;
 
   @Override
-  public PortLayout portLayout() {
-    return LAYOUT;
+  public int portCount() {
+    return PORT_COUNT;
+  }
+
+  @Override
+  public int primaryPort() {
+    return 0;
   }
 
   /**

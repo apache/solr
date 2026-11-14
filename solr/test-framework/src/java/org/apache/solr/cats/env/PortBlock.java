@@ -18,23 +18,29 @@
 package org.apache.solr.cats.env;
 
 /**
- * The ports one test class owns, in the shape its {@link PortLayout} describes.
+ * The consecutive ports one test class owns, as many as the program under test asked for.
  *
  * <p>An interface rather than a record so that a project can put its own names on them — an {@code
  * admin()} or a {@code registry()} — by implementing it over the block the harness handed out, and
- * still hand that back to the generic code.
+ * still hand that back to the generic code. The core knows only how many ports there are and which
+ * index is the primary one; what each is for is the project's business.
  */
 public interface PortBlock {
 
   /** The first port of the block, which is what the block is identified by. */
   int base();
 
-  /** The port at {@code index} in the layout's offsets. */
+  /** The port at {@code index}, counting from the base. */
   int at(int index);
 
-  /** Every port of the block, in layout order. */
+  /** Every port of the block, in order. */
   int[] all();
 
   /** Whether {@code port} is one of this block's. */
   boolean contains(int port);
+
+  /** Whether the program listens on nothing, and so was handed no ports. */
+  default boolean isEmpty() {
+    return all().length == 0;
+  }
 }

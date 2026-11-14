@@ -36,7 +36,6 @@ import java.util.function.Function;
 import org.apache.solr.cats.CatsDsl;
 import org.apache.solr.cats.env.CatsHarnessEnv;
 import org.apache.solr.cats.env.PortBlock;
-import org.apache.solr.cats.env.PortLayout;
 import org.apache.solr.cats.exec.BackgroundCommand;
 import org.apache.solr.cats.exec.ProgramUnderTest;
 import org.apache.solr.cats.exec.Shells;
@@ -55,26 +54,20 @@ import org.junit.rules.TestRule;
  */
 public class TwoProgramsTest implements CatsDsl {
 
-  /** Equal strides, so blocks claimed from the one counter stay disjoint whatever the offsets. */
-  private static final PortLayout TOOL_PORTS =
-      new PortLayout(4, new int[] {0, 1}, 20_000, 30_000, 200, 0);
-
-  private static final PortLayout OTHER_PORTS =
-      new PortLayout(4, new int[] {0}, 20_000, 30_000, 200, 0);
-
+  /** Different counts on purpose: one counter has to keep unequal blocks disjoint too. */
   private static final ProgramUnderTest TOOL =
       new ProgramUnderTest() {
         @Override
-        public PortLayout portLayout() {
-          return TOOL_PORTS;
+        public int portCount() {
+          return 2;
         }
       };
 
   private static final ProgramUnderTest OTHER =
       new ProgramUnderTest() {
         @Override
-        public PortLayout portLayout() {
-          return OTHER_PORTS;
+        public int portCount() {
+          return 1;
         }
       };
 

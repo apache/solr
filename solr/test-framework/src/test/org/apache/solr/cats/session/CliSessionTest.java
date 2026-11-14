@@ -41,7 +41,6 @@ import org.apache.solr.cats.EnabledOnShell;
 import org.apache.solr.cats.ShellGate;
 import org.apache.solr.cats.env.CatsHarnessEnv;
 import org.apache.solr.cats.env.PortBlock;
-import org.apache.solr.cats.env.PortLayout;
 import org.apache.solr.cats.exec.BackgroundCommand;
 import org.apache.solr.cats.exec.CatsFiles;
 import org.apache.solr.cats.exec.CommandResult;
@@ -81,15 +80,20 @@ public class CliSessionTest {
    */
   private final ScriptedProgram program = new ScriptedProgram();
 
-  private static final PortLayout LAYOUT =
-      new PortLayout(4, new int[] {0, 1, 2, 1000}, 20_000, 30_000, 200, 0);
+  /** Four ports, as the fixture's environment names them below. */
+  private static final int PORT_COUNT = 4;
 
   private static final class ScriptedProgram implements ProgramUnderTest {
     private List<RunningProcess> running = List.of();
 
     @Override
-    public PortLayout portLayout() {
-      return LAYOUT;
+    public int portCount() {
+      return PORT_COUNT;
+    }
+
+    @Override
+    public int primaryPort() {
+      return 0;
     }
 
     @Override

@@ -23,8 +23,8 @@ import org.apache.solr.cats.env.PortBlock;
  * Solr's names for the block of ports a shell test run owns, mirroring the {@code SOLR_PORT},
  * {@code SOLR2_PORT}, {@code SOLR3_PORT} and {@code ZK_PORT} variables used by the BATS suites.
  *
- * <p>A view over the block the harness claimed, in the order {@link
- * org.apache.solr.shell.exec.SolrProgram#LAYOUT} lists.
+ * <p>A view over the consecutive ports the harness claimed, as many as {@link
+ * org.apache.solr.shell.exec.SolrProgram#PORT_COUNT} asked for.
  */
 public record SolrPorts(PortBlock block) implements PortBlock {
 

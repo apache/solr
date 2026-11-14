@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.solr.cats.env.PortLayout;
 
 /**
  * Everything the harness needs to know about the program it is driving, and nothing more.
@@ -33,12 +32,12 @@ import org.apache.solr.cats.env.PortLayout;
  *
  * <p><b>Exactly one program per {@link org.apache.solr.cats.env.CatsHarnessEnv}.</b> Everything
  * here is asked by the lifecycle and never per command: {@link #launcherDir} when {@code PATH} is
- * assembled, {@link #portLayout} when the class claims its block, {@link #running}, {@link
+ * assembled, {@link #portCount} when the class claims its ports, {@link #running}, {@link
  * #stopCommand} and {@link #staleStateFiles} in the leak checks and the teardown, {@link #traits}
  * once. A command is a line in a shell whose environment was fixed when the session was built, so
  * "which program does {@code run()} pick" is a question that cannot arise. A program that is both a
  * server and its own client CLI is still one program: one installation, one launcher directory, one
- * layout.
+ * block of ports.
  *
  * <p>A fixture is not a program under test and needs none of this: a container the test starts, a
  * web root served to the program — nothing about them is discovered, stopped or port-allocated by
@@ -60,9 +59,24 @@ public interface ProgramUnderTest {
     return Optional.of(installDir.resolve("bin"));
   }
 
-  /** The block of ports one test class needs. */
-  default PortLayout portLayout() {
-    return PortLayout.NONE;
+  /**
+   * How many ports one test class needs. The harness hands out that many consecutive ones, disjoint
+   * from every other class's; zero, the default, is a program that listens on nothing.
+   *
+   * <p>Count every port the program will occupy, including any it derives from another — the core
+   * knows nothing of offsets or strides, so a port the program computes for itself has to be asked
+   * for here or it is not reserved.
+   */
+  default int portCount() {
+    return 0;
+  }
+
+  /**
+   * Which of those ports a request goes to when it names none — an index from 0, or -1 when the
+   * program has no such port.
+   */
+  default int primaryPort() {
+    return -1;
   }
 
   /**

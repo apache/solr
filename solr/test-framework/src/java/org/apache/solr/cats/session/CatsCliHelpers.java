@@ -85,13 +85,13 @@ public class CatsCliHelpers {
   }
 
   /**
-   * The port a request goes to when it names none: the one the layout marks primary.
+   * The port a request goes to when it names none: the one the program marks primary.
    *
    * <p>A program that listens on nothing, or on several ports with none of them primary, has no
    * answer here and must be asked for an explicit port instead.
    */
   private int defaultPort() {
-    int primary = harnessEnv.portLayout().primary();
+    int primary = harnessEnv.primaryPort();
     if (primary < 0) {
       throw new IllegalStateException(
           "The program under test declares no primary port, so a request must name the port");

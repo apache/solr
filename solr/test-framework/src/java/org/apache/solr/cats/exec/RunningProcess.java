@@ -25,8 +25,8 @@ import java.util.List;
  *
  * <p>A process is identified by its pid, never by a port: a long-running command-line tool and a
  * converter that runs to completion have no ports at all, a server has one, and a backend may have
- * several with different roles. Ports are an attribute, and the list is in the order the program's
- * {@link org.apache.solr.cats.env.PortLayout} declares them.
+ * several with different roles. Ports are an attribute, and the list is in the order the program
+ * names them.
  *
  * @param pid the operating system process id
  * @param ports the ports it serves on, empty when it serves none

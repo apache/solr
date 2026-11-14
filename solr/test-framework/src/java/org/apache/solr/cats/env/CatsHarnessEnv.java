@@ -95,7 +95,7 @@ public abstract class CatsHarnessEnv {
     this.classDir =
         scopeName == null ? outputDir : createDir(outputDir.resolve(scopeName), "the class dir");
     this.failureDir = createDir(outputDir.resolve("failure-snapshots"), "the failure snapshot dir");
-    this.ports = PortBlocks.claim(outputDir, portBaseSeed(), program.portLayout());
+    this.ports = PortBlocks.claim(outputDir, portBaseSeed(), program.portCount());
     this.marker = resolveMarker();
     this.timeout = resolveTimeout();
 
@@ -238,9 +238,12 @@ public abstract class CatsHarnessEnv {
     return ports;
   }
 
-  /** The shape of that block, including which of its ports is the primary one. */
-  public PortLayout portLayout() {
-    return program.portLayout();
+  /**
+   * Which of those ports a request goes to when it names none, as an index into {@link #ports()}.
+   * -1 when the program has no such port.
+   */
+  public int primaryPort() {
+    return program.primaryPort();
   }
 
   /** Where the processes a session starts are tracked, and from where a leak is finally killed. */

@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * ordered against the rest of the project's class setup — calls {@link #openClass} and {@link
  * #closeClass} from there.
  *
- * <p>Nothing here needs a program that has ports, state files or discovery: a program that declares
+ * <p>Nothing here needs a program that has ports, state files or discovery: a program that asks for
  * none gets the session, the transcript and the work directory, and the checks that do not apply
  * are skipped.
  *
@@ -306,15 +306,15 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
    * Fails fast if our port block is in use, killing any process of ours that is somehow already on
    * it.
    *
-   * <p>A port block is claimed once per run, so finding one of our own processes here means a
-   * process from an earlier run outlived it — possible when a run was killed outright and the
-   * shutdown hook never got to run.
+   * <p>Ports are claimed once per run, so finding one of our own processes here means a process
+   * from an earlier run outlived it — possible when a run was killed outright and the shutdown hook
+   * never got to run.
    */
   private void preFlightLeakCheck() {
-    // Processes carrying this task's marker but sitting outside this run's port span can only come
-    // from an earlier run of the same task — the span is fixed when the run claims its first block,
-    // from a base that is random per run. So this is safe against a sibling class in this run, and
-    // against another suite or checkout, whose marker prefix differs.
+    // Processes carrying this task's marker but sitting outside this run's port range can only
+    // come from an earlier run of the same task — the range starts at a base that is random per
+    // run. So this is safe against a sibling class in this run, and against another suite or
+    // checkout, whose marker prefix differs.
     //
     // A process with no ports is left alone: there is nothing to measure it against, so it cannot
     // be told from one a sibling class of this run started.
@@ -324,15 +324,14 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
       }
       boolean thisRun =
           process.ports().stream()
-              .anyMatch(
-                  port -> PortBlocks.belongsToThisRun(env.outputDir(), port, program.portLayout()));
+              .anyMatch(port -> PortBlocks.belongsToThisRun(env.outputDir(), port));
       if (!thisRun || ours(process)) {
         log.warn("Killing a process left behind by an earlier run of this task: {}", process);
         ProcessKill.killTree(process.pid(), KILL_TIMEOUT);
       }
     }
 
-    if (program.portLayout().isEmpty()) {
+    if (env.ports().isEmpty()) {
       return;
     }
     List<Integer> busy = busyPorts();
@@ -345,8 +344,8 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
   /**
    * Fails the class if a process outlived it. Whatever is found is killed first.
    *
-   * <p>Processes carrying our marker are checked for whatever the program is; the port block is
-   * only checked for a program that declares a layout.
+   * <p>Processes carrying our marker are checked for whatever the program is; the ports are only
+   * checked for a program that asked for some.
    */
   private void postFlightLeakCheck() {
     List<String> leaks = new ArrayList<>();
@@ -361,7 +360,7 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
       }
     }
 
-    if (!program.portLayout().isEmpty()) {
+    if (!env.ports().isEmpty()) {
       long deadline = System.nanoTime() + LEAK_CHECK_TIMEOUT.toNanos();
       List<Integer> busy;
       do {
