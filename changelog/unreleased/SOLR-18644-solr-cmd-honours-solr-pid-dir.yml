@@ -1,0 +1,14 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  `bin\solr.cmd` now honours the `SOLR_PID_DIR` environment variable, instead of always writing the
+  files that record running nodes into the installation's `bin` directory. `bin/solr` and
+  `SolrProcessManager` already read it, so Windows now behaves like the other platforms and like the
+  documentation.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18644
+    url: https://issues.apache.org/jira/browse/SOLR-18644
