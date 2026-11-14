@@ -1,0 +1,10 @@
+title: >
+  Leader election no longer retries a failed watch on the previous election node without limit.
+  After three failed attempts the KeeperException is thrown to the caller, so a persistent failure
+  such as NoAuth surfaces instead of ending in StackOverflowError.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-6213
+    url: https://issues.apache.org/jira/browse/SOLR-6213
