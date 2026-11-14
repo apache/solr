@@ -101,4 +101,9 @@
   <string name="label_username">Username</string>
 
   <!-- Uncategorized -->
+  <string name="label_collection_core">Collection / Core</string>
+  <string name="label_request_handler">Request Handler</string>
+  <string name="placeholder_select_request_handler">Select a request handler</string>
+  <string name="no_collections_available">No collections are available</string>
+  <string name="no_request_handlers">This collection has no request handlers</string>
 </resources>
