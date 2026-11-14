@@ -40,6 +40,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.PivotListEntry;
@@ -324,8 +325,12 @@ public class PivotFacetProcessor extends SimpleFacets {
     // re-usable BytesRefBuilder for conversion of term values to Objects
     BytesRefBuilder termval = new BytesRefBuilder();
 
+    final QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     List<NamedList<Object>> values = new ArrayList<>(superFacets.size());
     for (Map.Entry<String, Integer> kv : superFacets) {
+      if (queryLimits.maybeExitWithPartialResults("Faceting pivots")) {
+        break;
+      }
       // Only sub-facet if parent facet has positive count - still may not be any values for the
       // sub-field though
       if (kv.getValue() >= getMinCountForField(field)) {
