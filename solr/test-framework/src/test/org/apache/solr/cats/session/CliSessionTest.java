@@ -452,10 +452,45 @@ public class CliSessionTest {
     session.run("echo first");
     session.run("echo second");
     String transcript = session.transcript().text();
-    assertTrue(transcript, transcript.contains("$ echo first"));
-    assertTrue(transcript, transcript.contains("| first"));
-    assertTrue(transcript, transcript.contains("$ echo second"));
-    assertTrue(transcript, transcript.contains("exit 0 in "));
+    assertTrue(transcript, transcript.contains("\n$ echo first\n# CATS: exit 0 in "));
+    assertTrue(transcript, transcript.contains("\nfirst\n"));
+    assertTrue(transcript, transcript.contains("\n$ echo second\n"));
+    assertTrue(transcript, transcript.contains("\nsecond\n"));
+  }
+
+  @Test
+  public void theTranscriptOpensWithAHeaderAndClosesWithTheOutcome() {
+    session.run("echo once");
+    session.recordOutcome(null);
+    String transcript = session.transcript().text();
+    assertTrue(transcript, transcript.startsWith("# CATS transcript: " + testName.getMethodName()));
+    assertTrue(transcript, transcript.contains("\n# started: "));
+    assertTrue(transcript, transcript.contains("  shell: " + Shells.current().id() + "\n"));
+    assertTrue(transcript, transcript.contains("\n# CATS: PASSED in "));
+  }
+
+  @Test
+  public void aFailedOutcomeNamesTheReason() {
+    AssertionError failure =
+        assertThrows(
+            AssertionError.class, () -> session.run("echo haystack").assertContains("needle"));
+    session.recordOutcome(failure);
+    String transcript = session.transcript().text();
+    assertTrue(
+        transcript,
+        transcript.contains("\n# CATS: FAILED in ")
+            && transcript.contains(": FAILED: output did not contain: needle\n"));
+  }
+
+  @Test
+  public void anEnvironmentChangeIsExportedOnce() {
+    session.env("MARKER", "once");
+    session.run("echo one");
+    session.run("echo two");
+    String transcript = session.transcript().text();
+    assertEquals(transcript, 1, transcript.split("\\$ export MARKER=once", -1).length - 1);
+    assertTrue(
+        transcript, transcript.indexOf("$ export MARKER=once") < transcript.indexOf("$ echo one"));
   }
 
   @Test
@@ -468,9 +503,9 @@ public class CliSessionTest {
 
     // The whole history, so a reader sees how the test got here, not just the command that failed.
     assertTrue(message, message.contains("$ echo earlier-command"));
-    assertTrue(message, message.contains("| earlier-command"));
+    assertTrue(message, message.contains("\nearlier-command\n"));
     assertTrue(message, message.contains("$ echo haystack"));
-    assertTrue(message, message.contains("| haystack"));
+    assertTrue(message, message.contains("\nhaystack\n"));
 
     // Then one line saying what was expected, and nothing else.
     assertTrue(message, message.contains("FAILED: output did not contain: needle"));
@@ -583,8 +618,8 @@ public class CliSessionTest {
     // The outcome is appended to the transcript when it ends, under the line that started it.
     String transcript = session.transcript().text();
     assertTrue(transcript, transcript.contains("$ mytool work 1 3 &"));
-    assertTrue(transcript, transcript.contains("exit 3 in "));
-    assertTrue(transcript, transcript.contains("| finished"));
+    assertTrue(transcript, transcript.contains("# CATS: exit 3 in "));
+    assertTrue(transcript, transcript.contains("\nfinished\n"));
   }
 
   @Test

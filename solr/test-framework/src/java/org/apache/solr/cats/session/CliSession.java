@@ -58,6 +58,7 @@ import org.apache.solr.cats.exec.ShellAssertionError;
 import org.apache.solr.cats.exec.ShellExecutor;
 import org.apache.solr.cats.exec.Shells;
 import org.apache.solr.cats.exec.Variables;
+import org.junit.AssumptionViolatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +103,12 @@ public class CliSession implements AutoCloseable {
   private CommandResult lastResult;
   private boolean closed;
   private boolean shellSpecific;
+  private boolean showTranscript;
+
+  /**
+   * The environment as the transcript last recorded it, so each command shows only what changed.
+   */
+  private Map<String, String> recordedEnv;
 
   private CliSession(
       CatsHarnessEnv harnessEnv,
@@ -123,6 +130,8 @@ public class CliSession implements AutoCloseable {
     this.shell = shell;
     this.timeout = harnessEnv.timeout();
     this.transcript = new Transcript(workDir.resolve("transcript.log"));
+    this.transcript.header(parent == null ? name : parent.name + "." + name, shell.id());
+    this.recordedEnv = Map.copyOf(harnessEnv.baseEnv());
     this.helpers = new CatsCliHelpers(harnessEnv, shell, transcript, varsForAssertions());
     this.net = new CatsNet(transcript, this::path);
     // Exposed as a variable so a test can name its own scratch space inside a command line or an
@@ -157,6 +166,7 @@ public class CliSession implements AutoCloseable {
             harnessEnv, program, this, childName, childWorkDir, childVars, childCwd, shell);
     child.timeout = timeout;
     child.shellSpecific = shellSpecific;
+    child.showTranscript(showTranscript);
     return child;
   }
 
@@ -895,14 +905,11 @@ public class CliSession implements AutoCloseable {
     // carries a trailing newline — behaves the same as a plain string.
     String line = rawLine.stripTrailing();
     Map<String, String> envDiff = envDiff();
-    if (stdin != null) {
-      transcript.note("on standard input:\n" + stdin);
-    }
     CommandResult result =
         ShellExecutor.execute(
             spec(line, commandTimeout, separateStreams, stdin), this::recordChild);
     lastResult = result;
-    transcript.record(result, envDiff);
+    transcript.record(result, envDiff, stdin);
     claimNewProcesses();
     if (result.timedOut()) {
       throw new ShellAssertionError(
@@ -935,19 +942,19 @@ public class CliSession implements AutoCloseable {
    * Only what this session changed relative to the resolved base environment — the full environment
    * is hundreds of entries and tells a reader nothing.
    *
-   * <p>A session starts as a copy of the base, and {@link #env(String, String)} can only add or
-   * replace, so an entry present in the base is always present here too; there is nothing to report
-   * as unset.
+   * <p>Relative to what the transcript last showed, so a variable set once is exported once. A
+   * session starts as a copy of the base, and {@link #env(String, String)} can only add or replace,
+   * so there is nothing to report as unset.
    */
   private Map<String, String> envDiff() {
-    Map<String, String> base = harnessEnv.baseEnv();
     Map<String, String> diff = new LinkedHashMap<>();
     vars.forEach(
         (k, v) -> {
-          if (!v.equals(base.get(k))) {
+          if (!v.equals(recordedEnv.get(k))) {
             diff.put(k, v);
           }
         });
+    recordedEnv = Map.copyOf(vars);
     return diff;
   }
 
@@ -1079,6 +1086,39 @@ public class CliSession implements AutoCloseable {
    * Stops everything this session started. Idempotent, and safe to call after a hook has already
    * thrown. Errors are collected and reported together rather than cutting the cleanup short.
    */
+  /**
+   * While on, every transcript entry is also printed to standard output as it is written, so a test
+   * can be watched live from an IDE. Children started after this inherit the setting.
+   */
+  public void showTranscript(boolean on) {
+    this.showTranscript = on;
+    transcript.echo(on);
+  }
+
+  /**
+   * Closes the transcript with the scope's outcome, before {@link #close()} stops what it started:
+   * PASSED, SKIPPED for an assumption failure, or FAILED with the failure's last line, which for a
+   * harness assertion is the one that says what was expected.
+   */
+  public void recordOutcome(Throwable failure) {
+    if (failure == null) {
+      transcript.outcome("PASSED", null);
+    } else if (failure instanceof AssumptionViolatedException) {
+      transcript.outcome("SKIPPED", lastLine(failure.getMessage()));
+    } else {
+      String detail = lastLine(failure.getMessage());
+      transcript.outcome("FAILED", detail == null ? failure.getClass().getName() : detail);
+    }
+  }
+
+  private static String lastLine(String message) {
+    if (message == null) {
+      return null;
+    }
+    String[] lines = message.strip().split("\n");
+    return lines.length == 0 ? null : lines[lines.length - 1].strip();
+  }
+
   @Override
   public void close() {
     if (closed) {

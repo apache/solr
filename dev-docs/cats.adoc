@@ -14,7 +14,7 @@ It lives in package `org.apache.solr.cats` of `solr/test-framework`, and is gene
 
 *Rails that catch a one-shell test.* The portability tables below refuse `grep`, `|`, `&&` and their relatives in a command line. That is the opinionated part of CATS, and it is the product: a test that passes only on `bash` is exactly the failure mode the harness exists to catch, and the rejection names the replacement rather than just saying no.
 
-*A transcript that reads as a session.* Every scope writes `transcript.log` as it goes, and a failure quotes it. The format is a pasteable shell session — the environment changes, the command, its exit status and duration, its output — and an HTTP request made through the helpers appears as the `curl` that reproduces it, so the record covers the whole session a test ran and not only its command-line half.
+*A transcript that reads as a session.* Every scope writes `transcript.log` as it goes, and a failure quotes it. The format is a pasteable shell session: `$ export` for an environment change, `$` for the command, its output verbatim, and what the harness itself has to say as `# CATS:` comments — exit status and duration per command, the outcome and duration of the whole scope at the end — and an HTTP request made through the helpers appears as the `curl` that reproduces it, so the record covers the whole session a test ran and not only its command-line half.
 
 *Isolation per test class.* Each class gets its own work directory and, if the program listens on anything, its own disjoint block of ports, so classes run concurrently in separate forks. Processes a test starts carry a marker on their command line; a leak check before and after the class fails the run rather than leaving them behind.
 

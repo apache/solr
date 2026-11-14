@@ -227,6 +227,14 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
         openClass(description.getTestClass());
         try {
           base.evaluate();
+          if (classSession != null) {
+            classSession.recordOutcome(null);
+          }
+        } catch (Throwable failure) {
+          if (classSession != null) {
+            classSession.recordOutcome(failure);
+          }
+          throw failure;
         } finally {
           closeClass();
         }
@@ -250,7 +258,9 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
         }
         try {
           base.evaluate();
+          session.recordOutcome(null);
         } catch (Throwable failure) {
+          session.recordOutcome(failure);
           saveOnFailure(description, failure);
           throw failure;
         } finally {

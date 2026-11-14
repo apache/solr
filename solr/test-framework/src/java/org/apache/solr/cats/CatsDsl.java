@@ -134,6 +134,10 @@ public interface CatsDsl {
     cli().addPath(dir);
   }
 
+  default void showTranscript(boolean on) {
+    cli().showTranscript(on);
+  }
+
   default Path touch(String path) {
     return cli().touch(path);
   }
