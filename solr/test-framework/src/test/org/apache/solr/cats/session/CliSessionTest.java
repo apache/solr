@@ -190,6 +190,26 @@ public class CliSessionTest {
   }
 
   @Test
+  public void addPathMakesAHelperToolResolvable() throws IOException {
+    // The other stand-in program, installed somewhere the shell does not look.
+    Path tools = Files.createDirectories(tmp.resolve("tools"));
+    boolean cmd = "cmd".equals(Shells.current().id());
+    Path installed = tools.resolve(cmd ? "othertool.cmd" : "othertool");
+    try (InputStream in =
+        CliSessionTest.class.getResourceAsStream(
+            cmd ? "/cats/othertool.cmd" : "/cats/othertool.sh")) {
+      assertNotNull(in);
+      Files.copy(in, installed);
+    }
+    if (!cmd) {
+      Files.setPosixFilePermissions(installed, PosixFilePermissions.fromString("rwxr-xr-x"));
+    }
+    session.runFail("othertool echo hi");
+    session.addPath(tools);
+    session.run("othertool echo hi").assertExact("hi");
+  }
+
+  @Test
   public void harnessVariablesArePresent() {
     session.run("echo ${MYTOOL_HOME}").assertExitCode(0).assertExact(env.workDir().toString());
   }

@@ -126,6 +126,14 @@ public interface CatsDsl {
     cli().cd(dir);
   }
 
+  default void addPath(String dir) {
+    cli().addPath(dir);
+  }
+
+  default void addPath(Path dir) {
+    cli().addPath(dir);
+  }
+
   default Path touch(String path) {
     return cli().touch(path);
   }

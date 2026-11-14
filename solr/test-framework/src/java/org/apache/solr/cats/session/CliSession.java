@@ -205,6 +205,27 @@ public class CliSession implements AutoCloseable {
   }
 
   /**
+   * Puts a directory first on {@code PATH} for this session's later commands, for a helper tool
+   * that is not the program under test. A relative path resolves against {@link #cwd()}.
+   */
+  public void addPath(Path dir) {
+    Path absolute = cwd.resolve(dir).normalize();
+    if (!Files.isDirectory(absolute)) {
+      throw new AssertionError("addPath: not a directory: " + absolute);
+    }
+    String current = vars.get("PATH");
+    vars.put(
+        "PATH",
+        current == null || current.isBlank()
+            ? absolute.toString()
+            : absolute + System.getProperty("path.separator", ":") + current);
+  }
+
+  public void addPath(String dir) {
+    addPath(Path.of(dir));
+  }
+
+  /**
    * Creates an empty file, as {@code touch} does, resolving a relative path against {@link #cwd()}
    * and creating any missing parent directories.
    *

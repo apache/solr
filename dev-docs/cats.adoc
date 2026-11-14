@@ -37,7 +37,7 @@ A line whose command is one of these is rejected, because `cmd.exe` has no equiv
 | `sleep` | `awaitOrFail(what, timeout, interval, condition)`
 | `ps`, `pgrep`, `kill`, `pkill`, `lsof` | the harness tracks and stops what a test started
 | `pwd`, `basename`, `dirname`, `realpath` | `cwd()`, `path(p)` and `java.nio.file.Path`
-| `export`, `unset` | `env(name, value)`, `unset(name)`
+| `export`, `unset`, `PATH=dir:$PATH` | `env(name, value)`, `unset(name)`, `addPath(dir)`
 | `chmod`, `chown`, `ln`, `openssl`, `tar`, `unzip`, `which` | do it in Java, or mark the test `@EnabledOnShell(BASH)`
 |===
 
