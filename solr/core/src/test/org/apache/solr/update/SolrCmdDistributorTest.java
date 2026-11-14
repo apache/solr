@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.SocketException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -613,6 +614,56 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       err.statusCode = ((SolrException) e).code();
     }
     return err;
+  }
+
+  @Test
+  @ShardsFixed(num = 1)
+  public void testStallKeepsErrorsFromOtherNodes() throws Exception {
+    System.setProperty("solr.cloud.client.pollQueueTime", "100");
+    System.setProperty("solr.cloud.client.stallTime", "1000");
+    final var solrclient = clients.getFirst();
+
+    try (ServerSocket silent = new ServerSocket(0)) {
+      Node stalledNode =
+          new StdNode(
+              coreNodeProps("http://127.0.0.1:" + silent.getLocalPort() + "/solr", solrclient),
+              "collection1",
+              "shard1",
+              0);
+      Node failingNode =
+          new StdNode(
+              coreNodeProps("http://" + DEAD_HOST_1 + "/solr", solrclient),
+              "collection1",
+              "shard1",
+              1);
+
+      try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
+        AddUpdateCommand failing = new AddUpdateCommand(null);
+        failing.solrDoc = sdoc("id", uniqueId.incrementAndGet());
+        cmdDistrib.distribAdd(failing, List.of(failingNode), new ModifiableSolrParams());
+        for (int i = 0; i < 3; i++) {
+          AddUpdateCommand cmd = new AddUpdateCommand(null);
+          cmd.solrDoc = sdoc("id", uniqueId.incrementAndGet());
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          // distinct params keep each doc out of the in-flight stream, so the queue stays non-empty
+          params.set("stream", i);
+          cmdDistrib.distribAdd(cmd, List.of(stalledNode), params);
+        }
+        cmdDistrib.finish();
+        List<SolrError> errors = cmdDistrib.getErrors();
+        assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.req.node == failingNode));
+        assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.req.node == stalledNode));
+      }
+    }
+  }
+
+  private static ZkCoreNodeProps coreNodeProps(String baseUrl, HttpSolrClient client) {
+    return new ZkCoreNodeProps(
+        new ZkNodeProps(
+            ZkStateReader.BASE_URL_PROP,
+            baseUrl,
+            ZkStateReader.CORE_NAME_PROP,
+            client.getDefaultCollection()));
   }
 
   private void testOneRetry(NodeType nodeType) throws Exception {

@@ -1,0 +1,7 @@
+title: When an update stream to a replica stalls with updates still queued, the stall is now reported as a failure for that replica instead of the leader returning success and dropping errors from other replicas.
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-18656
+    url: https://issues.apache.org/jira/browse/SOLR-18656
