@@ -1,0 +1,12 @@
+title: >-
+  Add a binary compatibility check to the SolrJ build: :solr:solrj:check now compares the built
+  solrj and solr-api jars against the previous release with japicmp and fails on
+  binary-incompatible changes that are not excused in solr/solrj/binary-compat-exclusions.txt
+type: other
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18617
+    url: https://issues.apache.org/jira/browse/SOLR-18617
+  - name: SOLR-18600
+    url: https://issues.apache.org/jira/browse/SOLR-18600
