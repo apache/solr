@@ -18,6 +18,7 @@ package org.apache.solr.cli;
 
 import java.io.IOException;
 import java.util.Map;
+import org.apache.solr.cli.tools.cluster.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.EnvUtils;
@@ -30,20 +31,20 @@ import picocli.CommandLine;
  * ensure the user provides at most one of {@code --solr-connection}, {@code --solr-url} or {@code
  * --zk-host}.
  */
-class ConnectionOptions {
+public class ConnectionOptions {
   @CommandLine.Option(
       names = {"-s", "--solr-connection"},
       description =
           "Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to "
               + CommonCLIOptions.DefaultValues.ZK_HOST
               + ".")
-  String solrConnection;
+  public String solrConnection;
 
   @CommandLine.Option(
       names = {"--solr-url"},
       description =
           "Base Solr URL, which can be used to determine the zk-host if that's not known.")
-  String solrUrl;
+  public String solrUrl;
 
   @CommandLine.Option(
       names = {"-z", "--zk-host"},
@@ -51,13 +52,13 @@ class ConnectionOptions {
           "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
               + CommonCLIOptions.DefaultValues.ZK_HOST
               + ".")
-  String zkHost;
+  public String zkHost;
 
   /**
    * The effective ZooKeeper connection string, taking {@code --solr-connection} into account, or
    * null if the user targeted Solr via a URL (or gave no target at all).
    */
-  String effectiveZkHost() throws IOException {
+  public String effectiveZkHost() throws IOException {
     if (solrConnection != null) {
       var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
       return connection.isZookeeper() ? solrConnection : null;
@@ -69,7 +70,7 @@ class ConnectionOptions {
    * The effective Solr URL, taking {@code --solr-connection} into account, or null if the user
    * targeted ZooKeeper (or gave no target at all).
    */
-  String effectiveSolrUrl() throws IOException {
+  public String effectiveSolrUrl() throws IOException {
     if (solrConnection != null) {
       var connection = CloudSolrClient.CloudSolrClientConnection.parse(solrConnection);
       return connection.isZookeeper() ? null : connection.quorumItems().get(0);
@@ -77,7 +78,7 @@ class ConnectionOptions {
     return solrUrl;
   }
 
-  static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
+  public static String resolveSolrUrl(ConnectionOptions connectionOptions, String credentials)
       throws Exception {
     if (connectionOptions != null) {
       String solrUrl = connectionOptions.effectiveSolrUrl();
@@ -114,7 +115,7 @@ class ConnectionOptions {
     return defaultUrl;
   }
 
-  static String resolveZkHost(
+  public static String resolveZkHost(
       ConnectionOptions connectionOptions, String solrUrl, String credentials) throws Exception {
     boolean resolveFromSolrUrl = false;
     if (connectionOptions != null) {
