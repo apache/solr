@@ -63,7 +63,10 @@ public class SolrProcessManager {
    * marker, via {@code SOLR_OPTS_INTERNAL}.
    *
    * <p>While it is set, a PID file belonging to a node without the marker counts as stale and is
-   * removed by {@link #scanSolrPidFiles()}.
+   * removed by {@link #scanSolrPidFiles()}. A marker therefore scopes a PID directory, not just a
+   * scan: whoever sets one must also point its nodes at a PID directory of their own, as the CATS
+   * harness does with {@code SOLR_PID_DIR}. Nodes that share a PID directory must share the marker,
+   * or run with none, or a live node outside the marker loses its PID file.
    */
   public static final String PROCESS_SCAN_MARKER = "solr.process.scan.marker";
 
