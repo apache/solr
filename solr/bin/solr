@@ -1126,8 +1126,8 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
-    if [ $SOLR_PORT_LISTEN -gt 64535 ]; then
-      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT_LISTEN, which would result in an invalid embedded Zookeeper port!\n"
+    if [ $SOLR_PORT_LISTEN -gt 64000 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT_LISTEN; use 64000 or less, so that the embedded Zookeeper port (Solr port + 1000) stays a valid port!\n"
       exit 1
     fi
     if $verbose ; then

@@ -761,14 +761,14 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     return serverDir;
   }
 
-  /** Picks a free port, staying under 64536 so port + 1000 (embedded ZooKeeper) stays valid. */
+  /** Picks a free port the examples accept, i.e. one leaving room for the ports they derive. */
   private static int pickFreePort() throws IOException {
     int port;
     do {
       try (ServerSocket socket = new ServerSocket(0)) {
         port = socket.getLocalPort();
       }
-    } while (port > 64535);
+    } while (port > 64000);
     return port;
   }
 }

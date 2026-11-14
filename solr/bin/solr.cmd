@@ -974,8 +974,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
-    IF %SOLR_PORT_LISTEN% GTR 64535 (
-      set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT_LISTEN%, which would result in an invalid embedded Zookeeper port!"
+    IF %SOLR_PORT_LISTEN% GTR 64000 (
+      set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT_LISTEN%; use 64000 or less, so that the embedded Zookeeper port (Solr port + 1000) stays a valid port!"
       goto err
     )
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -Dsolr.zookeeper.server.enabled

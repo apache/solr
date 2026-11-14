@@ -558,12 +558,13 @@ public class RunExampleTool extends ToolBase {
   }
 
   /**
-   * Rejects ports outside the range bin/solr's embedded ZooKeeper (port + 1000, unless {@link
-   * SolrZkServer#EMBEDDED_ZK_PORT_PROPERTY} is set) can support, for every example type.
+   * Rejects ports outside the range the examples can support, for every example type. The upper
+   * bound leaves room both for the embedded ZooKeeper port derived as port + 1000 and for the
+   * further ports a multi-node example uses.
    */
   private static void validatePort(int port) {
-    if (port < 1024 || port > 64535) {
-      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
+    if (port < 1024 || port > 64000) {
+      throw new IllegalArgumentException("Choose a port between 1024 and 64000.");
     }
   }
 
