@@ -26,7 +26,7 @@ import org.junit.Test;
  * created: the class shares one {@code SOLR_HOME}, and a core directory left behind is discovered
  * by the other test's node and fails to load.
  */
-public class CreateTest extends SolrShellTestCase {
+public class CreateTest extends SolrCatsTestCase {
 
   @Test
   public void createForNonCloudMode() {

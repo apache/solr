@@ -29,8 +29,8 @@ import org.junit.runners.model.Statement;
  * implementation. The Solr counterpart of {@link org.apache.solr.cats.ShellGate}, over the {@code
  * cli} trait that {@link org.apache.solr.shell.exec.SolrProgram} reports.
  *
- * <p>{@link SolrShellTestCase} applies this itself; a test that drives the harness without
- * extending it adds the rule, handing it the traits of its own run.
+ * <p>{@link SolrCatsTestCase} applies this itself; a test that drives the harness without extending
+ * it adds the rule, handing it the traits of its own run.
  */
 public final class CliGate implements TestRule {
 

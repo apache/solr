@@ -28,7 +28,7 @@ import org.junit.Test;
  * <p>Both tests clean up the collection they created, {@code SOLR_HOME} being class-scoped, and the
  * {@code solr.include} file is written in the syntax of the shell that will read it.
  */
-public class ModulesTest extends SolrShellTestCase {
+public class ModulesTest extends SolrCatsTestCase {
 
   @Test
   public void sqlModule() {

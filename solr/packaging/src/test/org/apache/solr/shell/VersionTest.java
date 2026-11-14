@@ -20,7 +20,7 @@ package org.apache.solr.shell;
 import org.junit.Test;
 
 /** Port of {@code test_version.bats}. */
-public class VersionTest extends SolrShellTestCase {
+public class VersionTest extends SolrCatsTestCase {
 
   @Test
   public void versionReturnsSolrVersion() {

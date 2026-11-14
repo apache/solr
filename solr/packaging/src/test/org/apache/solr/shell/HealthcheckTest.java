@@ -25,7 +25,7 @@ import org.junit.Test;
  * <p>Each test starts its own node — one in cloud mode, one user-managed — and the cloud test
  * deletes its collection again, the class sharing one {@code SOLR_HOME}.
  */
-public class HealthcheckTest extends SolrShellTestCase {
+public class HealthcheckTest extends SolrCatsTestCase {
 
   @Test
   public void healthcheckOnCloudSolr() {

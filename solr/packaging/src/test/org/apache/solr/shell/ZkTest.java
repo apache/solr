@@ -32,7 +32,7 @@ import org.junit.Test;
  * <p>The symlink test works on a copy of the config set rather than mutating the shared
  * distribution, and the {@code ZK_HOST} test asserts only the fallback message.
  */
-public class ZkTest extends SolrShellTestCase {
+public class ZkTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

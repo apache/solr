@@ -23,12 +23,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Restricts a {@link SolrShellTestCase} test, or a whole class of them, to one command-line
+ * Restricts a {@link SolrCatsTestCase} test, or a whole class of them, to one command-line
  * implementation. On the other it is skipped as an assumption failure.
  *
  * <p>For the handful of tests that cannot hold for both, usually because they assert on usage or
  * error wording the two phrase differently. Where only a word or two differs, prefer {@code
- * SolrShellTestCase.forCli(commonsCliText, picocliText)}, which keeps one test covering both.
+ * SolrCatsTestCase.forCli(commonsCliText, picocliText)}, which keeps one test covering both.
  *
  * <pre>
  *   &#64;Test

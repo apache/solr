@@ -23,22 +23,21 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Restricts a {@code SolrShellTestCase} test, or a whole class of them, to particular shells. On
- * any other shell it is skipped as an assumption failure.
+ * Restricts a test, or a whole class of them, to particular shells. On any other shell it is
+ * skipped as an assumption failure.
  *
- * <p>Use it where {@code bin/solr} and {@code bin/solr.cmd} genuinely differ — an option only one
- * of them accepts, {@code solr.in.sh} versus {@code solr.in.cmd} handling, a Windows-only path
- * quirk. The default, no annotation at all, means the test is expected to pass on every shell,
- * which is what most ported BATS tests should be.
+ * <p>Use it where the program's launchers genuinely differ — an option only one of them accepts, a
+ * per-shell configuration file, a Windows-only path quirk. The default, no annotation at all, means
+ * the test is expected to pass on every shell, which is what most tests should be.
  *
  * <pre>
  *   &#64;Test
  *   &#64;EnabledOnShell("cmd")
- *   public void solrInCmdIsSourced() { ... }
+ *   public void configFileIsSourced() { ... }
  * </pre>
  *
- * <p>On a class it skips the whole class before any Solr is started, so a {@code @BeforeClass} that
- * starts a node costs nothing on the wrong shell.
+ * <p>On a class it skips the whole class before the program is started, so a {@code @BeforeClass}
+ * that launches a process costs nothing on the wrong shell.
  *
  * @see org.apache.solr.cats.exec.Shells
  */

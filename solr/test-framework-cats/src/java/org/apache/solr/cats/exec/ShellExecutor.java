@@ -41,8 +41,8 @@ import org.apache.solr.cats.SuppressForbidden;
 /**
  * Runs one command line in a fresh shell process and collects the result.
  *
- * <p>stdout and stderr always go to <em>files</em>, never pipes: a detached Solr JVM that inherits
- * a file handle cannot block the harness, while one that inherits a pipe can. stdin is a file too —
+ * <p>stdout and stderr always go to <em>files</em>, never pipes: a detached process that inherits a
+ * file handle cannot block the harness, while one that inherits a pipe can. stdin is a file too —
  * the null device unless the caller supplies text, so a command that prompts for input fails fast
  * instead of hanging.
  */
@@ -61,8 +61,8 @@ public final class ShellExecutor {
    * @param tag a name unique within {@code workDir}, used for those files
    * @param echoedPrefixes which of {@code env}'s names the result lists as defined when an
    *     assertion names one that is not
-   * @param separateStreams keep stdout and stderr apart instead of merging them like BATS' {@code
-   *     run} does
+   * @param separateStreams keep stdout and stderr apart instead of merging them, which is the
+   *     default
    * @param stdin text to feed the command on its standard input, or null for the null device
    */
   public record Spec(
@@ -143,11 +143,11 @@ public final class ShellExecutor {
   }
 
   /**
-   * Decodes as UTF-8, normalises CRLF to LF and strips one trailing newline, as BATS does.
+   * Decodes as UTF-8, normalises CRLF to LF and strips one trailing newline.
    *
-   * <p>Decoding is lenient, never strict: {@code bin\solr.cmd} output can come back in the console
-   * code page rather than the {@code chcp 65001} the harness asks for, and a truncated capture is
-   * cut mid-character. A replacement character in the transcript beats a {@link
+   * <p>Decoding is lenient, never strict: a Windows batch launcher's output can come back in the
+   * console code page rather than the {@code chcp 65001} the harness asks for, and a truncated
+   * capture is cut mid-character. A replacement character in the transcript beats a {@link
    * java.nio.charset.MalformedInputException} standing in for the test's real result.
    */
   private static String read(Path file) throws IOException {

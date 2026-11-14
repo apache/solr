@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Port of {@code test_delete_collection.bats}. */
-public class DeleteCollectionTest extends SolrShellTestCase {
+public class DeleteCollectionTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

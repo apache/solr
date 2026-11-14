@@ -25,7 +25,7 @@ import org.junit.Test;
  * <p>Each test starts its own node — one user-managed, one in cloud mode — and the harness stops it
  * when the test ends.
  */
-public class AssertTest extends SolrShellTestCase {
+public class AssertTest extends SolrCatsTestCase {
 
   @Test
   public void assertForNonCloudMode() {

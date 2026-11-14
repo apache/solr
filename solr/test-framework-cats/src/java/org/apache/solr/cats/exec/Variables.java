@@ -27,8 +27,8 @@ import java.util.regex.Pattern;
  *
  * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} all name an environment variable, and mean
  * the same wherever a test writes them — in a command line and in an assertion's expected text
- * alike — which is what lets a BATS line port over unchanged. See {@code CliSession#run(String)}
- * for why the harness resolves them rather than the shell.
+ * alike — which is what lets one line of test text work on every shell. See {@code
+ * CliSession#run(String)} for why the harness resolves them rather than the shell.
  */
 public final class Variables {
 

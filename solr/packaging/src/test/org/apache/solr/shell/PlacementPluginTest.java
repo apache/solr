@@ -25,7 +25,7 @@ import org.junit.Test;
  * <p>Each test names its own collection, the class sharing one {@code SOLR_HOME} and so one
  * ZooKeeper data directory.
  */
-public class PlacementPluginTest extends SolrShellTestCase {
+public class PlacementPluginTest extends SolrCatsTestCase {
 
   @Test
   public void affinityPlacementPluginUsingSysprop() {

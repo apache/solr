@@ -32,7 +32,7 @@ import org.junit.Test;
  * <p>The backup {@code location} is built from {@link Path#toUri()} rather than by gluing {@code
  * file://} onto the path, which would not be a valid file URL on Windows.
  */
-public class SecurityManagerTest extends SolrShellTestCase {
+public class SecurityManagerTest extends SolrCatsTestCase {
 
   @Test
   public void allowPathsBackup() throws IOException {

@@ -37,7 +37,7 @@ import org.junit.Test;
  * #stopByPortWorksWithoutAPidFile} matches both scripts' wording, {@code bin\solr.cmd} phrasing the
  * not-found case differently.
  */
-public class NoPidFileTest extends SolrShellTestCase {
+public class NoPidFileTest extends SolrCatsTestCase {
 
   /** Port of {@code start_solr_without_pid_file}. */
   private void startSolrWithoutPidFile() {

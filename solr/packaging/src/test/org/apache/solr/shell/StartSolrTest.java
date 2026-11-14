@@ -31,7 +31,7 @@ import org.junit.Test;
  * owns rather than a hardcoded one, and the stop-arg test is split per shell because the two
  * scripts reject the argument with different wording.
  */
-public class StartSolrTest extends SolrShellTestCase {
+public class StartSolrTest extends SolrCatsTestCase {
 
   @Test
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18647")

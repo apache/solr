@@ -38,15 +38,15 @@ import org.apache.solr.cats.exec.Shell;
 import org.apache.solr.cats.session.CatsCliHelpers.HttpResult;
 
 /**
- * A GET over HTTPS, carrying the client-side options the BATS suites express as {@code curl} flags:
- * a trust store ({@code --cacert}), credentials ({@code -u}) and the host to address the program
- * by.
+ * A GET over HTTPS, carrying the client-side options a shell test would express as {@code curl}
+ * flags: a trust store ({@code --cacert}), credentials ({@code -u}) and the host to address the
+ * program by.
  *
  * <p>The plain-HTTP {@link CatsCliHelpers#http} takes no configuration and so is a method; TLS
  * takes several options, hence a builder. Obtained from {@link CatsCliHelpers#https(String)}, and
  * what it returns is the same {@link HttpResult} a plain request returns.
  *
- * <p>This is what the {@code curl} lines of an SSL suite port to. There is no curl on a stock
+ * <p>This is what the {@code curl} lines of a TLS suite port to. There is no curl on a stock
  * Windows runner, so a test that shells out to one could only ever pass on bash.
  */
 public final class HttpsRequest {

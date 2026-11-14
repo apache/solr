@@ -13,6 +13,7 @@ on:
       - 'solr/packaging/src/**'
       - 'solr/packaging/build.gradle'
       - 'solr/core/src/java/org/apache/solr/cli/**'
+      - 'solr/test-framework-cats/**'
       - 'solr/test-framework/src/java/org/apache/solr/shell/**'
       - 'solr/test-framework/src/test/org/apache/solr/shell/**'
 
@@ -64,7 +65,7 @@ jobs:
     # The harness' own unit tests. No distribution needed, so this fails fast if the library itself
     # is broken. Run on both platforms: many of these cases exercise the cmd.exe half of it.
     - name: Test the CATS harness library
-      run: ${{ matrix.gradlew }} -p solr/test-framework catsTests
+      run: ${{ matrix.gradlew }} -p solr/test-framework-cats catsTests
 
     - name: Test bin/solr with CATS
       run: ${{ matrix.gradlew }} -p solr/packaging catsTests
@@ -87,4 +88,4 @@ jobs:
         path: |
           solr/packaging/build/cats-test-output
           solr/packaging/build/cats-test-output-picocli
-          solr/test-framework/build/test-results/catsTests
+          solr/test-framework-cats/build/test-results

@@ -24,7 +24,7 @@ import org.junit.Test;
  *
  * <p>Each test starts its own node, the last one needing a system property on the command line.
  */
-public class AdminConsoleUrlsTest extends SolrShellTestCase {
+public class AdminConsoleUrlsTest extends SolrCatsTestCase {
 
   @Test
   public void assertAbleToLaunchSolrAdminConsole() {

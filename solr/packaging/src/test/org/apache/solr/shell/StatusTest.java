@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Port of {@code test_status.bats}. */
-public class StatusTest extends SolrShellTestCase {
+public class StatusTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

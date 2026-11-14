@@ -20,9 +20,9 @@ package org.apache.solr.cats.env;
 /**
  * The ports one test class owns, in the shape its {@link PortLayout} describes.
  *
- * <p>An interface rather than a record so that a project can put its own names on them — a {@code
- * solr()} or a {@code zk()} — by implementing it over the block the harness handed out, and still
- * hand that back to the generic code.
+ * <p>An interface rather than a record so that a project can put its own names on them — an {@code
+ * admin()} or a {@code registry()} — by implementing it over the block the harness handed out, and
+ * still hand that back to the generic code.
  */
 public interface PortBlock {
 

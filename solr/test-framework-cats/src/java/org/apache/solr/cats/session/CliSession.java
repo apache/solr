@@ -66,9 +66,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>There is no long-lived shell process. Every {@link #run} starts a fresh one with this
  * session's environment and cwd, so quoting, globbing and variable expansion are done by the real
- * shell while control flow stays in Java. A class-scoped session stands in for BATS' {@code
- * setup_file}; each test gets a {@linkplain #child child} of it whose environment and cwd changes
- * are discarded afterwards.
+ * shell while control flow stays in Java. One session is scoped to a test class; each test gets a
+ * {@linkplain #child child} of it whose environment and cwd changes are discarded afterwards.
  *
  * <p>Sessions track which nodes they started by scanning the running process list after each
  * command, filtered to this scope's marker and port block, and stop exactly those on {@link
@@ -128,10 +127,7 @@ public class CliSession implements AutoCloseable {
     this.vars.put("WORK_DIR", workDir.toString());
   }
 
-  /**
-   * Creates the class-scoped session: BATS' {@code setup_file} scope. Its work dir is {@code
-   * <output dir>/work/<name>}.
-   */
+  /** Creates the class-scoped session. Its work dir is {@code <output dir>/work/<name>}. */
   public static CliSession forScope(CatsHarnessEnv env, ProgramUnderTest program, String name) {
     Path workDir = env.outputDir().resolve("work").resolve(sanitize(name));
     createDir(workDir);
@@ -143,8 +139,8 @@ public class CliSession implements AutoCloseable {
   }
 
   /**
-   * Creates a child session for one test: BATS' {@code setup} scope. It starts with a copy of this
-   * session's environment and cwd, so nothing a test changes leaks into the next one.
+   * Creates a child session for one test. It starts with a copy of this session's environment and
+   * cwd, so nothing a test changes leaks into the next one.
    */
   public CliSession child(String childName) {
     Path childWorkDir = workDir.resolve(sanitize(childName));
@@ -170,11 +166,11 @@ public class CliSession implements AutoCloseable {
   }
 
   /**
-   * Removes an environment variable for subsequent commands, as BATS' {@code unset} does.
+   * Removes an environment variable for subsequent commands, as a shell's {@code unset} does.
    *
-   * <p>Needed because several CLI behaviours are only reachable with a variable absent rather than
-   * empty — {@code bin/solr} checks whether {@code SOLR_PORT} is set at all before falling back to
-   * its default.
+   * <p>Needed because some behaviour of a program is only reachable with a variable absent rather
+   * than empty: a launcher may check whether a variable is set at all before falling back to its
+   * default.
    */
   public CliSession unset(String key) {
     vars.remove(key);
@@ -209,8 +205,8 @@ public class CliSession implements AutoCloseable {
   }
 
   /**
-   * Creates an empty file, as BATS' {@code touch} does, resolving a relative path against {@link
-   * #cwd()} and creating any missing parent directories.
+   * Creates an empty file, as {@code touch} does, resolving a relative path against {@link #cwd()}
+   * and creating any missing parent directories.
    *
    * <p>In Java rather than by running {@code touch}, which cmd.exe does not have. An existing file
    * is left as it is — tests use this to make a file exist, not to bump a timestamp.
@@ -231,7 +227,7 @@ public class CliSession implements AutoCloseable {
   }
 
   // ------------------------------------------------------------ file work, in Java
-  // The shell file tools a BATS test reaches for — mkdir, rm, cp, cat, ls, find, wc — exist on
+  // The shell file tools a test reaches for — mkdir, rm, cp, cat, ls, find, wc — exist on
   // bash and not on cmd.exe, so the harness offers them instead of letting a line hardcode one
   // shell. Every path is resolved against {@link #cwd()}, which is the scope's own work directory,
   // so a relative path behaves exactly as it would in the shell.
@@ -472,11 +468,11 @@ public class CliSession implements AutoCloseable {
   /**
    * Runs a command line.
    *
-   * <p>Variables are written the way the BATS suites write them, so a ported line needs no edit:
+   * <p>Variables are written the way a shell test writes them, so one line works on every shell:
    *
    * <pre>
-   *   run("solr zk ls / -z localhost:${ZK_PORT}");
-   *   run("solr start -p $SOLR2_PORT");
+   *   run("mytool list --server localhost:${REGISTRY_PORT}");
+   *   run("mytool start -p $SECOND_PORT");
    * </pre>
    *
    * <p>{@code ${NAME}}, {@code $NAME} and {@code {{NAME}}} resolve against the session environment,
@@ -489,7 +485,7 @@ public class CliSession implements AutoCloseable {
    * %} being {@link String#format}'s; {@code $'..'}, {@code $1} and a bare {@code $} are left for
    * the shell.
    *
-   * <p>A Java value is simply concatenated — {@code run("solr start -p " + myPort)}. Sharp edge:
+   * <p>A Java value is simply concatenated — {@code run("mytool start -p " + myPort)}. Sharp edge:
    * that happens before the harness resolves the line, so a value containing {@code ${...}} is
    * taken as a variable reference. An argument needing per-shell quoting goes through {@link
    * #run(List)}.
@@ -615,12 +611,12 @@ public class CliSession implements AutoCloseable {
   /**
    * A run is one command. A newline in the line would change what cmd.exe does without saying so:
    * Shells.CMD drops the {@code call} for a multi-line body, and without {@code call} a batch file
-   * that invokes {@code solr.cmd} never gets control back. Easy to write by accident in a text
+   * that invokes another batch file never gets control back. Easy to write by accident in a text
    * block.
    *
    * <p>Only the string form is checked. An argv element may legitimately contain a newline — the
-   * shell quoting takes care of it — which is how a BATS line like {@code $'id,value\nROW1,0.47'}
-   * ports over.
+   * shell quoting takes care of it — which is how a line like {@code $'id,value\nROW1,0.47'} is
+   * written.
    */
   private void requireSingleCommand(String line) {
     if (line.strip().contains("\n")) {
@@ -630,7 +626,7 @@ public class CliSession implements AutoCloseable {
   }
 
   /**
-   * The Unix-only tools a BATS line reaches for, each with the harness feature that replaces it.
+   * The Unix-only tools a shell line reaches for, each with the harness feature that replaces it.
    *
    * <p>None of these exist on cmd.exe, so a line invoking one is a test that silently only works on
    * one platform — caught here rather than on Windows three weeks later, and with the replacement

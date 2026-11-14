@@ -39,7 +39,7 @@ import org.junit.Test;
 // nodes' environment, so they get neither the process-scan marker nor SOLR_PID_DIR and cannot be
 // discovered or stopped (SOLR-18650). Both tests depend on the cluster the example starts, hence a
 // class gate rather than @AwaitsFix, which would skip the bash run too.
-public class ExampleTest extends SolrShellTestCase {
+public class ExampleTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

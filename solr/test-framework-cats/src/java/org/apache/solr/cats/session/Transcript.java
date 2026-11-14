@@ -34,13 +34,13 @@ import org.apache.solr.cats.exec.CommandResult;
  * <p>Formatted to read like a shell session, because on a failure this is the whole diagnosis.
  *
  * <pre>
- *   $ solr start
+ *   $ mytool start
  *   exit 0 in 3.1s
- *   | Started Solr server on port 46894 (pid=1234). Happy searching!
+ *   | Started mytool on port 46894 (pid=1234).
  *
- *   $ solr zk ls / -z localhost:47894
+ *   $ mytool list --port 46894
  *   exit 0 in 1.2s
- *   | aliases.json
+ *   | nothing yet
  * </pre>
  */
 public final class Transcript implements CommandHistory {
@@ -78,7 +78,7 @@ public final class Transcript implements CommandHistory {
 
   /**
    * Appends one HTTP request as the {@code curl} that reproduces it, so a transcript reads as the
-   * whole session a test ran rather than only its {@code bin/solr} half.
+   * whole session a test ran rather than only its command-line half.
    */
   public synchronized void recordHttp(String curlCommand, int status, String body) {
     StringBuilder entry = new StringBuilder();

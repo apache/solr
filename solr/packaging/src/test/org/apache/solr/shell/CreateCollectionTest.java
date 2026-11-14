@@ -28,7 +28,7 @@ import org.junit.Test;
  * <p>The invalid-config-dir path is matched with either separator: the tool echoes it back through
  * {@code Path}, which normalizes it on Windows.
  */
-public class CreateCollectionTest extends SolrShellTestCase {
+public class CreateCollectionTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

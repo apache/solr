@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** CATS, the cross-platform harness for testing Solr's command line scripts */
+/** CATS, the cross-platform harness for testing command line programs */
 package org.apache.solr.cats;

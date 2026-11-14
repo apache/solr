@@ -27,7 +27,7 @@ import org.junit.Test;
  * {@code SOLR_HOME} is wiped once per class, and a stale core directory would be discovered by the
  * other test's node.
  */
-public class ExportTest extends SolrShellTestCase {
+public class ExportTest extends SolrCatsTestCase {
 
   @Test
   public void checkExportCommand() {

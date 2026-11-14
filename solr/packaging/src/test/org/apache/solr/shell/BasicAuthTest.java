@@ -33,7 +33,7 @@ import org.junit.Test;
  * the credentials itself. That also keeps {@code solr auth disable} away from the distribution's
  * own include file, which every test class shares.
  */
-public class BasicAuthTest extends SolrShellTestCase {
+public class BasicAuthTest extends SolrCatsTestCase {
 
   @Before
   public void startSolrWithBasicAuth() throws IOException {

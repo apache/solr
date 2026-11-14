@@ -354,7 +354,8 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
 }
 
 // CATS - Cross-platform Automated Testing System - the CLI suites built on the
-// org.apache.solr.shell harness in solr/test-framework. Like the BATS suites these need the
+// org.apache.solr.cats harness in solr/test-framework-cats and its Solr layer in
+// solr/test-framework. Like the BATS suites these need the
 // unpacked distribution, so they are not part of 'check' and the stock 'test' task is turned off.
 tasks.named('test') {
   enabled = false
@@ -384,7 +385,7 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   def catsTestOutput = file("$buildDir/$outputName")
   task.inputs.dir(distDir)
   task.environment SOLR_TIP: distDir.toString()
-  task.environment TEST_OUTPUT_DIR: catsTestOutput.toString()
+  task.environment CATS_OUTPUT_DIR: catsTestOutput.toString()
   if (picocli != null) {
     task.environment SOLR_PICOCLI: picocli
   }
@@ -392,7 +393,7 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   task.doFirst {
     // Wiped per run, not per fork, so the port-block counter starts at zero and the last run's
     // failure snapshots do not pile up. Matches what configureBatsTask does for the BATS output.
-    // Nodes a killed run left behind are reaped by SolrShellTestCase's pre-flight check instead,
+    // Nodes a killed run left behind are reaped by SolrCatsTestCase's pre-flight check instead,
     // which matches on the command-line marker: reaping here would mean reading pid files, whose
     // names the two scripts disagree about, or process command lines, which the Gradle daemon
     // cannot read on Windows.

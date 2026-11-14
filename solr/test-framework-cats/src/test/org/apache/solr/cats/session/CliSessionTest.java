@@ -19,14 +19,17 @@ package org.apache.solr.cats.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.http.HttpHeaders;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -49,12 +52,12 @@ import org.junit.rules.TestName;
 
 /**
  * Unit tests for the harness itself — {@code env}, {@code cd}, {@code run}, {@code runWithStdin},
- * variable resolution, quoting, timeouts — with no program under test involved.
+ * variable resolution, quoting, timeouts.
  *
- * <p>Deliberately uses only shell built-ins, so it needs nothing installed and runs in a couple of
- * seconds. It runs on whichever shell the platform uses, which is how the {@code Shells.CMD} half
- * of the harness gets covered at all; the handful of cases that really are one shell's carry {@link
- * EnabledOnShell}.
+ * <p>Deliberately uses shell built-ins and the stand-in program under {@code src/test-files}, so it
+ * needs nothing installed and runs in a couple of seconds. It runs on whichever shell the platform
+ * uses, which is how the {@code Shells.CMD} half of the harness gets covered at all; the handful of
+ * cases that really are one shell's carry {@link EnabledOnShell}.
  */
 public class CliSessionTest {
 
@@ -105,30 +108,48 @@ public class CliSessionTest {
         Path classDir,
         PortBlock ports,
         String marker) {
-      vars.put("SOLR_HOME", createDir(classDir.resolve("home"), "SOLR_HOME").toString());
-      vars.put("SOLR_PORT", Integer.toString(ports.at(0)));
-      vars.put("SOLR2_PORT", Integer.toString(ports.at(1)));
-      vars.put("SOLR3_PORT", Integer.toString(ports.at(2)));
-      vars.put("ZK_PORT", Integer.toString(ports.at(3)));
+      vars.put("MYTOOL_HOME", createDir(classDir.resolve("home"), "MYTOOL_HOME").toString());
+      vars.put("MYTOOL_PORT", Integer.toString(ports.at(0)));
+      vars.put("MYTOOL2_PORT", Integer.toString(ports.at(1)));
+      vars.put("MYTOOL3_PORT", Integer.toString(ports.at(2)));
+      vars.put("MYTOOL_ADMIN_PORT", Integer.toString(ports.at(3)));
     }
 
     @Override
     public Path workDir() {
-      return Path.of(vars().get("SOLR_HOME"));
+      return Path.of(vars().get("MYTOOL_HOME"));
     }
 
     @Override
     public Set<String> echoedPrefixes() {
-      return Set.of("SOLR", "ZK_", "TEST_");
+      return Set.of("MYTOOL", "TEST_");
     }
   }
 
   @Before
   public void openSession() throws IOException {
     tmp = Files.createTempDirectory("cats-session-test");
-    Path installDir = Files.createDirectories(tmp.resolve("install").resolve("bin")).getParent();
-    env = new TestEnv(program, installDir, Files.createDirectory(tmp.resolve("out")));
+    Path launcherDir = Files.createDirectories(tmp.resolve("install").resolve("bin"));
+    installStandInProgram(launcherDir);
+    env = new TestEnv(program, launcherDir.getParent(), Files.createDirectory(tmp.resolve("out")));
     session = CliSession.forScope(env, program, testName.getMethodName());
+  }
+
+  /**
+   * Installs the stand-in program from {@code src/test-files} in the launcher directory, under the
+   * name this platform's shell resolves from the bare word {@code mytool}.
+   */
+  private static void installStandInProgram(Path launcherDir) throws IOException {
+    boolean cmd = "cmd".equals(Shells.current().id());
+    String fixture = cmd ? "mytool.cmd" : "mytool.sh";
+    Path installed = launcherDir.resolve(cmd ? "mytool.cmd" : "mytool");
+    try (InputStream in = CliSessionTest.class.getResourceAsStream("/" + fixture)) {
+      assertNotNull(fixture + " must be on the test classpath", in);
+      Files.copy(in, installed);
+    }
+    if (!cmd) {
+      Files.setPosixFilePermissions(installed, PosixFilePermissions.fromString("rwxr-xr-x"));
+    }
   }
 
   @After
@@ -166,26 +187,25 @@ public class CliSessionTest {
 
   @Test
   public void harnessVariablesArePresent() {
-    session.run("echo ${SOLR_HOME}").assertExitCode(0).assertExact(env.workDir().toString());
+    session.run("echo ${MYTOOL_HOME}").assertExitCode(0).assertExact(env.workDir().toString());
   }
 
   @Test
   public void runResolvesEveryVariableSpelling() {
     // All three mean "the environment variable", resolved by the harness before any shell sees it.
-    // ${NAME} is the one BATS uses, so a ported line needs no edit.
-    String zk = String.valueOf(env.ports().at(3));
-    session.run("echo ${ZK_PORT}").assertExact(zk);
-    session.run("echo $ZK_PORT").assertExact(zk);
-    session.run("echo {{ZK_PORT}}").assertExact(zk);
+    String admin = String.valueOf(env.ports().at(3));
+    session.run("echo ${MYTOOL_ADMIN_PORT}").assertExact(admin);
+    session.run("echo $MYTOOL_ADMIN_PORT").assertExact(admin);
+    session.run("echo {{MYTOOL_ADMIN_PORT}}").assertExact(admin);
   }
 
   @Test
   public void assertionsResolveVariablesToo() {
-    // The same spelling means the same thing in an assertion as in a command line, so a BATS
-    // assert_output --partial "...${ZK_PORT}" ports over unchanged.
-    session.run("echo port-${ZK_PORT}").assertContains("port-${ZK_PORT}");
-    session.run("echo port-${ZK_PORT}").assertExact("port-${ZK_PORT}");
-    session.run("echo nothing").assertNotContains("port-${ZK_PORT}");
+    // The same spelling means the same thing in an assertion as in a command line, so the two
+    // cannot drift apart.
+    session.run("echo port-${MYTOOL_ADMIN_PORT}").assertContains("port-${MYTOOL_ADMIN_PORT}");
+    session.run("echo port-${MYTOOL_ADMIN_PORT}").assertExact("port-${MYTOOL_ADMIN_PORT}");
+    session.run("echo nothing").assertNotContains("port-${MYTOOL_ADMIN_PORT}");
   }
 
   @Test
@@ -205,7 +225,9 @@ public class CliSessionTest {
 
   @Test
   public void runResolvesVariablesInTheArgvForm() {
-    session.run(List.of("echo", "${ZK_PORT}")).assertExact(String.valueOf(env.ports().at(3)));
+    session
+        .run(List.of("echo", "${MYTOOL_ADMIN_PORT}"))
+        .assertExact(String.valueOf(env.ports().at(3)));
   }
 
   @Test
@@ -215,7 +237,7 @@ public class CliSessionTest {
     // command even inside single quotes, where bash would never have expanded anything.
     session
         .allowShellSpecific()
-        .run("echo '${ZK_PORT}'")
+        .run("echo '${MYTOOL_ADMIN_PORT}'")
         .assertExact(String.valueOf(env.ports().at(3)));
   }
 
@@ -234,9 +256,9 @@ public class CliSessionTest {
     // %NAME% cannot be substituted (% is String.format's), and leaving it alone would make a line
     // that works on Windows and fails on bash. So it is refused, pointing at ${NAME}.
     AssertionError failure =
-        assertThrows(AssertionError.class, () -> session.run("echo %SOLR2_PORT%"));
+        assertThrows(AssertionError.class, () -> session.run("echo %MYTOOL2_PORT%"));
     assertTrue(failure.getMessage(), failure.getMessage().contains("cmd.exe-only variable"));
-    assertTrue(failure.getMessage(), failure.getMessage().contains("${SOLR2_PORT}"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("${MYTOOL2_PORT}"));
   }
 
   @Test
@@ -299,7 +321,7 @@ public class CliSessionTest {
 
   @Test
   public void stdoutAndStderrAreSeparableOnRequest() {
-    var separated = session.runSeparated("echo ${ZK_PORT}");
+    var separated = session.runSeparated("echo ${MYTOOL_ADMIN_PORT}");
     assertEquals(String.valueOf(env.ports().at(3)), separated.stdout());
     assertEquals("", separated.stderr());
   }
@@ -381,7 +403,7 @@ public class CliSessionTest {
   public void stdinCarriesQuotesNoShellWouldPassAsAnArgument() {
     session.allowShellSpecific();
     // Both quote characters at once, which cmd.exe cannot carry as an argument at all, plus the %
-    // it would expand. This is the shape PostTest.stdinMode feeds solr post.
+    // it would expand. This is the shape a test feeds a program that reads a document on stdin.
     String payload = "{'commit': {}, \"also\": \"100%\"}";
     session.runWithStdin(payload, "cat").assertExact(payload);
   }
@@ -449,12 +471,26 @@ public class CliSessionTest {
   @Test
   @EnabledOnShell("bash") // printf is the portable way to emit a specific invalid byte.
   public void outputThatIsNotValidUtf8DoesNotFailTheCommand() {
-    // Found on Windows, where bin/solr.cmd output comes back in the console code page: strict
+    // Found on Windows, where a launcher's .cmd output comes back in the console code page: strict
     // decoding turned a passing command into a MalformedInputException. Nothing guarantees a
     // command's bytes are UTF-8, so decoding replaces rather than throws.
     session.allowShellSpecific();
     session.run("printf 'before\\xffafter\\n'").assertExitCode(0).assertContains("before");
     session.lastResult().assertContains("after");
+  }
+
+  // ------------------------------------------------------- the program under test, on PATH
+
+  @Test
+  public void theProgramIsReachedByItsBareNameOnEitherShell() {
+    // One spelling for both platforms: the launcher directory is on PATH, and PATHEXT is what
+    // makes the bare word find mytool.cmd on Windows. The harness rewrites nothing.
+    session.run("mytool echo hello").assertExitCode(0).assertExact("hello");
+  }
+
+  @Test
+  public void anArgumentWithASpaceReachesTheProgramIntact() {
+    session.run(List.of("mytool", "echo", "two words")).assertExitCode(0).assertExact("two words");
   }
 
   // ------------------------------------------------------- node ownership
@@ -568,7 +604,7 @@ public class CliSessionTest {
   @Test
   public void aUnixOnlyToolIsRejectedWithTheAlternative() {
     AssertionError failure =
-        assertThrows(AssertionError.class, () -> session.run("grep -c solr somefile.txt"));
+        assertThrows(AssertionError.class, () -> session.run("grep -c hello somefile.txt"));
     assertTrue(failure.getMessage(), failure.getMessage().contains("linesMatching()"));
     // And the same mistake spelled with a path.
     assertThrows(AssertionError.class, () -> session.run("/usr/bin/awk {print} f"));
@@ -583,8 +619,8 @@ public class CliSessionTest {
     assertThrows(AssertionError.class, () -> session.run("echo $(date)"));
     assertThrows(AssertionError.class, () -> session.run("echo > /dev/null"));
     AssertionError assignment =
-        assertThrows(AssertionError.class, () -> session.run("SOLR_LOG_LEVEL=DEBUG echo hi"));
-    assertTrue(assignment.getMessage(), assignment.getMessage().contains("env(\"SOLR_LOG_LEVEL\""));
+        assertThrows(AssertionError.class, () -> session.run("LOG_LEVEL=DEBUG echo hi"));
+    assertTrue(assignment.getMessage(), assignment.getMessage().contains("env(\"LOG_LEVEL\""));
   }
 
   @Test
@@ -598,7 +634,7 @@ public class CliSessionTest {
   public void aMetacharacterInsideDoubleQuotesIsFine() {
     // Both shells protect it, so a URL with a query string must not trip the rails.
     session
-        .run("echo \"http://localhost:${SOLR_PORT}/solr/x?q=*:*&rows=10\"")
+        .run("echo \"http://localhost:${MYTOOL_PORT}/items?q=name:a*&rows=10\"")
         .assertContains("&rows=10");
   }
 
@@ -653,23 +689,23 @@ public class CliSessionTest {
   }
 
   @Test
-  public void headerAndRegexpAssertionsCoverTheCurlDashICasesOfTheBatsSuites() {
+  public void headerAndRegexpAssertionsCoverTheCurlDashICases() {
     CatsCliHelpers.HttpResult result =
         new CatsCliHelpers.HttpResult(
             200,
-            "<html><script src=\"libs/solr/index.js\"></script></html>",
+            "<html><script src=\"libs/app/index.js\"></script></html>",
             HttpHeaders.of(
                 Map.of("Content-Type", List.of("text/html;charset=utf-8")), (name, value) -> true),
-            Map.of("SOLR_PORT", "1234"),
+            Map.of("MYTOOL_PORT", "1234"),
             env.echoedPrefixes());
     // ${NAME} resolves in an HTTP assertion exactly as it does in a command assertion; before
-    // this, the expected text was compared unresolved and a ported BATS line passed silently.
-    result.assertContains("libs/solr/index.js").assertNotContains("port ${SOLR_PORT}");
+    // this, the expected text was compared unresolved and the assertion passed silently.
+    result.assertContains("libs/app/index.js").assertNotContains("port ${MYTOOL_PORT}");
     result
         .assertHeaderContains("Content-Type: text/html")
         .assertHeaderNotContains("Cache-Control")
         .assertMatches("<html")
-        // The versioned-asset shape the admin UI must not emit: a digest before the extension.
+        // The versioned-asset shape a web UI must not emit: a digest before the extension.
         .assertNotMatches("(src|href)=\"[^\"]+\\.[0-9a-f]{8}\\.(js|css)\"");
     assertThrows(AssertionError.class, () -> result.assertHeaderContains("X-Frame-Options"));
     assertThrows(
@@ -682,7 +718,7 @@ public class CliSessionTest {
     // block, so it exercises the request path without needing a node.
     session
         .helpers()
-        .http(session.ports().at(0), "/solr/films/select", Map.of("Accept-Encoding", "gzip"))
+        .http(session.ports().at(0), "/items/select", Map.of("Accept-Encoding", "gzip"))
         .assertConnectionFailed();
   }
 
@@ -693,17 +729,16 @@ public class CliSessionTest {
     Path document = session.write("doc.bin", "a document");
     session
         .helpers()
-        .httpPostFile(
-            session.ports().at(0), "/solr/x/update/extract?literal.id=doc1", "myfile", document)
+        .httpPostFile(session.ports().at(0), "/upload?id=doc1", "myfile", document)
         .assertConnectionFailed();
   }
 
   @Test
   public void anHttpsRequestThatCannotConnectIsReportedAsAFailureNotAStatus() {
-    // Nothing is listening on the block this session claimed, which is the shape of the BATS
-    // 'run ! curl https://...' line: no status, and the reason readable in the body.
+    // Nothing is listening on the block this session claimed, which is the shape of a test that
+    // expects a request to fail: no status, and the reason readable in the body.
     CatsCliHelpers.HttpResult result =
-        session.helpers().https(session.ports().at(0), "/solr/admin/info/system").get();
+        session.helpers().https(session.ports().at(0), "/status").get();
     result.assertConnectionFailed();
     assertTrue(result.body(), result.body().contains("Connect"));
   }
@@ -716,12 +751,12 @@ public class CliSessionTest {
     int port = session.ports().at(0);
     session
         .helpers()
-        .httpPost(port, "/solr/films/schema", "application/json", "{\"add-field\":{}}")
+        .httpPost(port, "/items", "application/json", "{\"name\":\"one\"}")
         .assertConnectionFailed();
     Path file = session.write("upload.txt", "payload");
     session
         .helpers()
-        .httpPut(port, "/api/cluster/filestore/files/upload.txt", "application/octet-stream", file)
+        .httpPut(port, "/files/upload.txt", "application/octet-stream", file)
         .assertConnectionFailed();
   }
 

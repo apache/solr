@@ -27,7 +27,7 @@ Built on `lucene-test-framework`: `SolrTestCase` extends `LuceneTestCase`, so te
 | --- | --- |
 | `SolrTestCase` | Default. Anything needing no Solr core. |
 | `cloud.SolrCloudTestCase` | You need a real cluster: in-JVM `MiniSolrCloudCluster` with embedded ZooKeeper. |
-| `shell.SolrShellTestCase` | You are testing `bin/solr` / `bin\solr.cmd` itself, as a real subprocess. |
+| `shell.SolrCatsTestCase` | You are testing `bin/solr` / `bin\solr.cmd` itself, as a real subprocess. |
 | `BaseDistributedSearchTestCase` | Distributed-search comparisons against a control core. |
 | `SolrTestCaseJ4` | Legacy. Don't extend it in new tests. |
 
@@ -41,20 +41,11 @@ Deliberately thin — its javadoc asks you to keep it that way. It contributes t
 
 `configureCluster(n).addConfig("conf", ExternalPaths.DEFAULT_CONFIGSET).configure()` in `@BeforeClass`; the cluster is the static `cluster` field and is shut down for you. Neighbours: `MultiSolrCloudTestCase`, `SolrCloudAuthTestCase`, `ChaosMonkey` and `SocketProxy` for fault injection.
 
-## SolrShellTestCase
+## SolrCatsTestCase
 
-CATS — Cross-platform Automated Testing System — the harness for the start scripts: one Java test runs `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, which the BATS suites cannot do. Suites live in `solr/packaging/src/test/org/apache/solr/shell/`; the harness' own unit tests are in `src/test/org/apache/solr/shell/`.
+CATS — Cross-platform Automated Testing System — is the harness for the start scripts: one Java test runs `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, which the BATS suites cannot do. The harness itself is generic and documented in [`solr/test-framework-cats/README.md`](../test-framework-cats/README.md) — sessions, `run`/`runFail` and the rest of the DSL, the portable file and HTTP replacements for Unix tools, transcripts and how a failure reads, `@EnabledOnShell`, port blocks, the `cats.*` settings. What follows is only the Solr layer. Suites live in `solr/packaging/src/test/org/apache/solr/shell/`.
 
-No long-lived shell process — each command starts a fresh one with the session's environment and cwd, so quoting and expansion are the real shell's while control flow stays in Java.
-
-### Sessions
-
-| Field | Scope | BATS equivalent |
-| --- | --- | --- |
-| `classCli` (static) | the class; nodes it starts are stopped after it | `setup_file` |
-| `cli` | one test; env, cwd and nodes rolled back after it | `setup` |
-
-Test methods use the inherited shorthands (`run`, `http`, `env`, `read`, …), which delegate to `cli`. Only `@BeforeClass`/`@AfterClass` name `classCli`.
+`SolrCatsTestCase extends SolrTestCase implements CatsDsl`, so a suite gets Solr's test conventions and the generic vocabulary in one base class — including the `classCli` and `cli` sessions and the shorthands that delegate to them:
 
 ```java
 @BeforeClass
@@ -68,55 +59,27 @@ public void createsCollection() {
 }
 ```
 
-### Commands and assertions
+What it adds beyond the DSL:
 
-`run(String)` is one command with merged streams, as BATS' `run`, and **asserts that it succeeded** — so the happy path carries no status boilerplate. A command expected to fail uses `runFail(String)`, which asserts a non-zero status and hands back the result to assert on what it printed. Both fail at the call site, naming the command and its output, and both fail if the status is the opposite of the one implied. For an exact code there is `assertExitCode(int)`. A predicate that inspects the status itself - a poll that expects failure until some state changes - uses `tryRun(String)`, which asserts nothing.
+- `ports()`, narrowed to `SolrPorts`: `solr()`, `solr2()`, `solr3()`, `zk()` over the class's port block.
+- `collectionExists`, `configExists`, `deleteAllCollections`, `shutdownAll`, `dumpSolrLog` — delegating to `SolrCliHelpers`, which is `CatsCliHelpers` plus those five.
+- `forCli(commonsCliText, picocliText)`, the wording for the command-line implementation this run targets.
 
-Also `run(Duration, String)`, `run(List<String>)` (harness quotes each argument for the shell in use), `runFail(List<String>)`, `tryRun(String)`, `runSeparated(String)`, `script(bash, cmd)` for shell-specific logic, and `lastResult()`. Timeouts default to 120 s, 300 s for `solr start`/`restart`.
+### The `cli` trait
 
-`CommandResult`'s assertions are fluent and chainable, named after their `bats-assert` originals: `assertExitCode`, `assertContains`, `assertNotContains`, `assertMatches`, `assertNotMatches`, `assertExact`, `assertLine`, `assertLineCount`, `assertContainsTimes`, and `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations. Accessors replace the pipelines a BATS line would use: `lines`, `linesMatching`, `firstMatch`, `firstLines`, `lastLines`, `fields`, `countOccurrences`.
+`SolrProgram.traits()` reports one trait, `cli`: `picocli` or `commons-cli`, as `SOLR_PICOCLI` says, defaulting to picocli in step with `SolrCLI.main`. `@EnabledOnCli("picocli")` on a method or a class skips a test that holds for only one implementation, before any node starts; where the two differ in wording alone, prefer `forCli`. `CliGate` is the rule behind the annotation, and the counterpart of the generic `ShellGate`.
 
-### Variables
+### SolrProgram
 
-Three mechanisms, and no others:
+The `ProgramUnderTest` implementation — how the generic harness learns the Solr facts it cannot guess: the port layout (the node port `P`, two more for the multi-node suites, embedded ZooKeeper on `P+1000`, stride 4, bases 20 000–30 000), node discovery by command-line marker through `SolrProcessManager`, `solr stop -p <port>` for a graceful stop, and `solr-<port>.pid` / `.port` as the stale files to delete after a force-kill.
 
-1. `${NAME}` (also `$NAME`, `{{NAME}}`) — resolved by the *harness*, in command lines and in expected text alike, so a BATS line ports unchanged. An unknown name fails the test rather than becoming empty. `%NAME%` is rejected. Supplied: `SOLR_TIP`, `SOLR_HOME`, `SOLR_PID_DIR`, `SOLR_LOGS_DIR`, `TEST_OUTPUT_DIR`, `TEST_FAILURE_DIR`, `WORK_DIR`, `SOLR_PORT`, `SOLR2_PORT`, `SOLR3_PORT`, `ZK_PORT`, plus `env(name, value)` / `unset(name)`.
-2. Java concatenation for Java values: `run("solr start -p " + myPort)`.
-3. `run(List.of(..))` when an argument needs per-shell quoting.
+### SolrCatsHarnessEnv and SolrPorts
 
-Inside `script(bash, cmd)` only `{{NAME}}` is harness-resolved; `$NAME` belongs to the shell, and a `$NAME` in the *cmd* body is rejected because cmd.exe would pass it through as text.
+`SolrCatsHarnessEnv` assembles the environment every spawned shell is given: `SOLR_TIP` (the unpacked distribution — required, with no fallback), a per-class `SOLR_HOME` wiped at setup, `SOLR_PID_DIR` inside it (which is what scopes `solr stop --all` to this class and away from your own Solr), `SOLR_LOGS_DIR`, `SOLR_PORT`/`SOLR_PORT_LISTEN`/`SOLR2_PORT`/`SOLR3_PORT`/`ZK_PORT` from the claimed block, `SOLR_ULIMIT_CHECKS=false`, the two-channel process-scan marker (`SOLR_PROCESS_SCAN_MARKER` for the CLI's JVM, `SOLR_OPTS_INTERNAL` for the node's command line), and `TEST_OUTPUT_DIR`/`TEST_FAILURE_DIR`. Each value is read from the environment, then from the system property `solr.cli.<lowercase.dotted.name>` (for IDE runs), then a fallback.
 
-### Portability rails
+`SOLR_HOME` is also what gets snapshotted into `$TEST_FAILURE_DIR/<Class>-<method>/` when a test fails, alongside the transcript.
 
-A `run()` line that could only pass on bash fails immediately, with the replacement named: Unix-only tools (`grep`, `sed`, `awk`, `cat`, `ls`, `curl`, `sleep` and ~40 more), bash-only syntax outside quotes (`|`, `&&`, `;`, `$(..)`, backticks, single-quoted arguments, leading `NAME=value`, `/dev/null`), more than one command, and `%NAME%`.
-
-The replacements are built in. File work, resolved against the session's cwd: `path`, `mkdirs`, `write`, `append`, `read`, `readLinesMatching`, `fileContains`, `exists`, `rm`, `copy`, `touch`, `list`. HTTP: `http(path)` and the `https(path)` builder, instead of `curl`. Waiting: `awaitOrFail(what, timeout, interval, condition)`, instead of `sleep`.
-
-`@EnabledOnShell` switches the rails off for that test — it has declared one shell, so there is nothing left to break.
-
-### Skipping
-
-`@EnabledOnShell(Shell.BASH|CMD)` and `@EnabledOnCli(Cli.PICOCLI|COMMONS_CLI)` work on a method or a class, and skip as assumption failures before any node starts. No annotation means the test must pass everywhere, which is what a ported BATS test normally should be. Where only wording differs, prefer `assertContainsForCli`. A test that drives the harness without extending `SolrShellTestCase` honours `@EnabledOnShell` via `@Rule public final ShellGate shellGate = new ShellGate();`.
-
-### Isolation
-
-Every test class gets its own `SOLR_HOME` (wiped at setup), `SOLR_PID_DIR` (inside it, which is what scopes `solr stop --all` to this class and away from your own Solr), logs directory, and port block claimed under a file lock. The block layout is dictated by Solr: a node on `P` also listens on `P-1000` for `solr stop` and runs ZooKeeper on `P+1000`. A pre-flight check fails fast if the block is busy, reaping nodes a killed earlier run left behind; a post-flight check fails the class if a node outlived it. That is what makes parallel forks safe.
-
-Each value is read from the environment, then the system property `solr.cli.<lowercase.dotted.name>` (for IDE runs), then a fallback. `SOLR_TIP` has none.
-
-### How a failure reads
-
-`ShellAssertionError` carries no stack trace — the frames would all be harness internals. You get the transcript and one `FAILED:` line:
-
-```
-$ solr zk ls / -z localhost:47894
-exit 0 in 1.2s
-| aliases.json
-
-FAILED: output did not contain: collections
-```
-
-A malformed *test* — unknown `${NAME}`, a non-portable line — still throws a normal `AssertionError` with frames, because there the test line is what matters. On failure `SOLR_HOME` and the transcript are copied to `$TEST_FAILURE_DIR/<Class>-<method>/` and the path printed; that is BATS' `save_home_on_failure`.
+`SolrPorts` is a `PortBlock` view that gives the block's four ports the names the BATS suites used.
 
 ## SolrTestCaseJ4
 
@@ -135,10 +98,11 @@ The ones you actually reach for:
 
 ## Running tests
 
-`./gradlew helpTests` covers seeds, filtering and the rest. Two things specific to CATS: `./gradlew catsTests` from the root runs both tasks of that name — `solr/test-framework`'s harness unit tests, which are part of `check`, and `solr/packaging`'s CLI suites, which are not because they need an unpacked distribution. To run a suite from an IDE, build one (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
+`./gradlew helpTests` covers seeds, filtering and the rest. Two things specific to CATS: `./gradlew catsTests` from the root runs both tasks of that name — `solr/test-framework-cats`'s harness unit tests, which are part of `check`, and `solr/packaging`'s CLI suites, which are not because they need an unpacked distribution. To run a suite from an IDE, build one (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
 
 ## See also
 
+- [`solr/test-framework-cats/README.md`](../test-framework-cats/README.md) — the generic CATS harness the Solr layer sits on.
 - [`solr/packaging/README.md`](../packaging/README.md) — the CLI suites and the distribution they run against.
 - [`dev-docs/writing-tests.adoc`](../../dev-docs/writing-tests.adoc) — which kind of test to write.
 - [`dev-docs/admin-ui-tests.md`](../../dev-docs/admin-ui-tests.md) — the Selenium browser tests.

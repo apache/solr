@@ -43,7 +43,7 @@ import org.junit.Test;
 // reports TestCouldNotBeSkippedException instead of skipping. Leak detection is off here rather
 // than chased: the suite drives bin/solr as subprocesses, so it has little of its own to leak.
 @ThreadLeakScope(Scope.NONE)
-public class ExtractionTest extends SolrShellTestCase {
+public class ExtractionTest extends SolrCatsTestCase {
 
   @ClassRule public static final TikaServerContainerRule tikaServer = new TikaServerContainerRule();
 

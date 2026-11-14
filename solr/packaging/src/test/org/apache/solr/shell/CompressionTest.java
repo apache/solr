@@ -31,7 +31,7 @@ import org.junit.Test;
  * create} and {@code solr post} of the example docs give these tests what they need: a collection
  * whose query response exceeds Jetty's 2048-byte {@code minGzipSize}.
  */
-public class CompressionTest extends SolrShellTestCase {
+public class CompressionTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

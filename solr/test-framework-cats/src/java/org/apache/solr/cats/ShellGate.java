@@ -29,8 +29,8 @@ import org.junit.runners.model.Statement;
 /**
  * Honours {@link EnabledOnShell} on a test method, skipping it on any other shell.
  *
- * <p>{@code SolrShellTestCase} applies this itself. A test that drives the harness without needing
- * a Solr distribution — and so does not extend it — adds the rule:
+ * <p>{@link org.apache.solr.cats.session.CatsSessionRule} applies this itself. A test that drives
+ * the harness without that rule adds this one:
  *
  * <pre>
  *   &#64;Rule public final ShellGate shellGate = new ShellGate();

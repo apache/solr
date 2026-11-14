@@ -34,7 +34,7 @@ import org.junit.Test;
  * SOLR_HOME} is wiped per class rather than per test, so a failure between a create and its delete
  * would otherwise resurface as a second failure in the sibling test that reused the name.
  */
-public class SnapshotsTest extends SolrShellTestCase {
+public class SnapshotsTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {

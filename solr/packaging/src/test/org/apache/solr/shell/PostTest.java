@@ -28,7 +28,7 @@ import org.junit.Test;
  * <p>The two tests that need a pipe or an embedded newline say so explicitly rather than relying on
  * bash syntax inside a shared command line.
  */
-public class PostTest extends SolrShellTestCase {
+public class PostTest extends SolrCatsTestCase {
 
   private static final String DOCS = "${SOLR_TIP}/example/exampledocs";
 

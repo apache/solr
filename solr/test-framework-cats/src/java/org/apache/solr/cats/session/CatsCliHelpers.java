@@ -47,11 +47,12 @@ import org.apache.solr.cats.exec.ShellAssertionError;
 import org.apache.solr.cats.exec.Variables;
 
 /**
- * The conveniences a shell test reaches for beyond running a command, ported from {@code
- * bats_helper.bash}: HTTP requests against the program under test, and the tail of a log file.
+ * The conveniences a shell test reaches for beyond running a command: HTTP requests against the
+ * program under test, and the tail of a log file.
  *
- * <p>Knows nothing of what the program is. A project extends this with the helpers that do — a
- * collection, a config, a graceful shutdown — and the session hands back whichever it was given.
+ * <p>Knows nothing of what the program is. A project extends this with the helpers that do — its
+ * own resources, its administrative endpoints, a graceful shutdown — and the session hands back
+ * whichever it was given.
  *
  * <p>Reached through the session that owns it, or directly as inherited shorthands on a test case.
  */
@@ -102,8 +103,8 @@ public class CatsCliHelpers {
    * The response to a harness HTTP request, with the same shape of fluent assertions a command
    * result has.
    *
-   * <p>{@code curl} appears seventy times across the BATS suites, almost always followed by an
-   * assertion on the body, so this is what those lines port to.
+   * <p>An HTTP request in a shell test is almost always followed by an assertion on the body, so
+   * this carries those assertions rather than returning bare text.
    */
   public record HttpResult(
       int status,
@@ -120,8 +121,8 @@ public class CatsCliHelpers {
 
     /**
      * Resolves {@code ${NAME}} in an assertion's expected text, exactly as {@link CommandResult}
-     * does: a ported BATS line asserting on {@code ${SOME_PORT}} must either work or fail loudly,
-     * never pass by comparing against the unresolved text.
+     * does: an assertion on {@code ${SOME_PORT}} must either work or fail loudly, never pass by
+     * comparing against the unresolved text.
      */
     private String resolve(String expected) {
       return Variables.resolve(expected, Variables.ANY, vars, "an HTTP assertion", echoedPrefixes);
@@ -170,7 +171,7 @@ public class CatsCliHelpers {
 
     /**
      * The response headers as {@code Name: value} lines, which is what {@code curl -I} prints and
-     * so what a BATS assertion on a header was written against.
+     * so the shape an assertion on a header is written against.
      */
     public String headerText() {
       StringBuilder text = new StringBuilder();
@@ -187,8 +188,8 @@ public class CatsCliHelpers {
      * Port of {@code curl -s -I ...} followed by {@code assert_output --partial}.
      *
      * <p>Matched without regard to case, because header names are case-insensitive by RFC and the
-     * client here speaks HTTP/2 where they arrive lowercased, while the BATS lines this ports were
-     * written against curl's HTTP/1.1 {@code Cache-Control: no-cache} spelling.
+     * client here speaks HTTP/2 where they arrive lowercased, while an assertion is usually written
+     * in curl's HTTP/1.1 {@code Cache-Control: no-cache} spelling.
      */
     public HttpResult assertHeaderContains(String substring) {
       if (!headerTextLower().contains(resolve(substring).toLowerCase(Locale.ROOT))) {
@@ -233,8 +234,8 @@ public class CatsCliHelpers {
   /**
    * A GET against {@code http://localhost:<primary port><pathAndQuery>}.
    *
-   * <p>Stands in for the {@code curl} calls in the BATS suites, which is most of what makes
-   * readiness checks portable: there is no curl on a stock Windows runner.
+   * <p>Stands in for a {@code curl} call, which is most of what makes readiness checks portable:
+   * there is no curl on a stock Windows runner.
    */
   public HttpResult http(String pathAndQuery) {
     return http(defaultPort(), pathAndQuery);
@@ -279,7 +280,7 @@ public class CatsCliHelpers {
 
   /**
    * A POST carrying a text body, which is what {@code curl -X POST -H 'Content-type:<type>' -d
-   * '<body>'} ports to — the shape every BATS line that modifies state uses.
+   * '<body>'} ports to — the shape a shell line that modifies state uses.
    */
   public HttpResult httpPost(String pathAndQuery, String contentType, String body) {
     return httpPost(defaultPort(), pathAndQuery, contentType, body);
@@ -327,7 +328,7 @@ public class CatsCliHelpers {
 
   /**
    * A {@code multipart/form-data} POST of one file: the port of {@code curl -F "field=@<file>"},
-   * which is how a BATS line hands a binary document to a request handler.
+   * which is how a shell line hands a binary document to a request handler.
    *
    * <p>Shares {@link #httpPut}'s longer timeout, for the same reason.
    */

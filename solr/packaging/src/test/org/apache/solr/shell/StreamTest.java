@@ -35,7 +35,7 @@ import org.junit.Test;
  * basicAuth.conf}, so every command has to supply the credentials itself, and the distribution's
  * own include file — shared with every concurrent class — is left alone.
  */
-public class StreamTest extends SolrShellTestCase {
+public class StreamTest extends SolrCatsTestCase {
 
   private static final String EXPR_FILE = "search.expr";
 

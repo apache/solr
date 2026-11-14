@@ -20,7 +20,7 @@ package org.apache.solr.shell;
 import org.junit.Test;
 
 /** Port of {@code test_help.bats}. */
-public class HelpTest extends SolrShellTestCase {
+public class HelpTest extends SolrCatsTestCase {
 
   @Test
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18649")

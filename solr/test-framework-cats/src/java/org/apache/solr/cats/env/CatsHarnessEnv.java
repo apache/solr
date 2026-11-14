@@ -61,13 +61,6 @@ public abstract class CatsHarnessEnv {
    */
   public static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(5);
 
-  /**
-   * The output-directory variable from before the harness owned the name, still accepted so a build
-   * that sets it keeps working.
-   */
-  // TODO G6.3: drop once the Gradle task sets CATS_OUTPUT_DIR.
-  private static final String LEGACY_OUTPUT_DIR_VAR = "TEST_OUTPUT_DIR";
-
   private final ProgramUnderTest program;
   private final Lookup lookup;
   private final Optional<Path> installDir;
@@ -332,9 +325,6 @@ public abstract class CatsHarnessEnv {
       return onDefaultFileSystem(explicit);
     }
     String configured = Lookup.CATS.get("CATS_OUTPUT_DIR");
-    if (configured == null) {
-      configured = lookup.get(LEGACY_OUTPUT_DIR_VAR);
-    }
     return configured == null ? tempDir("cats-") : onDefaultFileSystem(Path.of(configured));
   }
 
@@ -380,8 +370,8 @@ public abstract class CatsHarnessEnv {
         isWindows() ? new TreeMap<>(String.CASE_INSENSITIVE_ORDER) : new LinkedHashMap<>();
     env.putAll(System.getenv());
     env.putAll(programVars);
-    // With the launcher on PATH, one command string works on both shells: 'solr' on bash and
-    // 'solr.cmd' on cmd, the latter through PATHEXT rather than any rewriting by the harness.
+    // With the launcher on PATH, one command string works on both shells: the bare launcher name
+    // on bash and its .cmd twin on cmd, through PATHEXT rather than any rewriting by the harness.
     launcherDir()
         .ifPresent(
             dir -> {

@@ -30,7 +30,7 @@ import org.junit.Test;
  * shared with every concurrent class, so {@link #cleanSetup} points {@code SOLR_INCLUDE} at a
  * private copy — as {@code SslTest} does.
  */
-public class AuthTest extends SolrShellTestCase {
+public class AuthTest extends SolrCatsTestCase {
 
   @Before
   public void cleanSetup() throws IOException {

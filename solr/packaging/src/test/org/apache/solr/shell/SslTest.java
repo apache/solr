@@ -44,7 +44,7 @@ import org.junit.Test;
  * {@code curl --resolve} peer-name case lives in a bash-only companion test, {@link
  * #useDifferentHostnameWithCurlResolve}.
  */
-public class SslTest extends SolrShellTestCase {
+public class SslTest extends SolrCatsTestCase {
 
   private static final String SECRET = "secret";
 

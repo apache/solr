@@ -26,20 +26,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The outcome of one shell command, with BATS-style fluent assertions.
+ * The outcome of one shell command, with fluent assertions over it.
  *
  * <p>Every assertion failure carries the command, shell, cwd, status, duration and the captured
  * output, so a CI log alone is enough to diagnose it.
  *
  * @param command the line as handed to the shell
- * @param output stdout and stderr merged, as BATS' {@code run} produces, or their concatenation
- *     when the command was run with the streams kept apart
+ * @param output stdout and stderr merged, which is the default, or their concatenation when the
+ *     command was run with the streams kept apart
  * @param stdout stdout alone; equal to {@code output} when the streams were merged
  * @param stderr stderr alone; empty when the streams were merged
  * @param timedOut whether the command was killed for exceeding its timeout
  * @param vars an unmodifiable view of the session environment this ran with. Assertions resolve
- *     {@code ${NAME}} in their expected text against it, so an assertion reads exactly like the
- *     BATS one it was ported from.
+ *     {@code ${NAME}} in their expected text against it, so an assertion reads like the command
+ *     line it checks.
  * @param echoedPrefixes which of those names an unresolved {@code ${NAME}} lists as defined
  * @param history everything the scope has run, which a failure quotes instead of a stack trace
  */

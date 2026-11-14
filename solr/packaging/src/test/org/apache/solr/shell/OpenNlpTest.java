@@ -28,7 +28,7 @@ import org.junit.Test;
  * ${SOLR_TIP}/models/sentiment/}: the distribution is shared by every class running concurrently
  * and must not be written to.
  */
-public class OpenNlpTest extends SolrShellTestCase {
+public class OpenNlpTest extends SolrCatsTestCase {
 
   private static final String MODEL_URL =
       "https://nightlies.apache.org/solr/opennlp-dl-integration/model_quantized.onnx";
