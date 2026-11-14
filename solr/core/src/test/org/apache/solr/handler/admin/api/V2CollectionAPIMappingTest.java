@@ -50,10 +50,8 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   @Override
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
-    apiBag.registerObject(new MigrateDocsAPI(collectionsHandler));
     apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
-    apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
   }
 
   @Override
@@ -121,43 +119,5 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals(123, v1Params.getPrimitiveInt("timeout"));
     assertTrue(v1Params.getPrimitiveBool("inPlaceMove"));
     assertTrue(v1Params.getPrimitiveBool("followAliases"));
-  }
-
-  @Test
-  public void testMigrateDocsAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'migrate-docs': {"
-                + "'target': 'someTargetCollection', "
-                + "'splitKey': 'someSplitKey', "
-                + "'forwardTimeout': 123, "
-                + "'followAliases': true, "
-                + "'async': 'requestTrackingId' "
-                + "}}");
-
-    assertEquals(CollectionParams.CollectionAction.MIGRATE.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("someTargetCollection", v1Params.get("target.collection"));
-    assertEquals("someSplitKey", v1Params.get("split.key"));
-    assertEquals(123, v1Params.getPrimitiveInt("forward.timeout"));
-    assertTrue(v1Params.getPrimitiveBool("followAliases"));
-    assertEquals("requestTrackingId", v1Params.get(ASYNC));
-  }
-
-  @Test
-  public void testRebalanceLeadersAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'rebalance-leaders': {" + "'maxAtOnce': 123, " + "'maxWaitSeconds': 456" + "}}");
-
-    assertEquals(
-        CollectionParams.CollectionAction.REBALANCELEADERS.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals(123, v1Params.getPrimitiveInt("maxAtOnce"));
-    assertEquals(456, v1Params.getPrimitiveInt("maxWaitSeconds"));
   }
 }

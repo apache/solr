@@ -19,14 +19,18 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -234,6 +238,91 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     boolean ruleRemoved = waitForRuleToExpire(sourceCollection, "shard2", splitKey, finishTime);
     assertTrue("Routing rule was not expired", ruleRemoved);
+  }
+
+  @Test
+  public void testMigrateDocs() throws Exception {
+    final String source = "v2MigrateSource";
+    final String target = "v2MigrateTarget";
+    createMigrationCollections(source, target);
+
+    final var request = new CollectionsApi.MigrateDocs(source);
+    request.setTarget(target);
+    request.setSplitKey("a!");
+    request.setForwardTimeout(45);
+    final var response = request.process(cluster.getSolrClient());
+    assertEquals(0, response.responseHeader.status);
+
+    assertMigrationResult(source, target);
+  }
+
+  @Test
+  public void testMigrateDocsAsyncWithAliases() throws Exception {
+    final String source = "v2MigrateAsyncSource";
+    final String target = "v2MigrateAsyncTarget";
+    final String sourceAlias = "v2MigrateSourceAlias";
+    final String targetAlias = "v2MigrateTargetAlias";
+    final String asyncId = "v2MigrateAsyncId";
+    createMigrationCollections(source, target);
+    CollectionAdminRequest.createAlias(sourceAlias, source).process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias(targetAlias, target).process(cluster.getSolrClient());
+
+    final var request = new CollectionsApi.MigrateDocs(sourceAlias);
+    request.setTarget(targetAlias);
+    request.setSplitKey("a!");
+    request.setForwardTimeout(45);
+    request.setFollowAliases(true);
+    request.setAsync(asyncId);
+    final var response = request.process(cluster.getSolrClient());
+    assertEquals(0, response.responseHeader.status);
+
+    assertEquals(asyncId, response.requestId);
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.requestStatus(asyncId).waitFor(cluster.getSolrClient(), 120));
+    assertMigrationResult(source, target);
+  }
+
+  private void createMigrationCollections(String source, String target) throws Exception {
+    CollectionAdminRequest.createCollection(source, "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(target, "conf", 1, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(source, 1, 1);
+    cluster.waitForActiveCollection(target, 1, 1);
+    cluster.getSolrClient().add(source, new SolrInputDocument("id", "a!1"));
+    cluster.getSolrClient().add(source, new SolrInputDocument("id", "b!1"));
+    cluster.getSolrClient().add(target, new SolrInputDocument("id", "existing!1"));
+    cluster.getSolrClient().commit(source);
+    cluster.getSolrClient().commit(target);
+  }
+
+  private void assertMigrationResult(String source, String target) throws Exception {
+    waitForState(
+        "Expected a routing rule for split key a!",
+        source,
+        c -> {
+          if (c == null) {
+            return false;
+          }
+          Map<String, RoutingRule> rules = c.getSlice("shard1").getRoutingRules();
+          return rules != null && rules.containsKey("a!");
+        });
+
+    assertEquals(
+        target,
+        getCollectionState(source)
+            .getSlice("shard1")
+            .getRoutingRules()
+            .get("a!")
+            .getTargetCollectionName());
+    cluster.getSolrClient().commit(target);
+    final var documents =
+        cluster.getSolrClient().query(target, new SolrQuery("*:*").setFields("id")).getResults();
+    assertEquals(2, documents.getNumFound());
+    assertEquals(
+        Set.of("a!1", "existing!1"),
+        documents.stream()
+            .map(document -> document.getFieldValue("id"))
+            .collect(Collectors.toSet()));
   }
 
   static class Indexer extends Thread {
