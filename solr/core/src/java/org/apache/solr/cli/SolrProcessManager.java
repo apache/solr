@@ -166,7 +166,7 @@ public class SolrProcessManager {
    * to the port that {@code bin/solr} derives when nothing was configured.
    */
   private int parseStopPortFromProcess(ProcessHandle ph, int port) {
-    for (String arg : arguments(ph)) {
+    for (String arg : arguments(ph).reversed()) {
       int idx = arg.indexOf(STOP_PORT_ARG);
       if (idx >= 0) {
         try {
