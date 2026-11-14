@@ -1,0 +1,15 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  `bin\solr.cmd` writes a real `solr-<port>.pid` file for a background start, resolving the PID from
+  the port it listens on, and both `bin\solr.cmd stop` and `bin/solr status` now read only PID
+  files. A foreground start writes no file, as on other platforms. The `solr-<port>.port` file is
+  still written for external scripts, but nothing in Solr reads it any more; it is deprecated and
+  will no longer be written in Solr 11.0.
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18661
+    url: https://issues.apache.org/jira/browse/SOLR-18661
