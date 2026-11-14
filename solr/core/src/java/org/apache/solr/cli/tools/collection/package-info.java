@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** CLI tools for cluster operations. */
+/** CLI tools for creating, deleting and configuring collections and cores. */
 package org.apache.solr.cli.tools.collection;

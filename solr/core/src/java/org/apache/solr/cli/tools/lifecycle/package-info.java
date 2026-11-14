@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** CLI tools for lifecycle operations. */
+/** CLI tools for lifecycle operations. Start, stop and restart solr nodes. */
 package org.apache.solr.cli.tools.lifecycle;
