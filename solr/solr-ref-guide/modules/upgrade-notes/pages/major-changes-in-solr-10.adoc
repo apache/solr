@@ -93,12 +93,8 @@ The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to 
 
 === Windows PID Files
 
-A background `bin\solr.cmd start` now writes a real PID file, `solr-<port>.pid`, into `SOLR_PID_DIR`, the same file `bin/solr` writes on other platforms.
-A foreground start (`-f`) writes no file at all, again as on other platforms.
-
-`bin\solr.cmd stop` and `bin/solr status` read only the PID file from now on.
-The `solr-<port>.port` file is still written on a background start for external scripts that read it, but nothing in Solr reads it any more.
-It is deprecated in Solr 10.2 and will no longer be written in Solr 11.0.
+On Windows, `bin\solr.cmd` now writes a true `solr-<port>.pid` file instead of relying on the `solr-<port>.port` file.
+The `solr-<port>.port` file is deprecated and will be removed in a future version.
 
 == Solr 10.1
 
