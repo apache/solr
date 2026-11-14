@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: The `fl` parameter now accepts field exclusions, such as `fl=-title` or `fl=*,-attr_*`, to return all fields except those named or matching a glob.
+type: added
+authors:
+  - name: Scott Stults
+links:
+  - name: SOLR-3191
+    url: https://issues.apache.org/jira/browse/SOLR-3191
