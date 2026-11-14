@@ -160,6 +160,14 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
    * entirely unbuilt harness.
    */
   public void closeClass() {
+    closeClass(null);
+  }
+
+  /**
+   * As {@link #closeClass()}, recording {@code outcome} (null for success) as the class scope's
+   * last transcript line once its teardown has run.
+   */
+  public void closeClass(Throwable outcome) {
     List<String> problems = new ArrayList<>();
     try {
       if (classSession != null) {
@@ -171,6 +179,9 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
     } catch (RuntimeException | AssertionError e) {
       problems.add(e.toString());
     } finally {
+      if (classSession != null) {
+        classSession.recordOutcome(outcome);
+      }
       classSession = null;
     }
     try {
@@ -225,18 +236,14 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
       @Override
       public void evaluate() throws Throwable {
         openClass(description.getTestClass());
+        Throwable outcome = null;
         try {
           base.evaluate();
-          if (classSession != null) {
-            classSession.recordOutcome(null);
-          }
         } catch (Throwable failure) {
-          if (classSession != null) {
-            classSession.recordOutcome(failure);
-          }
+          outcome = failure;
           throw failure;
         } finally {
-          closeClass();
+          closeClass(outcome);
         }
       }
     };
@@ -256,17 +263,22 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
             || description.getTestClass().getAnnotation(EnabledOnShell.class) != null) {
           session.allowShellSpecific();
         }
+        Throwable outcome = null;
         try {
           base.evaluate();
-          session.recordOutcome(null);
         } catch (Throwable failure) {
-          session.recordOutcome(failure);
-          saveOnFailure(description, failure);
+          outcome = failure;
           throw failure;
         } finally {
+          // Teardown first, so the transcript's last line is the outcome and the failure snapshot
+          // holds the logs of nodes that have stopped and flushed.
           try {
             session.close();
           } finally {
+            session.recordOutcome(outcome);
+            if (outcome != null) {
+              saveOnFailure(description, outcome);
+            }
             session = null;
             sink.accept(null);
           }
