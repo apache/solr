@@ -34,6 +34,7 @@ import java.util.function.IntFunction;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -554,6 +555,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     HLLAgg agg = new HLLAgg(freq.field);
     SlotAcc acc = agg.createSlotAcc(fcontext, domain.size(), 1);
+    if (freq.prefix != null && acc instanceof UniqueSlotAcc uniqueAcc) {
+      // the docs in the domain can have values without the prefix too
+      uniqueAcc.valuePrefix = new BytesRef(freq.prefix);
+    }
     acc.collect(domain, 0, null); // we know HLL doesn't care about the bucket query
     acc.key = "numBuckets";
     acc.setValues(target, 0);
