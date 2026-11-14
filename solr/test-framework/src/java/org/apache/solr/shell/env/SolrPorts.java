@@ -20,11 +20,14 @@ package org.apache.solr.shell.env;
 import org.apache.solr.cats.env.PortBlock;
 
 /**
- * Solr's names for the block of ports a shell test run owns, mirroring the {@code SOLR_PORT},
- * {@code SOLR2_PORT}, {@code SOLR3_PORT} and {@code ZK_PORT} variables used by the BATS suites.
+ * Solr's names for the ports a shell test class owns: three node ports, the embedded ZooKeeper
+ * port, and a stop port per node. The first four mirror the {@code SOLR_PORT}, {@code SOLR2_PORT},
+ * {@code SOLR3_PORT} and {@code ZK_PORT} variables the BATS suites used.
  *
- * <p>A view over the consecutive ports the harness claimed, as many as {@link
- * org.apache.solr.shell.exec.SolrProgram#PORT_COUNT} asked for.
+ * <p>A view over the seven consecutive ports the harness claimed, which is where all of Solr's port
+ * knowledge lives — the generic harness only counts them. {@link
+ * org.apache.solr.shell.exec.SolrProgram#PORT_COUNT} says how many, and why the stop ports are
+ * allocated before anything passes them.
  */
 public record SolrPorts(PortBlock block) implements PortBlock {
 
@@ -42,6 +45,21 @@ public record SolrPorts(PortBlock block) implements PortBlock {
 
   public int zk() {
     return block.at(3);
+  }
+
+  /** The stop port of a node on {@link #solr()}. */
+  public int stop() {
+    return block.at(4);
+  }
+
+  /** The stop port of a node on {@link #solr2()}. */
+  public int stop2() {
+    return block.at(5);
+  }
+
+  /** The stop port of a node on {@link #solr3()}. */
+  public int stop3() {
+    return block.at(6);
   }
 
   @Override
@@ -69,6 +87,11 @@ public record SolrPorts(PortBlock block) implements PortBlock {
   @Override
   public boolean contains(int port) {
     return block.contains(port);
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return block.isEmpty();
   }
 
   @Override

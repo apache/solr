@@ -130,6 +130,16 @@ public abstract class CatsHarnessEnv {
       String marker);
 
   /**
+   * Puts whatever the program must find in its work directory there, called once per class after
+   * {@link #workDir()} has been emptied and recreated and before anything runs in it.
+   *
+   * <p>For configuration the harness writes rather than passes: a setting the program only reads
+   * from a file below its own home. A test that empties the work directory again itself has to call
+   * this afterwards. Nothing is required of it, and the default writes nothing.
+   */
+  public void prepareWorkDir() {}
+
+  /**
    * The system-property prefix the program's variables are looked up under, so that the properties
    * of one project cannot be mistaken for another's.
    */

@@ -38,6 +38,8 @@ public class AuthTest extends SolrCatsTestCase {
     // wipe also discards the embedded ZooKeeper's data, and with it any security.json.
     IOUtils.rm(harnessEnv.solrHome());
     Files.createDirectories(harnessEnv.logsDir());
+    // The wipe takes the zoo.cfg naming this class's embedded ZooKeeper port with it.
+    harnessEnv.prepareWorkDir();
 
     // 'solr auth enable' appends to the include file, which by default belongs to the distribution
     // every test class shares, so each test gets a private copy in its own work directory. The

@@ -40,6 +40,8 @@ public class BasicAuthTest extends SolrCatsTestCase {
     // Every test starts its own Solr from a clean SOLR_HOME.
     IOUtils.rm(harnessEnv.solrHome());
     Files.createDirectories(harnessEnv.logsDir());
+    // The wipe takes the zoo.cfg naming this class's embedded ZooKeeper port with it.
+    harnessEnv.prepareWorkDir();
 
     run("solr start -Dsolr.packages.enabled=true");
 

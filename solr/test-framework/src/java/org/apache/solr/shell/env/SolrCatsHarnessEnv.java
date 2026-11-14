@@ -17,6 +17,8 @@
 
 package org.apache.solr.shell.env;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -96,6 +98,14 @@ public final class SolrCatsHarnessEnv extends CatsHarnessEnv {
     vars.put("SOLR2_PORT", Integer.toString(solrPorts.solr2()));
     vars.put("SOLR3_PORT", Integer.toString(solrPorts.solr3()));
     vars.put("ZK_PORT", Integer.toString(solrPorts.zk()));
+    // EnvUtils turns this into solr.zookeeper.embedded.port, the setting SOLR-7596 adds. Until it
+    // lands, the zoo.cfg of prepareWorkDir() is what moves the embedded ZooKeeper off P + 1000.
+    vars.put("SOLR_ZOOKEEPER_EMBEDDED_PORT", Integer.toString(solrPorts.zk()));
+    // Named so a suite can address a node's stop port, not passed to bin/solr: one STOP_PORT per
+    // invocation would be shared by every node of a class (SOLR-9714, see SolrProgram#PORT_COUNT).
+    vars.put("SOLR_STOP_PORT", Integer.toString(solrPorts.stop()));
+    vars.put("SOLR2_STOP_PORT", Integer.toString(solrPorts.stop2()));
+    vars.put("SOLR3_STOP_PORT", Integer.toString(solrPorts.stop3()));
     // BATS' common_setup does the same; the checks are noisy and irrelevant under test.
     vars.put("SOLR_ULIMIT_CHECKS", "false");
 
@@ -114,6 +124,37 @@ public final class SolrCatsHarnessEnv extends CatsHarnessEnv {
     String picocli = lookup("SOLR_PICOCLI");
     if (picocli != null) {
       vars.put("SOLR_PICOCLI", picocli);
+    }
+  }
+
+  /**
+   * Writes the class's {@code zoo.cfg} into {@code SOLR_HOME}, so that the embedded ZooKeeper
+   * listens on the port this class was given rather than on {@code SOLR_PORT + 1000}.
+   *
+   * <p>{@code SolrZkServer} reads {@code clientPort} from {@code ${SOLR_HOME}/zoo.cfg} and only
+   * derives the port when it finds none, so a copy of the distribution's own file with {@code
+   * clientPort} filled in is enough — no setting to pass, and nothing derived. It has to be inside
+   * {@code SOLR_HOME}: the node runs under the security manager, whose policy grants it no read
+   * anywhere else. A test that wipes {@code SOLR_HOME} itself must therefore call this again.
+   *
+   * <p>Once SOLR-7596 lands, the exported {@code SOLR_ZOOKEEPER_EMBEDDED_PORT} says the same thing
+   * and this can go.
+   *
+   * <p>A consequence worth knowing: two nodes of one class share this {@code SOLR_HOME}, and so
+   * this {@code clientPort}. The second joins the first with {@code -z localhost:${ZK_PORT}}
+   * instead of running a ZooKeeper of its own, which is what a cluster looks like anyway.
+   */
+  @Override
+  public void prepareWorkDir() {
+    Path zooCfg = solrHome().resolve("zoo.cfg");
+    try {
+      String config =
+          Files.readString(solrTip().resolve("server").resolve("solr").resolve("zoo.cfg"));
+      Files.writeString(
+          zooCfg,
+          config + System.lineSeparator() + "clientPort=" + ports().zk() + System.lineSeparator());
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not write the embedded ZooKeeper config " + zooCfg, e);
     }
   }
 

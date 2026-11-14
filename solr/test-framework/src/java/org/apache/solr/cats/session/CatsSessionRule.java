@@ -300,6 +300,8 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
     } catch (IOException e) {
       throw new UncheckedIOException("Could not give the class a clean work directory", e);
     }
+    // After the wipe, so configuration the harness writes into the work directory survives it.
+    env.prepareWorkDir();
   }
 
   /**

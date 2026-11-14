@@ -47,10 +47,31 @@ public final class SolrProgram implements ProgramUnderTest {
 
   /**
    * The ports one test class gets: the node port {@code P} and two more for the multi-node suites,
-   * plus one for embedded ZooKeeper — four consecutive ports, named by {@link
+   * the embedded ZooKeeper port, and a stop port for each of the three nodes — seven consecutive
+   * ports, {@code at(0)} through {@code at(6)}, named by {@link
    * org.apache.solr.shell.env.SolrPorts}.
+   *
+   * <p>Four of the seven are passed to {@code bin/solr} today. The embedded ZooKeeper port is
+   * handed over in a {@code zoo.cfg} the harness writes for the class, which {@code SolrZkServer}
+   * reads before falling back to {@code P+1000}; once SOLR-7596 lands it can be passed as {@code
+   * solr.zookeeper.embedded.port} instead, which is why {@code SOLR_ZOOKEEPER_EMBEDDED_PORT} is
+   * already exported.
+   *
+   * <p>The three stop ports are allocated but not yet passed. {@code bin/solr} takes one {@code
+   * STOP_PORT} per invocation, so a single environment variable would have every node of a class
+   * share it and {@code stop --all} use it for all of them; a per-node stop port is SOLR-9714.
+   * Until then the scripts derive {@code P-1000} themselves, and the allocation reserves the three
+   * ports so that the switch is a one-line change rather than a re-think of the block.
+   *
+   * <p>That a derived port stays out of another class's block is arithmetic, not luck. Blocks are
+   * seven consecutive ports from one run-wide base, so class {@code i} owns {@code base+7i} through
+   * {@code base+7i+6}, and a port derived 1000 below or above one of them lands in class {@code
+   * j}'s block only when {@code 7|i-j|} falls within 6 of 1000 — that is, when the two classes are
+   * 142 or 143 blocks apart. A run has tens of classes, not 142, so a derived {@code P-1000} stop
+   * port and the {@code P+1000} ZooKeeper port {@code RunExampleTool} still picks for itself are
+   * both safe.
    */
-  public static final int PORT_COUNT = 4;
+  public static final int PORT_COUNT = 7;
 
   @Override
   public int portCount() {
