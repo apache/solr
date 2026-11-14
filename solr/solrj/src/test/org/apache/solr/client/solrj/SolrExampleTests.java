@@ -1021,6 +1021,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       src = (String) doc.getFieldValue("_src_");
       m = (Map) fromJSONString(src);
       assertEquals("name2", m.get("name"));
+
+      assertNumFound("name:name1", 1);
+      assertNumFound("name:name2", 1);
     }
   }
 
