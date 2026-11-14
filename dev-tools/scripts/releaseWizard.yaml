@@ -683,6 +683,9 @@ groups:
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
       NOTE: Do not add every single JIRA issue, but distill the release notes into important changes!
+
+      Leave a clear all-caps placeholder at the end of the page, e.g. `TODO: THANK CONTRIBUTORS`.
+      The list of contributors is only final after the vote, and is added in a later step.
     links:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
@@ -1493,9 +1496,33 @@ groups:
     post_description: |
       You will push and verify all changes in a later step
   - !Todo
+    id: release_notes_contributors
+    title: Add contributors to the release notes
+    depends: website_update_antora_htaccess
+    description: |
+      The changelog for {{ release_version }} is final, and the next step copies the Wiki Release Notes
+      page into the website news. List the contributors, to thank them in the release notes.
+
+      The script prints the unique authors of `changelog/v{{ release_version }}/`, excluding `solrbot`.
+      Its output is raw; merge duplicates (e.g. differing case, trailing commas, handles vs. real names),
+      split any entry holding several people, and drop placeholders like "various contributors".
+
+      Paste the cleaned list into the Wiki Release Notes page, replacing the all-caps
+      `TODO: THANK CONTRIBUTORS` placeholder.
+    links:
+    - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: List contributors of {{ release_version }}
+      commands:
+        - !Command
+          cmd: python3 -u dev-tools/scripts/parseContributorsFromChanges.py {{ release_version }}
+          comment: Print the contributors of this release
+          tee: true
+  - !Todo
     id: prepare_announce_solr
     title: Author the Solr release news
-    depends: website_update_antora_htaccess
+    depends: release_notes_contributors
     description: |
       Edit a news text for the Solr website. This text will be the basis for the release announcement email later.
       This step will open an editor with a template. You will need to copy/paste the final release announcement text
