@@ -17,6 +17,7 @@
 package org.apache.solr.ui.views.configsets
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -33,6 +34,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsScene
+import org.apache.solr.ui.views.indexquery.IndexQueryContent
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsTab
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.configsets_index_query
@@ -79,6 +81,17 @@ fun ConfigsetsScene(
                         modifier = Modifier.fillMaxSize().padding(16.dp),
                     )
                 }
+                entry<ConfigsetsScene.IndexQuery> {
+                    IndexQueryContent(
+                        viewModel = viewModel { component.createIndexQueryViewModel() },
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                    )
+                }
+                entry<ConfigsetsScene.Files> { Box(Modifier.fillMaxSize()) }
+                entry<ConfigsetsScene.Schema> { Box(Modifier.fillMaxSize()) }
+                entry<ConfigsetsScene.UpdateConfig> { Box(Modifier.fillMaxSize()) }
+                entry<ConfigsetsScene.Handlers> { Box(Modifier.fillMaxSize()) }
+                entry<ConfigsetsScene.SearchComponents> { Box(Modifier.fillMaxSize()) }
             },
         )
     }

@@ -23,6 +23,7 @@ import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsOverviewViewModel
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
 import org.apache.solr.ui.components.configsets.viewmodel.CreateConfigsetViewModel
 import org.apache.solr.ui.components.configsets.viewmodel.ImportConfigsetViewModel
@@ -55,4 +56,9 @@ interface ConfigsetsComponent {
     fun createConfigsetsViewModel(): ConfigsetsViewModel
 
     fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent
+
+    /**
+     * Factory method to create an [IndexQueryViewModel] instance.
+     */
+    fun createIndexQueryViewModel(): IndexQueryViewModel
 }
