@@ -36,8 +36,7 @@ import picocli.CommandLine;
     })
 public class StopCommand {
 
-  @CommandLine.Mixin
-  HelpMixin helpMixin;
+  @CommandLine.Mixin HelpMixin helpMixin;
 
   @CommandLine.Option(
       names = {"-p", "--port"},
