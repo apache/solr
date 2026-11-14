@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.collection;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

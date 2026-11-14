@@ -28,6 +28,7 @@ import org.apache.solr.cli.ConfigSetOptions;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
+import org.apache.solr.cli.tools.collection.CreateTool;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Supports zk upconfig command in the bin/solr script.
  *
- * <p>Unlike {@link org.apache.solr.cli.tools.CreateTool}, this uploads directly to ZooKeeper rather
+ * <p>Unlike {@link CreateTool}, this uploads directly to ZooKeeper rather
  * than going through the Configsets V2 API. That's intentional: this command is meant to work
  * against a bare ZooKeeper ensemble with no Solr node running yet (e.g. provisioning configs before
  * the cluster starts), and the V2 API requires an HTTP endpoint on an already-running node to PUT

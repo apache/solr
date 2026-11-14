@@ -57,6 +57,7 @@ import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.cli.tools.cluster.StatusTool;
+import org.apache.solr.cli.tools.collection.CreateTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;

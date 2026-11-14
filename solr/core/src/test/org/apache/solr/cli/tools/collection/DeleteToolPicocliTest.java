@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.collection;
 
 import java.util.Arrays;
 import org.apache.solr.cli.CLITestHelper;
@@ -24,11 +24,11 @@ import org.apache.solr.cli.ToolRuntime;
 import picocli.CommandLine;
 
 /**
- * Runs all {@link ConfigToolTest} tests through the picocli invocation path.
+ * Runs all {@link DeleteToolTest} tests through the picocli invocation path.
  *
  * <p>All {@code @Test} methods are inherited; only the invocation strategy is overridden.
  */
-public class ConfigToolPicocliTest extends ConfigToolTest {
+public class DeleteToolPicocliTest extends DeleteToolTest {
 
   @Override
   protected int runTool(String[] args, Class<? extends ToolBase> clazz) throws Exception {

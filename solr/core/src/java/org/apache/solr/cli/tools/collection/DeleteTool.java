@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.collection;
 
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;

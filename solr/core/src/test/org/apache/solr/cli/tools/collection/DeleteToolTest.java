@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.collection;
 
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.ToolBase;

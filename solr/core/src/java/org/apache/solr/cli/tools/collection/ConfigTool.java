@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cli.tools;
+package org.apache.solr.cli.tools.collection;
 
 import java.util.HashMap;
 import java.util.List;
