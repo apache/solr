@@ -71,7 +71,8 @@ public class StartCommand implements Callable<Integer> {
   @CommandLine.Option(
       names = {"-z", "--zk-host"},
       description =
-          "Zookeeper connection string; default is to start an embedded ZooKeeper on PORT+10000")
+          "Zookeeper connection string; default is to start an embedded ZooKeeper listening on"
+              + " SOLR_ZOOKEEPER_EMBEDDED_PORT if set, else the Solr port + 1000")
   String zkHost;
 
   @CommandLine.Option(
@@ -190,6 +191,7 @@ public class StartCommand implements Callable<Integer> {
               Zookeeper connection string; ignored in User Managed (--user-managed) mode.
               If neither ZK_HOST is defined in solr.in.sh nor -z is specified, an embedded
               ZooKeeper instance will be launched.
+              It listens on SOLR_ZOOKEEPER_EMBEDDED_PORT if set, else the Solr port + 1000.
               Set ZK_CREATE_CHROOT=true if your ZK host has a chroot path to create it automatically.
 
           -m, --memory <size>
