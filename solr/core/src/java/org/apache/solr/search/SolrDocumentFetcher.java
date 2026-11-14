@@ -17,6 +17,9 @@
 
 package org.apache.solr.search;
 
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toSet;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
@@ -33,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -43,12 +47,15 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.KnnVectorValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -68,6 +75,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.response.DocsStreamer;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
@@ -95,6 +103,7 @@ public class SolrDocumentFetcher {
   private final Set<String> allStored;
 
   private final Set<String> dvsCanSubstituteStored;
+  private final Set<String> derivedStoredVectorFields;
 
   /** Contains the names/patterns of all docValues=true,stored=false fields in the schema. */
   private final Set<String> allNonStoredDVs;
@@ -133,6 +142,7 @@ public class SolrDocumentFetcher {
     this.largeFields = template.largeFields;
     this.dvsCanSubstituteStored = template.dvsCanSubstituteStored;
     this.allStored = template.allStored;
+    this.derivedStoredVectorFields = template.derivedStoredVectorFields;
     this.storedHighlightFieldNames = template.indexedFieldNames;
     this.indexedFieldNames = template.indexedFieldNames;
     this.storedFields = storedFields;
@@ -169,6 +179,7 @@ public class SolrDocumentFetcher {
     final Set<String> storedLargeFields = new HashSet<>();
     final Set<String> dvsCanSubstituteStored = new HashSet<>();
     final Set<String> allStoreds = new HashSet<>();
+    final Set<String> vectorFieldsWithRawVectorsAsStored = new HashSet<>();
 
     // can find materialized dynamic fields, unlike using the Solr IndexSchema.
     for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
@@ -182,6 +193,12 @@ public class SolrDocumentFetcher {
       if (schemaField.stored()) {
         allStoreds.add(fieldInfo.name);
       }
+
+      if (schemaField.getType() instanceof DenseVectorField
+          && schemaField.useRawVectorsAsStored()) {
+        vectorFieldsWithRawVectorsAsStored.add(fieldInfo.name);
+      }
+
       if (!schemaField.stored() && schemaField.hasDocValues()) {
         if (schemaField.useDocValuesAsStored()) {
           nonStoredDVsUsedAsStored.add(fieldInfo.name);
@@ -203,6 +220,8 @@ public class SolrDocumentFetcher {
     this.largeFields = Collections.unmodifiableSet(storedLargeFields);
     this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
+    this.derivedStoredVectorFields =
+        Collections.unmodifiableSet(vectorFieldsWithRawVectorsAsStored);
     this.storedFields = null; // template docFetcher should throw NPE if used directly
     this.storedHighlightFieldNames = new Collection[1];
     this.indexedFieldNames = new Collection[1];
@@ -769,8 +788,62 @@ public class SolrDocumentFetcher {
     return nonStoredDVsWithoutCopyTargets;
   }
 
+  public Set<String> calcRawVectorFieldsForReturn(ReturnFields returnFields) {
+    if (derivedStoredVectorFields.isEmpty()) {
+      return Set.of();
+    }
+
+    if (returnFields.returnsAllFields()) {
+      return new HashSet<>(derivedStoredVectorFields);
+    }
+
+    if (returnFields.hasPatternMatching()) {
+      return derivedStoredVectorFields.stream().filter(returnFields::loadsField).collect(toSet());
+    } else {
+      return ofNullable(returnFields.getLuceneFieldNames())
+          .map(fields -> fields.stream().filter(derivedStoredVectorFields::contains))
+          .orElseGet(() -> derivedStoredVectorFields.stream().filter(returnFields::loadsField))
+          .collect(Collectors.toSet());
+    }
+  }
+
+  public void decorateWithRawVectorFields(
+      SolrDocument sdoc, int luceneDocId, Set<String> vectorFieldNames) throws IOException {
+    if (vectorFieldNames.isEmpty()) {
+      return;
+    }
+
+    final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
+    final int subIndex = ReaderUtil.subIndex(luceneDocId, leafContexts);
+    final LeafReaderContext leafReaderContext = leafContexts.get(subIndex);
+    final LeafReader leafReader = leafReaderContext.reader();
+    final int localId = luceneDocId - leafReaderContext.docBase;
+
+    for (String vectorFieldName : vectorFieldNames) {
+      SchemaField schemaField = searcher.getSchema().getFieldOrNull(vectorFieldName);
+      if (schemaField == null || !(schemaField.getType() instanceof DenseVectorField vectorField)) {
+        continue;
+      }
+
+      KnnVectorValues vectorValues =
+          switch (vectorField.getVectorEncoding()) {
+            case FLOAT32 -> leafReader.getFloatVectorValues(vectorFieldName);
+            case BYTE -> leafReader.getByteVectorValues(vectorFieldName);
+          };
+
+      if (vectorValues == null) {
+        continue;
+      }
+
+      KnnVectorValues.DocIndexIterator iterator = vectorValues.iterator();
+      if (iterator.advance(localId) == localId) {
+        sdoc.setField(vectorFieldName, vectorValueAsNumbers(vectorValues, iterator.index()));
+      }
+    }
+  }
+
   /**
-   * Moved as a private class here, we consider it an impelmentation detail. It should not be
+   * Moved as a private class here, we consider it an implementation detail. It should not be
    * exposed outside of this class.
    *
    * <p>This class is in charge of insuring that SolrDocuments can have their fields populated
@@ -782,6 +855,7 @@ public class SolrDocumentFetcher {
     private final Set<String> storedFields;
     // always non null
     private final Set<String> dvFields;
+    private final Set<String> rawVectorFields;
 
     private final SolrReturnFields solrReturnFields;
 
@@ -790,6 +864,7 @@ public class SolrDocumentFetcher {
     RetrieveFieldsOptimizer(SolrReturnFields solrReturnFields) {
       this.storedFields = calcStoredFieldsForReturn(solrReturnFields);
       this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
+      this.rawVectorFields = calcRawVectorFieldsForReturn(solrReturnFields);
       this.solrReturnFields = solrReturnFields;
 
       if (storedFields != null && dvsCanSubstituteStored.containsAll(storedFields)) {
@@ -827,37 +902,33 @@ public class SolrDocumentFetcher {
     }
 
     private Set<String> calcStoredFieldsForReturn(ReturnFields returnFields) {
-      final Set<String> storedFields = new HashSet<>();
-      Set<String> fnames = returnFields.getLuceneFieldNames();
       if (returnFields.returnsAllFields()) {
         return null;
-      } else if (returnFields.hasPatternMatching()) {
-        for (String s : getAllStored()) {
-          if (returnFields.loadsField(s)) {
-            storedFields.add(s);
+      }
+
+      final Set<String> storedFields = new HashSet<>();
+      Set<String> fieldNames = returnFields.getLuceneFieldNames();
+
+      if (returnFields.hasPatternMatching()) {
+        for (String fieldName : getAllStored()) {
+          if (returnFields.loadsField(fieldName)) {
+            storedFields.add(fieldName);
           }
         }
-      } else if (fnames != null) {
-        storedFields.addAll(fnames);
-        storedFields.removeIf(
-            (String name) -> {
-              SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
-              if (schemaField == null) {
-                // Get it from the stored fields if, for some reason, we can't get the schema.
-                return false;
-              }
-              if (schemaField.stored() && schemaField.multiValued()) {
-                // must return multivalued fields from stored data if possible.
-                return false;
-              }
-              if (schemaField.stored() == false) {
-                // if it's not stored, no choice but to return from DV.
-                return true;
-              }
-              return false;
-            });
+      } else if (fieldNames != null) {
+        storedFields.addAll(fieldNames);
       }
+
       storedFields.remove(SolrReturnFields.SCORE);
+      storedFields.removeIf(
+          name -> {
+            SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
+            if (schemaField == null) {
+              return false;
+            }
+            return schemaField.useRawVectorsAsStored() || !schemaField.stored();
+          });
+
       return storedFields;
     }
 
@@ -898,20 +969,20 @@ public class SolrDocumentFetcher {
     }
 
     private SolrDocument getSolrDoc(int luceneDocId) {
+      boolean returnNonStoredFields = returnDVFields() || !rawVectorFields.isEmpty();
 
-      SolrDocument sdoc = null;
+      SolrDocument sdoc;
       try {
         if (returnStoredFields()) {
           Document doc = doc(luceneDocId, getStoredFields());
           // make sure to use the schema from the searcher and not the request (cross-core)
           sdoc =
               DocsStreamer.convertLuceneDocToSolrDoc(doc, searcher.getSchema(), getReturnFields());
-          if (returnDVFields() == false) {
-            solrReturnFields.setFieldSources(SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED);
-            return sdoc;
-          } else {
-            solrReturnFields.setFieldSources(SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES);
-          }
+
+          solrReturnFields.setFieldSources(
+              returnNonStoredFields
+                  ? SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES
+                  : SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED);
         } else {
           // no need to get stored fields of the document, see SOLR-5968
           sdoc = new SolrDocument();
@@ -922,6 +993,7 @@ public class SolrDocumentFetcher {
         if (returnDVFields()) {
           decorateDocValueFields(sdoc, luceneDocId, getDvFields(), reuseDvIters);
         }
+        decorateWithRawVectorFields(sdoc, luceneDocId, rawVectorFields);
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -930,5 +1002,30 @@ public class SolrDocumentFetcher {
       }
       return sdoc;
     }
+  }
+
+  private static List<Number> vectorValueAsNumbers(KnnVectorValues vectorValues, int ord)
+      throws IOException {
+    return switch (vectorValues) {
+      case FloatVectorValues floatValues -> {
+        float[] vector = floatValues.vectorValue(ord);
+        List<Number> values = new ArrayList<>(vector.length);
+        for (float value : vector) {
+          values.add(value);
+        }
+        yield values;
+      }
+      case ByteVectorValues byteValues -> {
+        byte[] vector = byteValues.vectorValue(ord);
+        List<Number> values = new ArrayList<>(vector.length);
+        for (byte value : vector) {
+          values.add((int) value);
+        }
+        yield values;
+      }
+      default ->
+          throw new IllegalStateException(
+              "Unsupported vector values: " + vectorValues.getClass().getName());
+    };
   }
 }

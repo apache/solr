@@ -317,29 +317,27 @@ public class DenseVectorField extends FloatPointField {
           getClass().getSimpleName() + " fields can not have docValues: " + field.getName());
     }
 
+    if (field.stored() && field.useRawVectorsAsStored()) {
+      log.warn(
+          "You set both \"stored\"=\"true\" and \"useRawVectorsAsStored\"=\"true\" on field '{}', there is no benefit in this. "
+              + "Stored values are not used for retrieval because \"useRawVectorsAsStored\"=true; consider stored=false to save space. "
+              + "To choose the best option for you, please refer to the reference guide",
+          field.getName());
+    }
+
     switch (vectorEncoding) {
       case FLOAT32:
-        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
-          if (log.isWarnEnabled()) {
-            log.warn(
-                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
-                dimension,
-                field.getName(),
-                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
-          }
-        }
-        break;
       case BYTE:
         if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
-                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}."
+                    + " It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
                 KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
           }
         }
-        break;
     }
   }
 
@@ -350,9 +348,10 @@ public class DenseVectorField extends FloatPointField {
       DenseVectorParser vectorBuilder =
           getVectorBuilder(value, DenseVectorParser.BuilderPhase.INDEX);
 
-      if (field.indexed()) {
+      if (field.indexed() || field.useRawVectorsAsStored()) {
         fields.add(createField(field, vectorBuilder));
       }
+
       if (field.stored()) {
         switch (vectorEncoding) {
           case FLOAT32:
@@ -463,12 +462,19 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
-  public KnnVectorsFormat buildKnnVectorsFormat() {
-    if (FLAT_ALGORITHM.equals(knnAlgorithm)) {
+  public final KnnVectorsFormat buildKnnVectorsFormatFor(SchemaField field) {
+    boolean isNotIndexedButWeWantRawVectorsAsStored =
+        !field.indexed() && field.useRawVectorsAsStored();
+    if (isNotIndexedButWeWantRawVectorsAsStored) {
       return new Solr101FlatVectorFormat();
-    } else {
-      return new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
     }
+    return buildIndexedKnnVectorsFormat();
+  }
+
+  protected KnnVectorsFormat buildIndexedKnnVectorsFormat() {
+    return FLAT_ALGORITHM.equals(knnAlgorithm)
+        ? new Solr101FlatVectorFormat()
+        : new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
   }
 
   @Override

@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<schema name="bad-schema-use-raw-vectors-as-stored-non-vector" version="1.7">
+  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="boolean" class="solr.BoolField"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
+  <field name="text" type="string" indexed="true" stored="true"/>
+  <field name="enabled" type="boolean" indexed="true" stored="true"/>
+  <field name="count" type="pint" indexed="true" stored="true"/>
+  <field name="total" type="plong" indexed="true" stored="true"/>
+  <field name="weight" type="pfloat" indexed="true" stored="true"/>
+  <field name="price" type="pdouble" indexed="true" stored="true"/>
+
+  <field name="invalid" type="${solr.tests.rawvectors.invalidFieldType:string}"
+         indexed="true" stored="true" useRawVectorsAsStored="true"/>
+
+  <uniqueKey>id</uniqueKey>
+</schema>
