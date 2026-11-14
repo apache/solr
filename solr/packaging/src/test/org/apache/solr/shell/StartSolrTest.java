@@ -17,6 +17,9 @@
 
 package org.apache.solr.shell;
 
+import static org.apache.solr.cats.EnabledOnShell.BASH;
+import static org.apache.solr.cats.EnabledOnShell.CMD;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -81,14 +84,14 @@ public class StartSolrTest extends SolrCatsTestCase {
   // 'timeout 2' would do, without having to skip when that utility is missing.
 
   @Test
-  @EnabledOnShell("bash") // bin/solr parses the start args for stop too, so it names the option.
+  @EnabledOnShell(BASH) // bin/solr parses the start args for stop too, so it names the option.
   public void checkStopCommandDoesntHang() {
     runFail(Duration.ofSeconds(30), "solr stop --jvm-opts")
         .assertContains("ERROR: JVM options are required when using the --jvm-opts option!");
   }
 
   @Test
-  @EnabledOnShell("cmd") // solr.cmd skips the start args for stop and rejects it as unknown.
+  @EnabledOnShell(CMD) // solr.cmd skips the start args for stop and rejects it as unknown.
   public void checkStopCommandDoesntHangOnCmd() {
     run(Duration.ofSeconds(30), "solr stop --jvm-opts")
         .assertContains("Invalid command-line option: --jvm-opts");

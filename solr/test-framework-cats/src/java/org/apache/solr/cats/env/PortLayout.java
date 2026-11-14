@@ -27,6 +27,14 @@ import java.util.Arrays;
  * utility none. {@link #NONE} is the latter, and {@link PortBlocks} hands it an empty block without
  * claiming anything.
  *
+ * <p>A program whose ports have different roles declares one offset per role and leaves the naming
+ * to the project. A backend serving a REST API on one port and a health endpoint on another has
+ * {@code offsets = {0, 1}} with {@code primary = 0}, so that a {@code http(path)} naming no port
+ * goes to the REST one; the two are {@code ports().at(0)} and {@code ports().at(1)}, and a small
+ * {@link PortBlock} implementation of the project's own puts the names on them, so that a test
+ * reads {@code ports().rest()} and {@code ports().health()}. The core knows the offsets and never a
+ * role.
+ *
  * @param stride distance between the bases of two consecutive blocks, so that the ports of two
  *     blocks never coincide
  * @param offsets the block's ports, relative to its base

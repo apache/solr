@@ -23,7 +23,7 @@ The dependency set is deliberately thin: a JRE, JUnit 4, and `slf4j-api` for log
 
 ## What it gives you
 
-**One test source, both shells.** The same test class drives the program under `bash` and under `cmd.exe`. A command line is written once, in a single portable spelling, and the shell in use decides how it is quoted and invoked. Where the two genuinely differ, a test says so with `@EnabledOnShell("bash")` and is skipped elsewhere as an assumption failure rather than failing.
+**One test source, both shells.** The same test class drives the program under `bash` and under `cmd.exe`. A command line is written once, in a single portable spelling, and the shell in use decides how it is quoted and invoked. Where the two genuinely differ, a test says so with `@EnabledOnShell(BASH)` and is skipped elsewhere as an assumption failure rather than failing.
 
 **Variable resolution before any shell sees the line.** `${NAME}`, `$NAME` and `{{NAME}}` all name an environment variable, and the harness substitutes them itself — in a command line and in an assertion's expected text alike, so the two cannot drift apart. An undefined name is an immediate `AssertionError` listing the names that are defined, instead of the empty string a shell would quietly splice in. `%NAME%` is rejected: a line written that way would pass on one shell and fail on the other.
 
@@ -51,7 +51,7 @@ A line whose command is one of these is rejected, because `cmd.exe` has no equiv
 | `ps`, `pgrep`, `kill`, `pkill`, `lsof` | the harness tracks and stops what a test started |
 | `pwd`, `basename`, `dirname`, `realpath` | `cwd()`, `path(p)` and `java.nio.file.Path` |
 | `export`, `unset` | `env(name, value)`, `unset(name)` |
-| `chmod`, `chown`, `ln`, `openssl`, `tar`, `unzip`, `which` | do it in Java, or mark the test `@EnabledOnShell("bash")` |
+| `chmod`, `chown`, `ln`, `openssl`, `tar`, `unzip`, `which` | do it in Java, or mark the test `@EnabledOnShell(BASH)` |
 
 ### Unportable operators
 
@@ -123,25 +123,25 @@ public class MytoolServer implements ProgramUnderTest {
     return new PortLayout(4, new int[] {0, 1}, 20_000, 30_000, 200, 0);
   }
 
-  /** The instances whose command line carries this run's marker, found however the platform allows. */
+  /** The processes whose command line carries this run's marker, found however the platform allows. */
   @Override
-  public List<RunningProgram> running(String marker) {
+  public List<RunningProcess> running(String marker) {
     return ProcessHandle.allProcesses()
         .filter(p -> p.info().commandLine().orElse("").contains(marker))
-        .map(p -> new RunningProgram(p.pid(), portOf(p)))
+        .map(p -> RunningProcess.of(p.pid(), portOf(p)))
         .toList();
   }
 
-  /** Tried before the harness resorts to killing the process. */
+  /** Tried before the harness resorts to killing the process' pid. */
   @Override
-  public Optional<String> stopCommand(int port) {
-    return Optional.of("mytool stop --port " + port);
+  public Optional<String> stopCommand(RunningProcess process) {
+    return Optional.of("mytool stop --port " + process.ports().get(0));
   }
 
   /** Removed after a force-kill, so a later command does not walk them. */
   @Override
-  public List<Path> staleStateFiles(Path stateDir, int port) {
-    return List.of(stateDir.resolve("mytool-" + port + ".pid"));
+  public List<Path> staleStateFiles(Path stateDir, RunningProcess process) {
+    return List.of(stateDir.resolve("mytool-" + process.ports().get(0) + ".pid"));
   }
 
   /** The named traits of this run, read off the environment. */
@@ -188,6 +188,50 @@ public class MytoolEnv extends CatsHarnessEnv {
 A subclass may also override `installDirVariable()`, `requiresInstallDir()` and `noInstallDirMessage()` to make an installation mandatory with its own advice on how to get one, `checkInstallDir(dir)` to validate that a directory really is one, `lookupPrefix()` for the system-property prefix its own variables are read under, and `workDir()` / `stateDir()` / `logDir()` to report back the directories it created — those are what the per-class wipe and the failure snapshot work on.
 
 The two halves meet in `CatsSessionRule`, which resolves the environment per class, wipes the work directory, runs the leak checks, opens a class-scoped session and a child session per test, and snapshots the named directories plus `transcript.log` when a test fails. `CatsTestCase` is itself nothing but that wiring, and is worth reading as the template for a project's own base class.
+
+## One program per environment
+
+**Exactly one `ProgramUnderTest` per `CatsHarnessEnv`.** The program is consulted by the lifecycle and never per command: `launcherDir` when `PATH` is assembled, `portLayout` when the class claims its block, `running` / `stopCommand` / `staleStateFiles` in the leak checks and the teardown, `traits` once. A `run()` is a line in a shell whose environment was fixed when the session was built, so "which program does `run()` pick" is a question that cannot arise. A program that is both a server and its own client CLI is still one program: one installation, one launcher directory, one layout.
+
+A fixture is not a program under test, and needs no `ProgramUnderTest`: a container the test starts, a web root served to the program with `serveHttp` — nothing about them is discovered, stopped or port-allocated by the harness, so there is nothing for a program to declare.
+
+When two programs genuinely are under test, the shape is JUnit's — two rules in one class, each with its own environment, program, port block, work directory, marker and leak check:
+
+```java
+public class TwoProgramsTest implements CatsDsl {
+
+  @ClassRule public static final CatsSessionRule<MytoolEnv> mytool =
+      new CatsSessionRule<>(MytoolEnv::new, new MytoolServer(), List.of(MytoolEnv::workDir));
+
+  @ClassRule public static final CatsSessionRule<OthertoolEnv> othertool =
+      new CatsSessionRule<>(OthertoolEnv::new, new OthertoolServer(), List.of(OthertoolEnv::workDir));
+
+  private CliSession mytoolCli;
+  private CliSession othertoolCli;
+
+  @Rule public final TestRule mytoolSession =
+      (base, d) -> mytool.apply(base, d, session -> mytoolCli = session);
+
+  @Rule public final TestRule othertoolSession =
+      (base, d) -> othertool.apply(base, d, session -> othertoolCli = session);
+
+  /** Which of the two the bare vocabulary speaks to. */
+  @Override
+  public CliSession cli() {
+    return mytoolCli;
+  }
+
+  @Test
+  public void mytoolReadsWhatOthertoolWrote() {
+    othertoolCli.run("othertool put --port " + othertool.env().ports().at(0) + " k=v");
+    run("mytool get --from http://localhost:" + othertool.env().ports().at(0) + "/k").assertExact("v");
+  }
+}
+```
+
+The bare `run()`, `ports()` and the rest go to the session `cli()` returns; the other program is addressed explicitly, through its own session and its own environment. Two programs cost two port blocks and two work directories, which is what they should cost, and their launcher directories never share one `PATH` — both shipping a `bin/start` is not hypothetical, and a command meant for one program does not silently resolve against the other.
+
+What is deliberately absent: a composite program, and picking a program per command. The second would suggest the program matters per spawn, which it does not.
 
 ## Run settings
 
@@ -275,7 +319,7 @@ public final class PowerShell implements Shell {
 Shells.register(new PowerShell());
 ```
 
-`quoteForDisplay(arg)` and `joinArgs(argv)` have defaults worth overriding only if the display quoting is misleading for that shell. `@EnabledOnShell` takes ids, so a test for the new shell says `@EnabledOnShell("powershell")`, and `CATS_SHELL=powershell` runs the suite through it. The quoting rules are the whole job, and they belong with the project that needs that shell.
+`quoteForDisplay(arg)` and `joinArgs(argv)` have defaults worth overriding only if the display quoting is misleading for that shell. `@EnabledOnShell` takes ids, so a test for the new shell says `@EnabledOnShell` with its id, and `CATS_SHELL=powershell` runs the suite through it. The quoting rules are the whole job, and they belong with the project that needs that shell.
 
 ## Running the module's own tests
 

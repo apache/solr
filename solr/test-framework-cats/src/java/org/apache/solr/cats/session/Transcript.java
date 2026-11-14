@@ -60,17 +60,32 @@ public final class Transcript implements CommandHistory {
   /** Appends one command, preceded by the environment changes relative to the base environment. */
   public synchronized void record(CommandResult result, Map<String, String> envDiff) {
     StringBuilder entry = new StringBuilder();
-    if (!envDiff.isEmpty()) {
-      envDiff.forEach(
-          (k, v) -> entry.append("  export ").append(k).append('=').append(v).append('\n'));
-    }
+    appendEnv(entry, envDiff);
     entry.append("$ ").append(result.command()).append('\n');
-    entry
-        .append("exit ")
-        .append(result.timedOut() ? "TIMED OUT" : result.status())
-        .append(" in ")
-        .append(String.format(Locale.ROOT, "%.1fs", result.duration().toMillis() / 1000d))
-        .append('\n');
+    appendExit(entry, result);
+    appendOutput(entry, result.output());
+    entry.append('\n');
+    append(entry.toString());
+  }
+
+  /**
+   * Appends a command started in the background, which the {@code &} marks as still running. What
+   * it did is appended by {@link #recordBackgroundEnd} once it ends.
+   */
+  public synchronized void recordBackgroundStart(
+      String line, long pid, Map<String, String> envDiff) {
+    StringBuilder entry = new StringBuilder();
+    appendEnv(entry, envDiff);
+    entry.append("$ ").append(line).append(" &\n");
+    entry.append("started as pid ").append(pid).append("\n\n");
+    append(entry.toString());
+  }
+
+  /** Appends what a background command did. Its line is repeated: other commands ran in between. */
+  public synchronized void recordBackgroundEnd(CommandResult result) {
+    StringBuilder entry = new StringBuilder();
+    entry.append("$ ").append(result.command()).append(" &\n");
+    appendExit(entry, result);
     appendOutput(entry, result.output());
     entry.append('\n');
     append(entry.toString());
@@ -92,6 +107,20 @@ public final class Transcript implements CommandHistory {
   /** Appends a free-form note, for something the harness itself did. */
   public synchronized void note(String message) {
     append("# " + message + "\n\n");
+  }
+
+  private static void appendEnv(StringBuilder entry, Map<String, String> envDiff) {
+    envDiff.forEach(
+        (k, v) -> entry.append("  export ").append(k).append('=').append(v).append('\n'));
+  }
+
+  private static void appendExit(StringBuilder entry, CommandResult result) {
+    entry
+        .append("exit ")
+        .append(result.timedOut() ? "TIMED OUT" : result.status())
+        .append(" in ")
+        .append(String.format(Locale.ROOT, "%.1fs", result.duration().toMillis() / 1000d))
+        .append('\n');
   }
 
   private static void appendOutput(StringBuilder entry, String output) {

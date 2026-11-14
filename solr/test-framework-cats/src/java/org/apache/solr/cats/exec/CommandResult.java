@@ -20,6 +20,7 @@ package org.apache.solr.cats.exec;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -150,7 +151,7 @@ public record CommandResult(
     return this;
   }
 
-  /** Port of {@code assert_output --partial}. */
+  /** The output must contain {@code substring} somewhere. */
   public CommandResult assertContains(String substring) {
     String expected = resolve(substring);
     if (!output.contains(expected)) {
@@ -159,7 +160,7 @@ public record CommandResult(
     return this;
   }
 
-  /** Port of {@code refute_output --partial}. */
+  /** The output must not contain {@code substring} anywhere. */
   public CommandResult assertNotContains(String substring) {
     String expected = resolve(substring);
     if (output.contains(expected)) {
@@ -168,7 +169,7 @@ public record CommandResult(
     return this;
   }
 
-  /** Port of {@code assert_output --regexp}. The pattern may match anywhere in the output. */
+  /** The output must match {@code regex}, which may match anywhere in it. */
   public CommandResult assertMatches(String regex) {
     if (!Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output).find()) {
       throw fail("output did not match: " + resolve(regex));
@@ -176,7 +177,7 @@ public record CommandResult(
     return this;
   }
 
-  /** Port of {@code refute_output --regexp}. */
+  /** The output must not match {@code regex} anywhere. */
   public CommandResult assertNotMatches(String regex) {
     if (Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(output).find()) {
       throw fail("output matched what it should not: " + resolve(regex));
@@ -185,7 +186,7 @@ public record CommandResult(
   }
 
   /**
-   * Port of {@code assert_output} with no flag: the whole output must be exactly {@code expected}.
+   * The whole output must be exactly {@code expectedText}.
    *
    * <p>Named {@code assertExact} rather than {@code assertEquals} so it cannot be mistaken, in a
    * diff, for the static {@code assertEquals(expected, actual)} every test class inherits from
@@ -199,7 +200,7 @@ public record CommandResult(
     return this;
   }
 
-  /** Port of {@code assert_line --index <i>}. */
+  /** The output line at {@code index}, counting from zero, must be exactly {@code expected}. */
   public CommandResult assertLine(int index, String expected) {
     List<String> lines = lines();
     if (index < 0 || index >= lines.size()) {
@@ -232,6 +233,37 @@ public record CommandResult(
               + expected);
     }
     return this;
+  }
+
+  /**
+   * Asserts the command took no longer than {@code limit}, for a test whose subject is how long
+   * something takes — a cache that makes the second run faster, a {@code --timeout} being honoured.
+   *
+   * <p>Measured from the moment the process was spawned to the moment it exited, which is the same
+   * number the transcript prints.
+   */
+  public CommandResult assertDurationAtMost(Duration limit) {
+    if (duration.compareTo(limit) > 0) {
+      throw fail("took " + seconds(duration) + ", expected at most " + seconds(limit));
+    }
+    return this;
+  }
+
+  /**
+   * Asserts the command took at least {@code floor}; the mirror of {@link #assertDurationAtMost}.
+   */
+  public CommandResult assertDurationAtLeast(Duration floor) {
+    if (duration.compareTo(floor) < 0) {
+      throw fail("took " + seconds(duration) + ", expected at least " + seconds(floor));
+    }
+    return this;
+  }
+
+  /** Seconds as the transcript writes them, with the decimal dropped when it is zero. */
+  private static String seconds(Duration d) {
+    double value = d.toMillis() / 1000d;
+    String format = value == Math.rint(value) ? "%.0fs" : "%.1fs";
+    return String.format(Locale.ROOT, format, value);
   }
 
   /**

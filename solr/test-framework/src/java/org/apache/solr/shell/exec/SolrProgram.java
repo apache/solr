@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.cats.env.PortLayout;
 import org.apache.solr.cats.exec.ProgramUnderTest;
-import org.apache.solr.cats.exec.RunningProgram;
+import org.apache.solr.cats.exec.RunningProcess;
 import org.apache.solr.cli.SolrProcessManager;
 
 /**
@@ -75,7 +75,7 @@ public final class SolrProgram implements ProgramUnderTest {
    * on the host.
    */
   @Override
-  public List<RunningProgram> running(String marker) {
+  public List<RunningProcess> running(String marker) {
     // SolrProcessManager reads the marker from a system property, via EnvUtils, when constructed.
     // Set and restored around the call so the harness JVM is left as it was.
     String previous = System.getProperty(SolrProcessManager.PROCESS_SCAN_MARKER);
@@ -83,7 +83,7 @@ public final class SolrProgram implements ProgramUnderTest {
     try {
       SolrProcessManager processes = new SolrProcessManager();
       return processes.getAllRunning().stream()
-          .map(node -> new RunningProgram(node.pid(), node.port()))
+          .map(node -> RunningProcess.of(node.pid(), node.port()))
           .toList();
     } finally {
       if (previous == null) {
@@ -95,8 +95,8 @@ public final class SolrProgram implements ProgramUnderTest {
   }
 
   @Override
-  public Optional<String> stopCommand(int port) {
-    return Optional.of("solr stop -p " + port);
+  public Optional<String> stopCommand(RunningProcess process) {
+    return nodePort(process).map(port -> "solr stop -p " + port);
   }
 
   /**
@@ -106,9 +106,21 @@ public final class SolrProgram implements ProgramUnderTest {
    * {@code solr status} would later walk.
    */
   @Override
-  public List<Path> staleStateFiles(Path stateDir, int port) {
-    return List.of(
-        stateDir.resolve("solr-" + port + ".pid"), stateDir.resolve("solr-" + port + ".port"));
+  public List<Path> staleStateFiles(Path stateDir, RunningProcess process) {
+    return nodePort(process)
+        .map(
+            port ->
+                List.of(
+                    stateDir.resolve("solr-" + port + ".pid"),
+                    stateDir.resolve("solr-" + port + ".port")))
+        .orElseGet(List::of);
+  }
+
+  /**
+   * A node is named by the port it serves on, which is the first and only one discovery reports.
+   */
+  private static Optional<Integer> nodePort(RunningProcess process) {
+    return process.ports().stream().findFirst();
   }
 
   /**

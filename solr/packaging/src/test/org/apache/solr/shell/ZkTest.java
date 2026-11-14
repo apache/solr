@@ -17,6 +17,8 @@
 
 package org.apache.solr.shell;
 
+import static org.apache.solr.cats.EnabledOnShell.BASH;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -128,7 +130,7 @@ public class ZkTest extends SolrCatsTestCase {
   }
 
   @Test
-  @EnabledOnShell("bash") // Creating a symlink on Windows needs privileges a test cannot assume.
+  @EnabledOnShell(BASH) // Creating a symlink on Windows needs privileges a test cannot assume.
   public void solr12429UpconfigFailsWithSymlink() throws IOException {
     // A copy, rather than symlinking inside the distribution's own config set and deleting the
     // links

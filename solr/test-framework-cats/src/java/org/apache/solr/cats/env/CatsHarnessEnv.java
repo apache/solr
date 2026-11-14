@@ -199,7 +199,7 @@ public abstract class CatsHarnessEnv {
     return classDir;
   }
 
-  /** Where the program records the instances it starts, such as pid files. */
+  /** Where the program records the processes it starts, such as pid files. */
   public Path stateDir() {
     return workDir();
   }
@@ -243,7 +243,7 @@ public abstract class CatsHarnessEnv {
     return program.portLayout();
   }
 
-  /** Where the instances a session starts are tracked, and from where a leak is finally killed. */
+  /** Where the processes a session starts are tracked, and from where a leak is finally killed. */
   public ProgramRegistry registry() {
     return registry;
   }

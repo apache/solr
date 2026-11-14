@@ -15,10 +15,13 @@
 # limitations under the License.
 
 # A stand-in program under test for the harness' own tests. Its cmd.exe twin, mytool.cmd, takes
-# the same three modes and prints the same thing, so a test drives one spelling on either shell.
+# the same modes and prints the same thing, so a test drives one spelling on either shell.
 #
 # Usage: mytool echo <text...>     echoes its arguments, one space between them
 #        mytool sleep <seconds>    stays alive for that long
+#        mytool work <seconds> <status>
+#                                  prints "starting", stays alive for that long, prints
+#                                  "finished", exits with that status
 #        mytool listen <port>      holds a TCP port open until killed
 
 mode="$1"
@@ -33,6 +36,12 @@ case "$mode" in
   sleep)
     sleep "$1"
     ;;
+  work)
+    echo "starting"
+    sleep "$1"
+    echo "finished"
+    exit "${2:-0}"
+    ;;
   listen)
     echo "listening on $1"
     # nc is the only listener a POSIX shell can count on, and the -l spelling differs between its
@@ -40,7 +49,7 @@ case "$mode" in
     nc -l "$1" >/dev/null 2>&1 || nc -l -p "$1" >/dev/null 2>&1
     ;;
   *)
-    echo "usage: mytool echo <text...> | sleep <seconds> | listen <port>" >&2
+    echo "usage: mytool echo <text...> | sleep <s> | work <s> <status> | listen <port>" >&2
     exit 2
     ;;
 esac

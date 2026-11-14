@@ -151,9 +151,7 @@ public class CatsCliHelpers {
       return this;
     }
 
-    /**
-     * Port of {@code assert_output --regexp}, with the same semantics {@link CommandResult} has.
-     */
+    /** The body must match {@code regex}, with the same semantics {@link CommandResult} has. */
     public HttpResult assertMatches(String regex) {
       if (!Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(body).find()) {
         throw fail("body did not match: " + resolve(regex));
@@ -161,7 +159,7 @@ public class CatsCliHelpers {
       return this;
     }
 
-    /** Port of {@code refute_output --regexp}. */
+    /** The body must not match {@code regex} anywhere. */
     public HttpResult assertNotMatches(String regex) {
       if (Pattern.compile(resolve(regex), Pattern.DOTALL).matcher(body).find()) {
         throw fail("body matched what it should not: " + resolve(regex));
@@ -185,7 +183,7 @@ public class CatsCliHelpers {
     }
 
     /**
-     * Port of {@code curl -s -I ...} followed by {@code assert_output --partial}.
+     * Some response header line must contain {@code substring}.
      *
      * <p>Matched without regard to case, because header names are case-insensitive by RFC and the
      * client here speaks HTTP/2 where they arrive lowercased, while an assertion is usually written
@@ -198,7 +196,7 @@ public class CatsCliHelpers {
       return this;
     }
 
-    /** Port of {@code curl -s -I ...} followed by {@code refute_output --partial}. */
+    /** No response header line may contain {@code substring}. */
     public HttpResult assertHeaderNotContains(String substring) {
       if (headerTextLower().contains(resolve(substring).toLowerCase(Locale.ROOT))) {
         throw failHeaders("a response header contained what it should not: " + substring);
@@ -211,8 +209,8 @@ public class CatsCliHelpers {
     }
 
     /**
-     * Port of {@code run ! curl ...}: the request must not have completed at all — a TLS handshake
-     * failure or a refused connection rather than an HTTP error status.
+     * The request must not have completed at all — a TLS handshake failure or a refused connection
+     * rather than an HTTP error status.
      */
     public HttpResult assertConnectionFailed() {
       if (status >= 0) {
@@ -302,7 +300,7 @@ public class CatsCliHelpers {
    * A PUT whose body is a file's bytes: the port of {@code curl --data-binary @<file> -X PUT}.
    *
    * <p>Given a longer timeout than the other requests, because what this uploads is a file rather
-   * than a request a node answers from memory.
+   * than a request the program answers from memory.
    */
   public HttpResult httpPut(String pathAndQuery, String contentType, Path file) {
     return httpPut(defaultPort(), pathAndQuery, contentType, file);
@@ -414,8 +412,8 @@ public class CatsCliHelpers {
   }
 
   /**
-   * The {@code curl} that reproduces a request, for the transcript. Quoted bash-style because it is
-   * there for a reader to paste, not for the harness to run — and every variable is already
+   * The curl command line that reproduces a request, for the transcript. Quoted bash-style because
+   * it is there for a reader to paste, not for the harness to run — and every variable is already
    * resolved by the time it is built, so what the transcript shows is the real request.
    */
   static String curl(

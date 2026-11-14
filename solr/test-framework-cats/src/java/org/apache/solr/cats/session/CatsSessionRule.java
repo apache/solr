@@ -37,7 +37,7 @@ import org.apache.solr.cats.env.PortBlocks;
 import org.apache.solr.cats.exec.CatsFiles;
 import org.apache.solr.cats.exec.ProcessKill;
 import org.apache.solr.cats.exec.ProgramUnderTest;
-import org.apache.solr.cats.exec.RunningProgram;
+import org.apache.solr.cats.exec.RunningProcess;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -67,6 +67,18 @@ import org.slf4j.LoggerFactory;
  * none gets the session, the transcript and the work directory, and the checks that do not apply
  * are skipped.
  *
+ * <p>One rule drives exactly one {@link ProgramUnderTest}, through exactly one {@link
+ * CatsHarnessEnv}: the program is consulted by the lifecycle here and never per command. A fixture
+ * — a container, a served web root — is not a program under test and needs no rule of its own.
+ *
+ * <p>Two programs genuinely under test are two rules in one test class, each with its own
+ * environment, program, port block, work directory, marker and leak check. The vocabulary's bare
+ * {@code run()} is bound to the session the test case returns from {@code cli()}, and the other
+ * program is addressed explicitly through its own rule ({@code other.session().run(...)}, {@code
+ * other.env().ports().at(0)}). Two programs cost two port blocks and two work directories, which is
+ * what they should cost, and their launcher directories never share one {@code PATH} — both
+ * shipping a {@code bin/start} is not hypothetical.
+ *
  * @param <E> the environment this project resolves, so a base class can hand its own type back
  */
 public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule {
@@ -89,8 +101,8 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
 
   /**
    * @param envForClass resolves the environment for one test class
-   * @param program what the sessions drive: how an instance of it is found, stopped and cleaned up
-   *     after
+   * @param program what the sessions drive: how one of its processes is found, stopped and cleaned
+   *     up after
    * @param snapshotDirs the directories a failing test's snapshot copies, each named after its own
    *     last path element
    */
@@ -151,8 +163,8 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
     List<String> problems = new ArrayList<>();
     try {
       if (classSession != null) {
-        // close() stops the instances this class owns, by port. No 'stop everything' command
-        // first: it would walk the same per-class state directory, so every instance would then be
+        // close() stops the processes this class owns, one by one. No 'stop everything' command
+        // first: it would walk the same per-class state directory, so every process would then be
         // stopped twice — a wasted subprocess and a misleading "failed to stop" warning for each.
         classSession.close();
       }
@@ -281,14 +293,19 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
     // from an earlier run of the same task — the span is fixed when the run claims its first block,
     // from a base that is random per run. So this is safe against a sibling class in this run, and
     // against another suite or checkout, whose marker prefix differs.
-    for (RunningProgram process : program.running(env.taskMarkerPrefix())) {
-      boolean ours =
-          PortBlocks.belongsToThisRun(env.outputDir(), process.port(), program.portLayout());
-      if (!ours || env.ports().contains(process.port())) {
-        log.warn(
-            "Killing a process left behind by an earlier run of this task: port {}, pid {}",
-            process.port(),
-            process.pid());
+    //
+    // A process with no ports is left alone: there is nothing to measure it against, so it cannot
+    // be told from one a sibling class of this run started.
+    for (RunningProcess process : program.running(env.taskMarkerPrefix())) {
+      if (process.ports().isEmpty()) {
+        continue;
+      }
+      boolean thisRun =
+          process.ports().stream()
+              .anyMatch(
+                  port -> PortBlocks.belongsToThisRun(env.outputDir(), port, program.portLayout()));
+      if (!thisRun || ours(process)) {
+        log.warn("Killing a process left behind by an earlier run of this task: {}", process);
         ProcessKill.killTree(process.pid(), KILL_TIMEOUT);
       }
     }
@@ -303,15 +320,21 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
     }
   }
 
-  /** Fails the class if a process outlived it. Whatever is found is killed first. */
+  /**
+   * Fails the class if a process outlived it. Whatever is found is killed first.
+   *
+   * <p>Processes carrying our marker are checked for whatever the program is; the port block is
+   * only checked for a program that declares a layout.
+   */
   private void postFlightLeakCheck() {
     List<String> leaks = new ArrayList<>();
 
     // Only a running process is a leak. A state file left behind by one that is already gone is
-    // litter, and not this check's business — the process list is what matters.
-    for (RunningProgram process : program.running(env.marker())) {
-      if (env.ports().contains(process.port())) {
-        leaks.add("still running on port " + process.port() + " (pid " + process.pid() + ")");
+    // litter, and not this check's business — the process list is what matters. A process with no
+    // ports has nothing to filter on, and the marker it carries is this scope's own.
+    for (RunningProcess process : program.running(env.marker())) {
+      if (process.ports().isEmpty() || ours(process)) {
+        leaks.add("still running: " + process);
         ProcessKill.killTree(process.pid(), KILL_TIMEOUT);
       }
     }
@@ -340,6 +363,11 @@ public final class CatsSessionRule<E extends CatsHarnessEnv> implements TestRule
     if (!leaks.isEmpty()) {
       throw new AssertionError("Process leak after the test class: " + String.join("; ", leaks));
     }
+  }
+
+  /** Whether any of a process' ports is one this class claimed. */
+  private boolean ours(RunningProcess process) {
+    return process.ports().stream().anyMatch(port -> env.ports().contains(port));
   }
 
   private List<Integer> busyPorts() {

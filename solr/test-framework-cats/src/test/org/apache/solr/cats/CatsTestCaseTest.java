@@ -20,6 +20,7 @@ package org.apache.solr.cats;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -49,6 +50,15 @@ public class CatsTestCaseTest extends CatsTestCase {
   @Test
   public void aProgramWithNoPortsGetsAnEmptyBlock() {
     assertEquals(0, ports().all().length);
+  }
+
+  @Test
+  public void aRequestNamingNoPortSaysWhyItCannotBeSent() {
+    // Not an NPE on a port that was never allocated: a program with no primary port has no answer
+    // to "which port", and the message says so.
+    IllegalStateException failure =
+        assertThrows(IllegalStateException.class, () -> http("/status"));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("no primary port"));
   }
 
   @Test

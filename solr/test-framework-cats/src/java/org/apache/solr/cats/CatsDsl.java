@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.apache.solr.cats.env.PortBlock;
+import org.apache.solr.cats.exec.BackgroundCommand;
 import org.apache.solr.cats.exec.CommandResult;
 import org.apache.solr.cats.session.CatsCliHelpers;
 import org.apache.solr.cats.session.CliSession;
@@ -91,6 +92,14 @@ public interface CatsDsl {
   /** For a command that reads its input: the text goes in on standard input, not through a pipe. */
   default CommandResult runWithStdin(String stdin, String line) {
     return cli().runWithStdin(stdin, line);
+  }
+
+  /**
+   * For a program that only exits when it is stopped, or a long-running tool a test watches: starts
+   * the command and hands back the live process instead of waiting for it.
+   */
+  default BackgroundCommand runInBackground(String line) {
+    return cli().runInBackground(line);
   }
 
   default CommandResult lastResult() {

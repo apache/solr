@@ -17,6 +17,8 @@
 
 package org.apache.solr.shell;
 
+import static org.apache.solr.cats.EnabledOnShell.BASH;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -155,7 +157,7 @@ public class SslTest extends SolrCatsTestCase {
   }
 
   @Test
-  @EnabledOnShell("bash") // curl --resolve has no cross-shell equivalent; see the class javadoc.
+  @EnabledOnShell(BASH) // curl --resolve has no cross-shell equivalent; see the class javadoc.
   public void useDifferentHostnameWithCurlResolve() {
     Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
     Path pem = path("ssl/solr-ssl.pem");

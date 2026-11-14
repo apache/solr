@@ -17,6 +17,8 @@
 
 package org.apache.solr.cats.session;
 
+import static org.apache.solr.cats.EnabledOnShell.BASH;
+import static org.apache.solr.cats.EnabledOnShell.CMD;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -40,9 +42,11 @@ import org.apache.solr.cats.ShellGate;
 import org.apache.solr.cats.env.CatsHarnessEnv;
 import org.apache.solr.cats.env.PortBlock;
 import org.apache.solr.cats.env.PortLayout;
+import org.apache.solr.cats.exec.BackgroundCommand;
 import org.apache.solr.cats.exec.CatsFiles;
+import org.apache.solr.cats.exec.CommandResult;
 import org.apache.solr.cats.exec.ProgramUnderTest;
-import org.apache.solr.cats.exec.RunningProgram;
+import org.apache.solr.cats.exec.RunningProcess;
 import org.apache.solr.cats.exec.Shells;
 import org.junit.After;
 import org.junit.Before;
@@ -81,7 +85,7 @@ public class CliSessionTest {
       new PortLayout(4, new int[] {0, 1, 2, 1000}, 20_000, 30_000, 200, 0);
 
   private static final class ScriptedProgram implements ProgramUnderTest {
-    private List<RunningProgram> running = List.of();
+    private List<RunningProcess> running = List.of();
 
     @Override
     public PortLayout portLayout() {
@@ -89,7 +93,7 @@ public class CliSessionTest {
     }
 
     @Override
-    public List<RunningProgram> running(String marker) {
+    public List<RunningProcess> running(String marker) {
       return running;
     }
   }
@@ -163,7 +167,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // Reading the environment back needs the shell's own spelling.
+  @EnabledOnShell(BASH) // Reading the environment back needs the shell's own spelling.
   public void envReachesTheShell() {
     session.env("MARKER", "hello world");
     session.allowShellSpecific();
@@ -231,7 +235,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // Single quotes are bash's; cmd.exe treats them as ordinary characters.
+  @EnabledOnShell(BASH) // Single quotes are bash's; cmd.exe treats them as ordinary characters.
   public void aHarnessResolvedVariableIsNotLeftForTheShell() {
     // The proof that it is the harness and not bash doing the work: the resolved value reaches the
     // command even inside single quotes, where bash would never have expanded anything.
@@ -279,7 +283,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // About bash's brace expansion specifically.
+  @EnabledOnShell(BASH) // About bash's brace expansion specifically.
   public void bashLeavesDoubleBracesAlone() {
     // Guards the choice of delimiter. 'not-a-var' is not a legal placeholder name, so the harness
     // passes it through untouched and bash gets to see it — unquoted, with brace expansion live.
@@ -288,7 +292,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // 'pwd' is the shell's own; the harness offers cwd() instead.
+  @EnabledOnShell(BASH) // 'pwd' is the shell's own; the harness offers cwd() instead.
   public void cdChangesTheWorkingDirectory() throws IOException {
     // Compared as strings: the temporary directory may be reached through a symlink, while the
     // session resolves against its own cwd and produces a real path.
@@ -305,7 +309,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // 'exit' is spelled 'exit /b' on cmd.exe.
+  @EnabledOnShell(BASH) // 'exit' is spelled 'exit /b' on cmd.exe.
   public void exitStatusIsReported() {
     session.allowShellSpecific();
     session.tryRun("exit 3").assertExitCode(3);
@@ -313,7 +317,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // Writing to stderr at all needs the shell's own redirection syntax.
+  @EnabledOnShell(BASH) // Writing to stderr at all needs the shell's own redirection syntax.
   public void stderrIsMergedByDefault() {
     session.allowShellSpecific();
     session.run("echo out; echo err 1>&2").assertContains("out").assertContains("err");
@@ -328,7 +332,7 @@ public class CliSessionTest {
 
   // cmd.exe's echo prints the quotes that quoting adds, so the expected output differs.
   @Test
-  @EnabledOnShell("bash")
+  @EnabledOnShell(BASH)
   public void argvFormQuotesArgumentsForTheShell() {
     session.run(List.of("echo", "a b", "c&d", "e|f", "g'h")).assertExact("a b c&d e|f g'h");
   }
@@ -354,7 +358,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // 'sleep' is the shell's own; the harness offers awaitOrFail().
+  @EnabledOnShell(BASH) // 'sleep' is the shell's own; the harness offers awaitOrFail().
   public void aCommandThatNeverEndsFailsOnItsTimeout() {
     session.timeout(Duration.ofSeconds(2));
     session.allowShellSpecific();
@@ -364,7 +368,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // Prompting for input needs the shell's own 'read'.
+  @EnabledOnShell(BASH) // Prompting for input needs the shell's own 'read'.
   public void stdinIsClosedSoAPromptCannotHang() {
     // Redirecting stdin from the null device is what stops an interactive command blocking the
     // build: the prompt sees EOF at once. What matters is that the command returns at all, not
@@ -381,14 +385,14 @@ public class CliSessionTest {
   // one line is the same on both shells.
 
   @Test
-  @EnabledOnShell("bash")
+  @EnabledOnShell(BASH)
   public void stdinCarriesTextThroughUntouched() {
     session.allowShellSpecific();
     session.runWithStdin("plain text\n", "cat").assertExact("plain text");
   }
 
   @Test
-  @EnabledOnShell("bash")
+  @EnabledOnShell(BASH)
   public void stdinCarriesSeveralLines() {
     session.allowShellSpecific();
     session
@@ -399,7 +403,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash")
+  @EnabledOnShell(BASH)
   public void stdinCarriesQuotesNoShellWouldPassAsAnArgument() {
     session.allowShellSpecific();
     // Both quote characters at once, which cmd.exe cannot carry as an argument at all, plus the %
@@ -409,14 +413,14 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash")
+  @EnabledOnShell(BASH)
   public void stdinCarriesNonAsciiAsUtf8() {
     session.allowShellSpecific();
     session.runWithStdin("blåbær ☃\n", "cat").assertExact("blåbær ☃");
   }
 
   @Test
-  @EnabledOnShell("bash")
+  @EnabledOnShell(BASH)
   public void stdinIsRecordedInTheTranscript() {
     session.allowShellSpecific();
     session.runWithStdin("recorded\n", "cat");
@@ -458,7 +462,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // 'exit' is spelled 'exit /b' on cmd.exe.
+  @EnabledOnShell(BASH) // 'exit' is spelled 'exit /b' on cmd.exe.
   public void aFailingExitStatusIsReportedPlainly() {
     session.allowShellSpecific();
     AssertionError failure =
@@ -469,7 +473,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("bash") // printf is the portable way to emit a specific invalid byte.
+  @EnabledOnShell(BASH) // printf is the portable way to emit a specific invalid byte.
   public void outputThatIsNotValidUtf8DoesNotFailTheCommand() {
     // Found on Windows, where a launcher's .cmd output comes back in the console code page: strict
     // decoding turned a passing command into a MalformedInputException. Nothing guarantees a
@@ -493,15 +497,123 @@ public class CliSessionTest {
     session.run(List.of("mytool", "echo", "two words")).assertExitCode(0).assertExact("two words");
   }
 
-  // ------------------------------------------------------- node ownership
+  // ------------------------------------------------------- timing
+
+  @Test
+  public void durationAssertionsMeasureHowLongTheCommandTook() {
+    CommandResult result = session.run("mytool work 1 0");
+    result.assertDurationAtLeast(Duration.ofSeconds(1)).assertDurationAtMost(Duration.ofMinutes(5));
+
+    AssertionError tooSlow =
+        assertThrows(AssertionError.class, () -> result.assertDurationAtMost(Duration.ZERO));
+    assertTrue(tooSlow.getMessage(), tooSlow.getMessage().contains("expected at most 0s"));
+
+    AssertionError tooFast =
+        assertThrows(
+            AssertionError.class, () -> result.assertDurationAtLeast(Duration.ofMinutes(10)));
+    assertTrue(tooFast.getMessage(), tooFast.getMessage().contains("expected at least 600s"));
+  }
+
+  // ------------------------------------------------------- background commands
+  // The stand-in program prints a line, stays alive, prints another and exits with a given status,
+  // which is every shape these cases need.
+
+  @Test
+  public void aBackgroundCommandIsReadableWhileItRuns() {
+    BackgroundCommand command = session.runInBackground("mytool work 60 0");
+    try {
+      command.awaitOutput("starting", Duration.ofSeconds(60));
+      assertFalse("it has not printed its last line yet", command.hasEnded());
+      assertFalse(command.output(), command.output().contains("finished"));
+      assertTrue(alive(command.pid()));
+
+      String transcript = session.transcript().text();
+      assertTrue(transcript, transcript.contains("$ mytool work 60 0 &"));
+      assertTrue(transcript, transcript.contains("started as pid " + command.pid()));
+    } finally {
+      command.kill();
+    }
+  }
+
+  @Test
+  public void awaitOutputFailsWithWhatTheCommandHasPrintedSoFar() {
+    BackgroundCommand command = session.runInBackground("mytool work 60 0");
+    try {
+      AssertionError failure =
+          assertThrows(
+              AssertionError.class,
+              () -> command.awaitOutput("never printed", Duration.ofSeconds(2)));
+      assertTrue(failure.getMessage(), failure.getMessage().contains("timed out after 2s"));
+      assertTrue(failure.getMessage(), failure.getMessage().contains("never printed"));
+      assertTrue("the output so far is the diagnosis", failure.getMessage().contains("starting"));
+    } finally {
+      command.kill();
+    }
+  }
+
+  @Test
+  public void waitForReturnsTheResultTheCommandExitedWith() {
+    BackgroundCommand command = session.runInBackground("mytool work 1 3");
+    CommandResult result = command.waitFor(Duration.ofMinutes(1));
+    result
+        .assertExitCode(3)
+        .assertContains("starting")
+        .assertContains("finished")
+        .assertDurationAtLeast(Duration.ofSeconds(1));
+    assertTrue(command.hasEnded());
+
+    // The outcome is appended to the transcript when it ends, under the line that started it.
+    String transcript = session.transcript().text();
+    assertTrue(transcript, transcript.contains("$ mytool work 1 3 &"));
+    assertTrue(transcript, transcript.contains("exit 3 in "));
+    assertTrue(transcript, transcript.contains("| finished"));
+  }
+
+  @Test
+  public void waitForKillsAndFailsWhenTheCommandOverrunsIt() {
+    BackgroundCommand command = session.runInBackground("mytool work 60 0");
+    AssertionError failure =
+        assertThrows(AssertionError.class, () -> command.waitFor(Duration.ofSeconds(2)));
+    assertTrue(failure.getMessage(), failure.getMessage().contains("did not finish within 2s"));
+    assertTrue(command.hasEnded());
+    assertFalse(alive(command.pid()));
+  }
+
+  @Test
+  public void killStopsTheCommandAndIsIdempotent() {
+    BackgroundCommand command = session.runInBackground("mytool work 60 0");
+    command.awaitOutput("starting", Duration.ofSeconds(60));
+    command.kill();
+    assertTrue(command.hasEnded());
+    assertFalse(alive(command.pid()));
+    command.kill();
+  }
+
+  @Test
+  public void aBackgroundCommandLeftRunningIsStoppedWhenTheSessionEnds() {
+    CliSession child = session.child("forgot-to-wait");
+    BackgroundCommand command = child.runInBackground("mytool work 60 0");
+    command.awaitOutput("starting", Duration.ofSeconds(60));
+
+    child.close();
+
+    assertTrue("the teardown ended it", command.hasEnded());
+    assertFalse(alive(command.pid()));
+  }
+
+  private static boolean alive(long pid) {
+    return ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false);
+  }
+
+  // ------------------------------------------------------- process ownership
   // Pids no process could have, so cleanup finds nothing alive and kills nothing.
 
   @Test
-  public void aNodeIsOwnedByTheSessionThatStartedIt() {
+  public void aProcessIsOwnedByTheSessionThatStartedIt() {
     int port = env.ports().at(1);
     CliSession child = session.child("starter");
     try {
-      program.running = List.of(new RunningProgram(90_000_001L, port));
+      program.running = List.of(RunningProcess.of(90_000_001L, port));
       child.run("echo started");
       assertEquals(Set.of(port), child.ownedPorts());
       assertEquals(Set.of(), session.ownedPorts());
@@ -511,38 +623,50 @@ public class CliSessionTest {
   }
 
   @Test
-  public void aRestartedNodeStaysOwnedByTheAncestorSession() {
-    // Otherwise a test that restarts the node its class started would take ownership of it, and
-    // stop it when that one test ended — tearing down the node every later test still expects.
+  public void aRestartedProcessStaysOwnedByTheAncestorSession() {
+    // Otherwise a test that restarts the process its class started would take ownership of it, and
+    // stop it when that one test ended — tearing down what every later test still expects.
     int port = env.ports().at(0);
-    program.running = List.of(new RunningProgram(90_000_002L, port));
+    program.running = List.of(RunningProcess.of(90_000_002L, port));
     session.run("echo started");
     assertEquals(Set.of(port), session.ownedPorts());
 
     CliSession child = session.child("restarter");
     try {
-      program.running = List.of(new RunningProgram(90_000_003L, port));
+      program.running = List.of(RunningProcess.of(90_000_003L, port));
       child.run("echo restarted");
       assertEquals(Set.of(port), session.ownedPorts());
-      assertEquals(Set.of(), child.ownedPorts());
+      assertEquals(List.of(RunningProcess.of(90_000_003L, port)), session.ownedProcesses());
+      assertEquals(List.of(), child.ownedProcesses());
     } finally {
       child.close();
     }
   }
 
   @Test
-  public void aNodeOutsideThisClassesPortBlockIsNobodysBusiness() {
-    // The record of running nodes is shared with every other class on the cmd side, so the block
-    // is what tells this class's nodes from a sibling's.
-    program.running = List.of(new RunningProgram(90_000_004L, env.ports().at(0) + 500));
+  public void aProcessOutsideThisClassesPortBlockIsNobodysBusiness() {
+    // The record of running processes is shared with every other class on the cmd side, so the
+    // block is what tells this class's processes from a sibling's.
+    program.running = List.of(RunningProcess.of(90_000_004L, env.ports().at(0) + 500));
     session.run("echo elsewhere");
+    assertEquals(List.of(), session.ownedProcesses());
+  }
+
+  @Test
+  public void aProcessWithNoPortsIsOwnedOnItsMarkerAlone() {
+    // Nothing to filter on: a program the harness finds by marker and that listens on nothing is
+    // identified by its pid, and belongs to the session whose command made it appear.
+    RunningProcess discovered = RunningProcess.of(90_000_005L);
+    program.running = List.of(discovered);
+    session.run("echo started");
+    assertEquals(List.of(discovered), session.ownedProcesses());
     assertEquals(Set.of(), session.ownedPorts());
   }
 
   // ---------------------------------------------------------------- cmd.exe specifics
 
   @Test
-  @EnabledOnShell("cmd")
+  @EnabledOnShell(CMD)
   public void cmdQuotingProtectsMetacharacters() {
     // Characters cmd's parser would otherwise act on, passed as argv so the harness quotes each.
     // Checked with contains rather than equals because cmd's echo prints the quotes that quoting
@@ -555,7 +679,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("cmd")
+  @EnabledOnShell(CMD)
   public void cmdQuotingRefusesACaret() {
     // 'call' re-parses its line, which doubles a caret: "a^b" arrives as "a^^b". Refused rather
     // than silently mangled, the same treatment an embedded double quote gets.
@@ -566,7 +690,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("cmd")
+  @EnabledOnShell(CMD)
   public void cmdQuotingEscapesPercentForBatchFiles() {
     // % is expanded even inside double quotes, and a literal one in a batch file is written %%.
     // A URL carrying an escape like %20 is the case that matters.
@@ -574,7 +698,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("cmd")
+  @EnabledOnShell(CMD)
   public void cmdQuotingRefusesAnEmbeddedDoubleQuote() {
     // Refused rather than mangled: cmd has no escape that survives both its own quote counting
     // and the target program's parser.
@@ -585,7 +709,7 @@ public class CliSessionTest {
   }
 
   @Test
-  @EnabledOnShell("cmd")
+  @EnabledOnShell(CMD)
   public void cmdEnvironmentIsCaseInsensitive() {
     // Windows environment names are case-insensitive, so the harness keeps its env map that way.
     session.env("MiXeD_Case_Var", "value");
@@ -641,7 +765,7 @@ public class CliSessionTest {
   // ------------------------------------------------------- output extraction
 
   @Test
-  @EnabledOnShell("bash") // Emitting three fixed lines needs the shell's own 'printf'.
+  @EnabledOnShell(BASH) // Emitting three fixed lines needs the shell's own 'printf'.
   public void outputExtractionReplacesTheUnixTextTools() {
     session.allowShellSpecific();
     var result = session.run("printf 'alpha 1\\nbeta 2\\ngamma 3\\n'");
@@ -715,7 +839,7 @@ public class CliSessionTest {
   @Test
   public void anHttpRequestCarryingHeadersReportsAConnectionFailureTheSameWay() {
     // The overload that ports 'curl -H "Name: value"'; nothing is listening on this session's
-    // block, so it exercises the request path without needing a node.
+    // block, so it exercises the request path without needing a server.
     session
         .helpers()
         .http(session.ports().at(0), "/items/select", Map.of("Accept-Encoding", "gzip"))
@@ -725,7 +849,7 @@ public class CliSessionTest {
   @Test
   public void aMultipartFilePostReportsAConnectionFailureTheSameWay() {
     // The overload that ports 'curl -F "field=@file"'; nothing is listening on this session's
-    // block, so it exercises building and sending the multipart body without needing a node.
+    // block, so it exercises building and sending the multipart body without needing a server.
     Path document = session.write("doc.bin", "a document");
     session
         .helpers()
@@ -747,7 +871,7 @@ public class CliSessionTest {
   public void aPostOrPutThatCannotConnectIsReportedAsAFailureNotAStatus() {
     // The body-carrying ports of 'curl -X POST -d ...' and 'curl --data-binary @file -X PUT ...'.
     // Nothing is listening on the block this session claimed, so this exercises the request path
-    // without needing a node.
+    // without needing a server.
     int port = session.ports().at(0);
     session
         .helpers()

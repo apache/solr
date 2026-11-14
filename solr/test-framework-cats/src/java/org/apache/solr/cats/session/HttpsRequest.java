@@ -143,8 +143,8 @@ public final class HttpsRequest {
   }
 
   /**
-   * The {@code curl} this request ports back to, for the transcript: the {@code --cacert}, {@code
-   * -u} and {@code --resolve} the builder's options stand for.
+   * The curl command line this request ports back to, for the transcript: the {@code --cacert},
+   * {@code -u} and {@code --resolve} the builder's options stand for.
    */
   private String curl(String url) {
     StringBuilder curl = new StringBuilder("curl");

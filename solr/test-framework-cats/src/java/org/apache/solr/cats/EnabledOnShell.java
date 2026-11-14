@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
  *
  * <pre>
  *   &#64;Test
- *   &#64;EnabledOnShell("cmd")
+ *   &#64;EnabledOnShell(EnabledOnShell.CMD)
  *   public void configFileIsSourced() { ... }
  * </pre>
  *
@@ -44,6 +44,12 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EnabledOnShell {
+
+  /** The id of {@link org.apache.solr.cats.exec.Shells#BASH}. */
+  String BASH = "bash";
+
+  /** The id of {@link org.apache.solr.cats.exec.Shells#CMD}. */
+  String CMD = "cmd";
 
   /** The {@linkplain org.apache.solr.cats.exec.Shell#id() ids} of the shells this test is for. */
   String[] value();

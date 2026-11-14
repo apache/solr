@@ -17,6 +17,8 @@
 
 package org.apache.solr.shell;
 
+import static org.apache.solr.cats.EnabledOnShell.BASH;
+
 import org.apache.solr.cats.EnabledOnShell;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +36,7 @@ import org.junit.Test;
  * collection. Driving {@code RunExampleTool} from the command line is what this suite is
  * <em>for</em>, and it is now the only shell suite that does it at all.
  */
-@EnabledOnShell("bash")
+@EnabledOnShell(BASH)
 // Bash-only: on Windows RunExampleTool#startSolr drops every SOLR_* variable from the spawned
 // nodes' environment, so they get neither the process-scan marker nor SOLR_PID_DIR and cannot be
 // discovered or stopped (SOLR-18650). Both tests depend on the cluster the example starts, hence a

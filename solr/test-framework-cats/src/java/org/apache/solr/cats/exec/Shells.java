@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import org.apache.solr.cats.EnabledOnShell;
 
 /**
  * The shells the harness ships, the registry a project adds its own to, and which one is in use.
@@ -114,7 +115,7 @@ public final class Shells {
 
     @Override
     public String id() {
-      return "bash";
+      return EnabledOnShell.BASH;
     }
 
     @Override
@@ -137,7 +138,7 @@ public final class Shells {
 
     @Override
     public String id() {
-      return "cmd";
+      return EnabledOnShell.CMD;
     }
 
     @Override

@@ -23,8 +23,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Which instances of the program under test the harness has seen, so that each one is owned by
+ * Which processes of the program under test the harness has seen, so that each one is owned by
  * exactly one session and none outlives the JVM.
+ *
+ * <p>Two kinds are recorded, and cleanup treats them alike. A <em>child</em> is a direct child of a
+ * shell the harness spawned, tracked by the {@link Process} handle the executor already holds — a
+ * long-running command-line tool, or a converter that runs to completion. A <em>discovered</em>
+ * process is one that daemonised itself away from that shell, and is found again by the marker its
+ * command line carries.
  *
  * <p>One registry per harness environment rather than one per JVM: a library may be instantiated
  * twice in a process, and static bookkeeping would then have two harnesses stopping each other's
@@ -35,36 +41,59 @@ public final class ProgramRegistry {
   /** Every pid the registry has ever seen, so the shutdown hook can finish the job. */
   private final Set<Long> recordedPids = ConcurrentHashMap.newKeySet();
 
-  /** Instances already accounted for, so one is owned by the session that actually started it. */
-  private final Map<Integer, Long> known = new ConcurrentHashMap<>();
+  /** Children still tracked, by pid, so that a handle is at hand to kill the whole tree. */
+  private final Map<Long, Process> children = new ConcurrentHashMap<>();
+
+  /** Discovered processes already accounted for, so one is owned by the session that started it. */
+  private final Map<Long, RunningProcess> discovered = new ConcurrentHashMap<>();
 
   public ProgramRegistry() {
-    Runtime.getRuntime().addShutdownHook(new Thread(this::killRecordedPids, "cats-cleanup"));
+    Runtime.getRuntime().addShutdownHook(new Thread(this::killRecorded, "cats-cleanup"));
+  }
+
+  /** Records a process the harness spawned as a direct child of one of its shells. */
+  public void recordChild(Process child) {
+    children.put(child.pid(), child);
+    recordedPids.add(child.pid());
+  }
+
+  /** Drops a child a session has just stopped, or that has exited on its own. */
+  public void forgetChild(Process child) {
+    children.remove(child.pid(), child);
+    recordedPids.remove(child.pid());
   }
 
   /**
-   * Records an instance discovery has just reported, and says whether it is new — a port whose pid
-   * is already recorded has been accounted for and needs no second owner.
+   * Records a process discovery has just reported, and says whether it is new — a pid already
+   * recorded has been accounted for and needs no second owner.
    */
-  public boolean recordIfNew(RunningProgram program) {
-    Long previous = known.get(program.port());
-    if (previous != null && previous == program.pid()) {
+  public boolean recordIfNew(RunningProcess process) {
+    if (discovered.putIfAbsent(process.pid(), process) != null) {
       return false;
     }
-    known.put(program.port(), program.pid());
-    recordedPids.add(program.pid());
+    recordedPids.add(process.pid());
     return true;
   }
 
-  /** Drops an instance a session has just stopped. */
-  public void forget(int port, long pid) {
-    recordedPids.remove(pid);
-    known.remove(port, pid);
+  /** Drops a discovered process a session has just stopped. */
+  public void forget(RunningProcess process) {
+    discovered.remove(process.pid());
+    recordedPids.remove(process.pid());
   }
 
-  /** Last resort, from the JVM shutdown hook: kill everything this registry ever recorded. */
-  private void killRecordedPids() {
+  /**
+   * Last resort, from the JVM shutdown hook: kill everything this registry still tracks, a child by
+   * its handle and a discovered process by its pid.
+   */
+  void killRecorded() {
     for (Long pid : recordedPids) {
+      Process child = children.get(pid);
+      if (child != null) {
+        if (child.isAlive()) {
+          ProcessKill.killTree(child.toHandle(), Duration.ofSeconds(5));
+        }
+        continue;
+      }
       if (ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false)) {
         ProcessKill.killTree(pid, Duration.ofSeconds(5));
       }

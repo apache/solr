@@ -29,12 +29,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.solr.cats.SuppressForbidden;
 
@@ -85,6 +83,18 @@ public final class ShellExecutor {
    *     cleanup finds it still alive
    */
   public static CommandResult execute(Spec spec, Consumer<Process> processRegistrar) {
+    return start(spec, processRegistrar, result -> {}).awaitExit(spec.timeout());
+  }
+
+  /**
+   * Spawns the command and hands back the live process, for a caller that waits, polls or kills it
+   * itself.
+   *
+   * @param processRegistrar notified of the live process, as in {@link #execute}
+   * @param onExit called once with the result when the command ends, however it ends
+   */
+  public static BackgroundCommand start(
+      Spec spec, Consumer<Process> processRegistrar, Consumer<CommandResult> onExit) {
     try {
       Files.createDirectories(spec.workDir());
       Path stdoutFile = spec.workDir().resolve(spec.tag() + ".out");
@@ -107,38 +117,9 @@ public final class ShellExecutor {
       long startNanos = System.nanoTime();
       Process process = pb.start();
       processRegistrar.accept(process);
-
-      boolean exited = process.waitFor(spec.timeout().toMillis(), TimeUnit.MILLISECONDS);
-      boolean timedOut = !exited;
-      if (timedOut) {
-        ProcessKill.killTree(process.toHandle(), Duration.ofSeconds(10));
-      }
-      Duration duration = Duration.ofNanos(System.nanoTime() - startNanos);
-      int status = timedOut ? -1 : process.exitValue();
-
-      String stdout = read(stdoutFile);
-      String stderr = spec.separateStreams() ? read(stderrFile) : "";
-      String output = spec.separateStreams() ? stdout + stderr : stdout;
-
-      return new CommandResult(
-          spec.line(),
-          spec.shell(),
-          spec.cwd(),
-          status,
-          output,
-          stdout,
-          stderr,
-          duration,
-          timedOut,
-          // A view, not a copy: assertions resolve against it immediately after the command.
-          Collections.unmodifiableMap(spec.env()),
-          spec.echoedPrefixes(),
-          spec.history());
+      return new BackgroundCommand(spec, process, startNanos, stdoutFile, stderrFile, onExit);
     } catch (IOException e) {
       throw new UncheckedIOException("Could not run: " + spec.line(), e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while running: " + spec.line(), e);
     }
   }
 
@@ -150,7 +131,7 @@ public final class ShellExecutor {
    * capture is cut mid-character. A replacement character in the transcript beats a {@link
    * java.nio.charset.MalformedInputException} standing in for the test's real result.
    */
-  private static String read(Path file) throws IOException {
+  static String read(Path file) throws IOException {
     if (!Files.exists(file)) {
       return "";
     }
