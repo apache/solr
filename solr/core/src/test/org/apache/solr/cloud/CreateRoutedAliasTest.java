@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,19 +29,25 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
@@ -175,6 +182,94 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertEquals("bazbam", meta.get("create-collection.property.foobar"));
     assertEquals("bazbam2", meta.get("create-collection.property.foobar2"));
     assertEquals(createNode, meta.get("create-collection.createNodeSet"));
+  }
+
+  /**
+   * Fixing a date math router.start when the first document arrives must not undo alias changes
+   * that the node handling the document hasn't seen yet.
+   */
+  @Test
+  @SuppressForbidden(
+      reason = "Reflection needed to give a node cached aliases that are behind ZooKeeper")
+  public void testFixingStartKeepsOtherAliases() throws Exception {
+    final String aliasName = getSaferTestName();
+    CollectionAdminRequest.createTimeRoutedAlias(
+            aliasName,
+            "NOW/DAY",
+            "+1DAY",
+            "evt_dt",
+            CollectionAdminRequest.createCollection("_unused_", "_default", 1, 1))
+        .process(solrClient);
+    ZkStateReader clientReader = cluster.getZkStateReader();
+    clientReader.aliasesManager.update();
+    final String collectionName =
+        clientReader.getAliases().getCollectionAliasListMap().get(aliasName).get(0);
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    // send the update to the node hosting the collection, so that node handles it itself
+    String nodeName =
+        clientReader
+            .getCollection(collectionName)
+            .replicaStream()
+            .findFirst()
+            .orElseThrow()
+            .getNodeName();
+    JettySolrRunner jetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> j.getNodeName().equals(nodeName))
+            .findFirst()
+            .orElseThrow();
+    ZkStateReader reader = jetty.getCoreContainer().getZkController().getZkStateReader();
+    int zkVersion = cluster.getZkClient().exists(ZkStateReader.ALIASES, null).getVersion();
+    new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "node did not catch up with aliases.json",
+            () -> reader.getAliases().getZNodeVersion() == zkVersion);
+    Aliases aliasesBeforeOtherAlias = reader.getAliases();
+
+    // another alias is created and a property is set on this one, and the node is put back to
+    // before it saw them, as if the document arrived before the node processed the watch events
+    final String otherAlias = aliasName + "_other";
+    CollectionAdminRequest.createAlias(otherAlias, collectionName).process(solrClient);
+    CollectionAdminRequest.setAliasProperty(aliasName)
+        .addProperty("foo", "bar")
+        .process(solrClient);
+    new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "node did not see the alias changes",
+            () ->
+                reader.getAliases().hasAlias(otherAlias)
+                    && "bar"
+                        .equals(
+                            reader
+                                .getAliases()
+                                .getCollectionAliasProperties(aliasName)
+                                .get("foo")));
+    Field aliasesField = ZkStateReader.AliasesManager.class.getDeclaredField("aliases");
+    aliasesField.setAccessible(true);
+    aliasesField.set(reader.aliasesManager, aliasesBeforeOtherAlias);
+    assertSame(
+        "the node's cached aliases were refreshed before the document was sent",
+        aliasesBeforeOtherAlias,
+        reader.getAliases());
+
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "evt_dt", Instant.now().toString());
+    assertEquals(0, jetty.getSolrClient().add(collectionName, doc).getStatus());
+
+    // router.start is fixed asynchronously
+    new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "router.start was not fixed",
+            () ->
+                !"NOW/DAY"
+                    .equals(
+                        clientReader
+                            .getAliases()
+                            .getCollectionAliasProperties(aliasName)
+                            .get(TimeRoutedAlias.ROUTER_START)));
+    assertEquals(collectionName, clientReader.getAliases().getCollectionAliasMap().get(otherAlias));
+    assertEquals(
+        "bar", clientReader.getAliases().getCollectionAliasProperties(aliasName).get("foo"));
   }
 
   @Test

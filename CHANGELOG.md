@@ -1947,7 +1947,7 @@ Diagnostic logging now reports empty and skipped columns. [SOLR-18508](https://i
 - Don't fetch the PRS states while registering the collection watch [SOLR-16451](https://issues.apache.org/jira/browse/SOLR-16451) (Hitesh Khamesra) (Ishan Chattopadhyaya)
 - Do not update PRS states if local version is newer [SOLR-16452](https://issues.apache.org/jira/browse/SOLR-16452) (Hitesh Khamesra) (noble)
 - Upgrade commons-text to 1.10.0 [SOLR-16464](https://issues.apache.org/jira/browse/SOLR-16464) (Kevin Risden)
-- Add an internal envVar for passing options to bin/solr that will not be overriden by the user. [SOLR-16482](https://issues.apache.org/jira/browse/SOLR-16482) (Houston Putman)
+- Add an internal envVar for passing options to bin/solr that will not be overridden by the user. [SOLR-16482](https://issues.apache.org/jira/browse/SOLR-16482) (Houston Putman)
 - Pin the OS Variant for the default base image of the Dockerfile (to Ubuntu 20). [SOLR-16486](https://issues.apache.org/jira/browse/SOLR-16486) (Houston Putman) (janhoy) (Eva Müller)
 - Consistency in how dynamic fields are defined in sample schema.xml files [SOLR-9529](https://issues.apache.org/jira/browse/SOLR-9529) (Eric Pugh) (Trey Grainger)
 - Upgrade forbiddenapis to 3.3 (Uwe Schindler)
