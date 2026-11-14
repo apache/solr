@@ -43,43 +43,7 @@ Deliberately thin — its javadoc asks you to keep it that way. It contributes t
 
 ## SolrCatsTestCase
 
-CATS — Cross-platform Automated Testing System — is the harness for the start scripts: one Java test runs `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, which the BATS suites cannot do. The harness itself is generic and documented in [`solr/test-framework-cats/README.md`](../test-framework-cats/README.md) — sessions, `run`/`runFail` and the rest of the DSL, the portable file and HTTP replacements for Unix tools, transcripts and how a failure reads, `@EnabledOnShell`, port blocks, the `cats.*` settings. What follows is only the Solr layer. Suites live in `solr/packaging/src/test/org/apache/solr/shell/`.
-
-`SolrCatsTestCase extends SolrTestCase implements CatsDsl`, so a suite gets Solr's test conventions and the generic vocabulary in one base class — including the `classCli` and `cli` sessions and the shorthands that delegate to them:
-
-```java
-@BeforeClass
-public static void startSolr() {
-  classCli.run("solr start");
-}
-
-@Test
-public void createsCollection() {
-  run("solr create -c coll").assertContains("Created collection 'coll'");
-}
-```
-
-What it adds beyond the DSL:
-
-- `ports()`, narrowed to `SolrPorts`: `solr()`, `solr2()`, `solr3()`, `zk()` over the class's port block.
-- `collectionExists`, `configExists`, `deleteAllCollections`, `shutdownAll`, `dumpSolrLog` — delegating to `SolrCliHelpers`, which is `CatsCliHelpers` plus those five.
-- `forCli(commonsCliText, picocliText)`, the wording for the command-line implementation this run targets.
-
-### The `cli` trait
-
-`SolrProgram.traits()` reports one trait, `cli`: `picocli` or `commons-cli`, as `SOLR_PICOCLI` says, defaulting to picocli in step with `SolrCLI.main`. `@EnabledOnCli("picocli")` on a method or a class skips a test that holds for only one implementation, before any node starts; where the two differ in wording alone, prefer `forCli`. `CliGate` is the rule behind the annotation, and the counterpart of the generic `ShellGate`.
-
-### SolrProgram
-
-The `ProgramUnderTest` implementation — how the generic harness learns the Solr facts it cannot guess: the port layout (the node port `P`, two more for the multi-node suites, embedded ZooKeeper on `P+1000`, stride 4, bases 20 000–30 000), node discovery by command-line marker through `SolrProcessManager`, `solr stop -p <port>` for a graceful stop, and `solr-<port>.pid` / `.port` as the stale files to delete after a force-kill.
-
-### SolrCatsHarnessEnv and SolrPorts
-
-`SolrCatsHarnessEnv` assembles the environment every spawned shell is given: `SOLR_TIP` (the unpacked distribution — required, with no fallback), a per-class `SOLR_HOME` wiped at setup, `SOLR_PID_DIR` inside it (which is what scopes `solr stop --all` to this class and away from your own Solr), `SOLR_LOGS_DIR`, `SOLR_PORT`/`SOLR_PORT_LISTEN`/`SOLR2_PORT`/`SOLR3_PORT`/`ZK_PORT` from the claimed block, `SOLR_ULIMIT_CHECKS=false`, the two-channel process-scan marker (`SOLR_PROCESS_SCAN_MARKER` for the CLI's JVM, `SOLR_OPTS_INTERNAL` for the node's command line), and `TEST_OUTPUT_DIR`/`TEST_FAILURE_DIR`. Each value is read from the environment, then from the system property `solr.cli.<lowercase.dotted.name>` (for IDE runs), then a fallback.
-
-`SOLR_HOME` is also what gets snapshotted into `$TEST_FAILURE_DIR/<Class>-<method>/` when a test fails, alongside the transcript.
-
-`SolrPorts` is a `PortBlock` view that gives the block's four ports the names the BATS suites used.
+CATS — Cross-platform Automated Testing System — is the harness for the start scripts: one Java test runs `bin/solr` under bash and `bin\solr.cmd` under cmd.exe, which the BATS suites cannot do. `SolrCatsTestCase` in `org.apache.solr.shell` is the base class a suite extends, the generic harness under it is `org.apache.solr.cats` in the same module, and the suites live in `solr/packaging/src/test/org/apache/solr/shell/`. [`dev-docs/cats.adoc`](../../dev-docs/cats.adoc) covers both layers — the DSL, the portable replacements for Unix tools, transcripts and how a failure reads, `@EnabledOnShell`, port blocks, the `cats.*` settings, and what the Solr layer adds.
 
 ## SolrTestCaseJ4
 
@@ -98,11 +62,11 @@ The ones you actually reach for:
 
 ## Running tests
 
-`./gradlew helpTests` covers seeds, filtering and the rest. Two things specific to CATS: `./gradlew catsTests` from the root runs both tasks of that name — `solr/test-framework-cats`'s harness unit tests, which are part of `check`, and `solr/packaging`'s CLI suites, which are not because they need an unpacked distribution. To run a suite from an IDE, build one (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
+`./gradlew helpTests` covers seeds, filtering and the rest. Two things specific to CATS: the harness' own unit tests are part of `check` and run with `./gradlew -p solr/test-framework test --tests "org.apache.solr.cats.*"`, while `solr/packaging`'s CLI suites are not, because they need an unpacked distribution — `./gradlew -p solr/packaging catsTests`. To run a suite from an IDE, build a distribution (`./gradlew -p solr/packaging dev`) and point the harness at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=`.
 
 ## See also
 
-- [`solr/test-framework-cats/README.md`](../test-framework-cats/README.md) — the generic CATS harness the Solr layer sits on.
+- [`dev-docs/cats.adoc`](../../dev-docs/cats.adoc) — the CATS harness: the generic core and the Solr layer on top of it.
 - [`solr/packaging/README.md`](../packaging/README.md) — the CLI suites and the distribution they run against.
 - [`dev-docs/writing-tests.adoc`](../../dev-docs/writing-tests.adoc) — which kind of test to write.
 - [`dev-docs/admin-ui-tests.md`](../../dev-docs/admin-ui-tests.md) — the Selenium browser tests.

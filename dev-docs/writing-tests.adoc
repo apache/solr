@@ -23,7 +23,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | Current, but not a default.
 
 | `SolrCatsTestCase`
-| CATS — Cross-platform Automated Testing System: a real, unpacked Solr distribution driven through `bin/solr` and `bin\solr.cmd` as subprocesses under the platform's own shell. The only harness that runs an installation the way a user gets one, so a classpath, Jetty configuration or file layout problem reproduces here and nowhere else. Harness in `solr/test-framework-cats/src/java/org/apache/solr/cats/`, which is a generic, Solr-free core, with the Solr layer on top in `solr/test-framework/src/java/org/apache/solr/shell/`; suites in `solr/packaging/src/test/`.
+| CATS — Cross-platform Automated Testing System: a real, unpacked Solr distribution driven through `bin/solr` and `bin\solr.cmd` as subprocesses under the platform's own shell. The only harness that runs an installation the way a user gets one, so a classpath, Jetty configuration or file layout problem reproduces here and nowhere else. Harness in `solr/test-framework/src/java/org/apache/solr/cats/`, a generic, Solr-free core, with the Solr layer on top in `solr/test-framework/src/java/org/apache/solr/shell/`; suites in `solr/packaging/src/test/`.
 | seconds to minutes
 | Current. New CLI coverage goes here.
 
@@ -148,7 +148,7 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 +
 `solr/packaging/src/test/org/apache/solr/shell/PostTest.java` — same, plus `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations.
 +
-The generic core lives in `solr/test-framework-cats`; `solr/test-framework` holds the Solr layer the suites extend.
+The generic core is `org.apache.solr.cats` in `solr/test-framework`, with the Solr layer the suites extend alongside it in `org.apache.solr.shell`; xref:cats.adoc[cats.adoc] documents both.
 
 `AdminUiTestBase`::
 `solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — one screen; the version and JVM values are compared against live `/admin/info/system` JSON rather than against constants.
@@ -163,7 +163,7 @@ The generic core lives in `solr/test-framework-cats`; `solr/test-framework` hold
 * `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`.
 * `./gradlew -p solr/docker testDocker` builds the image from your tree and runs the bash cases against it; `-Psolr.docker.tests.include`/`-Psolr.docker.tests.exclude` select them.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
-* Neither `solr/packaging` nor `solr/docker` test tasks are part of `check` — they need an unpacked distribution or a built image. The harness' own unit tests are — run them with `./gradlew -p solr/test-framework-cats test`. The browser tests are in `check` but stay skipped until their test group is enabled.
+* Neither `solr/packaging` nor `solr/docker` test tasks are part of `check` — they need an unpacked distribution or a built image. The harness' own unit tests are — run them with `./gradlew -p solr/test-framework test --tests "org.apache.solr.cats.*"`. The browser tests are in `check` but stay skipped until their test group is enabled.
 
 When one fails, start with the artifacts rather than the stack trace: `SolrCatsTestCase` prints the path to a `SOLR_HOME` snapshot holding `transcript.log`, every command it ran with its output; `AdminUiTestBase` saves `screenshot.png`, `page.html` and `console.log`.
 
@@ -171,6 +171,7 @@ When one fails, start with the artifacts rather than the stack trace: `SolrCatsT
 
 * `solr/test-framework/README.md` — what the framework provides and how to depend on it.
 * `solr/packaging/README.md` — the distribution, CATS and the BATS suites it is replacing.
+* xref:cats.adoc[cats.adoc] — the CATS harness in detail: its vocabulary, portability rails and the Solr layer on top.
 * link:admin-ui-tests.md[admin-ui-tests.md] — how the browser suite works and what it skips.
 * `./gradlew helpTests` (`dev-docs/gradle-help/tests.txt`) — the guide to running tests. `./gradlew -p solr/core testOpts` lists every test property with its default and current value.
 * xref:solr-source-code.adoc[solr-source-code.adoc] — building, and what to do about a test that only fails for you.
