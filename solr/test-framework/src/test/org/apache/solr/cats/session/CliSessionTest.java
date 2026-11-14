@@ -239,10 +239,8 @@ public class CliSessionTest {
   public void aHarnessResolvedVariableIsNotLeftForTheShell() {
     // The proof that it is the harness and not bash doing the work: the resolved value reaches the
     // command even inside single quotes, where bash would never have expanded anything.
-    session
-        .allowShellSpecific()
-        .run("echo '${MYTOOL_ADMIN_PORT}'")
-        .assertExact(String.valueOf(env.ports().at(3)));
+    session.allowShellSpecific();
+    session.run("echo '${MYTOOL_ADMIN_PORT}'").assertExact(String.valueOf(env.ports().at(3)));
   }
 
   @Test

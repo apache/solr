@@ -163,9 +163,8 @@ public class CliSession implements AutoCloseable {
   // ---------------------------------------------------------------- state
 
   /** Sets an environment variable for subsequent commands in this session. */
-  public CliSession env(String key, String value) {
+  public void env(String key, String value) {
     vars.put(key, value);
-    return this;
   }
 
   /**
@@ -175,9 +174,8 @@ public class CliSession implements AutoCloseable {
    * than empty: a launcher may check whether a variable is set at all before falling back to its
    * default.
    */
-  public CliSession unset(String key) {
+  public void unset(String key) {
     vars.remove(key);
-    return this;
   }
 
   /** The current value of an environment variable, or null. */
@@ -194,17 +192,16 @@ public class CliSession implements AutoCloseable {
   }
 
   /** Changes the working directory. A relative path resolves against the current one. */
-  public CliSession cd(String dir) {
+  public void cd(String dir) {
     Path target = cwd.resolve(dir).normalize();
     if (!Files.isDirectory(target)) {
       throw new AssertionError("cd: not a directory: " + target);
     }
     cwd = target;
-    return this;
   }
 
-  public CliSession cd(Path dir) {
-    return cd(dir.toString());
+  public void cd(Path dir) {
+    cd(dir.toString());
   }
 
   /**
@@ -450,15 +447,13 @@ public class CliSession implements AutoCloseable {
    * org.apache.solr.cats.EnabledOnShell} — set automatically there. Such a test may use that
    * shell's pipes, quoting and tools freely, since there is no other shell for it to break on.
    */
-  public CliSession allowShellSpecific() {
+  public void allowShellSpecific() {
     this.shellSpecific = true;
-    return this;
   }
 
   /** Overrides the default per-command timeout for this session. */
-  public CliSession timeout(Duration newTimeout) {
+  public void timeout(Duration newTimeout) {
     this.timeout = newTimeout;
-    return this;
   }
 
   /** The result of the most recent command in this session. */

@@ -106,24 +106,24 @@ public interface CatsDsl {
     return cli().lastResult();
   }
 
-  default CliSession env(String key, String value) {
-    return cli().env(key, value);
+  default void env(String key, String value) {
+    cli().env(key, value);
   }
 
-  default CliSession unset(String key) {
-    return cli().unset(key);
+  default void unset(String key) {
+    cli().unset(key);
   }
 
   default String env(String key) {
     return cli().env(key);
   }
 
-  default CliSession cd(String dir) {
-    return cli().cd(dir);
+  default void cd(String dir) {
+    cli().cd(dir);
   }
 
-  default CliSession cd(Path dir) {
-    return cli().cd(dir);
+  default void cd(Path dir) {
+    cli().cd(dir);
   }
 
   default Path touch(String path) {
