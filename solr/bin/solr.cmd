@@ -312,6 +312,7 @@ goto err
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
 @echo                   an embedded ZooKeeper instance will be launched.
+@echo                   It listens on SOLR_ZOOKEEPER_EMBEDDED_PORT if set, else the Solr port + 1000.
 @echo                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
 @echo.
 @echo   -m/--memory memory Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
