@@ -229,13 +229,14 @@ public class SolrPluginUtils {
     }
 
     ReturnFields returnFields = res.getReturnFields();
-    if (returnFields.getLuceneFieldNames() != null) {
-      Set<String> fieldFilter = returnFields.getLuceneFieldNames();
-
+    if (returnFields.getLuceneFieldNames() == null && !returnFields.hasPatternMatching()) {
+      return;
+    }
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+    Set<String> fieldFilter = docFetcher.getStoredFieldsToPrefetch(returnFields);
+    if (fieldFilter != null) {
       if (rb.doHighlights) {
-        // copy return fields list
-        fieldFilter = new HashSet<>(fieldFilter);
-        // add highlight fields
+        // fieldFilter is a new set owned by this call; add highlight fields
 
         HighlightComponent hl =
             (HighlightComponent)
@@ -248,8 +249,11 @@ public class SolrPluginUtils {
         if (null != keyField) fieldFilter.add(keyField.getName());
       }
 
+      if (returnFields.hasPatternMatching() && fieldFilter.isEmpty()) {
+        return;
+      }
+
       // get documents
-      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       DocIterator iter = docs.iterator();
       for (int i = 0; i < docs.size(); i++) {
         docFetcher.doc(iter.nextDoc(), fieldFilter);
