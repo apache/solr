@@ -36,6 +36,8 @@ For example, if you search for "shoes" on a footwear retailer's e-commerce site,
 You can however combine grouping with faceting.
 Grouped faceting supports `facet.field` and `facet.range` but currently doesn't support date and pivot faceting.
 The facet counts are computed based on the first `group.field` parameter, and other `group.field` parameters are ignored.
+In distributed requests with `group.facet=true`, refinement of `facet.field` counts also returns grouped counts.
+When a shard omits a term from its initial facet response, refinement counts the matching groups on that shard rather than the matching documents.
 
 Grouped faceting differs from non grouped facets `(sum of all facets) == (total of products with that property)` as shown in the following example:
 

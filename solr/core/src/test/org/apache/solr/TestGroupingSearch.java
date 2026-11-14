@@ -530,6 +530,26 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGroupFacetWithoutGroupIsBadRequest() {
+    assertQEx(
+        "group.facet with group.field but without group=true",
+        req(
+            "q",
+            "*:*",
+            "group",
+            "false",
+            "group.field",
+            "value1_s1",
+            "group.facet",
+            "true",
+            "facet",
+            "true",
+            "facet.field",
+            "value3_s1"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
   public void testGroupingGroupedBasedFaceting() throws Exception {
     assertU(
         add(doc("id", "1", "value1_s1", "1", "value2_i", "1", "value3_s1", "a", "value4_i", "1")));
