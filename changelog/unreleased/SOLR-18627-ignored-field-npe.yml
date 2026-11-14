@@ -1,0 +1,8 @@
+title: Indexing a document that contains an ignored field no longer fails with a NullPointerException.
+type: fixed
+authors:
+  - name: Li Enlai
+    nick: linslee75
+links:
+  - name: SOLR-18627
+    url: https://issues.apache.org/jira/browse/SOLR-18627

@@ -107,6 +107,14 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testIgnoredFields() {
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
+    assertU("adding doc with ignored StrField", adoc("id", "43", "ignored_foo", "blah blah"));
+    assertU("adding doc with ignored BoolField", adoc("id", "44", "ignored_bool_foo", "true"));
+    assertU("adding doc with ignored BinaryField", adoc("id", "45", "ignored_bin_foo", "blah"));
+    assertU("adding doc with ignored SortableBinaryField", adoc("id", "46", "ignored_sbin_foo", "blah"));
+    assertU("adding doc with ignored SortableTextField", adoc("id", "47", "ignored_stxt_foo", "blah"));
+    assertU("adding doc with ignored CollationField", adoc("id", "48", "ignored_coll_foo", "blah"));
+    assertU("adding doc with ignored ICUCollationField", adoc("id", "49", "ignored_icu_foo", "blah"));
+    assertU("adding doc with ignored TrieField", adoc("id", "50", "ignored_trie_foo", "1"));
     assertU("commit", commit());
 
     // :TODO: the behavior of querying on an unindexed field should be better specified in the
@@ -116,6 +124,14 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
         req("bar_ignored:yo id:42"),
         "//*[@numFound='1']",
         "//str[@name='id'][.='42']");
+    assertQ("query doc with ignored StrField", req("id:43"), "//*[@numFound='1']");
+    assertQ("query doc with ignored BoolField", req("id:44"), "//*[@numFound='1']");
+    assertQ("query doc with ignored BinaryField", req("id:45"), "//*[@numFound='1']");
+    assertQ("query doc with ignored SortableBinaryField", req("id:46"), "//*[@numFound='1']");
+    assertQ("query doc with ignored SortableTextField", req("id:47"), "//*[@numFound='1']");
+    assertQ("query doc with ignored CollationField", req("id:48"), "//*[@numFound='1']");
+    assertQ("query doc with ignored ICUCollationField", req("id:49"), "//*[@numFound='1']");
+    assertQ("query doc with ignored TrieField", req("id:50"), "//*[@numFound='1']");
   }
 
   @Test
