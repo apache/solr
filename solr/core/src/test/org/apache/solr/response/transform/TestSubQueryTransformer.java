@@ -254,6 +254,34 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
             + "]/*)=1");
   }
 
+  @Test
+  public void testRowFieldNotInFl() {
+    assertQ(
+        "dept_ss_dv is only referenced as $row.dept_ss_dv, it is not listed in fl",
+        req(
+            "q",
+            "name_s:(john nancy)",
+            "fl",
+            "name_s_dv,depts:[subquery]",
+            "rows",
+            "" + (2 * peopleMultiplier),
+            "depts.q",
+            "{!term f=dept_id_s v=$row.dept_ss_dv}",
+            "depts.fl",
+            "text_t",
+            "depts.rows",
+            "" + deptMultiplier),
+        "count(//result/doc/str[@name='name_s_dv'][.='john']/../result[@name='depts'][@numFound='"
+            + deptMultiplier
+            + "']/doc/str[@name='text_t'][.='These guys develop stuff'])="
+            + (peopleMultiplier * deptMultiplier),
+        "count(//result/doc/str[@name='name_s_dv'][.='nancy']/../result[@name='depts'][@numFound='"
+            + deptMultiplier
+            + "']/doc/str[@name='text_t'][.='These guys sell stuff'])="
+            + (peopleMultiplier * deptMultiplier),
+        "count(//result/doc/arr[@name='dept_ss_dv'])=0");
+  }
+
   final String[] johnAndNancyParams =
       new String[] {
         "q",
