@@ -18,6 +18,7 @@
 package org.apache.solr.cats.exec;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -39,13 +40,15 @@ public final class ProcessKill {
    * @return whether the process is no longer alive
    */
   public static boolean killTree(ProcessHandle handle, Duration timeout) {
-    List<ProcessHandle> descendants = handle.descendants().toList();
-    for (ProcessHandle child : descendants) {
-      child.destroyForcibly();
+    List<ProcessHandle> tree = new ArrayList<>(handle.descendants().toList());
+    tree.add(handle);
+    for (ProcessHandle process : tree) {
+      process.destroyForcibly();
     }
-    handle.destroyForcibly();
+    // Wait for the whole tree, not just the root: on Windows a grandchild still holds the command's
+    // redirected output file for a moment after the kill, and deleting that file then fails.
     long deadline = System.nanoTime() + timeout.toNanos();
-    while (handle.isAlive() && System.nanoTime() < deadline) {
+    while (tree.stream().anyMatch(ProcessHandle::isAlive) && System.nanoTime() < deadline) {
       try {
         TimeUnit.MILLISECONDS.sleep(50);
       } catch (InterruptedException e) {
@@ -53,7 +56,7 @@ public final class ProcessKill {
         break;
       }
     }
-    return !handle.isAlive();
+    return tree.stream().noneMatch(ProcessHandle::isAlive);
   }
 
   /** Kills the given PID and its descendants, if that PID is still alive. */
