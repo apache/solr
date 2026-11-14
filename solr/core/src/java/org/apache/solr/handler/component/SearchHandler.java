@@ -68,6 +68,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
@@ -538,7 +539,7 @@ public class SearchHandler extends RequestHandlerBase
 
       // call all components
       for (SearchComponent c : components) {
-        if (checkLimitsBefore(c, "distrib", rb.req, rb.rsp, components)) {
+        if (distribLimitsExceeded(c, "distrib", rb, components, totalShardCpuTime)) {
           shortCircuitedResults(req, rb);
           return;
         } // the next stage is the minimum of what all components report
@@ -671,32 +672,35 @@ public class SearchHandler extends RequestHandlerBase
             }
           }
 
+          if (publishCpuTime) {
+            totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
+          }
+
           rb.finished.add(srsp.getShardRequest());
 
           // let the components see the responses to the request
           for (SearchComponent c : components) {
-            if (checkLimitsBefore(
+            if (distribLimitsExceeded(
                 c,
                 "handleResponses next stage:" + stageToString(nextStage),
-                rb.req,
-                rb.rsp,
-                components)) {
+                rb,
+                components,
+                totalShardCpuTime)) {
               shortCircuitedResults(req, rb);
               return;
             }
             c.handleResponses(rb, srsp.getShardRequest());
           }
-
-          // Compute total CpuTime used by all shards.
-          if (publishCpuTime) {
-            totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
-          }
         }
       }
 
       for (SearchComponent c : components) {
-        if (checkLimitsBefore(
-            c, "finishStage stage:" + stageToString(nextStage), rb.req, rb.rsp, components)) {
+        if (distribLimitsExceeded(
+            c,
+            "finishStage stage:" + stageToString(nextStage),
+            rb,
+            components,
+            totalShardCpuTime)) {
           return;
         }
         c.finishStage(rb);
@@ -705,6 +709,34 @@ public class SearchHandler extends RequestHandlerBase
       // we are done when the next stage is MAX_VALUE
     } while (nextStage != Integer.MAX_VALUE);
 
+    addShardCpuTime(rsp, totalShardCpuTime);
+  }
+
+  private boolean distribLimitsExceeded(
+      SearchComponent c,
+      String when,
+      ResponseBuilder rb,
+      List<SearchComponent> components,
+      long totalShardCpuTime) {
+    try {
+      if (checkLimitsBefore(c, when, rb.req, rb.rsp, components)) {
+        addShardCpuTimeIfAnyResponses(rb, totalShardCpuTime);
+        return true;
+      }
+      return false;
+    } catch (QueryLimitsExceededException e) {
+      addShardCpuTimeIfAnyResponses(rb, totalShardCpuTime);
+      throw e;
+    }
+  }
+
+  private void addShardCpuTimeIfAnyResponses(ResponseBuilder rb, long totalShardCpuTime) {
+    if (!rb.finished.isEmpty()) {
+      addShardCpuTime(rb.rsp, totalShardCpuTime);
+    }
+  }
+
+  private void addShardCpuTime(SolrQueryResponse rsp, long totalShardCpuTime) {
     if (publishCpuTime) {
       rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
