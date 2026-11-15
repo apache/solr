@@ -33,8 +33,9 @@ To get started run
   bin/solr --help
 ```
 
-Solr includes a few examples to help you get started.  For instance, if you want
-to run the techproducts example, enter:
+The full Solr distribution includes a few examples to help you get started.
+Examples are not included in the "slim" release. To run the techproducts example
+from the full distribution, enter:
 
 ```
   bin/solr start -e techproducts
@@ -68,6 +69,7 @@ cross-dc-manager/
   A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
 
 example/
+  (Not included in the "slim" release)
   Contains example documents and an alternative Solr home
   directory containing various examples.
 
