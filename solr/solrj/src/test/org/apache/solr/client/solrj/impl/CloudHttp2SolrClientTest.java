@@ -361,6 +361,28 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testZkAliasRequestsResolveAndQuery() throws Exception {
+    String collection = getSaferTestName();
+    String alias = collection + "_alias";
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 2, 2);
+    CollectionAdminRequest.createAlias(alias, collection).process(cluster.getSolrClient());
+
+    try (CloudSolrClient client =
+        new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress()).build()) {
+      assertEquals(List.of(collection), client.getClusterStateProvider().resolveAlias(alias));
+      assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
+      for (int i = 0; i < 3; i++) {
+        assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
+      }
+    } finally {
+      CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
+      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+    }
+  }
+
+  @Test
   public void testShardReplicationFactors() throws Exception {
     final String collection = "replication_factor_collection";
     CloudSolrClient client = cluster.getSolrClient();
