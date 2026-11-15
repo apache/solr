@@ -1,4 +1,3 @@
-# This test covers TikaServer tests for SolrCell, since crave does not support docker yet.
 name: Extraction module tests with Docker
 
 on:

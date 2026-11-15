@@ -1,12 +1,13 @@
-name: SolrJ Tests
+name: Solr Tests
 
 on:
   pull_request:
     branches:
       - '*'
     paths:
-      - '.github/workflows/solrj-test.yml'
-      - 'solr/solrj/**'
+      - '.github/workflows/solr-test.yml'
+      - 'solr/**/src/**'
+      - 'gradle/libs.versions.toml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -14,10 +15,10 @@ concurrency:
 
 jobs:
   test:
-    name: Run SolrJ Tests
+    name: Run Solr Tests
 
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
 
     steps:
     - name: Checkout code
@@ -25,5 +26,5 @@ jobs:
 
     - uses: ./.github/actions/prepare-for-build
 
-    - name: Test SolrJ module
-      run: ./gradlew solr:solrj:test
+    - name: Run tests
+      run: ./gradlew test
