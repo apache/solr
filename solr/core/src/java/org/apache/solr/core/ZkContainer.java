@@ -273,6 +273,8 @@ public class ZkContainer {
                     + peer.quorumPort()
                     + ":"
                     + peer.leaderPort()
+                    + ":participant;"
+                    + peer.clientPort()
                     + "\n";
           }
         }

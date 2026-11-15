@@ -373,6 +373,36 @@ If one happens to be down, Solr will automatically be able to send its request t
 ZooKeeper version 3.5 and later supports dynamic reconfiguration of server addresses and roles.
 But note that Solr will only be able to talk to the servers listed in the static ZooKeeper connect string.
 
+=== Retiring an Ensemble Member
+
+The v2 API exposes the current ZooKeeper membership through any SolrCloud node:
+
+[source,bash]
+----
+curl http://localhost:8983/api/cluster/zookeeper/members
+----
+
+The response includes `version` (a hexadecimal configuration version) and `members`, with each member's `id`, `host`, `clientPort`, `quorumPort`, `electionPort`, and `role`.
+`clientPort` can be absent for configurations that omit client addresses.
+Reading membership requires `zk-read` permission.
+
+To retire a member, remove its ID using the version returned by GET:
+
+[source,bash]
+----
+curl -X DELETE 'http://localhost:8983/api/cluster/zookeeper/members/5?version=100000000'
+----
+
+Removal requires `zk-edit` permission and ZooKeeper dynamic reconfiguration must be enabled.
+The response contains the updated membership and version.
+A stale version returns HTTP 409; fetch the current membership before deciding whether to retry.
+ZooKeeper requires a working quorum to commit the change.
+Crashing or stopping a process does not retire its member automatically.
+
+Removal changes ZooKeeper membership only: it does not stop Solr or remove its collection replicas.
+After a successful response, stop the retired process and update startup connection strings to use the surviving members.
+An embedded quorum node started again with the quorum role can rejoin the ensemble.
+
 === Using a chroot
 
 If your ensemble is or will be shared among other systems besides Solr, you should consider defining application-specific _znodes_, or a hierarchical namespace that will only include Solr's files.

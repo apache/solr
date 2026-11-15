@@ -282,7 +282,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
         // The 2 survivors must elect a NEW leader among themselves to stay serving.
         List<JettySolrRunner> survivors = new ArrayList<>();
         for (JettySolrRunner jetty : jettys) {
-          if (jetty != leaderJetty) {
+          if (!jetty.equals(leaderJetty)) {
             survivors.add(jetty);
           }
         }
