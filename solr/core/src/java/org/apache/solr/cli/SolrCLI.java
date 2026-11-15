@@ -241,6 +241,20 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
 
     boolean missingSubcommand = false;
 
+    if (args.length == 1 && "package".equals(args[0])) {
+      printToolHelp(new PackageTool(runtime));
+      return 2;
+    }
+    if ("snapshot".equals(args[0])
+        && (args.length == 1
+            || (args.length == 2 && Arrays.asList("-h", "--help").contains(args[1])))) {
+      print(
+          "Snapshot commands: snapshot-create, snapshot-list, snapshot-describe, "
+              + "snapshot-delete, snapshot-export");
+      print("Run 'solr COMMAND --help' for more information on a command.");
+      return args.length == 1 ? 2 : 0;
+    }
+
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run, printing the CLIENT version
       args = new String[] {"version"};

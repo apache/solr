@@ -605,7 +605,7 @@ if [ $# -eq 1 ]; then
   case $1 in
     --help|-h)
         run_tool --help
-        exit 0
+        exit $?
     ;;
   esac
 fi

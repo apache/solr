@@ -59,7 +59,8 @@ import org.slf4j.LoggerFactory;
     exitCodeListHeading = "%nExit Codes:%n",
     exitCodeList = {
       "0:Operation completed successfully.",
-      "1:Operation failed; check output for details."
+      "1:Operation failed; check output for details.",
+      "2:Invalid or incomplete command."
     },
     footerHeading = "%nExamples:%n",
     subcommands = {
