@@ -1204,12 +1204,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @return the ModifiableSolrParams generated from the given list of strings.
    */
   public static ModifiableSolrParams params(String... params) {
-    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-    for (int i = 0; i < params.length; i += 2) {
-      msp.add(params[i], params[i + 1]);
-    }
-    return msp;
+    return ModifiableSolrParams.of(params);
   }
 
   public static Map<String, String> map(String... params) {
