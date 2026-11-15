@@ -1,0 +1,13 @@
+title: >
+  For combined queries, numFound is the distinct fused document count when numFoundExact
+  is true, and otherwise a lower bound of at least the largest sub-query's match count,
+  marked inexact when a sub-query list was truncated by the fusion pool (shards.rows
+  or start + rows).
+type: fixed
+authors:
+  - name: Puneet Ahuja
+    nick: punAhuja
+  - name: Justin Michael Coyne
+links:
+  - name: SOLR-18550
+    url: https://issues.apache.org/jira/browse/SOLR-18550

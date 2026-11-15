@@ -288,6 +288,13 @@ This restriction is necessary to prevent an attacker from using Solr to explore 
   </queryParser>
 ----
 
+[NOTE]
+====
+The `zkHost` parameter is governed by a node-level allow-list in `solr.xml` (`<str name="allowZkHosts">`), *not* by `solrconfig.xml`.
+The local SolrCloud ZooKeeper ensemble is always trusted -- only remote ensembles need to be listed.
+See <<Cross Collection Join Query Parameters>> below and the `solr.xml` reference for details.
+====
+
 === Cross Collection Join Query Parameters
 
 `fromIndex`::
@@ -309,6 +316,9 @@ The name of the external Solr collection to be queried to retrieve the set of jo
 The connection string to be used to connect to SolrCloud cluster via ZooKeeper or HTTP(s).
 `solrConnection`, `zkHost` and `solrUrl` are optional parameters, and at most one of them should be specified.
 If neither `solrConnection`, `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used.
++
+A ZooKeeper connection string is validated like `zkHost` below.
+An HTTP(s) connection string must be a live node of the local cluster or be listed in the `allowUrls` entry in `solr.xml`; otherwise the request is rejected.
 
 `zkHost`::
 +
@@ -318,9 +328,14 @@ If neither `solrConnection`, `zkHost` nor `solrUrl` are specified, the local Zoo
 |===
 +
 The connection string to be used to connect to ZooKeeper.
-`zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified.
+`zkHost` and `solrUrl` are both optional parameters, and at most one of them may be specified; passing both is rejected.
 If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used.
 This parameter is deprecated. Use `solrConnection` instead.
++
+An explicit `zkHost` value must either match the local SolrCloud ensemble verbatim or be listed verbatim in the node-level `<str name="allowZkHosts">` entry in `solr.xml`.
+The match is a character-for-character exact comparison of the full connection string -- e.g. `zk1:2181,zk2:2181,zk3:2181/solr` is a different value from `zk1:2181,zk2:2181,zk3:2181` or from the same hosts in a different order.
+The local value includes any chroot suffix configured at startup -- so for a node started with `-DzkHost=zk1:2181/solr`, `zkHost="zk1:2181/solr"` is allowed while `zkHost="zk1:2181"` is not.
+If the value does not match, the request is rejected with a `SyntaxError`.
 
 `solrUrl`::
 +

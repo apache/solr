@@ -229,16 +229,13 @@ public class SolrIndexWriter extends IndexWriter {
         updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, false, false, null);
     try {
       super.merge(merge);
-      updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, false, timer);
     } catch (Throwable t) {
-      if (timer != null) {
-        timer.stop();
-      }
       updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, true, timer);
       throw t;
     } finally {
       runningMerges.remove(segString);
     }
+    updateMergeMetrics(totalNumDocs, deletedDocs, segmentsCount, true, false, timer);
   }
 
   public Map<String, Object> getRunningMerges() {

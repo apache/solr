@@ -36,6 +36,7 @@ import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.LongHistogramBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableDoubleCounter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
@@ -45,6 +46,7 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.ExemplarFilter;
 import io.opentelemetry.sdk.metrics.InstrumentSelector;
@@ -82,7 +84,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Solr creates 2 main {@link SdkMeterProvider}'s (solr.jvm, solr.node) as well as an additional
  * provider for every {@link SolrCore} JVM metrics and registry are collected from {@link
- * io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics}
+ * io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry}
  *
  * <p>The SolrMetricManager acts as a bridge between Solr and OpenTelemetry SDK providing the
  * following:
@@ -123,6 +125,7 @@ public class SolrMetricManager {
       new ConcurrentHashMap<>();
 
   private final MetricExporter metricExporter;
+  private final boolean enabled;
   private OtelRuntimeJvmMetrics otelRuntimeJvmMetrics;
 
   private static final List<Double> SOLR_NANOSECOND_HISTOGRAM_BOUNDARIES =
@@ -143,12 +146,24 @@ public class SolrMetricManager {
           1_000_000_000.0);
 
   public SolrMetricManager(MetricExporter exporter) {
+    this(exporter, true);
+  }
+
+  public SolrMetricManager(MetricExporter exporter, boolean enabled) {
     metricExporter = exporter;
+    this.enabled = enabled;
   }
 
   public SolrMetricManager(SolrResourceLoader loader) {
-    this.metricExporter = loadMetricExporter(loader);
-    this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
+    this(loader, true);
+  }
+
+  public SolrMetricManager(SolrResourceLoader loader, boolean enabled) {
+    this.enabled = enabled;
+    this.metricExporter = enabled ? loadMetricExporter(loader) : null;
+    if (enabled) {
+      this.otelRuntimeJvmMetrics = new OtelRuntimeJvmMetrics().initialize(this, JVM_REGISTRY);
+    }
   }
 
   public LongCounter longCounter(
@@ -429,9 +444,12 @@ public class SolrMetricManager {
    * Get (or create if not present) a named {@link SdkMeterProvider}.
    *
    * @param providerName name of the meter provider and prometheus metric reader
-   * @return existing or newly created meter provider
+   * @return existing or newly created meter provider, or a no-op one when metrics are disabled
    */
-  public SdkMeterProvider meterProvider(String providerName) {
+  public MeterProvider meterProvider(String providerName) {
+    if (!enabled) {
+      return MeterProvider.noop();
+    }
     providerName = enforcePrefix(providerName);
     return meterProviderAndReaders
         .computeIfAbsent(
@@ -456,6 +474,9 @@ public class SolrMetricManager {
                 builder.registerMetricReader(
                     PeriodicMetricReader.builder(metricExporter)
                         .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                        // One reader per registry, all sharing a static ComponentId, means
+                        // identical self-telemetry series that the metrics endpoint rejects
+                        .setInternalTelemetryVersion(InternalTelemetryVersion.LEGACY)
                         .build());
               return new MeterProviderAndReaders(builder.build(), reader);
             })

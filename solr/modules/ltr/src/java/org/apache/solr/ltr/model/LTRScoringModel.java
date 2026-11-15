@@ -201,7 +201,7 @@ public abstract class LTRScoringModel implements Accountable {
     return hashCode;
   }
 
-  private final int calculateHashCode() {
+  private int calculateHashCode() {
     final int prime = 31;
     int result = 1;
     result = (prime * result) + Objects.hashCode(features);

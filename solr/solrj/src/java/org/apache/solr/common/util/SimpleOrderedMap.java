@@ -43,7 +43,7 @@ import org.apache.solr.common.params.SolrParams;
  * hold data to be serialized. It aims to minimize overhead and to be efficient at adding new
  * elements.
  */
-public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
+public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
 
   private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
 

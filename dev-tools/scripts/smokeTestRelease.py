@@ -38,6 +38,7 @@ import datetime
 import filecmp
 import hashlib
 import http.client
+import json
 import os
 import platform
 import random
@@ -166,7 +167,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
     compileJDK = BASE_JAVA_VERSION
     if 'solrj' in desc or 'api' in desc:
       compileJDK = SOLRJ_JAVA_VERSION
-    for verify in (
+    checks = [
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       'Specification-Title: Apache Solr Search Server:',
@@ -174,8 +175,11 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'X-Compile-Source-JDK: %s' % compileJDK,
       'X-Compile-Target-JDK: %s' % compileJDK,
       'Specification-Version: %s' % version.replace('-SNAPSHOT', ''),
-      'X-Build-JDK: %s' % BASE_JAVA_VERSION,
-      'Extension-Name: org.apache.solr'):
+      'Extension-Name: org.apache.solr']
+    # CI may build the RC with a JDK other than BASE_JAVA_VERSION
+    if not os.environ.get('SMOKETEST_SKIP_BUILD_JDK_CHECK'):
+      checks.append('X-Build-JDK: %s' % BASE_JAVA_VERSION)
+    for verify in checks:
       if type(verify) is not tuple:
         verify = (verify,)
       for x in verify:
@@ -618,7 +622,7 @@ def is_in_list(in_folder, files, indent=4):
       raise RuntimeError('file "%s" is missing' % file_name)
 
 
-def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
+def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs, tmpDir):
   # The source release is everything in source control minus excluded paths, so we don't
   # check that it has specific things — the build will fail if something critical is missing.
   # Also the binary release checks for presence of things that come from source control, so we're
@@ -651,13 +655,22 @@ def verifySrcUnpacked(java, artifact, unpackPath, version, testArgs):
   print('    run "%s"' % validateCmd)
   java.run_java(validateCmd, '%s/documentation.log' % logDir)
 
-  print("    run tests w/ Java %s and testArgs='%s'..." % (java.version, testArgs))
-  java.run_java('./gradlew test %s' % testArgs, '%s/test.log' % logDir)
+  # SMOKETEST_SRC_TEST_TASK lets CI swap the full test run for something lighter
+  testTask = os.environ.get('SMOKETEST_SRC_TEST_TASK', 'test')
+  print("    run %s w/ Java %s and testArgs='%s'..." % (testTask, java.version, testArgs))
+  java.run_java('./gradlew %s %s' % (testTask, testArgs), '%s/test.log' % logDir)
+  # Some integration tests need the Docker image of the binary release, and skip without it
+  if subprocess.call('docker info', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+    print("    build docker image from solr-%s.tgz" % version)
+    run('docker build -f solr-%s/docker/Dockerfile -t apache/solr:%s - < %s/solr-%s.tgz' % (version, version, tmpDir, version),
+        '%s/docker.log' % logDir)
+  else:
+    print("    WARNING: Docker is not available; Docker-based integration tests will be skipped")
   print("    run integration tests w/ Java %s" % java.version)
   java.run_java('./gradlew integrationTest -Dversion.release=%s' % version, '%s/itest.log' % logDir)
   print("    build binary release w/ Java %s" % java.version)
   java.run_java('./gradlew dev -Dversion.release=%s' % version, '%s/assemble.log' % logDir)
-  testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home, False)
+  testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java_home)
 
   testChangelogMd('.', version)
 
@@ -679,7 +692,7 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
   is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGELOG.md'])
 
   if isSlim:
-    is_in_list(in_root_folder, ['bin', 'docker', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'docker', 'licenses', 'server', 'lib'])
   else:
     is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'example', 'licenses', 'server', 'lib'])
 
@@ -688,25 +701,30 @@ def verifyBinaryUnpacked(java, artifact, unpackPath, version, gitRevision):
 
   checkAllJARs(os.getcwd(), gitRevision, version)
 
-  print('    test solr example w/ Java %s...' % java.version)
-  testSolrExample(unpackPath, java.java_home, isSlim)
+  if isSlim:
+    print('    test slim solr w/ Java %s...' % java.version)
+    testSolrSlim(unpackPath, java.java_home)
+  else:
+    print('    test solr example w/ Java %s...' % java.version)
+    testSolrExample(unpackPath, java.java_home)
 
   testChangelogMd('.', version)
 
 
 def find_available_port(max_attempts=100):
   """Find an available port by randomly selecting from range 8901-8999.
-  Ensures both the port and port+1000 are available."""
+  Check the HTTP port, the default stop port and the embedded ZooKeeper port."""
   for _ in range(max_attempts):
     port = random.randint(8901, 8999)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
       try:
         s.bind(('localhost', port))
-        # Check if port+1000 is also available
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
           try:
             s2.bind(('localhost', port + 1000))
-            return port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s3:
+              s3.bind(('localhost', port - 1000))
+              return port
           except OSError:
             continue
       except OSError:
@@ -714,7 +732,71 @@ def find_available_port(max_attempts=100):
   raise RuntimeError('Could not find an available port after %d attempts in range 8901-8999' % max_attempts)
 
 
-def testSolrExample(binaryDistPath, javaPath, isSlim):
+def testSolrSlim(binaryDistPath, javaPath):
+  port = find_available_port()
+  solrUrl = 'http://localhost:%d/solr' % port
+  coreUrl = '%s/smoke' % solrUrl
+  # Do not let a caller's Solr configuration redirect this temporary server to
+  # an existing home, data directory, ZooKeeper or stop port.
+  env = {key: value for key, value in os.environ.items()
+         if not key.upper().startswith(('SOLR_', 'ZK_', 'STOP_', 'JETTY_', 'GC_', 'LOG4J_'))
+         and key.upper() not in ('JAVA_TOOL_OPTIONS', '_JAVA_OPTIONS', 'JDK_JAVA_OPTIONS',
+                                 'JAVA_OPTS', 'CLASSPATH', 'BASH_ENV', 'ENV')}
+  def launcherPath(path):
+    if cygwin:
+      return subprocess.check_output(['cygpath', '-w', path], text=True).strip()
+    return path
+
+  env['JAVA_HOME'] = launcherPath(javaPath)
+  env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
+  env['SOLR_INCLUDE'] = launcherPath(os.path.join(binaryDistPath, 'bin',
+                                                  'solr.in.cmd' if cygwin else 'solr.in.sh'))
+  env['SOLR_HOME'] = launcherPath(os.path.join(binaryDistPath, 'server', 'solr'))
+  env['SOLR_PID_DIR'] = launcherPath(os.path.join(binaryDistPath, 'bin'))
+
+  def solr(args):
+    if cygwin:
+      command = 'env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd ' + ' '.join(args)
+      return subprocess.call(command, shell=True, cwd=binaryDistPath, env=env)
+    return subprocess.call(['bin/solr'] + args, cwd=binaryDistPath, env=env)
+
+  if solr(['start', '--user-managed', '-p', str(port)]) != 0:
+    raise RuntimeError('Failed to start slim Solr on port %d' % port)
+  try:
+    if solr(['create', '-c', 'smoke', '--solr-url', solrUrl]) != 0:
+      raise RuntimeError('Failed to create the slim smoke core')
+
+    request = urllib.request.Request(
+        coreUrl + '/update?commit=true&wt=json',
+        data=json.dumps([{'id': 'slim-smoke'}]).encode('utf-8'),
+        headers={'Content-Type': 'application/json'})
+    with urllib.request.urlopen(request, timeout=30) as response:
+      result = json.load(response)
+    if result['responseHeader']['status'] != 0:
+      raise RuntimeError('Failed to index the slim smoke document: %s' % result)
+
+    query = urllib.parse.urlencode({'q': 'id:slim-smoke', 'fl': 'id', 'wt': 'json'})
+    with urllib.request.urlopen(coreUrl + '/select?' + query, timeout=30) as response:
+      result = json.load(response)
+    if result['response']['numFound'] != 1 or result['response']['docs'][0]['id'] != 'slim-smoke':
+      raise RuntimeError('Failed to query the slim smoke document: %s' % result)
+
+    with urllib.request.urlopen('http://localhost:%d/api/cores?wt=json' % port, timeout=30) as response:
+      result = json.load(response)
+    if result['responseHeader']['status'] != 0:
+      raise RuntimeError('Slim cores API request failed: %s' % result)
+  finally:
+    failed = sys.exc_info()[0] is not None
+    try:
+      if solr(['stop', '-p', str(port)]) != 0:
+        raise RuntimeError('Failed to stop slim Solr on port %d' % port)
+    except Exception as error:
+      if not failed:
+        raise
+      print('Cleanup failed: %s' % error, file=sys.stderr)
+
+
+def testSolrExample(binaryDistPath, javaPath):
   # test solr using some examples it comes with
   port = find_available_port()
   logFile = '%s/solr-example.log' % binaryDistPath
@@ -728,8 +810,6 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
 
   example = "techproducts"
-  if isSlim:
-    example = "films"
 
   print('      Running %s example on port %d from %s' % (example, port, binaryDistPath))
   try:
@@ -744,7 +824,7 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
     os.chdir('example')
     print('      run query...')
     s = load('http://localhost:%d/solr/%s/select/?q=video' % (port, example))
-    if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
+    if s.find('"numFound":3,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:%d/api/cores?wt=json' % port)
@@ -1168,7 +1248,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     artifact = 'solr-%s-slim.tgz' % version
     verifyBinaryUnpacked(java, artifact, unpack(tmpDir, artifact), version, gitRevision)
     artifact = 'solr-%s-src.tgz' % version
-    verifySrcUnpacked(java, artifact, unpack(tmpDir, artifact), version, testArgs)
+    verifySrcUnpacked(java, artifact, unpack(tmpDir, artifact), version, testArgs, tmpDir)
     print()
     print('Test Maven artifacts...')
     checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)

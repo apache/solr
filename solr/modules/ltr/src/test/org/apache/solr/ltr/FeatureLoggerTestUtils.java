@@ -35,7 +35,7 @@ public class FeatureLoggerTestUtils {
           .append(featureSeparator);
     }
 
-    final String features = (sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "");
+    final String features = (!sb.isEmpty() ? sb.substring(0, sb.length() - 1) : "");
 
     return features;
   }

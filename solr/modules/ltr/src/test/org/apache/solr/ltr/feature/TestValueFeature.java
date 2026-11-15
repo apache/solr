@@ -109,7 +109,7 @@ public class TestValueFeature extends TestRerankBase {
   }
 
   @Test
-  public void testValueFeatureExplictlyNotRequiredShouldReturnOkStatusCode() throws Exception {
+  public void testValueFeatureExplicitlyNotRequiredShouldReturnOkStatusCode() throws Exception {
     loadFeature(
         "c7", ValueFeature.class.getName(), "c7", "{\"value\":\"${val7}\",\"required\":false}");
     loadModel(
