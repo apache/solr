@@ -618,7 +618,8 @@ All three port offsets can be overridden with system properties — see <<embedd
 === Starting a 3-Node Embedded ZK Ensemble
 
 The ZK connection string must list all nodes' ZK client ports (`solr_port + 1000`), and every node must use `zookeeper_quorum:on`.
-All three nodes must be started before the quorum can elect a leader and become operational.
+When several nodes are listed in the connection string like this, they cold-bootstrap the ensemble together: a leader can only be elected once a majority of the listed nodes is up, so a node started ahead of its peers simply waits for them (its log repeats `still waiting for a quorum` while it does).
+If you'd rather bring nodes up one at a time, on their own schedule, see <<Starting with a Single Node and Growing the Ensemble>> below instead.
 
 NOTE: On a single machine, each node needs distinct ports. Because each ZK instance also binds to `zk_client_port+1` (quorum peer) and `zk_client_port+2` (leader election), Solr ports must be spaced *at least 1001 apart* to avoid collisions.
 When nodes share the same working directory, also set `solr.zookeeper.server.datadir` to a distinct path per node to avoid ZooKeeper data directory conflicts.
@@ -633,6 +634,33 @@ bin/solr start -p 20000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeepe
 bin/solr start -p 30000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_2
 bin/solr start -p 40000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_3
 ----
+
+=== Starting with a Single Node and Growing the Ensemble
+
+A `zookeeper_quorum` node can also be started entirely on its own, with a connection string that names only itself.
+It comes up as a complete, working single-member ensemble (not ZooKeeper's "standalone" mode: Solr configures the embedded server with `standaloneEnabled=false`, so even a lone member runs ZooKeeper's distributed stack and can be reconfigured later).
+Further nodes can then join whenever they are started: each new node lists the existing members plus itself in its connection string, starts its own embedded server, syncs with the leader, and is added to the ensemble via ZooKeeper's dynamic reconfiguration -- no restart of the existing nodes is needed.
+
+[source,bash]
+----
+export LH="localhost"
+ROLES="data:on,overseer:allowed,zookeeper_quorum:on"
+
+# A fully usable one-node SolrCloud, right away:
+bin/solr start -p 20000 -z "$LH:21000" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_1
+
+# ...later, grow it to two members:
+bin/solr start -p 30000 -z "$LH:21000,$LH:31000" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_2
+
+# ...and later still, to three:
+bin/solr start -p 40000 -z "$LH:21000,$LH:31000,$LH:41000" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_3
+----
+
+A joining node's connection string must include its own address (that is how Solr determines the node's ZooKeeper `myid`) as well as at least one current member.
+Restarting a node that is already a member reconnects it to its existing seat rather than adding it again.
+
+NOTE: A two-member ensemble has no fault tolerance -- both members are needed for a majority -- so treat it as a stepping stone to three (or another odd number) rather than a place to stop.
+Keep in mind, too, that ensemble membership and a node's *client* connection string are separate things: a node started with a one-host connection string keeps using that one host to talk to ZooKeeper even after the ensemble has grown, and its ZK Status page flags the mismatch.
 
 [[embedded-zk-ports]]
 === Configuring Embedded ZK Ports
@@ -659,7 +687,7 @@ Each can be overridden with a system property:
 
 === Known Limitations
 
-* Does not support ZooKeeper's dynamic-ensemble reconfiguration — all nodes must be listed in the static ZK connection string at startup.
+* A running node's own ZK *client* connection string is fixed at startup: nodes that join the ensemble later are not added to it, so that node only ever talks to the members it was originally started with (and its ZK Status page reports the mismatch as a warning). Restart the node with an updated `-z` to pick up the new members.
 * Quorum loss and recovery (majority of nodes down simultaneously) is not yet fully reliable.
 * The hostname in the ZK connection string must exactly match Solr's configured host (`solr.host` / `-Dhost`). Using `localhost` on some nodes and `127.0.0.1` on others will not work.
 * Runs best with the Java security manager disabled (`solr.security.manager.enabled=false`).

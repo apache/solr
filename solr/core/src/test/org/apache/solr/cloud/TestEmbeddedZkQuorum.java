@@ -36,15 +36,19 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -97,6 +101,50 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
       assertTrue("Node " + i + " should be running", node.isRunning());
       assertNotNull("Node " + i + " should have a NodeName", node.getNodeName());
     }
+  }
+
+  /**
+   * A single node cannot bootstrap a growable embedded-ZK quorum on its own: ZooKeeper runs a lone
+   * voting member in plain standalone mode, which doesn't support the dynamic reconfiguration that
+   * {@link MiniSolrCloudCluster#addEmbeddedZkQuorumNode()} relies on to add more members later
+   * (confirmed via a real {@code bin/solr} node, not just this test framework -- it fails with ZK's
+   * own {@code KeeperErrorCode = Unimplemented}). 2 nodes is the actual minimum: cold-bootstrapping
+   * exactly 2 together already forms a genuine ZK ensemble (leader+follower, dynamic reconfiguration
+   * enabled), from which further nodes can join one at a time via a live join instead of all being
+   * cold-bootstrapped together up front.
+   */
+  @Test
+  public void testColdBootstrapWithTwoNodesThenGrowsToThreeViaLiveJoin() throws Exception {
+    Path configPath = TEST_PATH().resolve("collection1").resolve("conf");
+    MiniSolrCloudCluster privateCluster =
+        configureCluster(2).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
+    try {
+      privateCluster.waitForAllNodes(60);
+
+      Map<String, Object> afterBootstrap = fetchZkStatus(privateCluster.getJettySolrRunner(0));
+      assertEquals("ensemble", afterBootstrap.get("mode"));
+      assertEquals(2L, afterBootstrap.get("ensembleSize"));
+      assertEquals(Boolean.TRUE, afterBootstrap.get("dynamicReconfig"));
+
+      privateCluster.addEmbeddedZkQuorumNode();
+      privateCluster.waitForLiveNodes(3, 60);
+
+      Map<String, Object> afterGrowth = fetchZkStatus(privateCluster.getJettySolrRunner(0));
+      assertEquals("ensemble", afterGrowth.get("mode"));
+      assertEquals(3L, afterGrowth.get("ensembleSize"));
+    } finally {
+      privateCluster.shutdown();
+    }
+  }
+
+  private static Map<String, Object> fetchZkStatus(JettySolrRunner jetty) throws Exception {
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status");
+    req.setResponseParser(new JsonMapResponseParser());
+    NamedList<Object> nl = jetty.getSolrClient().request(req);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> zkStatus = (Map<String, Object>) nl.get("zkStatus");
+    return zkStatus;
   }
 
   @Test
@@ -333,7 +381,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
   /**
    * Stress-tests the race between a node deciding to cold-bootstrap alongside its peers versus
-   * joining an already-running ensemble (see {@code ZkContainer#tryJoinExistingEnsemble}): every
+   * joining an already-running ensemble (see {@code ZkContainer#planJoinExistingEnsemble}): every
    * node in a fresh quorum starts concurrently, and under unlucky timing one node could mistake a
    * sibling's barely-open port for an already-serving ensemble to join, instead of bootstrapping
    * together with it -- which would fragment the 3 nodes across two different ensemble views
@@ -386,7 +434,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
   /**
    * Tests what happens when the ZK leader a new node is joining through dies partway through the
-   * join. {@code ZkContainer#tryJoinExistingEnsemble} gives the ZK client every other peer at once
+   * join. {@code ZkContainer#planJoinExistingEnsemble} gives the ZK client every other peer at once
    * so it can fail over to a surviving member mid-handshake, but ZK itself still refuses to approve
    * growing the ensemble (3 members -&gt; 4, needing 3 synced) when that would leave fewer synced
    * members (2 survivors) than the new, larger quorum requires -- NewConfigNoQuorum. That's

@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -86,6 +88,15 @@ public class ZkContainer {
   // joining it.
   private static final long ZK_JOIN_CONNECT_TIMEOUT_MS =
       EnvUtils.getPropertyAsLong("solr.zookeeper.server.join.connectTimeoutMs", 15000L);
+
+  // How often to re-announce that this quorum node is still waiting for the rest of the
+  // ensemble to form, while cold-bootstrapping. Quorum mode's ZK connect timeout is a full day
+  // (see runAsQuorum below), so without a repeating message, the one-shot "Waiting for a
+  // quorum" log line logged when the wait begins is easy to miss -- an operator attaching
+  // minutes or hours later sees only raw ZooKeeper/Curator connection-retry noise, which reads
+  // identically to a genuinely broken deployment.
+  private static final long QUORUM_WAIT_LOG_INTERVAL_MS =
+      EnvUtils.getPropertyAsLong("solr.zookeeper.server.quorum.waitLogIntervalMs", 30000L);
 
   protected ZkController zkController;
 
@@ -177,6 +188,7 @@ public class ZkContainer {
               4lw.commands.whitelist=mntr,conf,ruok
               admin.enableServer=false
               reconfigEnabled=true
+              standaloneEnabled=false
               clientPort=@@ZK_CLIENT_PORT@@
               """;
       String zooCfgContents =
@@ -255,11 +267,11 @@ public class ZkContainer {
       try {
         Files.createDirectories(zkDataDir);
 
-        ZkJoinResult joined = tryJoinExistingEnsemble(otherPeers, self);
+        ZkJoinPlan joinPlan = planJoinExistingEnsemble(otherPeers, self);
 
-        if (joined != null) {
-          zooCfgContents = zooCfgContents + joined.serverLines();
-          myId = joined.myId();
+        if (joinPlan != null) {
+          zooCfgContents = zooCfgContents + joinPlan.serverLines();
+          myId = joinPlan.myId();
         } else {
           for (int i = 0; i < peers.size(); i++) {
             final ZkQuorumPeer peer = peers.get(i);
@@ -283,6 +295,17 @@ public class ZkContainer {
         Properties zkProps = new Properties();
         zkProps.load(new StringReader(zooCfgContents));
         startZooKeeperServerEmbedded(zkPort, zkConfDir, zkProps);
+
+        // Only now -- with our own server up and syncing with the leader as a non-voting
+        // follower -- ask the ensemble to add us as a voting member. Doing this BEFORE starting
+        // our server (the previous order) only worked when the existing members alone already
+        // formed a quorum of the grown config (2->3, 3->4, ...); growing 1->2 makes the new
+        // quorum 2-of-2, which needs the joiner itself synced first, or ZK rejects the
+        // reconfiguration with NewConfigNoQuorum. This is also the order ZooKeeper's own
+        // reconfiguration docs prescribe for adding a server.
+        if (joinPlan != null && joinPlan.joiningServer() != null) {
+          completeJoinExistingEnsemble(otherPeers, joinPlan.joiningServer());
+        }
       } catch (Exception e) {
         throw new ZooKeeperException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -355,9 +378,11 @@ public class ZkContainer {
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
+        ScheduledExecutorService quorumWaitLogger = null;
         if (runAsQuorum) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded quorum
           log.info("Zookeeper client={} (quorum mode)  Waiting for a quorum.", zookeeperHost);
+          quorumWaitLogger = startQuorumWaitLogger(zookeeperHost);
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
@@ -369,8 +394,14 @@ public class ZkContainer {
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
 
-        ZkController zkController =
-            new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
+        ZkController zkController;
+        try {
+          zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
+        } finally {
+          if (quorumWaitLogger != null) {
+            quorumWaitLogger.shutdownNow();
+          }
+        }
 
         if (zkServerEnabled || runAsQuorum) {
           if (StrUtils.isNotNullOrEmpty(EnvUtils.getProperty(HTTPS_PORT_PROP))) {
@@ -481,6 +512,29 @@ public class ZkContainer {
     log.info("Started embedded ZooKeeper server on port {}", port);
   }
 
+  /**
+   * Starts a background task that re-logs "still waiting for a quorum" every {@link
+   * #QUORUM_WAIT_LOG_INTERVAL_MS} while the blocking {@link ZkController} connect attempt is in
+   * flight (see the call site above). The caller must shut the returned executor down once that
+   * attempt finishes, whether it succeeded or failed.
+   */
+  private ScheduledExecutorService startQuorumWaitLogger(String zookeeperHost) {
+    ScheduledExecutorService executor =
+        Executors.newSingleThreadScheduledExecutor(
+            new SolrNamedThreadFactory("zkContainer-quorumWaitLogger"));
+    long startNanos = System.nanoTime();
+    executor.scheduleAtFixedRate(
+        () ->
+            log.info(
+                "Zookeeper client={} (quorum mode) still waiting for a quorum after {}s.",
+                zookeeperHost,
+                TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos)),
+        QUORUM_WAIT_LOG_INTERVAL_MS,
+        QUORUM_WAIT_LOG_INTERVAL_MS,
+        TimeUnit.MILLISECONDS);
+    return executor;
+  }
+
   /** Strips a trailing chroot (e.g. "host:2181/solr" -&gt; "host:2181") from a zkHost string. */
   private static String stripChroot(String zkHost) {
     if (zkHost == null || zkHost.trim().isEmpty() || zkHost.lastIndexOf('/') < 0) {
@@ -493,8 +547,14 @@ public class ZkContainer {
   private record ZkQuorumPeer(
       String host, int clientPort, int quorumPort, int leaderPort, boolean isSelf) {}
 
-  /** Outcome of joining an already-running ensemble via dynamic reconfiguration. */
-  private record ZkJoinResult(int myId, String serverLines) {}
+  /**
+   * How to join an already-running ensemble: the server id to run under, the {@code server.N=}
+   * lines to seed our own static config with, and -- when we're a genuinely new member rather
+   * than one reconnecting to a seat it already holds -- the {@code server.N=} line to ask the
+   * ensemble to add via dynamic reconfiguration once our own server is up ({@code null} when
+   * rejoining an existing seat, where no reconfiguration is needed).
+   */
+  private record ZkJoinPlan(int myId, String serverLines, String joiningServer) {}
 
   /**
    * Test-only hook invoked just before the {@code reconfigure()} call that actually adds us as a
@@ -518,34 +578,26 @@ public class ZkContainer {
    * than tried one at a time ourselves, so the client's own built-in failover transparently picks
    * another live member if the one it first connects to dies partway through the join.
    */
-  private ZkJoinResult tryJoinExistingEnsemble(List<ZkQuorumPeer> otherPeers, ZkQuorumPeer self)
+  private ZkJoinPlan planJoinExistingEnsemble(List<ZkQuorumPeer> otherPeers, ZkQuorumPeer self)
       throws Exception {
-    final StringBuilder connectStringBuilder = new StringBuilder();
-    for (ZkQuorumPeer peer : otherPeers) {
-      if (connectStringBuilder.length() > 0) {
-        connectStringBuilder.append(',');
-      }
-      connectStringBuilder.append(peer.host()).append(':').append(peer.clientPort());
+    // A single-node zkHost (bootstrapping a 1-node quorum, meant to grow via later live joins)
+    // has no other peers to check at all -- vacuously "none of otherPeers is reachable", so fall
+    // straight through to cold-bootstrap. Skipping this would otherwise build an empty ZK
+    // connect string below, which ZooKeeperAdmin's constructor rejects outright
+    // (StaticHostProvider: "A HostProvider may not be empty!"), aborting Solr's startup entirely.
+    if (otherPeers.isEmpty()) {
+      return null;
     }
-    final String connectString = connectStringBuilder.toString();
-    final CountDownLatch connected = new CountDownLatch(1);
-    final ZooKeeperAdmin admin =
-        new ZooKeeperAdmin(
-            connectString,
-            (int) ZK_JOIN_CONNECT_TIMEOUT_MS, // ZK session timeout, once connected
-            event -> {
-              if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
-                connected.countDown();
-              }
-            });
-    try {
-      // Bound how long we wait to find out whether this peer is reachable at all right now --
-      // kept short so cold-bootstrap (where siblings aren't up yet) isn't needlessly delayed; a
-      // genuinely live ensemble member will typically respond almost immediately.
-      if (!connected.await(ZK_JOIN_PROBE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-        return null;
-      }
 
+    final String connectString = connectString(otherPeers);
+    // Bound how long we wait to find out whether this peer is reachable at all right now --
+    // kept short so cold-bootstrap (where siblings aren't up yet) isn't needlessly delayed; a
+    // genuinely live ensemble member will typically respond almost immediately.
+    final ZooKeeperAdmin admin = connectAdmin(connectString, ZK_JOIN_PROBE_TIMEOUT_MS);
+    if (admin == null) {
+      return null;
+    }
+    try {
       final String currentConfig;
       try {
         currentConfig = new String(admin.getConfig(false, new Stat()), StandardCharsets.UTF_8);
@@ -573,7 +625,7 @@ public class ZkContainer {
             "Rejoining existing ZK ensemble at {} as already-configured server.{}",
             connectString,
             existingId);
-        return new ZkJoinResult(existingId, extractServerLines(currentConfig));
+        return new ZkJoinPlan(existingId, extractServerLines(currentConfig), null);
       }
 
       int maxId = 0;
@@ -596,18 +648,102 @@ public class ZkContainer {
               + self.clientPort();
 
       log.info("Joining existing ZK ensemble at {} as server.{}", connectString, newId);
+      // Seed our own static config with the ensemble's current members plus ourselves; the
+      // actual reconfiguration that makes us a voting member happens in
+      // completeJoinExistingEnsemble, once our server is up (see the call site for why).
+      return new ZkJoinPlan(
+          newId, extractServerLines(currentConfig) + joiningServer + "\n", joiningServer);
+    } finally {
+      closeQuietly(admin);
+    }
+  }
+
+  /**
+   * Second half of a live join (see {@link #planJoinExistingEnsemble}): asks the ensemble, via
+   * dynamic reconfiguration, to add {@code joiningServer} -- our own, already-started server -- as
+   * a voting member. Retries on {@code NewConfigNoQuorum} for up to {@link
+   * #ZK_JOIN_CONNECT_TIMEOUT_MS}: the leader only commits a reconfiguration once a quorum of the
+   * NEW config is synced with it, and right after starting we may still be mid-sync as a
+   * non-voting follower -- which is the whole reason the reconfiguration has to come after our
+   * server starts rather than before (growing 1-&gt;2 needs us synced to form a 2-of-2 quorum).
+   */
+  private void completeJoinExistingEnsemble(List<ZkQuorumPeer> otherPeers, String joiningServer)
+      throws Exception {
+    final String connectString = connectString(otherPeers);
+    final ZooKeeperAdmin admin = connectAdmin(connectString, ZK_JOIN_CONNECT_TIMEOUT_MS);
+    if (admin == null) {
+      throw new TimeoutException(
+          "Could not connect to the ZK ensemble at " + connectString + " to complete joining it");
+    }
+    try {
       if (testing_beforeReconfigure != null) {
         testing_beforeReconfigure.run();
       }
-      final byte[] merged = admin.reconfigure(List.of(joiningServer), null, null, -1, new Stat());
-      return new ZkJoinResult(
-          newId, extractServerLines(new String(merged, StandardCharsets.UTF_8)));
-    } finally {
-      try {
-        admin.close();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+      final long deadlineNanos =
+          System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(ZK_JOIN_CONNECT_TIMEOUT_MS);
+      while (true) {
+        try {
+          admin.reconfigure(List.of(joiningServer), null, null, -1, new Stat());
+          log.info("Joined ZK ensemble at {} as {}", connectString, joiningServer);
+          return;
+        } catch (KeeperException.NewConfigNoQuorum e) {
+          if (System.nanoTime() >= deadlineNanos) {
+            throw e;
+          }
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Ensemble at {} not ready to add {} yet (still syncing?), retrying",
+                connectString,
+                joiningServer);
+          }
+          Thread.sleep(250);
+        }
       }
+    } finally {
+      closeQuietly(admin);
+    }
+  }
+
+  private static String connectString(List<ZkQuorumPeer> peers) {
+    final StringBuilder sb = new StringBuilder();
+    for (ZkQuorumPeer peer : peers) {
+      if (sb.length() > 0) {
+        sb.append(',');
+      }
+      sb.append(peer.host()).append(':').append(peer.clientPort());
+    }
+    return sb.toString();
+  }
+
+  /**
+   * Opens a {@link ZooKeeperAdmin} client to {@code connectString} and waits up to {@code waitMs}
+   * for it to connect. Returns {@code null} (with the client closed) if it doesn't connect in
+   * time.
+   */
+  private static ZooKeeperAdmin connectAdmin(String connectString, long waitMs)
+      throws IOException, InterruptedException {
+    final CountDownLatch connected = new CountDownLatch(1);
+    final ZooKeeperAdmin admin =
+        new ZooKeeperAdmin(
+            connectString,
+            (int) ZK_JOIN_CONNECT_TIMEOUT_MS, // ZK session timeout, once connected
+            event -> {
+              if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
+                connected.countDown();
+              }
+            });
+    if (connected.await(waitMs, TimeUnit.MILLISECONDS)) {
+      return admin;
+    }
+    closeQuietly(admin);
+    return null;
+  }
+
+  private static void closeQuietly(ZooKeeperAdmin admin) {
+    try {
+      admin.close();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 
