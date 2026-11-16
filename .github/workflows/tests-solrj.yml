@@ -1,0 +1,46 @@
+name: SolrJ Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/tests-solrj.yml'
+      - 'gradle/libs.versions.toml'
+      - 'solr/api/**'
+      - 'solr/solrj/**'
+      - 'solr/solrj-jetty/**'
+      - 'solr/solrj-zookeeper/**'
+      - 'solr/solrj-streaming/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run SolrJ Tests
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Test the SolrJ modules and the API module
+      run: ./gradlew :solr:api:test :solr:solrj:test :solr:solrj-jetty:test :solr:solrj-zookeeper:test :solr:solrj-streaming:test
+
+    - name: Archive test output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output-solrj
+        path: |
+          solr/api/build/test-results/**
+          solr/solrj/build/test-results/**
+          solr/solrj-jetty/build/test-results/**
+          solr/solrj-zookeeper/build/test-results/**
+          solr/solrj-streaming/build/test-results/**

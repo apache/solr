@@ -1,0 +1,81 @@
+name: Solr Core Tests
+
+# solr/core is 78% of the whole test suite, so it is split into four slices by
+# Java package that run in parallel. Each slice is sized to finish in roughly
+# 15 minutes on an ubuntu-latest runner. The "other" slice is exclusion-based so
+# that a new package can never silently fall outside every slice.
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/tests-core.yml'
+      - 'gradle/libs.versions.toml'
+      - 'solr/core/**'
+      # core tests are built on these; a change here can break them
+      - 'solr/test-framework/**'
+      - 'solr/api/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Solr Core Tests (${{ matrix.slice }})
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        slice: [cloud, search, handler, other]
+        jvms: [2]
+        include:
+          # cloud tests mostly wait on ZooKeeper and Jetty, so oversubscribe the 4 vCPUs
+          - slice: cloud
+            jvms: 3
+
+    env:
+      # Top-level packages under org.apache.solr for each named slice.
+      # The "other" slice runs everything not listed here.
+      SLICE_CLOUD: cloud
+      SLICE_SEARCH: search uninverting spelling highlight analysis legacy index parser
+      SLICE_HANDLER: handler cli response request servlet jersey rest security api
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Test solr/core slice "${{ matrix.slice }}"
+      run: |
+        args=()
+        case "${{ matrix.slice }}" in
+          cloud)   pkgs="$SLICE_CLOUD" ;;
+          search)  pkgs="$SLICE_SEARCH" ;;
+          handler) pkgs="$SLICE_HANDLER" ;;
+          other)
+            pkgs=""
+            excl=""
+            for p in $SLICE_CLOUD $SLICE_SEARCH $SLICE_HANDLER; do
+              excl="${excl:+$excl,}org.apache.solr.$p.*"
+            done
+            args+=("-Ptests.exclude=$excl")
+            ;;
+        esac
+        for p in $pkgs; do
+          args+=(--tests "org.apache.solr.$p.*")
+        done
+        ./gradlew :solr:core:test -Ptests.jvms=${{ matrix.jvms }} "${args[@]}"
+
+    - name: Archive test output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output-core-${{ matrix.slice }}
+        path: |
+          solr/core/build/test-results/**
