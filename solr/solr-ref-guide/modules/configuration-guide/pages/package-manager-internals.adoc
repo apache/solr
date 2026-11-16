@@ -90,6 +90,7 @@ The end points are:
 
 * `PUT /api/cluster/filestore/files/{full/path/to/file}` to upload a new file and add it to the file store
 * `GET /api/cluster/filestore/files/{full/path/to/file}` to download a file already in the filestore
+* `DELETE /api/cluster/filestore/files/{full/path/to/file}` to remove a file from ZooKeeper and delete its copies on live nodes. Files used by an installed package cannot be deleted.
 * `GET /api/cluster/filestore/metadata/{full/path/to/file}` to get the metadata of a particular file, or a list of files available in a directory
 
 === Signing Your Artifacts
