@@ -1,0 +1,7 @@
+title: Set a lower shared arena permit limit for MMapDirectory
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18552
+    url: https://issues.apache.org/jira/browse/SOLR-18552
