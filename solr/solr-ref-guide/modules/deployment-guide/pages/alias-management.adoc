@@ -583,7 +583,9 @@ curl 'http://localhost:8983/api/aliases/testalias2'
 
 === LISTALIASES Response
 
-The output will contain a list of aliases with the corresponding collection names.
+The v2 output maps each alias name to an object containing its `name`, a `collections` array, and a `properties` map.
+Each object has the same fields as the detail response for a single alias, without a nested `responseHeader`.
+The v1 `LISTALIASES` response retains its alias-to-comma-separated-collections map and separate `properties` map.
 
 === Examples using LISTALIASES
 
@@ -606,12 +608,17 @@ curl 'http://localhost:8983/api/aliases'
     "QTime": 1
   },
   "aliases": {
-    "testalias1": "collection1",
-    "testalias2": "collection2,collection1"
-  },
-  "properties": {
+    "testalias1": {
+      "name": "testalias1",
+      "collections": ["collection1"],
+      "properties": {}
+    },
     "testalias2": {
-      "someKey": "someValue"
+      "name": "testalias2",
+      "collections": ["collection2", "collection1"],
+      "properties": {
+        "someKey": "someValue"
+      }
     }
   }
 }

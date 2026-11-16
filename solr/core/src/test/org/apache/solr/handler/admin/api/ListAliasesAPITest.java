@@ -80,19 +80,31 @@ public class ListAliasesAPITest extends SolrTestCaseJ4 {
     Aliases aliases =
         Aliases.EMPTY
             .cloneWithCollectionAlias("alias0", "colA")
-            .cloneWithCollectionAlias("alias1", "colB")
+            .cloneWithCollectionAlias("alias1", "colB,colC")
             .cloneWithCollectionAliasProperties("alias1", "pkey1", "pvalA");
     when(zkStateReader.getAliases()).thenReturn(aliases);
 
     ListAliasesResponse response = getAliasesAPI.getAliases();
-    assertEquals(aliases.getCollectionAliasMap(), response.aliases);
-    assertEquals(
-        aliases.getCollectionAliasProperties("alias0"),
-        response.properties.getOrDefault("alias0", Map.of()));
-    assertEquals(
-        aliases.getCollectionAliasProperties("alias1"),
-        response.properties.getOrDefault("alias1", Map.of()));
+    assertEquals(2, response.aliases.size());
+    for (String name : List.of("alias0", "alias1")) {
+      GetAliasByNameResponse entry = response.aliases.get(name);
+      GetAliasByNameResponse detail = getAliasesAPI.getAliasByName(name);
+      assertEquals(name, entry.alias);
+      assertEquals(detail.collections, entry.collections);
+      assertEquals(detail.properties, entry.properties);
+      assertNull(entry.responseHeader);
+    }
     assertNull(response.error);
+  }
+
+  @Test
+  public void testGetEmptyAliases() throws Exception {
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+    when(zkStateReader.getAliases()).thenReturn(Aliases.EMPTY);
+
+    ListAliasesResponse response = getAliasesAPI.getAliases();
+    assertEquals(Map.of(), response.aliases);
+    assertNotNull(response.responseHeader);
   }
 
   @Test

@@ -643,11 +643,8 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
                   if (error) { ApiErrorHandler.handle(response); return; }
                   $scope.aliases = [];
                   for (var key in adata.aliases) {
-                    var props = {};
-                    if (key in adata.properties) {
-                      props = adata.properties[key];
-                    }
-                    var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                    var details = adata.aliases[key];
+                    var alias = {name: details.name, collections: details.collections, type: 'alias', properties: details.properties};
                     $scope.aliases.push(alias);
                     if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
                       $scope.currentCollection = alias;
@@ -790,7 +787,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   };
 
   $scope.isMultiDestAlias = function(selectedColl) {
-    return selectedColl && selectedColl.type === 'alias' && selectedColl.collections.includes(',');
+    return selectedColl && selectedColl.type === 'alias' && selectedColl.collections.length > 1;
   };
 
   $scope.ping = function() {

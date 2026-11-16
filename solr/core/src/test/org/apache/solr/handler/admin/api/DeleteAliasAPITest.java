@@ -19,6 +19,8 @@ package org.apache.solr.handler.admin.api;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -27,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -45,7 +48,7 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDeleteAlias() throws Exception {
+  public void testGetAndDeleteAlias() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "deletealiastest_coll";
     String aliasName = "deletealiastest_alias";
@@ -56,6 +59,9 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
 
     // Create an alias pointing to the collection
     CollectionAdminRequest.createAlias(aliasName, collectionName).process(cloudClient);
+    CollectionAdminRequest.setAliasProperty(aliasName)
+        .addProperty("description", "Alias details")
+        .process(cloudClient);
 
     // Verify the alias exists
     var clusterStateProvider = cloudClient.getClusterStateProvider();
@@ -63,6 +69,38 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
         "Alias should exist before deletion",
         collectionName,
         clusterStateProvider.resolveSimpleAlias(aliasName));
+
+    var aliasesResponse = new AliasesApi.GetAliases().process(cloudClient);
+    var aliasEntry = aliasesResponse.aliases.get(aliasName);
+    var aliasResponse = new AliasesApi.GetAliasByName(aliasName).process(cloudClient);
+    assertEquals(aliasName, aliasResponse.alias);
+    assertEquals(List.of(collectionName), aliasResponse.collections);
+    assertEquals(Map.of("description", "Alias details"), aliasResponse.properties);
+    assertEquals(aliasResponse.alias, aliasEntry.alias);
+    assertEquals(aliasResponse.collections, aliasEntry.collections);
+    assertEquals(aliasResponse.properties, aliasEntry.properties);
+
+    var jetty = cluster.getJettySolrRunner(0);
+    var httpResponse =
+        jetty.getSolrClient().getHttpClient().newRequest(jetty.getBaseURLV2() + "/aliases").send();
+    assertEquals(200, httpResponse.getStatus());
+    Map<?, ?> listing = (Map<?, ?>) Utils.fromJSON(httpResponse.getContent());
+    assertTrue(listing.containsKey("responseHeader"));
+    assertFalse(listing.containsKey("properties"));
+    Map<?, ?> entries = (Map<?, ?>) listing.get("aliases");
+    assertEquals(
+        Map.of(
+            "name",
+            aliasName,
+            "collections",
+            List.of(collectionName),
+            "properties",
+            aliasResponse.properties),
+        entries.get(aliasName));
+
+    var legacyResponse = new CollectionAdminRequest.ListAliases().process(cloudClient);
+    assertEquals(collectionName, legacyResponse.getAliases().get(aliasName));
+    assertEquals(aliasResponse.properties, legacyResponse.getAliasProperties().get(aliasName));
 
     // Delete the alias using the V2 API
     var request = new AliasesApi.DeleteAlias(aliasName);

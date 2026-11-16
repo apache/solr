@@ -623,8 +623,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LISTALIASES,
         (req, rsp, h) -> {
           final ListAliases getAliasesAPI = new ListAliases(h.coreContainer, req, rsp);
-          final SolrJerseyResponse getAliasesResponse = getAliasesAPI.getAliases();
-          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
+          final var getAliasesResponse = getAliasesAPI.getAliases();
+          Map<String, String> aliases = new LinkedHashMap<>();
+          Map<String, Map<String, String>> properties = new LinkedHashMap<>();
+          for (var alias : getAliasesResponse.aliases.values()) {
+            aliases.put(alias.alias, String.join(",", alias.collections));
+            if (!alias.properties.isEmpty()) {
+              properties.put(alias.alias, alias.properties);
+            }
+          }
+          rsp.add("aliases", aliases);
+          rsp.add("properties", properties);
           return null;
         }),
     /**
