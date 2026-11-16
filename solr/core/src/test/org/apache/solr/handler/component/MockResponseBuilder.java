@@ -17,13 +17,11 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -38,9 +36,16 @@ import org.mockito.Mockito;
 
 public class MockResponseBuilder extends ResponseBuilder {
 
+  // real params, so every read (get/getBool/getFloat/iterator) behaves like production
+  private final ModifiableSolrParams params;
+
   private MockResponseBuilder(
-      SolrQueryRequest request, SolrQueryResponse response, List<SearchComponent> components) {
+      SolrQueryRequest request,
+      SolrQueryResponse response,
+      List<SearchComponent> components,
+      ModifiableSolrParams params) {
     super(request, response, components);
+    this.params = params;
   }
 
   public static MockResponseBuilder create() {
@@ -49,7 +54,7 @@ public class MockResponseBuilder extends ResponseBuilder {
     SolrQueryRequest request = Mockito.mock(SolrQueryRequest.class);
     SolrQueryResponse response = Mockito.mock(SolrQueryResponse.class);
     IndexSchema indexSchema = Mockito.mock(IndexSchema.class);
-    SolrParams params = Mockito.mock(SolrParams.class);
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
     // SchemaField must be concrete due to field access
     SchemaField uniqueIdField = new SchemaField("id", new StrField());
@@ -60,16 +65,12 @@ public class MockResponseBuilder extends ResponseBuilder {
     // the mock implementations
     Mockito.when(request.getSchema()).thenReturn(indexSchema);
     Mockito.when(indexSchema.getUniqueKeyField()).thenReturn(uniqueIdField);
-    Mockito.when(params.getBool(ShardParams.SHARDS_INFO)).thenReturn(false);
-    // RRF weight validation iterates params. A mock iterator() is null, so give it an empty one.
-    Mockito.when(params.iterator())
-        .thenReturn(Collections.<Map.Entry<String, String[]>>emptyIterator());
     Mockito.when(request.getParams()).thenReturn(params);
     Mockito.when(response.getResponseHeader()).thenReturn(responseHeader);
     Mockito.when(response.getReturnFields()).thenCallRealMethod();
 
     List<SearchComponent> components = new ArrayList<>();
-    return new MockResponseBuilder(request, response, components);
+    return new MockResponseBuilder(request, response, components, params);
   }
 
   public MockResponseBuilder withSortSpec(SortSpec sortSpec) {
@@ -78,10 +79,7 @@ public class MockResponseBuilder extends ResponseBuilder {
   }
 
   public MockResponseBuilder withCombinerQueries(String... combinerQueries) {
-    SolrParams params = req.getParams();
-    Mockito.when(params.getParams(CombinerParams.COMBINER_QUERY)).thenReturn(combinerQueries);
-    Mockito.when(params.get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER))
-        .thenReturn(CombinerParams.DEFAULT_COMBINER);
+    params.set(CombinerParams.COMBINER_QUERY, combinerQueries);
     SolrCore core = Mockito.mock(SolrCore.class);
     Mockito.when(core.getCoreContainer()).thenReturn(Mockito.mock(CoreContainer.class));
     Mockito.when(req.getCore()).thenReturn(core);
@@ -90,10 +88,8 @@ public class MockResponseBuilder extends ResponseBuilder {
   }
 
   public MockResponseBuilder withShardsTolerant() {
-    SolrParams params = req.getParams();
-    Mockito.when(params.get(ShardParams.SHARDS_TOLERANT)).thenReturn("true");
-    Mockito.when(params.getBool(Mockito.eq(CommonParams.PARTIAL_RESULTS), Mockito.anyBoolean()))
-        .thenReturn(true);
+    params.set(ShardParams.SHARDS_TOLERANT, "true");
+    params.set(CommonParams.PARTIAL_RESULTS, "true");
     return this;
   }
 }
