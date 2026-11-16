@@ -87,4 +87,13 @@ public class TextProfileSignatureTest extends SolrTestCase {
     assertArrayEquals(signatureOf(a), signatureOf(b));
     assertArrayEquals(signatureOf(a), signatureOf(c));
   }
+
+  @Test
+  public void testKnownSignatureFrequencyOrderAndQuantizationTie() {
+    String content = "aaaa aaaa aaaa aaaa aaaa bbbb bbbb bbbb bbbb cccc cccc cccc";
+    String shuffled = "cccc bbbb aaaa cccc bbbb aaaa cccc bbbb aaaa bbbb aaaa aaaa";
+    byte[] expected = HexFormat.of().parseHex("5fd6a7197fa8a7050c42000163cddee1");
+    assertArrayEquals(expected, signatureOf(content));
+    assertArrayEquals(expected, signatureOf(shuffled));
+  }
 }
