@@ -70,7 +70,7 @@ public final class TestcontainersUtil {
       Thread.currentThread().interrupt();
       return false;
     } catch (RuntimeException e) {
-      log.info("Could not pull {} for {}: {}", dockerImage, S390X, e.toString());
+      log.info("Could not pull {} for {}", dockerImage, S390X, e);
       return false;
     }
   }
