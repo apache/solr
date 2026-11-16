@@ -65,7 +65,7 @@ The unused `ContentStreamBase.create(RequestWriter, SolrRequest)` and `ContentSt
 
 == Response Format
 
-=== Some admin response sections are JSON objects regardless of json.nl
+=== Some response sections are JSON objects regardless of json.nl
 
 Solr builds many response sections as a `NamedList`, which the JSON response writer renders according to the `json.nl` parameter (by default as a flat array of alternating names and values).
 Sections whose names never repeat are now built as a `SimpleOrderedMap` instead, which the JSON writer always renders as a JSON object, exactly as `json.nl=map` did before.
