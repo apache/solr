@@ -18,7 +18,7 @@ jobs:
     name: Run Solr Tests
 
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
     - name: Checkout code
@@ -27,4 +27,4 @@ jobs:
     - uses: ./.github/actions/prepare-for-build
 
     - name: Run tests
-      run: ./gradlew test
+      run: ./gradlew test --max-workers=4 -Ptests.jvms=4
