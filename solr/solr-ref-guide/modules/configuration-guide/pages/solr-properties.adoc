@@ -46,8 +46,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
 
-|solr.cloud.wait.for.zk.seconds|waitForZk|Falls back to `solr.zookeeper.client.timeout`.|Deprecated override for the ZooKeeper connection check during node startup, in seconds. Use `solr.zookeeper.client.timeout`, in milliseconds, instead. An explicit override takes precedence for the startup check only.
-
 |solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr. Often ends in `/conf`.
 
 |solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset. Use with "solr.configset.bootstrap.confdir".

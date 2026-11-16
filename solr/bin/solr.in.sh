@@ -74,9 +74,6 @@
 # for production SolrCloud environments to control the hostname exposed to cluster state
 #SOLR_HOST_ADVERTISE="192.168.1.1"
 
-# Deprecated startup-only override in seconds; use ZK_CLIENT_TIMEOUT in milliseconds instead.
-#SOLR_CLOUD_WAIT_FOR_ZK_SECONDS="30"
-
 # By default Solr will log a warning for cores that are not registered in Zookeeper at startup
 # but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
 # wrong Zookeeper instance or chroot), however you need to manually delete the cores if

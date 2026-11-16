@@ -40,7 +40,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.CoreContainerProvider;
@@ -241,7 +240,8 @@ public class NodeConfig {
 
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOutMillis = getStartUpZkTimeOutMillis();
+      int startUpZkTimeOutMillis =
+          EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
@@ -258,17 +258,6 @@ public class NodeConfig {
     }
 
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
-  }
-
-  static int getStartUpZkTimeOutMillis() {
-    Integer waitSeconds = EnvUtils.getPropertyAsInteger("solr.cloud.wait.for.zk.seconds");
-    if (waitSeconds != null) {
-      DeprecationLog.log(
-          "solr.cloud.wait.for.zk.seconds",
-          "solr.cloud.wait.for.zk.seconds is deprecated. Use solr.zookeeper.client.timeout in milliseconds instead.");
-      return Math.toIntExact(TimeUnit.SECONDS.toMillis(waitSeconds));
-    }
-    return EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
   }
 
   public String getConfigSetServiceClass() {
