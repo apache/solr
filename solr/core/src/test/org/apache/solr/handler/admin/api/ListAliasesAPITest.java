@@ -16,113 +16,126 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.CoreMatchers.containsString;
 
-import io.opentelemetry.api.trace.Span;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.GetAliasByNameResponse;
 import org.apache.solr.client.api.model.ListAliasesResponse;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZkStateReader.AliasesManager;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
+import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.request.AliasesApi;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.Utils;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link ListAliases} */
-public class ListAliasesAPITest extends SolrTestCaseJ4 {
-
-  private CoreContainer mockCoreContainer;
-  private ZkStateReader zkStateReader;
-  private SolrQueryRequest mockQueryRequest;
-  private SolrQueryResponse queryResponse;
-
-  private ListAliases getAliasesAPI;
+/** HTTP integration tests for {@link ListAliases} using the generated SolrJ client. */
+public class ListAliasesAPITest extends SolrCloudTestCase {
+  private static final String COLLECTION_A = "listaliases_a";
+  private static final String COLLECTION_B = "listaliases_b";
 
   @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+  public static void setupCluster() throws Exception {
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    for (String collection : List.of(COLLECTION_A, COLLECTION_B)) {
+      CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collection, 1, 1);
+    }
   }
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-
-    AliasesManager aliasesManager = mock(AliasesManager.class);
-    zkStateReader = mock(ZkStateReader.class);
-    when(zkStateReader.getAliasesManager()).thenReturn(aliasesManager);
-
-    ZkController zkController = mock(ZkController.class);
-    when(zkController.getZkStateReader()).thenReturn(zkStateReader);
-
-    mockCoreContainer = mock(CoreContainer.class);
-    when(mockCoreContainer.getZkController()).thenReturn(zkController);
-
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
-    queryResponse = new SolrQueryResponse();
-
-    getAliasesAPI = new ListAliases(mockCoreContainer, mockQueryRequest, queryResponse);
+  @After
+  public void clearAliases() throws Exception {
+    var response = new AliasesApi.GetAliases().process(cluster.getSolrClient());
+    for (String alias : response.aliases.keySet()) {
+      new AliasesApi.DeleteAlias(alias).process(cluster.getSolrClient());
+    }
   }
 
   @Test
   public void testGetAliases() throws Exception {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
-
-    Aliases aliases =
-        Aliases.EMPTY
-            .cloneWithCollectionAlias("alias0", "colA")
-            .cloneWithCollectionAlias("alias1", "colB,colC")
-            .cloneWithCollectionAliasProperties("alias1", "pkey1", "pvalA");
-    when(zkStateReader.getAliases()).thenReturn(aliases);
-
-    ListAliasesResponse response = getAliasesAPI.getAliases();
+    createAliases();
+    ListAliasesResponse response = new AliasesApi.GetAliases().process(cluster.getSolrClient());
     assertEquals(2, response.aliases.size());
+    assertNotNull(response.responseHeader);
+    assertEquals(List.of(COLLECTION_A), response.aliases.get("alias0").collections);
+    assertEquals(List.of(COLLECTION_B, COLLECTION_A), response.aliases.get("alias1").collections);
+    assertEquals(Map.of(), response.aliases.get("alias0").properties);
+    assertEquals(Map.of("pkey1", "pvalA"), response.aliases.get("alias1").properties);
     for (String name : List.of("alias0", "alias1")) {
       GetAliasByNameResponse entry = response.aliases.get(name);
-      GetAliasByNameResponse detail = getAliasesAPI.getAliasByName(name);
+      GetAliasByNameResponse detail =
+          new AliasesApi.GetAliasByName(name).process(cluster.getSolrClient());
       assertEquals(name, entry.alias);
       assertEquals(detail.collections, entry.collections);
       assertEquals(detail.properties, entry.properties);
-      assertNull(entry.responseHeader);
     }
-    assertNull(response.error);
   }
 
   @Test
   public void testGetEmptyAliases() throws Exception {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
-    when(zkStateReader.getAliases()).thenReturn(Aliases.EMPTY);
-
-    ListAliasesResponse response = getAliasesAPI.getAliases();
+    ListAliasesResponse response = new AliasesApi.GetAliases().process(cluster.getSolrClient());
     assertEquals(Map.of(), response.aliases);
     assertNotNull(response.responseHeader);
   }
 
   @Test
   public void testGetAliasByName() throws Exception {
-    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
-
-    Aliases aliases =
-        Aliases.EMPTY
-            .cloneWithCollectionAlias("alias0", "colA")
-            .cloneWithCollectionAlias("alias1", "colB")
-            .cloneWithCollectionAliasProperties("alias1", "pkey1", "pvalA");
-    when(zkStateReader.getAliases()).thenReturn(aliases);
-
-    GetAliasByNameResponse response = getAliasesAPI.getAliasByName("alias1");
+    createAliases();
+    GetAliasByNameResponse response =
+        new AliasesApi.GetAliasByName("alias1").process(cluster.getSolrClient());
     assertEquals("alias1", response.alias);
-    assertEquals(List.of("colB"), response.collections);
+    assertEquals(List.of(COLLECTION_B, COLLECTION_A), response.collections);
     assertEquals(Map.of("pkey1", "pvalA"), response.properties);
+    assertNotNull(response.responseHeader);
+  }
 
-    assertNull(response.error);
+  @Test
+  public void testGetMissingAliasByName() throws Exception {
+    createAliases();
+    var request = new AliasesApi.GetAliasByName("missingAlias");
+    RemoteSolrException exception =
+        expectThrows(RemoteSolrException.class, () -> request.process(cluster.getSolrClient()));
+    assertEquals(404, exception.code());
+    assertThat(exception.getMessage(), containsString("No such alias [missingAlias]"));
+  }
+
+  @Test
+  public void testResponseFormatAndV1Compatibility() throws Exception {
+    createAliases();
+    var jetty = cluster.getJettySolrRunner(0);
+    var httpResponse =
+        jetty.getSolrClient().getHttpClient().newRequest(jetty.getBaseURLV2() + "/aliases").send();
+    assertEquals(200, httpResponse.getStatus());
+    Map<?, ?> listing = (Map<?, ?>) Utils.fromJSON(httpResponse.getContent());
+    assertTrue(listing.containsKey("responseHeader"));
+    assertFalse(listing.containsKey("properties"));
+    assertEquals(
+        Map.of(
+            "alias0",
+            Map.of("name", "alias0", "collections", List.of(COLLECTION_A), "properties", Map.of()),
+            "alias1",
+            Map.of(
+                "name", "alias1",
+                "collections", List.of(COLLECTION_B, COLLECTION_A),
+                "properties", Map.of("pkey1", "pvalA"))),
+        listing.get("aliases"));
+
+    var legacyResponse = new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient());
+    assertEquals(
+        Map.of("alias0", COLLECTION_A, "alias1", COLLECTION_B + "," + COLLECTION_A),
+        legacyResponse.getAliases());
+    assertEquals(Map.of("alias1", Map.of("pkey1", "pvalA")), legacyResponse.getAliasProperties());
+  }
+
+  private void createAliases() throws Exception {
+    CollectionAdminRequest.createAlias("alias0", COLLECTION_A).process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias("alias1", COLLECTION_B + "," + COLLECTION_A)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.setAliasProperty("alias1")
+        .addProperty("pkey1", "pvalA")
+        .process(cluster.getSolrClient());
   }
 }

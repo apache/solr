@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.SolrException.ErrorCode.NOT_FOUND;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import jakarta.inject.Inject;
@@ -24,6 +25,7 @@ import java.util.List;
 import org.apache.solr.client.api.endpoint.ListAliasesApi;
 import org.apache.solr.client.api.model.GetAliasByNameResponse;
 import org.apache.solr.client.api.model.ListAliasesResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -71,6 +73,9 @@ public class ListAliases extends AdminAPIBase implements ListAliasesApi {
 
     final GetAliasByNameResponse response = instantiateJerseyResponse(GetAliasByNameResponse.class);
     final Aliases aliases = readAliasesFromZk();
+    if (aliases == null || !aliases.hasAlias(aliasName)) {
+      throw new SolrException(NOT_FOUND, "No such alias [" + aliasName + "]");
+    }
     populateAlias(response, aliases, aliasName);
 
     return response;
