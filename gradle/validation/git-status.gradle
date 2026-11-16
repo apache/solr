@@ -37,14 +37,23 @@ buildscript {
 }
 
 configure(rootProject) {
+  // Only a repository rooted at the project dir counts, not a parent checkout that merely contains it
+  // (e.g. an unpacked source release inside a clone).
+  def findGitRepository = {
+    if (!rootProject.file(".git").exists()) {
+      throw new RepositoryNotFoundException(rootProject.projectDir)
+    }
+    return new FileRepositoryBuilder()
+        .findGitDir(rootProject.projectDir)
+        .setWorkTree(rootProject.projectDir)
+        .setMustExist(true)
+        .build()
+  }
+
   task gitStatus() {
     doFirst {
       try {
-        def repository = new FileRepositoryBuilder()
-            .findGitDir(rootProject.projectDir)
-            .setWorkTree(rootProject.projectDir)
-            .setMustExist(true)
-            .build()
+        def repository = findGitRepository()
 
         def ref = repository.findRef("HEAD").getObjectId()
         project.ext.gitRev = ref.name()
@@ -65,11 +74,7 @@ configure(rootProject) {
     doFirst {
       def status
       try {
-        def repository = new FileRepositoryBuilder()
-            .findGitDir(rootProject.projectDir)
-            .setWorkTree(rootProject.projectDir)
-            .setMustExist(true)
-            .build()
+        def repository = findGitRepository()
         status = new Git(repository).status().call()
       } catch (RepositoryNotFoundException | NoWorkTreeException e) {
         status = null

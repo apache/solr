@@ -1,0 +1,10 @@
+title: >
+  Add a step-by-step tutorial and a bin/solr start -e secure example for configuring
+  a two-node SolrCloud cluster with self-signed PKCS12 certificates, HTTPS, Basic Authentication,
+  and ZooKeeper digest accounts and ACLs.
+type: added
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18527
+    url: https://issues.apache.org/jira/browse/SOLR-18527
