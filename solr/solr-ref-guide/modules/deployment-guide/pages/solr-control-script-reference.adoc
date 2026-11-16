@@ -129,7 +129,7 @@ The film data used can be found in `$SOLR_HOME/example/films/films.json`.
 The run in-foreground option (`-f`) is not compatible with the `-e` option since the script needs to perform additional tasks after starting the Solr server.
 ====
 
-==== Configuration Directories and SolrCloud
+=== Configuration Directories and SolrCloud
 
 Before creating a collection in SolrCloud, the configuration directory used by the collection must be uploaded to ZooKeeper.
 The `create` command supports several use cases for how collections and configuration directories work.

@@ -642,12 +642,17 @@ public abstract class CloudSolrClient extends SolrClient {
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
+      Set<String> missingInputCollections = new HashSet<>();
+      Set<String> requestedCollectionNames =
+          resolveAliases(inputCollections, missingInputCollections);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
-        DocCollection coll = getDocCollection(requestedCollection, null);
+        DocCollection coll =
+            missingInputCollections.contains(requestedCollection)
+                ? null
+                : getDocCollection(requestedCollection, null);
         if (coll == null) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
@@ -1056,12 +1061,20 @@ public abstract class CloudSolrClient extends SolrClient {
    * collection existence.
    */
   private Set<String> resolveAliases(List<String> inputCollections) {
+    return resolveAliases(inputCollections, null);
+  }
+
+  private Set<String> resolveAliases(
+      List<String> inputCollections, Set<String> missingInputCollections) {
     if (inputCollections.isEmpty()) {
       return Set.of();
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
       if (getDocCollection(collectionName, -1) == null) {
+        if (missingInputCollections != null) {
+          missingInputCollections.add(collectionName);
+        }
         // perhaps it's an alias
         uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
