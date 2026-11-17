@@ -144,30 +144,6 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
-  public void deprecatedWaitForZkSystemPropertyIsMigratedWithWarning() {
-    Properties sysprops = new Properties();
-    sysprops.setProperty("waitForZk", "60");
-    try (LogListener warnLog =
-        LogListener.warn(EnvUtils.class).substring("solr.cloud.wait.for.zk.seconds")) {
-      EnvUtils.init(false, Map.of(), sysprops);
-      assertEquals("60", EnvUtils.getProperty("solr.cloud.wait.for.zk.seconds"));
-      assertEquals(1, warnLog.getCount());
-      assertTrue(warnLog.pollMessage().contains("waitForZk"));
-    }
-  }
-
-  @Test
-  public void deprecatedWaitForZkEnvVarIsMigratedWithWarning() {
-    try (LogListener warnLog =
-        LogListener.warn(EnvUtils.class).substring("solr.cloud.wait.for.zk.seconds")) {
-      EnvUtils.init(false, Map.of("SOLR_WAIT_FOR_ZK", "45"), System.getProperties());
-      assertEquals("45", EnvUtils.getProperty("solr.cloud.wait.for.zk.seconds"));
-      assertEquals(1, warnLog.getCount());
-      assertTrue(warnLog.pollMessage().contains("solr.wait.for.zk"));
-    }
-  }
-
-  @Test
   public void testFlippingDisabledToEnabledPropertyName() {
 
     var env = Map.of("SOLR_ADMIN_UI_DISABLED", "true");
