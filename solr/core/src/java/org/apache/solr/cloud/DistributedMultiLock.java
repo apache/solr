@@ -59,8 +59,20 @@ public class DistributedMultiLock {
 
   public void release() {
     isReleased = true;
+    RuntimeException failure = null;
     for (DistributedLock lock : locks) {
-      lock.release();
+      try {
+        lock.release();
+      } catch (RuntimeException e) {
+        if (failure == null) {
+          failure = e;
+        } else {
+          failure.addSuppressed(e);
+        }
+      }
+    }
+    if (failure != null) {
+      throw failure;
     }
   }
 

@@ -554,7 +554,13 @@ public class DistributedCollectionConfigSetCommandRunner {
                 SolrException.ErrorCode.BAD_REQUEST, "Bug! Unknown Config Set action: " + action);
         }
       } finally {
-        lock.release();
+        try {
+          lock.release();
+        } catch (SolrException se) {
+          if (log.isErrorEnabled()) {
+            log.error("Error when releasing config set locks for action {}", action, se);
+          }
+        }
       }
 
       return null;
