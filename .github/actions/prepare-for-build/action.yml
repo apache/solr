@@ -38,3 +38,8 @@ runs:
         # increase expiry time for the temp. develocity token.
         # https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#increasing-the-expiry-time-for-develocity-access-tokens
         develocity-token-expiry: 8
+        # the default omits "wrapper", so the distribution zip is downloaded on every run
+        gradle-home-cache-includes: |
+          caches
+          notifications
+          wrapper
