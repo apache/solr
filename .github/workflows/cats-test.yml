@@ -90,4 +90,5 @@ jobs:
         path: |
           solr/packaging/build/cats-test-output
           solr/packaging/build/cats-test-output-picocli
-          solr/test-framework-cats/build/test-results
+          solr/packaging/build/cats-test-output-commons-cli
+          solr/test-framework/build/test-results
