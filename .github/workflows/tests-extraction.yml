@@ -1,6 +1,7 @@
+name: Extraction Module Tests
+
 # The extraction module tests need Docker for the TikaServer tests of SolrCell,
 # so they get a workflow of their own.
-name: Extraction Module Tests
 
 on:
   pull_request:

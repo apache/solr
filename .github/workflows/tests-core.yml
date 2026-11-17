@@ -1,6 +1,6 @@
 name: Solr Core Tests
 
-# solr/core is 78% of the whole test suite, so it is split into four slices by
+# solr/core is most of the whole test suite, so it is split into four slices by
 # Java package that run in parallel. The slices are balanced from measured CI
 # timings: the cloud package alone is the largest unit in solr/core and sets
 # the critical path, so its api and overseer sub-packages run in the search
