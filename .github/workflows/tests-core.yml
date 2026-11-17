@@ -32,7 +32,6 @@ jobs:
       fail-fast: false
       matrix:
         slice: [cloud, search, handler, other]
-        jvms: [2]
         include:
           # cloud tests mostly wait on ZooKeeper and Jetty, so oversubscribe the 4 vCPUs
           - slice: cloud
@@ -70,7 +69,7 @@ jobs:
         for p in $pkgs; do
           args+=(--tests "org.apache.solr.$p.*")
         done
-        ./gradlew :solr:core:test -Ptests.jvms=${{ matrix.jvms }} "${args[@]}"
+        ./gradlew :solr:core:test -Ptests.jvms=${{ matrix.jvms || 2 }} "${args[@]}"
 
     - name: Archive test output
       if: ${{ failure() }}
