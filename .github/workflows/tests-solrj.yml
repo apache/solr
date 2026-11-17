@@ -30,7 +30,7 @@ jobs:
     - uses: ./.github/actions/prepare-for-build
 
     - name: Test the SolrJ modules and the API module
-      run: ./gradlew :solr:api:test :solr:solrj:test :solr:solrj-jetty:test :solr:solrj-streaming:test
+      run: ./gradlew :solr:api:test :solr:solrj:test :solr:solrj-jetty:test :solr:solrj-streaming:test -Ptests.jvms=3
 
     - name: Archive test output
       if: ${{ failure() }}
