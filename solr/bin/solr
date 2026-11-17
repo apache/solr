@@ -56,9 +56,9 @@ JAVA_VER_REQ=21
 stop_all=false
 
 # for now, we don't support running this script from cygwin due to problems
-# like not having lsof, ps auxww, curl, and awkward directory handling
+# like not having ps auxww, curl, and awkward directory handling
 if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
-  echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of lsof, curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
+  echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
   exit 1
 fi
 # Alpine Linux BusyBox comes with a stripped down ps, make sure we have a fully featured one
