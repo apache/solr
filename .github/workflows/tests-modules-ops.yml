@@ -1,11 +1,11 @@
-name: Cloud Modules Tests
+name: Ops Modules Tests
 
 on:
   pull_request:
     branches:
       - '*'
     paths:
-      - '.github/workflows/tests-modules-cloud.yml'
+      - '.github/workflows/tests-modules-ops.yml'
       - 'gradle/libs.versions.toml'
       - 'solr/cross-dc-manager/**'
       - 'solr/modules/cross-dc/**'
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   test:
-    name: Run Cloud Modules Tests
+    name: Run Ops Modules Tests
 
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -31,7 +31,7 @@ jobs:
 
     - uses: ./.github/actions/prepare-for-build
 
-    - name: Test the cloud and infrastructure modules
+    - name: Test the ops and infrastructure modules
       run: >
         ./gradlew
         :solr:cross-dc-manager:test
@@ -45,7 +45,7 @@ jobs:
       if: ${{ failure() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: test-output-modules-cloud
+        name: test-output-modules-ops
         path: |
           solr/cross-dc-manager/build/test-results/**
           solr/modules/*/build/test-results/**
