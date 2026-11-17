@@ -62,17 +62,30 @@ public class SnapshotToolsTest extends SolrCloudTestCase {
 
   @Test
   public void testSnapshotLifecycle() throws Exception {
-    run(SnapshotCreateTool.class, "snapshot-create", "--snapshot-name", "snap1");
+    assertTrue(
+        run(SnapshotCreateTool.class, "snapshot-create", "--snapshot-name", "snap1")
+            .contains("Successfully created snapshot"));
 
     assertTrue(run(SnapshotListTool.class, "snapshot-list").contains("snap1"));
 
     String described =
         run(SnapshotDescribeTool.class, "snapshot-describe", "--snapshot-name", "snap1");
     assertTrue(described, described.contains("Name: snap1"));
+    assertTrue(described, described.contains("Status: Successful"));
+    assertTrue(described, described.contains("Total number of cores with snapshot: 1"));
+    assertTrue(described, described.contains("leader=true"));
 
     run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "snap1");
 
     assertFalse(run(SnapshotListTool.class, "snapshot-list").contains("snap1"));
+  }
+
+  @Test
+  public void testDeleteMissingSnapshot() throws Exception {
+    String output = run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "missing");
+    assertTrue(output, output.contains("Failed to delete a snapshot with name missing"));
+    assertTrue(output, output.contains("does not exist"));
+    assertFalse(output, output.contains("Successfully deleted"));
   }
 
   // snapshot-list reports a failed request in its output and still exits 0, so check the output.

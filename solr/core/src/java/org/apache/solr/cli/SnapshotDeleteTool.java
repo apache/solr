@@ -20,8 +20,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-delete command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -118,15 +117,10 @@ public class SnapshotDeleteTool extends ToolBase {
   }
 
   public void deleteSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
-    CollectionAdminRequest.DeleteSnapshot deleteSnapshot =
-        new CollectionAdminRequest.DeleteSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
+    var deleteSnapshot =
+        new CollectionSnapshotsApi.DeleteCollectionSnapshot(collectionName, snapshotName);
     try {
-      resp = deleteSnapshot.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The DELETESNAPSHOT request failed. The status code is " + resp.getStatus());
-      }
+      deleteSnapshot.process(solrClient);
       echo(
           "Successfully deleted snapshot with name "
               + snapshotName
