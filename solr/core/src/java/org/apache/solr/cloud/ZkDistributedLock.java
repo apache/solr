@@ -212,22 +212,6 @@ abstract class ZkDistributedLock implements DistributedLock {
     }
   }
 
-  @Override
-  public boolean isAcquired() {
-    try {
-      if (released) {
-        throw new IllegalStateException(
-            "Bug. isAcquired() should not be called after release(). " + lockNode);
-      }
-      return nodeToWatch() == null;
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
   /**
    * @return Another lock node (complete path) that must go away for us to acquire the lock, or
    *     {@code null} if the lock is ours.

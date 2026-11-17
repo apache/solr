@@ -64,19 +64,6 @@ public class DistributedMultiLock {
     }
   }
 
-  public boolean isAcquired() {
-    if (isReleased) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Released lock can't be tested");
-    }
-    for (DistributedLock lock : locks) {
-      if (!lock.isAcquired()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   public String getLockId() {
     return locks.stream().map(DistributedLock::getLockId).collect(Collectors.joining(","));
   }

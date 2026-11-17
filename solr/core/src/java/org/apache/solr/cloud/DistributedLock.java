@@ -23,8 +23,6 @@ public interface DistributedLock {
 
   void release();
 
-  boolean isAcquired();
-
   String getLockId();
 
   boolean isMirroringLock();

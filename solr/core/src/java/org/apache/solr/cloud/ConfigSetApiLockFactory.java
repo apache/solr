@@ -39,10 +39,10 @@ public class ConfigSetApiLockFactory {
    * <p>This method obtains a write lock on {@code configSetName} as well as (when not {@code
    * null}), a read lock on {@code baseConfigSetName}.
    *
-   * @return a lock that once {@link DistributedMultiLock#isAcquired()} guarantees the corresponding
-   *     Config Set API command can execute safely. The returned lock <b>MUST</b> be {@link
-   *     DistributedMultiLock#release()} no matter what once no longer needed as otherwise it would
-   *     prevent other threads from locking.
+   * @return a lock that once {@link DistributedMultiLock#waitUntilAcquired()} returns guarantees
+   *     the corresponding Config Set API command can execute safely. The returned lock <b>MUST</b>
+   *     be {@link DistributedMultiLock#release()} no matter what once no longer needed as otherwise
+   *     it would prevent other threads from locking.
    */
   public DistributedMultiLock createConfigSetApiLock(
       String configSetName, String baseConfigSetName) {
