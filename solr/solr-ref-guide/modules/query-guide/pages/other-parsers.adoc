@@ -494,6 +494,21 @@ The field name in candidate documents to inspect to identify incoming graph edge
 +
 An optional query that can be supplied to limit the scope of documents that are traversed.
 
+`lookupFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+An optional query that limits which documents have their outgoing edges followed.
+Documents reached by the traversal (and matching `traversalFilter`, if specified) are always collected, but only those that also match `lookupFilter` are expanded to find the next level of the graph.
+This also applies to the documents matching the initial query.
++
+Unlike `traversalFilter`, which excludes non-matching documents from the results, `lookupFilter` only skips the edge lookup for them.
+This is useful when many nodes are known to have no outgoing edges but still carry a value in the `to` field.
+For example, in a file system hierarchy where folders have `docType:folder` and files have `docType:file`, `{!graph from=parentId to=id lookupFilter=docType:folder}` returns all files and folders, but only looks up children of folders.
+
 `maxDepth`::
 +
 [%autowidth,frame=none]

@@ -54,10 +54,11 @@ import org.apache.solr.util.SolrDefaultScorerSupplier;
  * GraphQuery - search for nodes and traverse edges in an index.
  *
  * <p>Params: fromField = the field that contains the node id toField = the field that contains the
- * edge ids traversalFilter = a query that can be applied for each hop in the graph. maxDepth = the
- * max depth to traverse. (start nodes is depth=1) onlyLeafNodes = only return documents that have
- * no edge id values. returnRoot = if false, the documents matching the initial query will not be
- * returned.
+ * edge ids traversalFilter = a query that can be applied for each hop in the graph. lookupFilter =
+ * a query restricting which collected nodes have their edges followed (nodes not matching it are
+ * still returned, but not expanded). maxDepth = the max depth to traverse. (start nodes is depth=1)
+ * onlyLeafNodes = only return documents that have no edge id values. returnRoot = if false, the
+ * documents matching the initial query will not be returned.
  *
  * @lucene.experimental
  */
@@ -74,6 +75,12 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
 
   /** A query to apply while traversing the graph to filter out edges */
   private Query traversalFilter;
+
+  /**
+   * A query restricting which collected nodes have their edges looked up for the next hop. Nodes
+   * that do not match are still collected, but are not expanded. Null means all nodes are expanded.
+   */
+  private Query lookupFilter;
 
   /** The max depth to traverse the graph, -1 means no limit. */
   private int maxDepth = -1;
@@ -132,6 +139,9 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
         .append(']');
     if (traversalFilter != null) {
       sb.append(" [TraversalFilter: ").append(traversalFilter.toString()).append(']');
+    }
+    if (lookupFilter != null) {
+      sb.append(" [LookupFilter: ").append(lookupFilter.toString()).append(']');
     }
     sb.append("[maxDepth=").append(maxDepth).append(']');
     sb.append("[returnRoot=").append(returnRoot).append(']');
@@ -193,6 +203,8 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
       Query frontierQuery = q;
       // Find all documents in this graph that are leaf nodes to speed traversal
       DocSet leafNodes = resolveLeafNodes();
+      // Find all documents whose edges may be followed, if restricted by a lookup filter
+      DocSet lookupNodes = lookupFilter == null ? null : fromSearcher.getDocSet(lookupFilter);
       // Start the breadth first graph traversal.
 
       do {
@@ -211,9 +223,9 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
           GraphEdgeCollector graphResultCollector =
               collectSchemaField.getType().isPointField()
                   ? new GraphPointsCollector(
-                      collectSchemaField, new BitDocSet(resultBits), leafNodes)
+                      collectSchemaField, new BitDocSet(resultBits), leafNodes, lookupNodes)
                   : new GraphEdgeCollector.GraphTermsCollector(
-                      collectSchemaField, new BitDocSet(resultBits), leafNodes);
+                      collectSchemaField, new BitDocSet(resultBits), leafNodes, lookupNodes);
 
           fromSet = new BitDocSet(new FixedBitSet(capacity));
           graphResultCollector.setCollectDocs(fromSet.getBits());
@@ -343,6 +355,18 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
     this.traversalFilter = traversalFilter;
   }
 
+  /**
+   * @return The query restricting which collected nodes have their edges followed, or null if all
+   *     collected nodes are expanded.
+   */
+  public Query getLookupFilter() {
+    return lookupFilter;
+  }
+
+  public void setLookupFilter(Query lookupFilter) {
+    this.lookupFilter = lookupFilter;
+  }
+
   public Query getQ() {
     return q;
   }
@@ -430,6 +454,7 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
     result = prime * result + (returnRoot ? 1231 : 1237);
     result = prime * result + Objects.hashCode(toField);
     result = prime * result + Objects.hashCode(traversalFilter);
+    result = prime * result + Objects.hashCode(lookupFilter);
     result = prime * result + (useAutn ? 1231 : 1237);
     return result;
   }
@@ -447,7 +472,8 @@ public class GraphQuery extends Query implements SolrSearcherRequirer {
         && useAutn == other.useAutn
         && Objects.equals(q, other.q)
         && Objects.equals(toField, other.toField)
-        && Objects.equals(traversalFilter, other.traversalFilter);
+        && Objects.equals(traversalFilter, other.traversalFilter)
+        && Objects.equals(lookupFilter, other.lookupFilter);
   }
 
   @Override

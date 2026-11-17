@@ -43,7 +43,12 @@ public class GraphPointsCollector extends GraphEdgeCollector {
   SortedNumericDocValues values = null;
 
   public GraphPointsCollector(SchemaField collectField, DocSet skipSet, DocSet leafNodes) {
-    super(collectField, skipSet, leafNodes);
+    this(collectField, skipSet, leafNodes, null);
+  }
+
+  public GraphPointsCollector(
+      SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet lookupNodes) {
+    super(collectField, skipSet, leafNodes, lookupNodes);
   }
 
   @Override
