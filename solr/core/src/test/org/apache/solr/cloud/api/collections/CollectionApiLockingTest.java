@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.DistributedLock;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.cloud.ThreadBoundLock;
 import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
@@ -66,6 +67,66 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
           monothreadedTests(apiLockFactory);
           multithreadedTests(apiLockFactory);
           testCallingLockIdSubLocks(apiLockFactory);
+        } finally {
+          boundLocks.values().forEach(ThreadBoundLock::close);
+        }
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testBlockedMultiLockHoldsNoLowerLevelNode() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient client =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        zkClient = client;
+        ZkDistributedCollectionLockFactory factory =
+            new ZkDistributedCollectionLockFactory(zkClient, "/apiLockTestRoot");
+        CollectionApiLockFactory apiLockFactory = new CollectionApiLockFactory(factory);
+
+        try {
+          DistributedMultiLock collWrite =
+              apiLockFactory.createCollectionApiLock(
+                  new AdminCmdContext(CollectionParams.CollectionAction.CREATE),
+                  COLLECTION_NAME,
+                  null,
+                  null);
+          assertAcquired("Collection write should have been acquired", collWrite);
+
+          DistributedMultiLock split =
+              apiLockFactory.createCollectionApiLock(
+                  new AdminCmdContext(CollectionParams.CollectionAction.SPLITSHARD),
+                  COLLECTION_NAME,
+                  SHARD1_NAME,
+                  null);
+          Future<?> splitAcquisition =
+              assertBlocked("Split should be blocked by collection write", split, collWrite, 0, 2);
+
+          DistributedLock shardWrite =
+              factory.createLock(
+                  true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD1_NAME, null, null);
+          ThreadBoundLock shardWriteThread =
+              new ThreadBoundLock(shardWrite::waitUntilAcquired, shardWrite::release);
+          try {
+            awaitAcquired(
+                "Plain shard write should acquire while the split is blocked",
+                shardWriteThread.acquire());
+            shardWriteThread.release();
+          } finally {
+            shardWriteThread.close();
+          }
+
+          release(collWrite);
+          awaitAcquired(
+              "Split should acquire once the collection write is released", splitAcquisition);
+          release(split);
         } finally {
           boundLocks.values().forEach(ThreadBoundLock::close);
         }

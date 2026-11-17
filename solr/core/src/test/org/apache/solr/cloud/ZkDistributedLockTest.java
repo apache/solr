@@ -322,6 +322,145 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     }
   }
 
+  private DistributedCollectionLockFactory collectionLockFactory(SolrZkClient zkClient) {
+    return new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
+  }
+
+  private DistributedLock collectionLock(
+      DistributedCollectionLockFactory factory, boolean write, String callingLockId) {
+    return factory.createLock(
+        write, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, callingLockId);
+  }
+
+  private void assertWriteAcquirable(DistributedCollectionLockFactory factory) throws Exception {
+    ThreadBoundLock next = bind(collectionLock(factory, true, null));
+    next.acquire().get(TIMEOUT, TimeUnit.MILLISECONDS);
+    next.release();
+  }
+
+  @Test
+  public void testInterruptedWaiterLeavesNoNode() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        DistributedCollectionLockFactory factory = collectionLockFactory(zkClient);
+        DistributedLock read = collectionLock(factory, false, null);
+        ThreadBoundLock readThread = bind(read);
+        readThread.acquire().get(TIMEOUT, TimeUnit.MILLISECONDS);
+        String readId = read.getLockId();
+
+        ThreadBoundLock waiter = bind(collectionLock(factory, true, null));
+        waiter.acquire();
+        ThreadBoundLock.waitForLockNodes(zkClient, readId, 2);
+
+        waiter.close();
+        ThreadBoundLock.waitForLockNodes(zkClient, readId, 1);
+
+        readThread.release();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testReleaseWithoutAcquireIsNoOp() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        DistributedCollectionLockFactory factory = collectionLockFactory(zkClient);
+        collectionLock(factory, true, null).release();
+        assertWriteAcquirable(factory);
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testMirrorOfReleasedLockFails() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        DistributedCollectionLockFactory factory = collectionLockFactory(zkClient);
+        DistributedLock write = collectionLock(factory, true, null);
+        ThreadBoundLock writeThread = bind(write);
+        writeThread.acquire().get(TIMEOUT, TimeUnit.MILLISECONDS);
+        String releasedId = write.getLockId();
+        writeThread.release();
+
+        DistributedLock mirror = collectionLock(factory, false, releasedId);
+        SolrException e = expectThrows(SolrException.class, mirror::waitUntilAcquired);
+        assertTrue(e.getMessage(), e.getMessage().contains("Missing mirrored lock node"));
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testReleaseOnOtherThreadFails() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        DistributedCollectionLockFactory factory = collectionLockFactory(zkClient);
+        DistributedLock write = collectionLock(factory, true, null);
+        ThreadBoundLock holder = bind(write);
+        holder.acquire().get(TIMEOUT, TimeUnit.MILLISECONDS);
+
+        SolrException e = expectThrows(SolrException.class, write::release);
+        assertTrue(e.getCause() instanceof IllegalMonitorStateException);
+
+        holder.release();
+        assertWriteAcquirable(factory);
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testRepeatWaitThenSingleReleaseFrees() throws Exception {
+    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    try {
+      server.run();
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
+        DistributedCollectionLockFactory factory = collectionLockFactory(zkClient);
+        DistributedLock write = collectionLock(factory, true, null);
+        write.waitUntilAcquired();
+        write.waitUntilAcquired();
+        write.release();
+        assertWriteAcquirable(factory);
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
   /** Asserts every node between the lock node and {@code root} is a container. */
   private static void assertLockDirsAreContainers(ZkTestServer server, String lockId, String root) {
     for (String dir = parent(lockId); !dir.equals(root); dir = parent(dir)) {
