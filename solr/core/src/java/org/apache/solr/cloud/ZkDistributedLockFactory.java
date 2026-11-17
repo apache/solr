@@ -17,16 +17,14 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.zookeeper.CreateMode;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 abstract class ZkDistributedLockFactory {
-
-  static final int MAX_CREATE_ATTEMPTS = 3;
 
   private final SolrZkClient zkClient;
   private final String rootPath;
@@ -38,53 +36,24 @@ abstract class ZkDistributedLockFactory {
 
   protected DistributedLock doCreateLock(
       boolean isWriteLock, String lockPath, String lockIdToMirror) {
-    try {
-      for (int attempt = 1; ; attempt++) {
-        try {
-          return isWriteLock
-              ? new ZkDistributedLock.Write(zkClient, lockPath, lockIdToMirror)
-              : new ZkDistributedLock.Read(zkClient, lockPath, lockIdToMirror);
-        } catch (KeeperException.NoNodeException e) {
-          if (attempt == MAX_CREATE_ATTEMPTS) {
-            throw e;
-          }
-          // Lock dirs are containers, so ZK drops them when empty. Recreate and try again.
-          makeLockPath(lockPath);
-        }
+    if (StrUtils.isBlank(lockIdToMirror)) {
+      // Empty payload: otherwise Curator stores the local IP address in every lock node
+      InterProcessReadWriteLock readWriteLock =
+          new InterProcessReadWriteLock(zkClient.getCuratorFramework(), lockPath, new byte[0]);
+      if (isWriteLock) {
+        InterProcessReadWriteLock.WriteLock writeLock = readWriteLock.writeLock();
+        return new ZkDistributedLock.Owned(writeLock, lockPath, writeLock::getLockPath);
       }
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      InterProcessReadWriteLock.ReadLock readLock = readWriteLock.readLock();
+      return new ZkDistributedLock.Owned(readLock, lockPath, readLock::getLockPath);
     }
+    return new ZkDistributedLock.Mirrored(zkClient, lockPath, isWriteLock, lockIdToMirror);
   }
 
   protected StringBuilder getPathPrefix() {
     StringBuilder path = new StringBuilder(100);
     path.append(rootPath).append(DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR);
     return path;
-  }
-
-  private void makeLockPath(String lockPath) throws KeeperException, InterruptedException {
-    if (!zkClient.exists(rootPath)) {
-      zkClient.makePath(rootPath, false);
-    }
-    StringBuilder path = new StringBuilder(rootPath);
-    for (String node :
-        lockPath
-            .substring(rootPath.length() + 1)
-            .split(DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR)) {
-      path.append(DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR).append(node);
-      try {
-        zkClient.create(path.toString(), null, CreateMode.CONTAINER);
-      } catch (KeeperException.NodeExistsException nee) {
-        // Some other thread (on this or another JVM) beat us to create the node, that's ok.
-      } catch (KeeperException.NoNodeException nne) {
-        // A parent got removed while we were here. The caller retries.
-        return;
-      }
-    }
   }
 
   /**

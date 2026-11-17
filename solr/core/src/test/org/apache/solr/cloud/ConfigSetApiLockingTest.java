@@ -17,86 +17,28 @@
 
 package org.apache.solr.cloud;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
+import static org.apache.solr.cloud.ThreadBoundLock.awaitAcquired;
+
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.junit.Test;
 
-public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
+public class ConfigSetApiLockingTest extends ApiLockingTestBase {
   private static final String CONFIG_SET_NAME_1 = "configSet1";
   private static final String CONFIG_SET_NAME_2 = "configSet2";
   private static final String CONFIG_SET_NAME_3 = "configSet3";
 
   private static final String BASE_CONFIG_SET_NAME = "baseConfigSet";
 
-  static final int TIMEOUT = 10000;
-
-  private final Map<DistributedMultiLock, ThreadBoundLock> boundLocks = new IdentityHashMap<>();
-  private SolrZkClient zkClient;
-
   /**
    * Tests the Config Set API locking. All tests run from single test method to save on setup time.
    */
   @Test
   public void monothreadedApiLockTests() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      try (SolrZkClient client =
-          new SolrZkClient.Builder()
-              .withUrl(server.getZkAddress())
-              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        zkClient = client;
-        ConfigSetApiLockFactory apiLockFactory =
-            new ConfigSetApiLockFactory(
-                new ZkDistributedConfigSetLockFactory(zkClient, "/apiLockTestRoot"));
+    ConfigSetApiLockFactory apiLockFactory =
+        new ConfigSetApiLockFactory(new ZkDistributedConfigSetLockFactory(zkClient, LOCK_ROOT));
 
-        try {
-          monothreadedTests(apiLockFactory);
-          multithreadedTests(apiLockFactory);
-        } finally {
-          boundLocks.values().forEach(ThreadBoundLock::close);
-        }
-      }
-    } finally {
-      server.shutdown();
-    }
-  }
-
-  private ThreadBoundLock bound(DistributedMultiLock lock) {
-    return boundLocks.computeIfAbsent(
-        lock, l -> new ThreadBoundLock(l::waitUntilAcquired, l::release));
-  }
-
-  private void assertAcquired(String message, DistributedMultiLock lock) throws Exception {
-    awaitAcquired(message, bound(lock).acquire());
-  }
-
-  private void awaitAcquired(String message, Future<?> acquisition) throws Exception {
-    try {
-      acquisition.get(TIMEOUT, TimeUnit.MILLISECONDS);
-    } catch (TimeoutException e) {
-      throw new AssertionError(message, e);
-    }
-  }
-
-  private Future<?> assertBlocked(
-      String message, DistributedMultiLock lock, DistributedMultiLock holder, int level, int count)
-      throws Exception {
-    Future<?> acquisition = bound(lock).acquire();
-    ThreadBoundLock.waitForLockNodes(
-        zkClient, DistributedMultiLock.splitLockIds(holder.getLockId()).get(level), count);
-    assertFalse(message, acquisition.isDone());
-    return acquisition;
-  }
-
-  private void release(DistributedMultiLock lock) throws Exception {
-    bound(lock).release();
+    monothreadedTests(apiLockFactory);
+    multithreadedTests(apiLockFactory);
   }
 
   private void monothreadedTests(ConfigSetApiLockFactory apiLockingHelper) throws Exception {
@@ -118,7 +60,8 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock csBaseLock =
         apiLockingHelper.createConfigSetApiLock(BASE_CONFIG_SET_NAME, null);
     Future<?> csBaseAcquisition =
-        assertBlocked("csBaseLock should not have been acquired", csBaseLock, cs2Lock, 1, 3);
+        bound(csBaseLock)
+            .acquireBlocked("csBaseLock should not have been acquired", zkClient, LOCK_ROOT, 1);
 
     release(cs2Lock);
     assertFalse(
@@ -130,12 +73,12 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     // Acquiring a lock with a locked base config set should not be possible
     cs2Lock = apiLockingHelper.createConfigSetApiLock(CONFIG_SET_NAME_2, BASE_CONFIG_SET_NAME);
     Future<?> cs2Acquisition =
-        assertBlocked(
-            "cs2Lock should not have been acquired, csBaseLock still held",
-            cs2Lock,
-            csBaseLock,
-            0,
-            2);
+        bound(cs2Lock)
+            .acquireBlocked(
+                "cs2Lock should not have been acquired, csBaseLock still held",
+                zkClient,
+                LOCK_ROOT,
+                2);
 
     release(csBaseLock);
     awaitAcquired("cs2Lock should now be acquired, csBaseLock was freed", cs2Acquisition);
@@ -153,7 +96,8 @@ public class ConfigSetApiLockingTest extends SolrTestCaseJ4 {
     DistributedMultiLock csBaseLock =
         apiLockingHelper.createConfigSetApiLock(BASE_CONFIG_SET_NAME, null);
     Future<?> csBaseAcquisition =
-        assertBlocked("csBaseLock should not have been acquired", csBaseLock, cs2Lock, 1, 2);
+        bound(csBaseLock)
+            .acquireBlocked("csBaseLock should not have been acquired", zkClient, LOCK_ROOT, 1);
 
     release(cs2Lock);
     awaitAcquired(

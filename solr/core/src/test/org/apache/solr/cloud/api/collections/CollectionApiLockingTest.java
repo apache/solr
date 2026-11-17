@@ -17,159 +17,83 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.util.IdentityHashMap;
+import static org.apache.solr.cloud.ThreadBoundLock.awaitAcquired;
+
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.ApiLockingTestBase;
 import org.apache.solr.cloud.DistributedLock;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.cloud.ThreadBoundLock;
 import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
-import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Test;
 
-public class CollectionApiLockingTest extends SolrTestCaseJ4 {
+public class CollectionApiLockingTest extends ApiLockingTestBase {
   private static final String COLLECTION_NAME = "lockColl";
   final String SHARD1_NAME = "lockShard1";
   final String SHARD2_NAME = "lockShard2";
   final String REPLICA_NAME = "lockReplica";
-
-  static final int TIMEOUT = 10000;
-
-  private final Map<DistributedMultiLock, ThreadBoundLock> boundLocks = new IdentityHashMap<>();
-  private SolrZkClient zkClient;
 
   /**
    * Tests the Collection API locking. All tests run from single test method to save on setup time.
    */
   @Test
   public void monothreadedApiLockTests() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      try (SolrZkClient client =
-          new SolrZkClient.Builder()
-              .withUrl(server.getZkAddress())
-              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        zkClient = client;
-        CollectionApiLockFactory apiLockFactory =
-            new CollectionApiLockFactory(
-                new ZkDistributedCollectionLockFactory(zkClient, "/apiLockTestRoot"));
+    CollectionApiLockFactory apiLockFactory =
+        new CollectionApiLockFactory(new ZkDistributedCollectionLockFactory(zkClient, LOCK_ROOT));
 
-        try {
-          monothreadedTests(apiLockFactory);
-          multithreadedTests(apiLockFactory);
-          testCallingLockIdSubLocks(apiLockFactory);
-        } finally {
-          boundLocks.values().forEach(ThreadBoundLock::close);
-        }
-      }
-    } finally {
-      server.shutdown();
-    }
+    monothreadedTests(apiLockFactory);
+    multithreadedTests(apiLockFactory);
+    testCallingLockIdSubLocks(apiLockFactory);
   }
 
   @Test
   public void testBlockedMultiLockHoldsNoLowerLevelNode() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
+    ZkDistributedCollectionLockFactory factory =
+        new ZkDistributedCollectionLockFactory(zkClient, LOCK_ROOT);
+    CollectionApiLockFactory apiLockFactory = new CollectionApiLockFactory(factory);
+
+    DistributedMultiLock collWrite =
+        apiLockFactory.createCollectionApiLock(
+            new AdminCmdContext(CollectionParams.CollectionAction.CREATE),
+            COLLECTION_NAME,
+            null,
+            null);
+    assertAcquired("Collection write should have been acquired", collWrite);
+
+    DistributedMultiLock split =
+        apiLockFactory.createCollectionApiLock(
+            new AdminCmdContext(CollectionParams.CollectionAction.SPLITSHARD),
+            COLLECTION_NAME,
+            SHARD1_NAME,
+            null);
+    Future<?> splitAcquisition =
+        bound(split)
+            .acquireBlocked("Split should be blocked by collection write", zkClient, LOCK_ROOT, 1);
+
+    DistributedLock shardWrite =
+        factory.createLock(
+            true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD1_NAME, null, null);
+    ThreadBoundLock shardWriteThread =
+        new ThreadBoundLock(shardWrite::waitUntilAcquired, shardWrite::release);
     try {
-      server.run();
-      try (SolrZkClient client =
-          new SolrZkClient.Builder()
-              .withUrl(server.getZkAddress())
-              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        zkClient = client;
-        ZkDistributedCollectionLockFactory factory =
-            new ZkDistributedCollectionLockFactory(zkClient, "/apiLockTestRoot");
-        CollectionApiLockFactory apiLockFactory = new CollectionApiLockFactory(factory);
-
-        try {
-          DistributedMultiLock collWrite =
-              apiLockFactory.createCollectionApiLock(
-                  new AdminCmdContext(CollectionParams.CollectionAction.CREATE),
-                  COLLECTION_NAME,
-                  null,
-                  null);
-          assertAcquired("Collection write should have been acquired", collWrite);
-
-          DistributedMultiLock split =
-              apiLockFactory.createCollectionApiLock(
-                  new AdminCmdContext(CollectionParams.CollectionAction.SPLITSHARD),
-                  COLLECTION_NAME,
-                  SHARD1_NAME,
-                  null);
-          Future<?> splitAcquisition =
-              assertBlocked("Split should be blocked by collection write", split, collWrite, 0, 2);
-
-          DistributedLock shardWrite =
-              factory.createLock(
-                  true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD1_NAME, null, null);
-          ThreadBoundLock shardWriteThread =
-              new ThreadBoundLock(shardWrite::waitUntilAcquired, shardWrite::release);
-          try {
-            awaitAcquired(
-                "Plain shard write should acquire while the split is blocked",
-                shardWriteThread.acquire());
-            shardWriteThread.release();
-          } finally {
-            shardWriteThread.close();
-          }
-
-          release(collWrite);
-          awaitAcquired(
-              "Split should acquire once the collection write is released", splitAcquisition);
-          release(split);
-        } finally {
-          boundLocks.values().forEach(ThreadBoundLock::close);
-        }
-      }
+      awaitAcquired(
+          "Plain shard write should acquire while the split is blocked",
+          shardWriteThread.acquire());
+      shardWriteThread.release();
     } finally {
-      server.shutdown();
+      shardWriteThread.close();
     }
+
+    release(collWrite);
+    awaitAcquired("Split should acquire once the collection write is released", splitAcquisition);
+    release(split);
   }
 
-  private ThreadBoundLock bound(DistributedMultiLock lock) {
-    return boundLocks.computeIfAbsent(
-        lock, l -> new ThreadBoundLock(l::waitUntilAcquired, l::release));
-  }
-
-  private void assertAcquired(String message, DistributedMultiLock lock) throws Exception {
-    awaitAcquired(message, bound(lock).acquire());
-  }
-
-  private void awaitAcquired(String message, Future<?> acquisition) throws Exception {
-    try {
-      acquisition.get(TIMEOUT, TimeUnit.MILLISECONDS);
-    } catch (TimeoutException e) {
-      throw new AssertionError(message, e);
-    }
-  }
-
-  private Future<?> assertBlocked(
-      String message, DistributedMultiLock lock, DistributedMultiLock holder, int level, int count)
-      throws Exception {
-    Future<?> acquisition = bound(lock).acquire();
-    ThreadBoundLock.waitForLockNodes(
-        zkClient, DistributedMultiLock.splitLockIds(holder.getLockId()).get(level), count);
-    assertFalse(message, acquisition.isDone());
-    return acquisition;
-  }
-
-  private void release(DistributedMultiLock lock) throws Exception {
-    bound(lock).release();
-  }
-
-  private void abandon(DistributedMultiLock lock) {
-    bound(lock).close();
-    lock.release();
+  private void abandon(DistributedMultiLock lock) throws Exception {
+    bound(lock).abandon();
   }
 
   private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) throws Exception {
@@ -196,7 +120,8 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             SHARD1_NAME,
             null);
     Future<?> shard1Acquisition =
-        assertBlocked("Shard1 should not have been acquired", shard1Lock, collLock, 0, 2);
+        bound(shard1Lock)
+            .acquireBlocked("Shard1 should not have been acquired", zkClient, LOCK_ROOT, 1);
     assertEquals(
         "Lock at shard level expected to need two distributed locks",
         2,
@@ -211,9 +136,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             SHARD2_NAME,
             null);
     Future<?> shard2Acquisition =
-        assertBlocked("Shard2 should not have been acquired", shard2Lock, collLock, 0, 3);
+        bound(shard2Lock)
+            .acquireBlocked("Shard2 should not have been acquired", zkClient, LOCK_ROOT, 1);
 
-    assertAcquired("Collection should still be acquired", collLock);
+    assertTrue("Collection lock node should still exist", zkClient.exists(collLock.getLockId()));
 
     release(collLock);
 
@@ -230,12 +156,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             SHARD1_NAME,
             REPLICA_NAME);
     Future<?> replicaShard1Acquisition =
-        assertBlocked(
-            "replicaShard1Lock should not have been acquired, shard1 is locked",
-            replicaShard1Lock,
-            shard1Lock,
-            1,
-            2);
+        bound(replicaShard1Lock)
+            .acquireBlocked(
+                "replicaShard1Lock should not have been acquired, shard1 is locked",
+                zkClient,
+                LOCK_ROOT,
+                2);
 
     // Now ask for a new lock on the collection
     collLock =
@@ -246,12 +172,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             null);
 
     Future<?> collAcquisition =
-        assertBlocked(
-            "Collection should not have been acquired, shard1 and shard2 locks preventing it",
-            collLock,
-            shard1Lock,
-            0,
-            4);
+        bound(collLock)
+            .acquireBlocked(
+                "Collection should not have been acquired, shard1 and shard2 locks preventing it",
+                zkClient,
+                LOCK_ROOT,
+                1);
 
     release(shard1Lock);
     awaitAcquired(
@@ -271,12 +197,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             SHARD2_NAME,
             REPLICA_NAME);
     Future<?> replicaShard2Acquisition =
-        assertBlocked(
-            "replicaShard2Lock should not have been acquired, shard2 is locked",
-            replicaShard2Lock,
-            shard2Lock,
-            0,
-            3);
+        bound(replicaShard2Lock)
+            .acquireBlocked(
+                "replicaShard2Lock should not have been acquired, shard2 is locked",
+                zkClient,
+                LOCK_ROOT,
+                1);
 
     release(shard2Lock);
 
@@ -314,12 +240,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             SHARD1_NAME,
             REPLICA_NAME);
     Future<?> replicaShard1Acquisition =
-        assertBlocked(
-            "replicaShard1Lock should not have been acquired, because collection is locked",
-            replicaShard1Lock,
-            collLock,
-            0,
-            2);
+        bound(replicaShard1Lock)
+            .acquireBlocked(
+                "replicaShard1Lock should not have been acquired, because collection is locked",
+                zkClient,
+                LOCK_ROOT,
+                1);
 
     release(collLock);
     awaitAcquired(
@@ -340,12 +266,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.RELOAD), "coll1", null, null);
     assertEquals("Wrong number of internalLocks", 1, coll1Lock2.getCountInternalLocks());
-    assertBlocked(
-        "Should not be able to lock coll1 without using a callingLockId",
-        coll1Lock2,
-        coll1Lock,
-        0,
-        2);
+    bound(coll1Lock2)
+        .acquireBlocked(
+            "Should not be able to lock coll1 without using a callingLockId",
+            zkClient,
+            LOCK_ROOT,
+            1);
     abandon(coll1Lock2);
     coll1Lock2 =
         apiLockingHelper.createCollectionApiLock(
@@ -377,12 +303,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             "shard1",
             null);
     assertEquals("Wrong number of internalLocks", 2, shard1Lock2.getCountInternalLocks());
-    assertBlocked(
-        "Should not be able to lock coll1/shard1 since our callingLockId is only coll1, not shard1, since shard1 is already locked",
-        shard1Lock2,
-        shard1Lock,
-        1,
-        2);
+    bound(shard1Lock2)
+        .acquireBlocked(
+            "Should not be able to lock coll1/shard1 since our callingLockId is only coll1, not shard1, since shard1 is already locked",
+            zkClient,
+            LOCK_ROOT,
+            1);
     abandon(shard1Lock2);
     DistributedMultiLock shard2Lock =
         apiLockingHelper.createCollectionApiLock(
@@ -418,12 +344,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             "shard1",
             "replica1");
     assertEquals("Wrong number of internalLocks", 3, replica2Lock.getCountInternalLocks());
-    assertBlocked(
-        "Should not be able to lock coll1/shard1/replica1 since our callingLockId is only coll1, not replica1, which is already locked",
-        replica2Lock,
-        replica1Lock,
-        2,
-        2);
+    bound(replica2Lock)
+        .acquireBlocked(
+            "Should not be able to lock coll1/shard1/replica1 since our callingLockId is only coll1, not replica1, which is already locked",
+            zkClient,
+            LOCK_ROOT,
+            2);
     abandon(replica2Lock);
     shard1Lock =
         apiLockingHelper.createCollectionApiLock(
@@ -433,12 +359,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             "shard1",
             null);
     assertEquals("Wrong number of internalLocks", 2, shard1Lock.getCountInternalLocks());
-    assertBlocked(
-        "Should not be able to lock coll1/shard1 since our callingLockId is only coll1, not shard1, which is locked because of a replica task",
-        shard1Lock,
-        replica1Lock,
-        1,
-        2);
+    bound(shard1Lock)
+        .acquireBlocked(
+            "Should not be able to lock coll1/shard1 since our callingLockId is only coll1, not shard1, which is locked because of a replica task",
+            zkClient,
+            LOCK_ROOT,
+            1);
     abandon(shard1Lock);
     replica2Lock =
         apiLockingHelper.createCollectionApiLock(
@@ -505,12 +431,12 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
         apiLockingHelper.createCollectionApiLock(
             new AdminCmdContext(CollectionParams.CollectionAction.RELOAD), "coll1", null, null);
     assertEquals("Wrong number of internalLocks", 1, coll1Lock2.getCountInternalLocks());
-    assertBlocked(
-        "Should not be able to lock coll1 since we have no callingLockId and shard1 is already locked. Cannot move up",
-        coll1Lock2,
-        shard1Lock1,
-        0,
-        2);
+    bound(coll1Lock2)
+        .acquireBlocked(
+            "Should not be able to lock coll1 since we have no callingLockId and shard1 is already locked. Cannot move up",
+            zkClient,
+            LOCK_ROOT,
+            1);
     abandon(coll1Lock2);
     assertExceptionThrownWithMessageContaining(
         SolrException.class,
