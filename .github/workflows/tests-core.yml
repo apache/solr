@@ -1,9 +1,11 @@
 name: Solr Core Tests
 
 # solr/core is 78% of the whole test suite, so it is split into four slices by
-# Java package that run in parallel. Each slice is sized to finish in roughly
-# 15 minutes on an ubuntu-latest runner. The "other" slice is exclusion-based so
-# that a new package can never silently fall outside every slice.
+# Java package that run in parallel. The slices are balanced from measured CI
+# timings: the cloud package alone is the largest unit in solr/core and sets
+# the critical path, so its api and overseer sub-packages run in the search
+# slice instead. The "other" slice is exclusion-based so that a new package
+# can never silently fall outside every slice.
 
 on:
   pull_request:
@@ -32,17 +34,13 @@ jobs:
       fail-fast: false
       matrix:
         slice: [cloud, search, handler, other]
-        include:
-          # cloud tests mostly wait on ZooKeeper and Jetty, so oversubscribe the 4 vCPUs
-          - slice: cloud
-            jvms: 3
 
     env:
       # Top-level packages under org.apache.solr for each named slice.
       # The "other" slice runs everything not listed here.
       SLICE_CLOUD: cloud
-      SLICE_SEARCH: search uninverting spelling highlight analysis legacy index parser
-      SLICE_HANDLER: handler cli response request servlet jersey rest security api
+      SLICE_SEARCH: search uninverting spelling highlight analysis legacy index parser request cloud.api cloud.overseer
+      SLICE_HANDLER: handler cli response servlet jersey rest security api
 
     steps:
     - name: Checkout code
@@ -54,7 +52,10 @@ jobs:
       run: |
         args=()
         case "${{ matrix.slice }}" in
-          cloud)   pkgs="$SLICE_CLOUD" ;;
+          cloud)
+            pkgs="$SLICE_CLOUD"
+            args+=("-Ptests.exclude=org.apache.solr.cloud.api.*,org.apache.solr.cloud.overseer.*")
+            ;;
           search)  pkgs="$SLICE_SEARCH" ;;
           handler) pkgs="$SLICE_HANDLER" ;;
           other)
@@ -69,7 +70,7 @@ jobs:
         for p in $pkgs; do
           args+=(--tests "org.apache.solr.$p.*")
         done
-        ./gradlew :solr:core:test -Ptests.jvms=${{ matrix.jvms || 2 }} "${args[@]}"
+        ./gradlew :solr:core:test -Ptests.jvms=2 "${args[@]}"
 
     - name: Archive test output
       if: ${{ failure() }}
