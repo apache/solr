@@ -18,6 +18,7 @@ on:
       # core tests are built on these; a change here can break them
       - 'solr/test-framework/**'
       - 'solr/api/**'
+      - 'solr/solrj-zookeeper/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -50,6 +51,7 @@ jobs:
 
     - name: Test solr/core slice "${{ matrix.slice }}"
       run: |
+        tasks=(:solr:core:test)
         args=()
         case "${{ matrix.slice }}" in
           cloud)
@@ -59,7 +61,11 @@ jobs:
           search)  pkgs="$SLICE_SEARCH" ;;
           handler) pkgs="$SLICE_HANDLER" ;;
           other)
+            # This slice has the most headroom, so it also runs solrj-zookeeper.
+            # It passes no --tests, so one invocation can drive both test tasks,
+            # and the excluded packages do not overlap solrj-zookeeper's tests.
             pkgs=""
+            tasks+=(:solr:solrj-zookeeper:test)
             excl=""
             for p in $SLICE_CLOUD $SLICE_SEARCH $SLICE_HANDLER; do
               excl="${excl:+$excl,}org.apache.solr.$p.*"
@@ -70,7 +76,7 @@ jobs:
         for p in $pkgs; do
           args+=(--tests "org.apache.solr.$p.*")
         done
-        ./gradlew :solr:core:test -Ptests.jvms=2 "${args[@]}"
+        ./gradlew "${tasks[@]}" -Ptests.jvms=2 "${args[@]}"
 
     - name: Archive test output
       if: ${{ failure() }}
@@ -79,3 +85,4 @@ jobs:
         name: test-output-core-${{ matrix.slice }}
         path: |
           solr/core/build/test-results/**
+          solr/solrj-zookeeper/build/test-results/**

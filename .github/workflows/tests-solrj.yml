@@ -10,7 +10,6 @@ on:
       - 'solr/api/**'
       - 'solr/solrj/**'
       - 'solr/solrj-jetty/**'
-      - 'solr/solrj-zookeeper/**'
       - 'solr/solrj-streaming/**'
 
 concurrency:
@@ -31,7 +30,7 @@ jobs:
     - uses: ./.github/actions/prepare-for-build
 
     - name: Test the SolrJ modules and the API module
-      run: ./gradlew :solr:api:test :solr:solrj:test :solr:solrj-jetty:test :solr:solrj-zookeeper:test :solr:solrj-streaming:test
+      run: ./gradlew :solr:api:test :solr:solrj:test :solr:solrj-jetty:test :solr:solrj-streaming:test
 
     - name: Archive test output
       if: ${{ failure() }}
@@ -42,5 +41,4 @@ jobs:
           solr/api/build/test-results/**
           solr/solrj/build/test-results/**
           solr/solrj-jetty/build/test-results/**
-          solr/solrj-zookeeper/build/test-results/**
           solr/solrj-streaming/build/test-results/**
