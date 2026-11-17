@@ -44,7 +44,7 @@ jobs:
       # The "other" slice runs everything not listed here.
       SLICE_CLOUD: cloud
       SLICE_SEARCH: search uninverting spelling highlight analysis legacy index parser request cloud.api cloud.overseer
-      SLICE_HANDLER: handler cli response servlet jersey rest security api
+      SLICE_HANDLER: handler response servlet jersey rest security api
 
     steps:
     - name: Checkout code
