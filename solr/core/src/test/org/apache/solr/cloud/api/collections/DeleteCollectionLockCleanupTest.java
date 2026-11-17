@@ -69,8 +69,10 @@ public class DeleteCollectionLockCleanupTest extends SolrCloudTestCase {
   }
 
   private static String lockDir(DistributedLock lock) {
+    lock.waitUntilAcquired();
+    String lockId = lock.getLockId();
     lock.release();
-    return parent(lock.getLockId());
+    return parent(lockId);
   }
 
   private static String parent(String path) {
