@@ -651,8 +651,10 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         }
         cmdDistrib.finish();
         List<SolrError> errors = cmdDistrib.getErrors();
-        assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.req.node == failingNode));
-        assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.req.node == stalledNode));
+        assertTrue(
+            errors.toString(), errors.stream().anyMatch(e -> failingNode.equals(e.req.node)));
+        assertTrue(
+            errors.toString(), errors.stream().anyMatch(e -> stalledNode.equals(e.req.node)));
       }
     }
   }
