@@ -15,10 +15,13 @@ on:
       - '.github/workflows/tests-core.yml'
       - 'gradle/libs.versions.toml'
       - 'solr/core/**'
+      - 'solr/solrj-zookeeper/**'
       # core tests are built on these; a change here can break them
       - 'solr/test-framework/**'
       - 'solr/api/**'
-      - 'solr/solrj-zookeeper/**'
+      - 'solr/solrj/**'
+      - 'solr/solrj-jetty/**'
+      - 'solr/solrj-streaming/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
