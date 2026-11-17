@@ -40,6 +40,15 @@ public class ZkTest extends SolrCatsTestCase {
   public static void startSolr() {
     // The node lives for the whole class and is stopped automatically.
     classCli.run("solr start -DminStateByteLenForCompression=0");
+    // 'solr start' returns as soon as the port listens, which Jetty opens before the webapp has
+    // loaded, so the _default configset the node uploads at startup can still be missing
+    // (SOLR-18665). BATS never saw this: its fixed order ran downconfig ninth. Methods here run in
+    // a random order, so wait for what the node promised rather than what it is listening on.
+    classCli.awaitOrFail(
+        "the node to publish the _default configset",
+        Duration.ofSeconds(30),
+        Duration.ofSeconds(1),
+        () -> classCli.helpers().http("/api/configsets").body().contains("_default"));
   }
 
   @Test
