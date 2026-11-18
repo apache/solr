@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>File based DirectoryFactory implementations generally extend this class.
  *
- * <p>Can set the following parameters:
+ * <p>The following parameters are supported:
  *
  * <ul>
  *   <li>preload -- Whether to load each index file into the OS page cache when that file is opened.
