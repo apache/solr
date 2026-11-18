@@ -69,6 +69,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
 
   // Reused across requests: it caches the SSLContext it builds, so the truststore is read and
   // parsed once rather than for every four-letter-word command.
+  // TODO: that cached context is never rebuilt, so after a keystore or truststore is replaced on
+  // disk this page keeps using the old one until Solr restarts, while ZooKeeper's own client
+  // builds a fresh context for each connection and picks up the new files.
   private final ClientX509Util x509Util = new ClientX509Util();
 
   public ZookeeperStatusHandler(CoreContainer cc) {
@@ -356,6 +359,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       socket.setSoTimeout(
           EnvUtils.getPropertyAsInteger(
               "solr.zookeeper.client.timeout", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT));
+      // TODO: SNIHostName rejects names the JDK doesn't consider valid DNS names, such as ones
+      // with "_" (e.g. "zoo_1"); that IllegalArgumentException isn't caught below, so such hosts
+      // fail this request instead of connecting without SNI.
       if (socket instanceof SSLSocket sslSocket && !InetAddresses.isInetAddress(host)) {
         var parameters = sslSocket.getSSLParameters();
         parameters.setServerNames(List.of(new SNIHostName(host)));
