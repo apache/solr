@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.security.AllowListPathChecker;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
@@ -55,22 +56,20 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public static final String METADATA_FILE = ".metadata.json";
 
   private final Path configSetBase;
-  // TODO currently it's not really possible to check paths against allowPaths without a
-  // CoreContainer reference, see SOLR-18059
-  private final CoreContainer cc;
+  private final AllowListPathChecker allowListPathChecker;
 
   public FileSystemConfigSetService(CoreContainer cc) {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
-
-    this.cc = cc;
     this.configSetBase = cc.getConfig().getConfigSetBaseDirectory();
+    this.allowListPathChecker = cc.getAllowListPathChecker();
   }
 
   /** Testing purpose */
   protected FileSystemConfigSetService(Path configSetBase) {
     super(null, false);
-    this.cc = null;
     this.configSetBase = configSetBase;
+    this.allowListPathChecker =
+        new AllowListPathChecker(new SolrPaths.AllowPathBuilder().addPath(configSetBase).build());
   }
 
   @Override
@@ -330,12 +329,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
     String configSet = cd.getConfigSet();
     if (configSet == null) return cd.getInstanceDir();
     Path configSetDirectory = configSetBase.resolve(configSet);
-
-    // CoreContainer only null in testing scenarios - bit of a hack, but will go away with
-    // SOLR-18059
-    if (cc != null) {
-      cc.assertPathAllowed(configSetDirectory);
-    }
+    allowListPathChecker.assertPathAllowed(configSetDirectory);
 
     if (!Files.isDirectory(configSetDirectory))
       throw new SolrException(

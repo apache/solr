@@ -144,6 +144,7 @@ import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListPathChecker;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -306,7 +307,7 @@ public class CoreContainer {
   private ClusterFileStore clusterFileStoreAPI;
   private SolrPackageLoader packageLoader;
 
-  private final Set<Path> allowPaths;
+  private final AllowListPathChecker allowListPathChecker;
 
   private final AllowListUrlChecker allowListUrlChecker;
 
@@ -427,20 +428,7 @@ public class CoreContainer {
                 new SolrNamedThreadFactory("replayUpdatesExecutor")));
     this.appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
-    SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
-    allowPathBuilder.addPath(cfg.getSolrHome());
-    allowPathBuilder.addPath(cfg.getCoreRootDirectory());
-    allowPathBuilder.addPath(cfg.getConfigSetBaseDirectory());
-    if (cfg.getSolrDataHome() != null) {
-      allowPathBuilder.addPath(cfg.getSolrDataHome());
-    }
-    if (!cfg.getAllowPaths().isEmpty()) {
-      cfg.getAllowPaths().forEach(allowPathBuilder::addPath);
-      if (log.isInfoEnabled()) {
-        log.info("Allowing use of paths: {}", cfg.getAllowPaths());
-      }
-    }
-    this.allowPaths = allowPathBuilder.build();
+    this.allowListPathChecker = AllowListPathChecker.create(config);
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
@@ -633,7 +621,7 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
-    allowPaths = null;
+    allowListPathChecker = null;
     allowListUrlChecker = null;
     indexSearcherExecutor = null;
     indexFingerprintExecutor = null;
@@ -1613,13 +1601,13 @@ public class CoreContainer {
   /**
    * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one
    * of the paths specified in solr.xml's allowPaths element. Delegates to {@link
-   * SolrPaths#assertPathAllowed(Path, Set)}
+   * AllowListPathChecker#assertPathAllowed(Path)}
    *
    * @param pathToAssert path to check
    * @throws SolrException if path is outside allowed paths
    */
   public void assertPathAllowed(Path pathToAssert) throws SolrException {
-    SolrPaths.assertPathAllowed(pathToAssert, allowPaths);
+    allowListPathChecker.assertPathAllowed(pathToAssert);
   }
 
   /**
@@ -1633,7 +1621,12 @@ public class CoreContainer {
    */
   @VisibleForTesting
   public Set<Path> getAllowPaths() {
-    return allowPaths;
+    return allowListPathChecker.getAllowPaths();
+  }
+
+  /** Gets the paths checker based on the node's home directories and solr.xml's allowPaths. */
+  public AllowListPathChecker getAllowListPathChecker() {
+    return allowListPathChecker;
   }
 
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */
