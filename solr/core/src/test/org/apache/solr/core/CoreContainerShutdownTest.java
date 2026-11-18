@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -41,6 +42,8 @@ import org.junit.Test;
  * container's metrics contexts; skipping them leaks the whole metrics tree, and in a test JVM the
  * leaked contexts are then charged to an unrelated suite by the object release tracker.
  */
+// Two minutes of waiting on the production close timeouts, so nightly only.
+@Nightly
 public class CoreContainerShutdownTest extends SolrTestCase {
 
   private static final String SOLR_XML =
