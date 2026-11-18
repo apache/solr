@@ -621,7 +621,6 @@ public class RealTimeGetComponent extends SearchComponent {
       SolrIndexSearcher searcher, int docId, ReturnFields returnFields) throws IOException {
     final SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     final SolrDocument solrDoc = docFetcher.solrDoc(docId, (SolrReturnFields) returnFields);
-    removeCopyFieldTargets(solrDoc, searcher.getSchema());
     final DocTransformer transformer = returnFields.getTransformer();
     if (transformer != null) {
       transformer.setContext(
@@ -884,8 +883,9 @@ public class RealTimeGetComponent extends SearchComponent {
       boolean fieldArrayListCreated = false;
       SchemaField sf = schema.getFieldOrNull(fname);
       if (sf != null) {
-        if ((!sf.hasDocValues() && !sf.stored() && !sf.useRawVectorsAsStored())
-            || schema.isCopyFieldTarget(sf)) continue;
+        if (!shouldKeepFieldInInputDocument(sf, schema)) {
+          continue;
+        }
         if (sf.getType() instanceof DenseVectorField) {
           out.setField(fname, new ArrayList<>());
         }
@@ -915,6 +915,17 @@ public class RealTimeGetComponent extends SearchComponent {
       }
     }
     return out;
+  }
+
+  /**
+   * Returns whether a schema field should be kept when rebuilding a {@link SolrInputDocument} from
+   * the index. For instance, the value must be recoverable from doc values, a stored field, or
+   * Lucene's vector values when {@code useRawVectorsAsStored} is enabled. Copy-field targets are
+   * excluded because indexing regenerates them from their source fields.
+   */
+  private static boolean shouldKeepFieldInInputDocument(SchemaField field, IndexSchema schema) {
+    return (field.hasDocValues() || field.stored() || field.useRawVectorsAsStored())
+        && !schema.isCopyFieldTarget(field);
   }
 
   private static SolrDocument toSolrDoc(Document doc, IndexSchema schema) {
@@ -1006,24 +1017,10 @@ public class RealTimeGetComponent extends SearchComponent {
     Document out = new Document();
     for (IndexableField f : doc.getFields()) {
       SchemaField schemaField = schema.getFieldOrNull(f.name());
-      if (schemaField != null
-          && schemaField.useRawVectorsAsStored()
-          && !schema.isCopyFieldTarget(schemaField)) {
-        if (f instanceof KnnFloatVectorField vectorField) {
-          float[] vector = vectorField.vectorValue();
-          List<Number> values = new ArrayList<>(vector.length);
-          for (float value : vector) {
-            values.add(value);
-          }
-          rawVectorFields.put(f.name(), values);
-          continue;
-        } else if (f instanceof KnnByteVectorField vectorField) {
-          byte[] vector = vectorField.vectorValue();
-          List<Number> values = new ArrayList<>(vector.length);
-          for (byte value : vector) {
-            values.add((int) value);
-          }
-          rawVectorFields.put(f.name(), values);
+      if (shouldReadRawVectorValues(schemaField, schema)) {
+        List<Number> rawVectorValues = getRawVectorValues(f);
+        if (rawVectorValues != null) {
+          rawVectorFields.put(f.name(), rawVectorValues);
           continue;
         }
       }
@@ -1062,6 +1059,41 @@ public class RealTimeGetComponent extends SearchComponent {
     }
 
     return solrDoc;
+  }
+
+  /**
+   * Returns whether the schema allows reading raw vector values for this field. The field must be
+   * defined in the schema and opt into {@code useRawVectorsAsStored}. Copy-field targets are
+   * excluded because indexing regenerates them from their source fields.
+   */
+  private static boolean shouldReadRawVectorValues(SchemaField field, IndexSchema schema) {
+    return field != null && field.useRawVectorsAsStored() && !schema.isCopyFieldTarget(field);
+  }
+
+  /**
+   * Converts a Lucene float or byte vector field to a list of numbers. For other Lucene field types
+   * returns {@code null}.
+   */
+  private static List<Number> getRawVectorValues(IndexableField field) {
+    if (field instanceof KnnFloatVectorField vectorField) {
+      float[] vector = vectorField.vectorValue();
+      List<Number> values = new ArrayList<>(vector.length);
+      for (float value : vector) {
+        values.add(value);
+      }
+      return values;
+    }
+
+    if (field instanceof KnnByteVectorField vectorField) {
+      byte[] vector = vectorField.vectorValue();
+      List<Number> values = new ArrayList<>(vector.length);
+      for (byte value : vector) {
+        values.add((int) value);
+      }
+      return values;
+    }
+
+    return null;
   }
 
   @Override

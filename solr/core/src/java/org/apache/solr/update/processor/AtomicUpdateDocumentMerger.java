@@ -167,11 +167,12 @@ public class AtomicUpdateDocumentMerger {
       if (val instanceof Map
           && field != null
           && field.multiValued()
-          && field.getType() instanceof DenseVectorField vectorField
+          && field.getType() instanceof DenseVectorField vectorFieldType
           && ((Map<?, ?>) val).values().stream().noneMatch(AtomicUpdateDocumentMerger::isChildDoc)
           && !toDoc.containsKey(IndexSchema.NEST_PATH_FIELD_NAME)
           && !toDoc.containsKey(IndexSchema.NEST_PARENT_FIELD_NAME)) {
-        mergeMultivaluedVectorField(toDoc, sif.getName(), vectorField, (Map<String, Object>) val);
+        mergeMultivaluedVectorField(
+            toDoc, sif.getName(), vectorFieldType, (Map<String, Object>) val);
         continue;
       }
       if (val instanceof Map) {
@@ -222,7 +223,7 @@ public class AtomicUpdateDocumentMerger {
   private void mergeMultivaluedVectorField(
       SolrInputDocument toDoc,
       String fieldName,
-      DenseVectorField vectorField,
+      DenseVectorField vectorFieldType,
       Map<String, Object> operations) {
     List<List<Number>> vectors = new ArrayList<>();
     Collection<Object> values = toDoc.getFieldValues(fieldName);
@@ -230,8 +231,8 @@ public class AtomicUpdateDocumentMerger {
       for (Object value : values) {
         vectors.add(
             value instanceof SolrInputDocument child
-                ? readAtomicVectorChild(fieldName, vectorField, child)
-                : parseAtomicVector(fieldName, vectorField, value));
+                ? readAtomicVectorChild(fieldName, vectorFieldType, child)
+                : parseAtomicVector(fieldName, vectorFieldType, value));
       }
     }
 
@@ -241,7 +242,7 @@ public class AtomicUpdateDocumentMerger {
       for (Object value : nestedVectors) {
         SolrInputDocument child = (SolrInputDocument) value;
         if (child.containsKey(fieldName)) {
-          vectors.add(readAtomicVectorChild(fieldName, vectorField, child));
+          vectors.add(readAtomicVectorChild(fieldName, vectorFieldType, child));
         } else {
           remainingChildren.add(child);
         }
@@ -268,7 +269,7 @@ public class AtomicUpdateDocumentMerger {
               "Expected a list of vectors for multivalued dense vector field '" + fieldName + "'");
         }
         for (Object inputVector : inputVectors) {
-          operands.add(parseAtomicVector(fieldName, vectorField, inputVector));
+          operands.add(parseAtomicVector(fieldName, vectorFieldType, inputVector));
         }
       }
 
