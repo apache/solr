@@ -92,6 +92,13 @@ run solr create -c COLL_NAME
   #refute_output --partial "Invalid collection"
 }
 
+@test "start succeeds when the node rejects unauthenticated requests" {
+  solr stop --all
+  run solr start
+  assert_success
+  assert_output --partial "Happy searching!"
+}
+
 @test "admin UI static content is excepted from basic auth" {
   run curl -I -s http://localhost:${SOLR_PORT}/solr/
   assert_output --partial "HTTP/1.1 200"
