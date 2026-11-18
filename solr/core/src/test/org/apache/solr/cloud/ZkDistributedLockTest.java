@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.ThreadBoundLock.TIMEOUT_MS;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -83,13 +84,13 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
   @Test
   public void testSingleLocks() throws Exception {
     DistributedCollectionLockFactory collLockFactory =
-        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT);
+        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
 
     monothreadedCollectionTests(collLockFactory);
     multithreadedCollectionTests(collLockFactory);
 
     DistributedConfigSetLockFactory configSetLockFactory =
-        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT);
+        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT, "testNode");
 
     monothreadedConfigSetTests(configSetLockFactory);
     multithreadedConfigSetTests(configSetLockFactory);
@@ -102,7 +103,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
   @Test
   public void testLockDirsAreContainers() throws Exception {
     DistributedCollectionLockFactory collLockFactory =
-        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT);
+        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
     DistributedLock replicaLock =
         collLockFactory.createLock(
             true,
@@ -131,7 +132,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     assertLockDirsAreContainers(server, collLockId, COLLECTION_ROOT);
 
     DistributedConfigSetLockFactory configSetLockFactory =
-        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT);
+        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT, "testNode");
     DistributedLock configSetLock = configSetLockFactory.createLock(true, CONFIG_SET_NAME);
     configSetLock.waitUntilAcquired();
     String configSetLockId = configSetLock.getLockId();
@@ -147,11 +148,32 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     lock.release();
   }
 
+  /** Lock nodes record the Solr node that holds them. */
+  @Test
+  public void testLockNodeHoldsNodeName() throws Exception {
+    DistributedLock collLock = collectionLock(collectionLockFactory(), true, null);
+    collLock.waitUntilAcquired();
+    assertEquals(
+        "testNode",
+        new String(zkClient.getData(collLock.getLockId(), null, null), StandardCharsets.UTF_8));
+    collLock.release();
+
+    DistributedLock configSetLock =
+        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT, "testNode")
+            .createLock(false, CONFIG_SET_NAME);
+    configSetLock.waitUntilAcquired();
+    assertEquals(
+        "testNode",
+        new String(
+            zkClient.getData(configSetLock.getLockId(), null, null), StandardCharsets.UTF_8));
+    configSetLock.release();
+  }
+
   /** Lock dirs left as persistent nodes by older versions get removed, live locks are kept. */
   @Test
   public void testDeleteEmptyLockDirs() throws Exception {
     ZkDistributedCollectionLockFactory factory =
-        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT);
+        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
     String collLockDir =
         lockDir(
             factory.createLock(
@@ -196,7 +218,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
   }
 
   private DistributedCollectionLockFactory collectionLockFactory() {
-    return new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT);
+    return new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
   }
 
   private DistributedLock collectionLock(

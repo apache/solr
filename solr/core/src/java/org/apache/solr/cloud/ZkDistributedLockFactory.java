@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.nio.charset.StandardCharsets;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -28,26 +29,29 @@ abstract class ZkDistributedLockFactory {
 
   private final SolrZkClient zkClient;
   private final String rootPath;
+  private final byte[] lockNodeData;
 
-  ZkDistributedLockFactory(SolrZkClient zkClient, String rootPath) {
+  ZkDistributedLockFactory(SolrZkClient zkClient, String rootPath, String nodeName) {
     this.zkClient = zkClient;
     this.rootPath = rootPath;
+    this.lockNodeData = nodeName.getBytes(StandardCharsets.UTF_8);
   }
 
   protected DistributedLock doCreateLock(
       boolean isWriteLock, String lockPath, String lockIdToMirror) {
     if (StrUtils.isBlank(lockIdToMirror)) {
-      // Empty payload: otherwise Curator stores the local IP address in every lock node
       InterProcessReadWriteLock readWriteLock =
-          new InterProcessReadWriteLock(zkClient.getCuratorFramework(), lockPath, new byte[0]);
+          new InterProcessReadWriteLock(zkClient.getCuratorFramework(), lockPath, lockNodeData);
       if (isWriteLock) {
         InterProcessReadWriteLock.WriteLock writeLock = readWriteLock.writeLock();
         return new ZkDistributedLock.Owned(writeLock, lockPath, writeLock::getLockPath);
+      } else {
+        InterProcessReadWriteLock.ReadLock readLock = readWriteLock.readLock();
+        return new ZkDistributedLock.Owned(readLock, lockPath, readLock::getLockPath);
       }
-      InterProcessReadWriteLock.ReadLock readLock = readWriteLock.readLock();
-      return new ZkDistributedLock.Owned(readLock, lockPath, readLock::getLockPath);
+    } else {
+      return new ZkDistributedLock.Mirrored(zkClient, lockPath, isWriteLock, lockIdToMirror);
     }
-    return new ZkDistributedLock.Mirrored(zkClient, lockPath, isWriteLock, lockIdToMirror);
   }
 
   protected StringBuilder getPathPrefix() {

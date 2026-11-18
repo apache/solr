@@ -35,7 +35,8 @@ public class ConfigSetApiLockingTest extends ApiLockingTestBase {
   @Test
   public void monothreadedApiLockTests() throws Exception {
     ConfigSetApiLockFactory apiLockFactory =
-        new ConfigSetApiLockFactory(new ZkDistributedConfigSetLockFactory(zkClient, LOCK_ROOT));
+        new ConfigSetApiLockFactory(
+            new ZkDistributedConfigSetLockFactory(zkClient, LOCK_ROOT, "testNode"));
 
     monothreadedTests(apiLockFactory);
     multithreadedTests(apiLockFactory);

@@ -42,7 +42,8 @@ public class CollectionApiLockingTest extends ApiLockingTestBase {
   @Test
   public void monothreadedApiLockTests() throws Exception {
     CollectionApiLockFactory apiLockFactory =
-        new CollectionApiLockFactory(new ZkDistributedCollectionLockFactory(zkClient, LOCK_ROOT));
+        new CollectionApiLockFactory(
+            new ZkDistributedCollectionLockFactory(zkClient, LOCK_ROOT, "testNode"));
 
     monothreadedTests(apiLockFactory);
     multithreadedTests(apiLockFactory);
@@ -52,7 +53,7 @@ public class CollectionApiLockingTest extends ApiLockingTestBase {
   @Test
   public void testBlockedMultiLockHoldsNoLowerLevelNode() throws Exception {
     ZkDistributedCollectionLockFactory factory =
-        new ZkDistributedCollectionLockFactory(zkClient, LOCK_ROOT);
+        new ZkDistributedCollectionLockFactory(zkClient, LOCK_ROOT, "testNode");
     CollectionApiLockFactory apiLockFactory = new CollectionApiLockFactory(factory);
 
     DistributedMultiLock collWrite =

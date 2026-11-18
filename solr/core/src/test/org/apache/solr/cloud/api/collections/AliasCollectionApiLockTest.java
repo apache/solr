@@ -61,7 +61,8 @@ public class AliasCollectionApiLockTest extends SolrCloudTestCase {
     DistributedLock held =
         new ZkDistributedCollectionLockFactory(
                 cluster.getZkClient(),
-                DistributedCollectionConfigSetCommandRunner.ZK_COLLECTION_LOCKS)
+                DistributedCollectionConfigSetCommandRunner.ZK_COLLECTION_LOCKS,
+                "testNode")
             .createLock(true, LockLevel.COLLECTION, COLLECTION, null, null, null);
     held.waitUntilAcquired();
     try {
