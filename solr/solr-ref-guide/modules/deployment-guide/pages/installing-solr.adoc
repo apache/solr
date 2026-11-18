@@ -84,9 +84,7 @@ This directory includes several important scripts that will make using Solr easi
 
 solr and solr.cmd::: This is xref:solr-control-script-reference.adoc[Solr's Control Script], also known as `bin/solr` (*nix) / `bin/solr.cmd` (Windows).
 This script is the preferred tool to start and stop Solr.
-You can also create collections or cores, configure authentication, and work with configuration files when running in SolrCloud mode.
-
-post::: The xref:indexing-guide:post-command.adoc[], which provides a simple command line interface for POSTing content to Solr.
+You can also create collections or cores, configure authentication, work with configuration files when running in SolrCloud mode, and xref:indexing-guide:post-command.adoc[post content to Solr] using the `bin/solr post` subcommand.
 
 solr.in.sh and solr.in.cmd:::
 These are property files for *nix and Windows systems, respectively.
@@ -149,10 +147,6 @@ exampledocs::
 This is a small set of simple CSV, XML, and JSON files that can be used with `bin/solr post` when first getting started with Solr.
 For more information about using `bin/solr post` with these files, see xref:indexing-guide:post-command.adoc[].
 
-files::
-The `files` directory provides a basic search UI for documents such as Word or PDF that you may have stored locally.
-See the README there for details on how to use this example.
-
 films::
 The `films` directory includes a robust set of data about movies in three formats: CSV, XML, and JSON.
 See the README there for details on how to use this dataset.
@@ -171,7 +165,7 @@ bin/solr start
 
 If you are running Windows, you can start Solr by running `bin\solr.cmd` instead.
 
-[source,plain]
+[source,powershell]
 ----
 bin\solr.cmd start
 ----

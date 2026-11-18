@@ -30,16 +30,16 @@ Then go ahead to the next section.
 
 === Preparing for the Vector data
 
-[,console]
+[,bash]
 ----
-$ bin/solr create -c films
+bin/solr create -c films
 ----
 
 Because we didn't specify a ConfigSet when we created the collection, we will use the `_default` ConfigSet.
 
 First we need to update our schema to add the vector field type, the field to hold the vector values and some supporting fields.
 
-[,console]
+[,bash]
 ----
 curl http://localhost:8983/solr/films/schema -H 'Content-type:application/json' --data-binary '{
   "add-field-type" : {
@@ -75,9 +75,9 @@ curl http://localhost:8983/solr/films/schema -H 'Content-type:application/json' 
 
 We have the vectors embedded in our `films.json` file, so let's index that data, taking advantage of our new schema field we just defined.
 
-[,console]
+[,bash]
 ----
-$ bin/solr post -c films example/films/films.json
+bin/solr post -c films example/films/films.json
 ----
 
 === Let's do some Vector searches

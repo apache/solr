@@ -30,14 +30,14 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
-All of the examples in this section assume you are running the "techproducts" Solr example:
+All of the examples in this section assume you are running the "techproducts" Solr example in user-managed mode:
 
 [source,bash]
 ----
-bin/solr start -DconfigSetBaseDir=./server/solr/configsets -e techproducts
+bin/solr start --user-managed -e techproducts
 ----
 
-We are passing in the explicit relative path for the `configSetBaseDir` to enable creating new cores using the `sample_techproducts_configs` configset in the examples below.
+The `sample_techproducts_configs` configset used to create new cores in the examples below is found in the default `configsets` directory of the Solr home.
 
 [[coreadmin-status]]
 == STATUS

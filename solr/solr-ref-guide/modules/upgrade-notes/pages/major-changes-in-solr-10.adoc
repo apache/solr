@@ -92,12 +92,36 @@ Streaming expressions and the cross-collection join query parser now restrict wh
 
 If you use these features to query another cluster, add its connection details to the corresponding setting before upgrading.
 
+[#cuvs-gpu-acceleration-broken]
+=== GPU Acceleration (cuVS) Does Not Work in Solr 10.1
+
+[WARNING]
+====
+Vector indexing with the xref:query-guide:dense-vector-search.adoc#gpu-acceleration[GPU Acceleration] (cuVS) module (`CuVSCodecFactory` with `knnAlgorithm="cagra_hnsw"`) does not work in Solr 10.1 (refer SOLR-18556 for updates).
+Solr 10.1 upgrades to Lucene 10.4, and a cuVS-lucene (library which powers the GPU accelertion) library version compatible with Lucene 10.4 is not available as of Solr 10.1 release.
+
+If you use GPU acceleration for vector indexing, skip Solr 10.1 and stay on Solr 10.0.x.
+This is expected to be fixed in a subsequent Solr 10.x release.
+====
+
 === v2 API
 Starting in Solr 10.1 it is no longer possible for users to disable the v2 API by use of the `solr.api.v2.enabled` system property, and the Solr server and tooling (`bin/solr`, Admin UI, etc.) will start using these APIs internally.
 
 Former users of `solr.api.v2.enabled` looking to upgrade to Solr 10.1 or newer should take care to review any custom `RuleBasedAuthorizationPlugin` permissions and ensure that v2 API paths are adequately secured.
 
 Users who deploy a proxy in front of Solr should also review this setup to ensure that it allows access to the v2 API root path, `/api`.
+
+=== V2 API
+
+In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
+It does not include `live_nodes`, the alias map, or cluster properties.
+Use `GET /api/cluster/nodes`, `GET /api/aliases`, and `GET /api/cluster/properties` for those.
+
+There is no `includeAll` parameter.
+A request with no other parameters returns every collection.
+`collection`, `shard`, and `_route_` narrow which part of the tree is returned.
+
+The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 
 === JWT Authentication
 

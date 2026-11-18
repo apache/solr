@@ -51,6 +51,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
@@ -160,10 +161,23 @@ public class PackageUtils {
     return getJsonStringFromUrl(client, path, params, false);
   }
 
-  /** Returns JSON string from a given Solr URL */
+  /**
+   * repository.json's verify/setup command templates embed their query string directly in {@code
+   * path} (e.g. {@code .../requestHandlers?componentName=x&meta=true}). The HTTP client always
+   * appends its own query string afterward with a leading {@code ?}, and a URL with two {@code ?}
+   * characters is parsed as a single query string on the wire -- so the last templated parameter
+   * silently absorbs the client's params as part of its own value instead of being read correctly.
+   */
   private static String getJsonStringFromUrl(
       SolrClient client, String path, SolrParams params, boolean isCollectionApi) {
     try {
+      int queryIndex = path.indexOf('?');
+      if (queryIndex >= 0) {
+        ModifiableSolrParams merged = new ModifiableSolrParams(params);
+        merged.add(SolrRequestParsers.parseQueryString(path.substring(queryIndex + 1)));
+        params = merged;
+        path = path.substring(0, queryIndex);
+      }
       GenericSolrRequest request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
               .setRequiresCollection(isCollectionApi);

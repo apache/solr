@@ -2510,6 +2510,24 @@ public class ZkController implements Closeable {
     }
   }
 
+  /**
+   * Removes the stored response of a completed or failed async operation and releases its asyncId,
+   * in both Overseer and distributed modes. An asyncId with no stored response is left claimed,
+   * since its task may still be running or pending.
+   *
+   * @return True if a stored response was found and removed.
+   */
+  public boolean removeStoredAsyncResponse(String asyncId) throws Exception {
+    if (distributedCommandRunner.isPresent()) {
+      return distributedCommandRunner.get().deleteSingleAsyncId(asyncId);
+    }
+    if (overseerCompletedMap.remove(asyncId) || overseerFailureMap.remove(asyncId)) {
+      clearAsyncId(asyncId);
+      return true;
+    }
+    return false;
+  }
+
   public Overseer getOverseer() {
     return overseer;
   }

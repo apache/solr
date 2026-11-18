@@ -456,7 +456,7 @@ Stop Solr with verbose messages from this script.
 
 The `--version` command simply returns the version of Solr currently installed and immediately exists.
 
-[source,bash]
+[source,console]
 ----
 $ bin/solr --version
 X.Y.0
@@ -519,7 +519,7 @@ ERROR: Directory /opt/bin/solr does not exist.
 
 The basic usage of `bin/solr assert` is:
 
-[source, plain]
+[source,console]
 ----
 $ bin/solr assert -h
 usage: bin/solr assert [--cloud <url>] [--exists <directory>] [--exitcode] [-h] [--message <message>] [--not-cloud
@@ -1217,7 +1217,7 @@ The operations are available as sub-commands, which each have their own set of o
 
 The basic usage of bin/solr zk is:
 
-[source,plain]
+[source,console]
 ----
 $ bin/solr zk -h
 Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s solrUrl]
@@ -1934,35 +1934,35 @@ Notice the different endpoints used depending on the format.
 
 First export the documents, making sure to ignore any fields that are populated via a `copyField` by specifying what fields you want to export:
 
-[,console]
+[,bash]
 ----
-$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --fields id,name,manu,cat,features
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --fields id,name,manu,cat,features
 ----
 
 Create a new collection to import the exported documents into:
 
-[,console]
+[,bash]
 ----
-$ bin/solr create -c test_collection -n techproducts
+bin/solr create -c test_collection -n techproducts
 ----
 
 Now import the data with either of these methods:
 
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true' --header "Content-Type: application/json" -d @gettingstarted.json
 ----
 or
-[,console]
+[,bash]
 ----
 curl 'http://localhost:8983/solr/test_collection/update?commit=true' -H 'Content-Type: application/json' -d @gettingstarted.json
 ----
 
 *Example: import `javabin` files*
 
-[,console]
+[,bash]
 ----
-$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
 curl 'http://localhost:8983/solr/test_collection/update?commit=true' --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin
 ----
 
@@ -2035,36 +2035,36 @@ Learn more about on the xref:backup-restore.adoc[Backup and Restore] and xref:co
 
 To create a snapshot you just give it the collection and the name you want:
 
-[,console]
+[,bash]
 ----
-$  bin/solr snapshot-create -c <collection-name> --snapshot-name <snapshot-name>
+ bin/solr snapshot-create -c <collection-name> --snapshot-name <snapshot-name>
 ----
 
 === List all available snapshots
 
 To list all the snapshots that have been taken for a collection:
 
-[,console]
+[,bash]
 ----
-$ bin/solr snapshot-list -c <collection-name>
+bin/solr snapshot-list -c <collection-name>
 ----
 
 === Detailed information about a Snapshot
 
 Use the describe command to gain detailed information about a specific snapshot:
 
-[,console]
+[,bash]
 ----
-$ bin/solr snapshot-describe -c <collection-name> --snapshot-name <snapshot-name>
+bin/solr snapshot-describe -c <collection-name> --snapshot-name <snapshot-name>
 ----
 
 === Backing up a Collection
 
 Use the export command to back up a collection:
 
-[,console]
+[,bash]
 ----
-$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>]
+bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>]
 ----
 
 The backup is named after the collection and the time the command ran, and the name is printed when the export starts.
@@ -2079,7 +2079,7 @@ Doing that required the non-incremental backup format, which was removed in Solr
 
 Use the delete command to delete a snapshot :
 
-[,console]
+[,bash]
 ----
-$ bin/solr snapshot-delete -c <NAME> --snapshot-name <NAME>
+bin/solr snapshot-delete -c <NAME> --snapshot-name <NAME>
 ----

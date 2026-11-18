@@ -23,12 +23,15 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.response.PrometheusResponseWriter;
@@ -112,6 +115,20 @@ public class V2ApiUtils {
 
   public static void squashObjectIntoNamedList(
       NamedList<Object> destination, Object o, boolean trimHeader) {
+    squashObjectIntoNamedList(destination, o, trimHeader, false);
+  }
+
+  /**
+   * Like {@link #squashObjectIntoNamedList(NamedList, Object, boolean)}, but renders {@code
+   * Boolean} leaf values as their String form ("true"/"false") instead of a JSON boolean.
+   *
+   * <p>Use only when a V1 API must preserve a legacy String-typed boolean field that the same data
+   * now exposes as a properly-typed {@code Boolean} on its v2 response POJO - see {@code
+   * ReplicationHandler#getReplicationDetails}, whose {@code isLeader}/{@code isFollower}/etc.
+   * fields have always been Strings in the V1 {@code command=details} response.
+   */
+  public static void squashObjectIntoNamedList(
+      NamedList<Object> destination, Object o, boolean trimHeader, boolean stringifyBooleans) {
     final var ew =
         new EntryWriter() {
           @Override
@@ -120,7 +137,7 @@ public class V2ApiUtils {
             if (trimHeader && kStr.equals("responseHeader")) {
               return null;
             }
-            destination.add(kStr, value);
+            destination.add(kStr, convertReflectWriteableValue(value, stringifyBooleans));
             return this; // returning "this" means we can't use a lambda :-(
           }
         };
@@ -134,5 +151,24 @@ public class V2ApiUtils {
           final JsonProperty prop = field.getAnnotation(JsonProperty.class);
           return prop.value().isEmpty() ? field.getName() : prop.value();
         });
+  }
+
+  private static Object convertReflectWriteableValue(Object value, boolean stringifyBooleans) {
+    if (stringifyBooleans && value instanceof Boolean bool) {
+      return bool.toString();
+    }
+    if (value instanceof ReflectWritable) {
+      NamedList<Object> result = new SimpleOrderedMap<>();
+      squashObjectIntoNamedList(result, value, true, stringifyBooleans);
+      return result;
+    }
+    if (value instanceof List<?> list) {
+      List<Object> objects = new ArrayList<>(list.size());
+      for (Object item : list) {
+        objects.add(convertReflectWriteableValue(item, stringifyBooleans));
+      }
+      return objects;
+    }
+    return value;
   }
 }

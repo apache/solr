@@ -98,13 +98,24 @@ public class TestSolrConfigHandler extends RestTestBase {
     solrTestRule.reset();
   }
 
+  /**
+   * The full "/config" response pluralizes some section names (e.g. searchComponent ->
+   * searchComponents, requestHandler -> requestHandlers etc.) under the V2 API (see
+   * GetConfig#getConfig), but not under V1.
+   */
+  private static String fullConfigKey(
+      RestTestHarness harness, String internalName, String externalName) {
+    return harness.getBaseURL().contains("/____v2/") ? externalName : internalName;
+  }
+
   public void testProperty() throws Exception {
     RestTestHarness harness = restTestHarness;
+    String requestHandlerKey = fullConfigKey(harness, "requestHandler", "requestHandlers");
     MapWriter confMap = getRespMap(harness, "/config");
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/info"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/luke"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/info"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/file"), null));
+    assertNotNull(confMap._get(asList("config", requestHandlerKey, "/admin/ping"), null));
 
     String payload =
         "{\n"
@@ -188,6 +199,16 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static void reqhandlertests(RestTestHarness writeHarness) throws Exception {
+    // The per-component endpoints used elsewhere in this test are unaffected by the full-config
+    // pluralization below, since they already use the pluralized name.
+    String searchComponentKey = fullConfigKey(writeHarness, "searchComponent", "searchComponents");
+    String requestHandlerKey = fullConfigKey(writeHarness, "requestHandler", "requestHandlers");
+    String queryConverterKey = fullConfigKey(writeHarness, "queryConverter", "queryConverters");
+    String listenerKey = fullConfigKey(writeHarness, "listener", "listeners");
+    String valueSourceParserKey =
+        fullConfigKey(writeHarness, "valueSourceParser", "valueSourceParsers");
+    String transformerKey = fullConfigKey(writeHarness, "transformer", "transformers");
+
     String payload =
         "{\n"
             + "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n"
@@ -270,7 +291,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "queryConverter", "qc", "class"),
+        asList("config", queryConverterKey, "qc", "class"),
         "org.apache.solr.spelling.SpellingQueryConverter",
         TIMEOUT_S);
     payload =
@@ -281,14 +302,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "queryConverter", "qc", "class"),
+        asList("config", queryConverterKey, "qc", "class"),
         "org.apache.solr.spelling.SuggestQueryConverter",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-queryconverter' : 'qc'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness, "/config", asList("config", "queryConverter", "qc"), null, TIMEOUT_S);
+        writeHarness, "/config", asList("config", queryConverterKey, "qc"), null, TIMEOUT_S);
 
     payload =
         "{\n"
@@ -301,7 +322,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "listener[0]", "class"),
+        asList("config", listenerKey + "[0]", "class"),
         "solr.QuerySenderListener",
         TIMEOUT_S);
 
@@ -316,13 +337,13 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "listener[0]", "class"),
+        asList("config", listenerKey + "[0]", "class"),
         "org.apache.solr.core.QuerySenderListener",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-listener' : 'f7fb2d87bea44464af2401cf33f42b69'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
-    testForResponseElement(writeHarness, "/config", asList("config", "listener"), null, TIMEOUT_S);
+    testForResponseElement(writeHarness, "/config", asList("config", listenerKey), null, TIMEOUT_S);
 
     payload =
         "{\n"
@@ -332,7 +353,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "searchComponent", "tc", "class"),
+        asList("config", searchComponentKey, "tc", "class"),
         "org.apache.solr.handler.component.TermsComponent",
         TIMEOUT_S);
     payload =
@@ -343,14 +364,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "searchComponent", "tc", "class"),
+        asList("config", searchComponentKey, "tc", "class"),
         "org.apache.solr.handler.component.TermVectorComponent",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-searchcomponent' : 'tc'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness, "/config", asList("config", "searchComponent", "tc"), null, TIMEOUT_S);
+        writeHarness, "/config", asList("config", searchComponentKey, "tc"), null, TIMEOUT_S);
     // <valueSourceParser name="countUsage"
     // class="org.apache.solr.core.CountUsageValueSourceParser"/>
     payload =
@@ -361,7 +382,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "valueSourceParser", "cu", "class"),
+        asList("config", valueSourceParserKey, "cu", "class"),
         "org.apache.solr.core.CountUsageValueSourceParser",
         TIMEOUT_S);
     //  <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
@@ -375,14 +396,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "valueSourceParser", "cu", "class"),
+        asList("config", valueSourceParserKey, "cu", "class"),
         "org.apache.solr.search.function.NvlValueSourceParser",
         TIMEOUT_S);
 
     payload = "{\n" + "'delete-valuesourceparser' : 'cu'" + "}";
     runConfigCommand(writeHarness, "/config", payload);
     testForResponseElement(
-        writeHarness, "/config", asList("config", "valueSourceParser", "cu"), null, TIMEOUT_S);
+        writeHarness, "/config", asList("config", valueSourceParserKey, "cu"), null, TIMEOUT_S);
     //    <transformer name="mytrans2"
     // class="org.apache.solr.response.transform.ValueAugmenterFactory" >
     //    <int name="value">5</int>
@@ -395,7 +416,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "transformer", "mytrans", "class"),
+        asList("config", transformerKey, "mytrans", "class"),
         "org.apache.solr.response.transform.ValueAugmenterFactory",
         TIMEOUT_S);
 
@@ -407,7 +428,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     testForResponseElement(
         writeHarness,
         "/config",
-        asList("config", "transformer", "mytrans", "value"),
+        asList("config", transformerKey, "mytrans", "value"),
         "6",
         TIMEOUT_S);
 
@@ -419,7 +440,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     runConfigCommand(writeHarness, "/config", payload);
     Map<?, ?> map =
         testForResponseElement(
-            writeHarness, "/config", asList("config", "transformer", "mytrans"), null, TIMEOUT_S);
+            writeHarness, "/config", asList("config", transformerKey, "mytrans"), null, TIMEOUT_S);
 
     List<?> l = (List<?>) Utils.getObjectByPath(map, false, asList("config", "initParams"));
     assertNotNull("no object /config/initParams : " + map, l);
@@ -444,7 +465,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         testForResponseElement(
             writeHarness,
             "/config",
-            asList("config", "searchComponent", "myspellcheck", "spellchecker", "class"),
+            asList("config", searchComponentKey, "myspellcheck", "spellchecker", "class"),
             "solr.DirectSolrSpellChecker",
             TIMEOUT_S);
 
@@ -463,7 +484,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         testForResponseElement(
             writeHarness,
             "/config",
-            asList("config", "requestHandler", "/dump100", "class"),
+            asList("config", requestHandlerKey, "/dump100", "class"),
             "org.apache.solr.handler.DumpRequestHandler",
             TIMEOUT_S);
 

@@ -233,14 +233,14 @@ public class {{classname}} {
 
             @Override
             public SolrParams getParams() {
-              final ModifiableSolrParams params = new ModifiableSolrParams();
+              final ModifiableSolrParams solrParams = new ModifiableSolrParams();
               {{#queryParams}}
               if ({{paramName}} != null) {
-                  {{#isArray}}{{paramName}}.forEach(v -> params.add("{{baseName}}", v{{^items.isString}}.toString(){{/items.isString}}));{{/isArray}}
-                  {{^isArray}}params.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});{{/isArray}}
+                  {{#isArray}}{{paramName}}.forEach(v -> solrParams.add("{{baseName}}", v{{^items.isString}}.toString(){{/items.isString}}));{{/isArray}}
+                  {{^isArray}}solrParams.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});{{/isArray}}
               }
               {{/queryParams}}
-              return params;
+              return solrParams;
             }
 
             @Override
