@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -87,7 +87,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     if (value == null) {
       return Set.of();
     }
-    Set<String> extensions = new LinkedHashSet<>();
+    Set<String> extensions = new HashSet<>();
     for (String extension : value.split(",")) {
       extension = extension.trim().toLowerCase(Locale.ROOT);
       if (!extension.isEmpty()) {
