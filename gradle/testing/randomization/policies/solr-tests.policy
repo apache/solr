@@ -304,4 +304,8 @@ grant {
 
 grant {
     permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+    // OtelRuntimeJvmMetrics opens a JFR recording stream for the JVM metrics
+    permission jdk.jfr.FlightRecorderPermission "registerEvent";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
 };

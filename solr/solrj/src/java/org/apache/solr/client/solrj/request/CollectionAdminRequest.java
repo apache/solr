@@ -262,6 +262,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     @Override
+    @SuppressWarnings("deprecation") // the parameter itself is on its way out; see SOLR-17712
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       if (asyncId != null) {

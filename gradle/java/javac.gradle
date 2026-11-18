@@ -17,6 +17,13 @@
 
 // Configure Java project defaults.
 
+// Projects that compile free of deprecation warnings and so can keep -Xlint:deprecation on.
+// Everywhere else javac prints an unsuppressable "uses or overrides a deprecated API" note
+// instead; move a project here once its warnings are gone.
+def deprecationLintProjects = [
+    ":solr:api",
+]
+
 allprojects {
   plugins.withType(JavaPlugin) {
     java {
@@ -38,7 +45,7 @@ allprojects {
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
       options.compilerArgs += [
-          "-Xlint:-deprecation",
+          deprecationLintProjects.contains(project.path) ? "-Xlint:deprecation" : "-Xlint:-deprecation",
           "-Xlint:-serial",
           "-Xlint:cast",
           "-Xlint:classfile",
