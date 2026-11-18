@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.apache.solr.client.api.endpoint.ReplicationApis;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -40,6 +41,14 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
   @Inject
   public CoreReplication(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(solrCore, req, rsp);
+  }
+
+  @Override
+  @PermissionName(CORE_READ_PERM)
+  public ReplicationDetailsResponse fetchReplicationDetails(Boolean follower) {
+    // Boxed (rather than the primitive boolean used elsewhere for similar flags) so this method
+    // can also be called directly, bypassing the JAX-RS @DefaultValue, with no value supplied.
+    return doFetchReplicationDetails(follower == null || follower);
   }
 
   @Override

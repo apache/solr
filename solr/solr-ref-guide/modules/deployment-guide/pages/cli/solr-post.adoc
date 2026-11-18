@@ -1,0 +1,130 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// DO NOT EDIT -- this page is auto-generated from picocli annotations.
+// To update: modify the @Command/@Option annotations in the Java source, then run:
+//   ./gradlew :solr:solr-ref-guide:generateCliDocs
+
+= bin/solr post
+:page-toclevels: 2
+
+[WARNING]
+====
+This page documents the *experimental* picocli implementation of `bin/solr`, which is not enabled by default.
+For what `bin/solr` does by default, see xref:solr-control-script-reference.adoc[].
+See xref:cli/index.adoc[] to enable this implementation and for its known limitations.
+====
+
+// tag::picocli-generated-man-section-synopsis[]
+== Synopsis
+
+....
+bin/solr post [-hov] [--dry-run] [--format] [--skip-commit] -c=name [-d=delay]
+              [-ft=<type>[,<type>,...]] [--mode=mode] [--params=<key>=<value>
+              [&<key>=<value>...]] [-r=recursive] [-t=content-type]
+              [-u=<credentials>] [-s=<solrConnection> | --solr-url=<solrUrl> |
+              -z=<zkHost>] [FILE...]
+....
+
+// end::picocli-generated-man-section-synopsis[]
+
+// tag::picocli-generated-man-section-description[]
+== Description
+
+The Post command sends one or more files, directories, URLs or literal data to a collection for indexing.
+
+// end::picocli-generated-man-section-description[]
+
+// tag::picocli-generated-man-section-options[]
+== Options
+
+*-c*, *--name*=_name_::
+  *(required)* Name of the collection.
+
+*-d*, *--delay*=_delay_::
+  If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files
+
+*--dry-run*::
+  Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.
+
+*--format*::
+  sends application/json content as Solr commands to /update instead of /update/json/docs.
+
+*-ft, --filetypes*=_<type>[,<type>,...]_::
+  default: xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
+
+*-h*, *--help*::
+  Print this help message and exit.
+
+*--mode*=_mode_::
+  Which mode the Post command is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.
+
+*-o*, *--optimize*::
+  Issue an optimize at end of posting documents.
+
+*--params*=_<key>=<value>[&<key>=<value>...]_::
+  Values must be URL-encoded; these pass through to Solr update request.
+
+*-r*, *--recursive*=_recursive_::
+  For web crawl, how deep to go. default: 1
+
+*-s*, *--solr-connection*=_<solrConnection>_::
+  Zookeeper or HTTP(s) connection string; unnecessary if SOLR_CONNECTION is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+*--skip-commit*::
+  Do not 'commit', and thus changes won't be visible till a commit occurs.
+
+*--solr-url*=_<solrUrl>_::
+  Base Solr URL, which can be used to determine the zk-host if that's not known.
+
+*-t*, *--type*=_content-type_::
+  Specify a specific mimetype to use, such as application/json.
+
+*-u*, *--credentials*=_<credentials>_::
+  Credentials in the format username:password. Example: --credentials solr:SolrRocks
+
+*-v*, *--verbose*::
+  Enable verbose mode.
+
+*-z*, *--zk-host*=_<zkHost>_::
+  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to localhost:9983.
+
+// end::picocli-generated-man-section-options[]
+
+// tag::picocli-generated-man-section-arguments[]
+== Arguments
+
+[_FILE_...]::
+  Files, directories, urls or literal data to post, depending on --mode.
+
+// end::picocli-generated-man-section-arguments[]
+
+// tag::picocli-generated-man-section-footer[]
+== Examples
+[%hardbreaks]
+  # Index all JSON files into a collection
+  bin/solr post -c gettingstarted *.json
+
+[%hardbreaks]
+  # Index a tab-separated file, using the CSV handler's separator param
+  bin/solr post -c gettingstarted --params "separator=%09" --type text/csv data.tsv
+
+[%hardbreaks]
+  # Crawl a website one layer deep and index the pages found
+  bin/solr post -c gettingstarted --mode web --recursive 1 https://solr.apache.org/
+
+// end::picocli-generated-man-section-footer[]

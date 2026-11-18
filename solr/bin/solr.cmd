@@ -343,7 +343,7 @@ goto err
 @echo.
 @echo   -y/--no-prompt Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
-@echo   --prompt-inputs values Don't prompt for input; comma delimited list of inputs read when running examples that accept user input.
+@echo   --script-inputs values Don't prompt for input; comma delimited list of inputs read when running examples that accept user input.
 @echo.
 @echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -404,7 +404,7 @@ IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="-y" goto set_noprompt
 IF "%1"=="--no-prompt" goto set_noprompt
-IF "%1"=="--prompt-inputs" goto set_prompt_inputs
+IF "%1"=="--script-inputs" goto set_script_inputs
 
 REM Skip stop arg parsing if not stop command
 IF NOT "%SCRIPT_CMD%"=="stop" goto parse_general_args
@@ -417,8 +417,22 @@ IF "%1"=="--all" goto set_stop_all
 :parse_general_args
 
 REM Print usage of command in case help option included
-IF "%1"=="--help" goto usage
-IF "%1"=="-h" goto usage
+IF "%1"=="--help" goto check_picocli_help
+IF "%1"=="-h" goto check_picocli_help
+goto after_help_check
+
+:check_picocli_help
+IF "%SOLR_PICOCLI%"=="true" goto run_picocli_help
+goto usage
+
+:run_picocli_help
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.cli.SolrCLI %SCRIPT_CMD% --help
+goto done
+
+:after_help_check
 
 REM other args supported by all special commands
 IF "%1"=="-p" goto set_port
@@ -715,8 +729,8 @@ set "PASS_TO_RUN_EXAMPLE=--no-prompt !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 
-:set_prompt_inputs
-set "PASS_TO_RUN_EXAMPLE=--prompt-inputs %~2 !PASS_TO_RUN_EXAMPLE!"
+:set_script_inputs
+set "PASS_TO_RUN_EXAMPLE=--script-inputs %~2 !PASS_TO_RUN_EXAMPLE!"
 
 SHIFT
 SHIFT

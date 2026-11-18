@@ -28,22 +28,14 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 APIs for retrieving some or all configuration relevant to a particular collection (or core).
  *
- * <p>This class covers a handful of distinct paths under GET /v2/c/collectionName/config: /,
- * /overlay, /params, /znodeVersion, etc.
+ * <p>This class only covers legacy AnnotatedApi paths under GET /config: /params and
+ * /params{paramset}
  */
 public class GetConfigAPI {
   private final SolrConfigHandler configHandler;
 
   public GetConfigAPI(SolrConfigHandler configHandler) {
     this.configHandler = configHandler;
-  }
-
-  @EndPoint(
-      path = {"/config"},
-      method = GET,
-      permission = CONFIG_READ_PERM)
-  public void getAllConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
-    configHandler.handleRequest(req, rsp);
   }
 
   @EndPoint(
@@ -59,15 +51,6 @@ public class GetConfigAPI {
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getSingleParamSet(SolrQueryRequest req, SolrQueryResponse rsp) {
-    configHandler.handleRequest(req, rsp);
-  }
-
-  // This endpoint currently covers a whole list of paths by using the "component" placeholder
-  @EndPoint(
-      path = {"/config/{component}"},
-      method = GET,
-      permission = CONFIG_READ_PERM)
-  public void getComponentConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
     configHandler.handleRequest(req, rsp);
   }
 }

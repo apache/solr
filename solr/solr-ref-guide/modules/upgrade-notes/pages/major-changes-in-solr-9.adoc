@@ -67,6 +67,75 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.11
+
+=== Max distributed requests now configurable
+
+The internal HTTP client used for distributed shard sub-requests previously had a hard-coded limit of 1000 concurrent async requests per node.
+In large clusters, a single query can fan out to hundreds of sub-requests, quickly exhausting this limit and causing requests to queue, potentially leading to stalls or timeouts.
+This limit is now configurable via the system property `solr.solrj.http.jetty.async_requests.max`.
+
+Current permit utilization can be monitored via the `solr_client_request_async_permits` metric (see xref:deployment-guide:metrics-reporting.adoc#http-client-registry[HTTP Client Registry]).
+
+=== Docker
+
+The `gosu` binary is no longer installed in the Solr Docker image. See https://github.com/tianon/gosu[gosu github page] for alternatives, such as `runuser`, `setpriv` or `chroot`.
+
+=== Removing 'local' Tika
+
+The project normally doesn't remove functionality in a minor release, but we made an exception to avoid shipping Tika 1.x with known vulnerabilities.
+
+* LocalTikaExtractionBackend, which was deprecated in 9.10, has been removed. The `tikaserver` extraction backend is now the only supported backend for the ExtractingRequestHandler, and the default. Users must configure a Tika Server URL via the `tikaserver.url` parameter. (SOLR-17961, SOLR-18037)
++
+NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
+
+=== Luke requests now distributed by default
+
+In SolrCloud mode, the xref:indexing-guide:luke-request-handler.adoc[Luke Request Handler] (`/admin/luke`) now automatically distributes requests across all shards in the collection and returns an aggregated view of the index.
+Previously, Luke only reported on the local shard that received the request, giving an incomplete picture of multi-shard collections.
+In user-managed clusters, you can opt into distributed behavior by passing the `shards` parameter with explicit shard URLs.
+See xref:indexing-guide:luke-request-handler.adoc[] for more details.
+
+To revert to the previous local-only behavior, set `distrib=false` on individual requests, or configure it as a default in `solrconfig.xml`:
+
+[source,xml]
+----
+<requestHandler name="/admin/luke" class="solr.LukeRequestHandler">
+  <lst name="defaults">
+    <bool name="distrib">false</bool>
+  </lst>
+</requestHandler>
+----
+
+=== JWT Authentication
+
+The `blockUnknown` setting in the JWT Authentication plugin now defaults to `true`, meaning requests without a valid JWT token are blocked by default.
+In Solr 9.10 and earlier, the code default was `false` (pass-through), which contradicted the reference guide documentation that described `true` as the default.
+Users upgrading from 9.10 who relied on the pass-through behavior must explicitly set `"blockUnknown": false` in their `security.json`.
+
+=== Basic Authentication
+
+The Basic Authentication password policy has been strengthened: a password may no longer be equal to its username.
+Login attempts where the password equals the username are now rejected, and creating or editing such a user (via the Admin UI, the Authentication API, or `bin/solr auth`) is no longer allowed.
+
+If you are upgrading and still have Basic Auth users whose password equals their username, you can temporarily re-enable the old behavior by setting the system property `-Dsolr.security.auth.basicauth.allowuseraspassword=true` (or the environment variable `SOLR_SECURITY_AUTH_BASICAUTH_ALLOWUSERASPASSWORD=true`).
+When enabled, this escape hatch relaxes both the login-time check and the user creation/editing check, so existing accounts keep working and can still be managed.
+It is intended as a temporary measure while you migrate the affected accounts to stronger passwords, and should be removed once that is done.
+
+=== Connecting to Other Clusters
+
+Streaming expressions and the cross-collection join query parser now restrict which SolrCloud clusters a `zkHost` parameter may refer to:
+
+* A ZooKeeper connection string must match the local cluster's exactly (including any chroot), or be listed in the new xref:configuration-guide:configuring-solr-xml.adoc#allow-zk-hosts[`allowZkHosts`] setting in `solr.xml` (or the `solr.allowZkHosts` system property).
+* The cross-collection join query parser no longer accepts both `zkHost` and `solrUrl`; specify at most one.
+
+If you use these features to query another cluster, add its connection details to `allowZkHosts` before upgrading.
+
+=== /update/extract requires the "update" permission
+
+`/update/extract` (`ExtractingRequestHandler` in the `extraction` module) requires the `update` permission rather than `read`, since it indexes documents.
+Deployments where `read`-only users submit documents through `/update/extract` must grant those users `update` as well.
+
 == Solr 9.10
 
 === SolrJ
@@ -777,7 +846,9 @@ If your cluster is running 8.6.0 and *not using an explicit autoscaling policy*,
 Replace `localhost:8983` with your Solr endpoint.
 +
 [source,text]
-curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : [], set-cluster-preferences : []}' http://localhost:8983/api/cluster/autoscaling
+curl 'http://localhost:8983/api/cluster/autoscaling' \
+  -H 'Content-type:application/json' \
+  -d '{set-cluster-policy : [], set-cluster-preferences : []}'
 +
 This information is only relevant for users upgrading from 8.6.0.
 If upgrading from an earlier version to 8.6.1+, this warning can be ignored.

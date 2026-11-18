@@ -65,7 +65,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "split":{
       "shard":"shard1"
@@ -319,7 +319,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
     "shard":"newShardName"
   }
@@ -675,7 +675,7 @@ V2 API::
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/install -H 'Content-Type: application/json' -d '
+curl http://localhost:8983/api/collections/techproducts/shards/shard1/install -H 'Content-Type: application/json' -d '
   {
     "repository": "localfs",
     "location": "/mounts/myNFSDrive/tech/shard1/data/index"

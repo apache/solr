@@ -50,7 +50,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.Before;
@@ -330,7 +329,13 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster)
       throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getSolrHome());
+
+    FileStoreAPI.MetaData metaData = ClusterFileStore._createJsonMetaData(bytes, null);
+    DistribFileStore._persistToFile(
+        jetty.getCoreContainer().getSolrHome(),
+        path,
+        ByteBuffer.wrap(bytes),
+        ByteBuffer.wrap(Utils.toJSON(metaData)));
 
     final var syncReq = new FileStoreApi.SyncFile(path);
     final var syncRsp = syncReq.process(jetty.getSolrClient());

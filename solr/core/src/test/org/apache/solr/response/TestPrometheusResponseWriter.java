@@ -181,6 +181,15 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNullRequestDefaultsToPrometheusFormat() {
+    PrometheusResponseWriter writer = new PrometheusResponseWriter();
+    assertEquals(
+        "Null request should not NPE and should default to Prometheus format",
+        PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS,
+        writer.getContentType(null, null));
+  }
+
+  @Test
   public void testUnsupportedMetricsFormat() throws Exception {
     var req = new MetricsRequest();
 

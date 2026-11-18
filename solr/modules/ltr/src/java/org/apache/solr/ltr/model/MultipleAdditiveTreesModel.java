@@ -116,6 +116,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
   private boolean isNullSameAsZero = true;
 
+  public void setIsNullSameAsZero(boolean nullSameAsZero) {
+    isNullSameAsZero = nullSameAsZero;
+  }
+
   private RegressionTree createRegressionTree(Map<String, Object> map) {
     final RegressionTree rt = new RegressionTree();
     if (map != null) {
@@ -130,10 +134,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       SolrPluginUtils.invokeSetters(rtn, map.entrySet());
     }
     return rtn;
-  }
-
-  public void setIsNullSameAsZero(boolean nullSameAsZero) {
-    isNullSameAsZero = nullSameAsZero;
   }
 
   public class RegressionTreeNode {
@@ -197,7 +197,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         sb.append(value);
       } else {
         sb.append("(feature=").append(feature);
-        sb.append(",threshold=").append(threshold.floatValue() - NODE_SPLIT_SLACK);
+        sb.append(",threshold=").append(threshold - NODE_SPLIT_SLACK);
         if (missing != null) {
           sb.append(",missing=").append(missing);
         }
@@ -231,9 +231,9 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     public float score(float[] featureVector) {
       if (isNullSameAsZero) {
-        return weight.floatValue() * scoreNode(featureVector, root);
+        return weight * scoreNode(featureVector, root);
       } else {
-        return weight.floatValue() * scoreNodeWithNullSupport(featureVector, root);
+        return weight * scoreNodeWithNullSupport(featureVector, root);
       }
     }
 
@@ -500,8 +500,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       index++;
     }
 
-    return Explanation.match(
-        finalScore, toString() + " model applied to features, sum of:", details);
+    return Explanation.match(finalScore, this + " model applied to features, sum of:", details);
   }
 
   @Override

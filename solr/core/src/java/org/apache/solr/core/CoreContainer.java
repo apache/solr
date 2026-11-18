@@ -279,8 +279,6 @@ public class CoreContainer {
 
   protected MetricsHandler metricsHandler;
 
-  private volatile SolrClientCache solrClientCache;
-
   private volatile Map<String, SolrCache<?, ?>> caches;
 
   private final ObjectCache objectCache = new ObjectCache();
@@ -403,12 +401,13 @@ public class CoreContainer {
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.cfg = requireNonNull(config);
     this.loader = config.getSolrResourceLoader();
+    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader); // early as possible!
+    this.tracer = TraceUtils.getGlobalTracer();
+    this.metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig().isEnabled());
+
     this.solrHome = config.getSolrHome();
     this.solrCores = SolrCores.newSolrCores(this);
     this.nodeKeyPair = new SolrNodeKeyPair(cfg.getCloudConfig());
-    OpenTelemetryConfigurator.initializeOpenTelemetrySdk(cfg, loader);
-    this.metricManager = new SolrMetricManager(loader);
-    this.tracer = TraceUtils.getGlobalTracer();
 
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler(nodeKeyPair));
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
@@ -709,8 +708,8 @@ public class CoreContainer {
    */
   @Deprecated(since = "10.0")
   public SolrClientCache getSolrClientCache() {
-    // TODO put in the objectCache instead
-    return solrClientCache;
+    // TODO put in the objectCache instead?
+    return isZooKeeperAware() ? getZkController().getSolrClientCache() : null;
   }
 
   public ObjectCache getObjectCache() {
@@ -797,7 +796,6 @@ public class CoreContainer {
     solrClientProvider =
         new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, Attributes.empty());
-    solrClientCache = new SolrClientCache(solrClientProvider.getSolrClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
@@ -824,7 +822,6 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
       zkSys
           .getZkMetricsProducer()
@@ -1292,9 +1289,6 @@ public class CoreContainer {
         }
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
-      }
-      if (solrClientCache != null) {
-        solrClientCache.close();
       }
       if (containerPluginsRegistry != null) {
         IOUtils.closeQuietly(containerPluginsRegistry);

@@ -128,7 +128,7 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 +
 Accepted values: `hnsw`, `flat`, `cagra_hnsw` (requires GPU acceleration setup).
 +
-The `flat` algorithm stores vectors without building an HNSW graph. This avoids the indexing overhead of graph construction, but does not support the `{!knn}` query parser. Use `vectorSimilarity()` function queries to score and rank documents by vector similarity. See <<Flat Vector Index>> for details.
+The `flat` algorithm stores vectors without building an HNSW graph, avoiding the indexing overhead of graph construction. Supported query parsers differ by field type. See <<Flat Vector Index>> for details.
 +
 Please note that the `knnAlgorithm` accepted values may change in future releases.
 
@@ -187,12 +187,15 @@ JSON::
 ====
 [source,json]
 ----
-[{ "id": "1",
-"vector": [1.0, 2.5, 3.7, 4.1]
-},
-{ "id": "2",
-"vector": [1.5, 5.5, 6.7, 65.1]
-}
+[
+  { 
+    "id": "1",
+    "vector": [1.0, 2.5, 3.7, 4.1]
+  },
+  { 
+    "id": "2",
+    "vector": [1.5, 5.5, 6.7, 65.1]
+  }
 ]
 ----
 ====
@@ -203,20 +206,20 @@ XML::
 [source,xml]
 ----
 <add>
-<doc>
-<field name="id">1</field>
-<field name="vector">1.0</field>
-<field name="vector">2.5</field>
-<field name="vector">3.7</field>
-<field name="vector">4.1</field>
-</doc>
-<doc>
-<field name="id">2</field>
-<field name="vector">1.5</field>
-<field name="vector">5.5</field>
-<field name="vector">6.7</field>
-<field name="vector">65.1</field>
-</doc>
+  <doc>
+    <field name="id">1</field>
+    <field name="vector">1.0</field>
+    <field name="vector">2.5</field>
+    <field name="vector">3.7</field>
+    <field name="vector">4.1</field>
+  </doc>
+  <doc>
+    <field name="id">2</field>
+    <field name="vector">1.5</field>
+    <field name="vector">5.5</field>
+    <field name="vector">6.7</field>
+    <field name="vector">65.1</field>
+  </doc>
 </add>
 ----
 ====
@@ -251,12 +254,15 @@ JSON::
 ====
 [source,json]
 ----
-[{ "id": "1",
- "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
-},
-{ "id": "2",
- "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
-}
+[
+  { 
+    "id": "1",
+    "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+  },
+  { 
+    "id": "2",
+    "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+  }
 ]
 ----
 ====
@@ -300,8 +306,9 @@ with 8 bits we can store up to 256 discrete values, so a float dimension with va
 
 [0.0, 0.0039) => 0, [0.0039, 0.0078) => 1 ... etc
 
-As a specific type of DenseVectorField, this field type supports all the same configurable properties outlined above as well
-as some additional ones.
+As a specific type of DenseVectorField, this field type supports `knnAlgorithm` (`hnsw` or `flat`) and other configurable properties outlined above, as well as some additional ones.
+
+NOTE: Scalar quantization applies to `FLOAT32` vectors only. `vectorEncoding="BYTE"` vectors are stored unquantized, and with `knnAlgorithm="flat"` they do not support the KNN query parsers. Use `vectorSimilarity()` function queries instead.
 
 Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
 
@@ -347,6 +354,8 @@ Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
 BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField` with the only notable exception being
 `similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
 param.
+
+NOTE: `knnAlgorithm="flat"` is not supported for `BinaryQuantizedDenseVectorField`.
 
 [[query-hnsw-fields]]
 == Querying Vectors in Navigable Small-world Graphs
@@ -510,7 +519,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 +
 ACORN is an algorithm designed to make hybrid searches consisting of a filter and a vector search more efficient.
 This approach tackles both the performance limitations of pre- and post- filtering.
-It modifies the construction of the HNSW graph and the search on it. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
+It modifies how the HNSW graph is searched. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
 +
 Solr relies on Lucene's implementation of the `filteredSearchThreshold` in the  {lucene-javadocs}/core/org/apache/lucene/search/knn/KnnSearchStrategy.html[KnnSearchStrategy].
 +
@@ -873,11 +882,27 @@ The final ranked list of results will have the first pass score(main query `q`) 
 
 Setting `knnAlgorithm="flat"` stores vectors without building an HNSW graph, avoiding the indexing cost of graph construction.
 
-Flat fields do not support the `{!knn}`, `{!knn_text_to_vector}`, or `{!vectorSimilarity}` query parsers.
+The flat algorithm is supported by both `DenseVectorField` and `ScalarQuantizedDenseVectorField`. When used with `ScalarQuantizedDenseVectorField`, `FLOAT32` vectors are still quantized at index time.
+
+[source,xml]
+----
+<!-- Flat vector index (no quantization) -->
+<fieldType name="knn_flat" class="solr.DenseVectorField"
+           vectorDimension="4" similarityFunction="cosine" knnAlgorithm="flat"/>
+
+<!-- Flat vector index with scalar quantization -->
+<fieldType name="knn_sq_flat" class="solr.ScalarQuantizedDenseVectorField"
+           vectorDimension="4" similarityFunction="cosine" knnAlgorithm="flat"/>
+----
+
+For `DenseVectorField`, flat fields do not support the `{!knn}`, `{!knn_text_to_vector}`, or `{!vectorSimilarity}` query parsers.
 Use `vectorSimilarity()` function queries to score and rank by similarity:
 
 [source]
 q={!func}vectorSimilarity(vector,[1.0, 2.0, 3.0, 4.0])&fl=id,score
+
+For `ScalarQuantizedDenseVectorField` with `FLOAT32` vectors, flat fields also support the `{!knn}`, `{!knn_text_to_vector}`, and `{!vectorSimilarity}` query parsers, which score against the quantized vectors.
+Note that `vectorSimilarity()` function queries score against the raw (unquantized) float vectors, so the two paths can return slightly different scores for the same field.
 
 
 == Indexing Multi-Vectors for Late Interaction
@@ -947,12 +972,15 @@ JSON::
 ====
 [source,json]
 ----
-[{ "id": "1",
-"my_late_vector": "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]",
-},
-{ "id": "2",
-"my_late_vector": "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"
-}
+[
+  {
+    "id": "1",
+    "my_late_vector": "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]"
+  },
+  {
+    "id": "2",
+    "my_late_vector": "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"
+  }
 ]
 ----
 ====
@@ -963,14 +991,14 @@ XML::
 [source,xml]
 ----
 <add>
-<doc>
-<field name="id">1</field>
-<field name="my_late_vector">[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]</field>
-</doc>
-<doc>
-<field name="id">2</field>
-<field name="my_late_vector">[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]</field>
-</doc>
+  <doc>
+    <field name="id">1</field>
+    <field name="my_late_vector">[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]</field>
+  </doc>
+  <doc>
+    <field name="id">2</field>
+    <field name="my_late_vector">[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]</field>
+  </doc>
 </add>
 ----
 ====
@@ -1013,6 +1041,12 @@ Details about using the ReRank Query Parser can be found in the xref:query-guide
 
 [NOTE]
 This is feature is currently experimental.
+
+[WARNING]
+====
+Vector indexing with GPU acceleration does not work in Solr 10.1 (see SOLR-18556), and is expected to be fixed in a subsequent Solr 10.x release.
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#cuvs-gpu-acceleration-broken[Major Changes in Solr 10] for details.
+====
 
 Building HNSW graphs, esp. with high dimensions and cardinality, is usually slow. If you have a NVIDIA GPU, then building HNSW based indexes can be sped up manifold. This is powered by the https://github.com/rapidsai/cuvs-lucene[cuVS-Lucene] library, a pluggable vectors format for Apache Lucene. It uses the state of the art https://arxiv.org/abs/2308.15136[CAGRA algorithm] for quickly building a fixed degree connected graph, which is then serialized into a HNSW graph. https://developer.nvidia.com/cuda-downloads[CUDA 13.0+] and https://jdk.java.net/archive/[JDK 22] are required to use this feature.
 
@@ -1227,23 +1261,23 @@ EOF
 
 . Start Solr
 +
-[source,sh]
+[source,bash]
 ----
 ./bin/solr start
 ----
 
 . Upload the configset and create a collection
 +
-[source,sh]
+[source,bash]
 ----
 ./bin/solr zk upconfig -n cuvs_vectors -d cuvs_configset/conf && ./bin/solr create -c vectors -n cuvs_vectors
 ----
 
 . Index documents
 +
-[source,sh]
+[source,bash]
 ----
-curl -s -X POST "http://localhost:8983/solr/vectors/update?commit=true" \
+curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
      -H "Content-Type: application/json" \
      -d '[
        {"id": "doc1", "article_vector": [0.35648, 0.11664, 0.85660, 0.25043, 0.80778, 0.08031, 0.48444, 0.39083]},
@@ -1256,7 +1290,7 @@ curl -s -X POST "http://localhost:8983/solr/vectors/update?commit=true" \
 
 . Query the index
 +
-[source,sh]
+[source,bash]
 ----
 curl -s 'http://localhost:8983/solr/vectors/select?q=%7B!knn%20f=article_vector%20topK=1%7D%5B0.84393,0.50073,0.57059,0.89899,-0.08722,0.26803,0.00807,0.09877%5D&fl=id,score&rows=3&omitHeader=true'
 ----

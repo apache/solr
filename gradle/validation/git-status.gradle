@@ -41,6 +41,7 @@ configure(rootProject) {
     doFirst {
       try {
         def repository = new FileRepositoryBuilder()
+            .findGitDir(rootProject.projectDir)
             .setWorkTree(rootProject.projectDir)
             .setMustExist(true)
             .build()
@@ -65,6 +66,7 @@ configure(rootProject) {
       def status
       try {
         def repository = new FileRepositoryBuilder()
+            .findGitDir(rootProject.projectDir)
             .setWorkTree(rootProject.projectDir)
             .setMustExist(true)
             .build()
@@ -73,15 +75,9 @@ configure(rootProject) {
         status = null
       }
       if (status == null) {
-        if (file("${rootProject.projectDir}/.git").exists()) {
-          // Ignore git worktree branches until jgit supports them.
-          logger
-              .warn("WARNING: git worktrees are not supported by jgit (won't check dirty files): ${rootProject.projectDir}")
-        } else {
-          // Ignore the check. This isn't a git checkout.
-          logger
-              .warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
-        }
+        // Ignore the check. This isn't a git checkout.
+        logger
+            .warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
       } else {
         // git ignores any folders which are empty (this includes folders with recursively empty sub-folders).
         def untrackedNonEmptyFolders = status.untrackedFolders.findAll {path ->

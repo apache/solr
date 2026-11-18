@@ -162,10 +162,26 @@ docker run -e SOLR_HOST_ADVERTISE=solr1 --network docs_solr solr solr create -c 
 
 The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
 
+[tabs#docker-create-collection]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted3&numShards=1&collection.configName=_default'
+curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted4&numShards=1&collection.configName=_default'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '{"name": "gettingstarted4", "numShards": 1, "config": "_default"}'
+----
+====
+======
 
 If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
 You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].

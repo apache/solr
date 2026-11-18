@@ -37,7 +37,30 @@ bin/solr start -e schemaless
 
 This will launch a single Solr server, and automatically create a collection (named "```gettingstarted```") that contains only three fields in the initial schema: `id`, `\_version_`, and `\_text_`.
 
-You can use the `/schema/fields` xref:schema-api.adoc[] to confirm this: `curl \http://localhost:8983/solr/gettingstarted/schema/fields` will output:
+You can use the `/schema/fields` xref:schema-api.adoc[] to confirm this:
+
+[tabs#schemaless-fields-initial]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/schema/fields
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/gettingstarted/schema/fields
+----
+====
+======
+
+The output will be:
 
 [source,json]
 ----
@@ -246,7 +269,30 @@ Output indicating success:
 </response>
 ----
 
-The fields now in the schema (output from `curl \http://localhost:8983/solr/gettingstarted/schema/fields` ):
+To see the fields now in the schema:
+
+[tabs#schemaless-fields-after]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/schema/fields
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/gettingstarted/schema/fields
+----
+====
+======
+
+The output is:
 
 [source,json]
 ----
@@ -283,7 +329,30 @@ The fields now in the schema (output from `curl \http://localhost:8983/solr/gett
 ]}
 ----
 
-In addition string versions of the text fields are indexed, using copyFields to a `*_str` dynamic field: (output from `curl \http://localhost:8983/solr/gettingstarted/schema/copyfields` ):
+In addition string versions of the text fields are indexed, using copyFields to a `*_str` dynamic field. To see them:
+
+[tabs#schemaless-copyfields]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/schema/copyfields
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/gettingstarted/schema/copyfields
+----
+====
+======
+
+The output is:
 
 [source,json]
 ----

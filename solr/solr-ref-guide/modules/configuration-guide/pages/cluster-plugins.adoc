@@ -92,7 +92,7 @@ Example plugin configuration:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
@@ -105,7 +105,6 @@ curl -X POST -H 'Content-type: application/json' -d '{
           }
         }
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 === Types of Cluster Plugins
@@ -173,22 +172,20 @@ Event producer configuration can be changed dynamically by changing the predefin
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".cluster-event-producer",
         "class": "org.apache.solr.cluster.events.impl.DefaultClusterEventProducer"
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 It can be restored to the default no-op configuration by simply removing the plugin:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "remove": ".cluster-event-producer"
   }'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 === ClusterEventListener Plugins
@@ -210,12 +207,11 @@ Example plugin configuration:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": "collections-repair-listener",
         "class": "org.apache.solr.cluster.events.impl.CollectionsRepairEventListener"
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 == Plugin Management API
@@ -237,13 +233,12 @@ If a plugin with the same name already exists this results in an error.
 Example command, which adds a plugin contained in a Solr package:
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": "my-plugin1",
         "class": "my-package:com.example.MyPlugin",
         "version": "1.0"
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 === Update Plugin
@@ -256,14 +251,13 @@ The old instance of the plugin is removed and a new instance is created using th
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "update":{
         "name": "collections-repair-listener",
         "class": "org.apache.solr.cluster.events.impl.CollectionsRepairEventListener",
         "config":{
           "waitForSecond": 30
     }}}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 === Remove Plugin
@@ -275,8 +269,7 @@ Unlike other commands the command payload here consists just of the name of the 
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "remove": "my-plugin1"
     }'
-  http://localhost:8983/api/cluster/plugin
 ----

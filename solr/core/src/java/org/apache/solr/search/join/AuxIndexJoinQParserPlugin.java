@@ -170,6 +170,12 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
    */
   public static final String COMMIT_INTERVAL_MS = "commitIntervalMs";
 
+  /**
+   * Init parameter: name of the Lucene codec the sidecar is written with. See {@link
+   * AuxIndexJoinConfig#setCodecName}.
+   */
+  public static final String CODEC_NAME = "codecName";
+
   private String configuredDir = DEFAULT_DIR;
   private final AuxIndexJoinConfig joinIndexConfig = new AuxIndexJoinConfig();
 
@@ -205,6 +211,7 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
               MIN_RECLAIMABLE_BYTES_TO_PURGE, joinIndexConfig.getMinReclaimableBytesToPurge()));
       joinIndexConfig.setCommitIntervalMs(
           params.getLong(COMMIT_INTERVAL_MS, joinIndexConfig.getCommitIntervalMs()));
+      joinIndexConfig.setCodecName(params.get(CODEC_NAME, joinIndexConfig.getCodecName()));
     }
   }
 
@@ -401,9 +408,7 @@ public class AuxIndexJoinQParserPlugin extends QParserPlugin
         }
         final String fromField = getParam("from");
         final String toField = getParam("to");
-        if (fromField == null || toField == null) {
-          throw new SyntaxError("auxIndexJoin query parser requires 'from' and 'to' local params");
-        }
+        ScoreJoinQParserPlugin.requireFromAndTo(fromField, toField);
         final String fromIndex = localParams.get("fromIndex");
         final String v = localParams.get(CommonParams.VALUE);
         final String myCore = req.getCore().getCoreDescriptor().getName();

@@ -40,6 +40,7 @@ In order to make a new contribution to Solr you will use the fork you have creat
 * The PR will run a gradle pre-commit task that will do some basic checks of your changes. This is run as a Github Action and the results can be viewed from your PR.
 * If you properly named your PR you will see it automatically linked to your Jira issue when you view the issue.
 * If your PR is still a work in progress, you can use the https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests[PR Draft feature] of Github to denote draft status.
+* Contributors without write access to the repository can have at most seven pull requests open at a time, drafts included. GitHub will refuse to create further PRs until one of your open ones is merged or closed. If you hit the limit, please help your earlier contributions over the line before starting something new. Committers are not subject to this limit.
 5. At this point, you will need a Solr committer to review your change and help to get it merged upstream. You can use the https://solr.apache.org/community.html[Solr Developers Mailing List] to get attention to your issue.
 
 ## PR Do-s and Don't-s

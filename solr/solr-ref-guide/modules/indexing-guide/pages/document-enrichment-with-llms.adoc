@@ -131,7 +131,7 @@ s|Exactly one of these parameters is required |Default: none
 +
 Two different ways to define a prompt are available: one directly in the solrconfig and one through a dedicated file.
 Either way, the content of the prompt _must_ contain a special token for each `inputField` declared, that are the
-`fieldName` surrounded by curly brackets (e.g., `{string_field}`, in the example below). Solr will throw an error if
+`fieldName` surrounded by curly brackets (e.g., `\{string_field}`, in the example below). Solr will throw an error if
 the parameters are not properly defined.
 +
 These parameters can be defined in one of the following ways:
@@ -371,20 +371,20 @@ To upload the model in a `/path/myModel.json` file, please run:
 
 [source,bash]
 ----
-curl -XPUT 'http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+curl -XPUT 'http://localhost:8983/solr/{collectionName}/schema/large-language-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
 ----
 
 To delete the `currentModel` model:
 
 [source,bash]
 ----
-curl -XDELETE 'http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store/currentModel'
+curl -XDELETE 'http://localhost:8983/solr/{collectionName}/schema/large-language-model-store/currentModel'
 ----
 
 To view all models:
 
 [source,text]
-http://localhost:8983/solr/YOUR_COLLECTION/schema/large-language-model-store
+http://localhost:8983/solr/{collectionName}/schema/large-language-model-store
 
 
 .Example: /path/myOpenAIModel.json

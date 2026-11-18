@@ -407,13 +407,11 @@ public class PackageAPI {
     }
 
     private void syncToVersion(int expectedVersion) {
-      int origVersion = pkgs.znodeVersion;
       for (int i = 0; i < 10; i++) {
         log.debug("my version is {} , and expected version {}", pkgs.znodeVersion, expectedVersion);
         if (pkgs.znodeVersion >= expectedVersion) {
-          if (origVersion < pkgs.znodeVersion) {
-            packageLoader.refreshPackageConf();
-          }
+          // Blocks until any in-flight refresh started by the ZK watcher has been applied
+          packageLoader.refreshPackageConf();
           return;
         }
         try {

@@ -90,6 +90,8 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createTestCluster() throws Exception {
+    // this test inspects core level update metrics
+    System.setProperty("metricsEnabled", "true");
     System.setProperty("solr.solrj.cloud.max.stale.retries", "1");
     System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
 
