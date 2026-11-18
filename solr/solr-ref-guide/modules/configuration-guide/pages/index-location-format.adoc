@@ -39,8 +39,8 @@ element `<solrDataHome>` then the location of data directory will be `<SOLR_DATA
 
 == Specifying the DirectoryFactory For Your Index
 
-The default {solr-javadocs}/core/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform.
-You can force a particular implementation and/or configuration options by specifying {solr-javadocs}/core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`] or {solr-javadocs}/core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`].
+The default {solr-core-javadocs}/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform.
+You can force a particular implementation and/or configuration options by specifying {solr-core-javadocs}/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`] or {solr-core-javadocs}/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`].
 
 [source,xml]
 ----
@@ -73,7 +73,7 @@ Extension matching is case insensitive, applies to the end of the file name, and
 Both parameters are honored by `solr.MMapDirectoryFactory`, `solr.StandardDirectoryFactory`, and the default `solr.NRTCachingDirectoryFactory`.
 They have no effect when the underlying directory is not memory mapped, as with `solr.NIOFSDirectoryFactory`.
 
-The {solr-javadocs}/core/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAMDirectoryFactory`] is memory based, not persistent, and does not work with replication.
+The {solr-core-javadocs}/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAMDirectoryFactory`] is memory based, not persistent, and does not work with replication.
 Use this DirectoryFactory to store your index in RAM.
 
 [source,xml]
