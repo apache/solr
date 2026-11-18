@@ -19,8 +19,6 @@ package org.apache.solr.schema;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
@@ -129,12 +127,12 @@ public class SortableTextField extends TextField {
     return getIndexableFields(field, f, bytes);
   }
 
-  private static List<IndexableField> getIndexableFields(
+  private List<IndexableField> getIndexableFields(
       SchemaField field, IndexableField f, BytesRef bytes) {
     final IndexableField docval =
         field.multiValued()
-            ? new SortedSetDocValuesField(field.getName(), bytes)
-            : new SortedDocValuesField(field.getName(), bytes);
+            ? createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList())
+            : createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
 
     if (null == f) {
       return List.of(docval);
@@ -146,6 +144,10 @@ public class SortableTextField extends TextField {
   @Override
   protected void checkSupportsDocValues() {
     // No-Op
+  }
+
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
   }
 
   @Override
