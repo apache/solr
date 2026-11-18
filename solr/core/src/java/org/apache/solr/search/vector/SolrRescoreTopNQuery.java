@@ -33,8 +33,9 @@ import org.apache.lucene.search.RescoreTopNQuery;
  * but the re-ranking query has no equivalent guard, so an oversampled knn query that matches
  * nothing (a restrictive {@code preFilter}, say) fails instead of returning no results.
  *
- * <p>TODO: remove this class once the guard is added upstream in Lucene and Solr picks up a release
- * containing it.
+ * <p>TODO: this was fixed with https://github.com/apache/lucene/commit/645d4fe14a203471fd120709c8bcbacbf3d9d256
+ *          remove this class once Solr adopts a Lucene version including it. At the time of writing, it looks like
+ *          it will not be backported into Lucene 10.x, so likely Lucene 11.0 upgrade.
  */
 public class SolrRescoreTopNQuery extends RescoreTopNQuery {
 
