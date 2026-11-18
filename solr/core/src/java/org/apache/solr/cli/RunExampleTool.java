@@ -668,7 +668,8 @@ public class RunExampleTool extends ToolBase {
             + serverDir.getParent().toAbsolutePath().normalize());
     Path tls = home.resolve("tls");
     Path include = tls.resolve("solr.in.sh");
-    String zkHost = "localhost:" + (port + 1000);
+    // The /solr chroot gives the example its own ZooKeeper namespace.
+    String zkHost = "localhost:" + (port + 1000) + "/solr";
     Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
     environment.put("SOLR_INCLUDE", include.toString());
     environment.put("SOLR_ULIMIT_CHECKS", "false");
@@ -691,6 +692,20 @@ public class RunExampleTool extends ToolBase {
         Files.copy(serverDir.resolve("solr").resolve(file), nodeHome.resolve(file));
       }
     }
+    // Node 1 runs the embedded ZooKeeper, so it can't be started with -z (that would mean an
+    // external ensemble); it picks up the chrooted connect string from its solr.xml instead.
+    // Deciding if an bin/solr start -e secure can take in other params like -z or not would
+    // simplify a lot of logic.
+    Path node1SolrXml = home.resolve("node1").resolve("solr").resolve("solr.xml");
+    String solrXml = Files.readString(node1SolrXml);
+    if (!solrXml.contains("<solrcloud>")) {
+      throw new IllegalStateException(
+          "Cannot add the ZooKeeper chroot: no <solrcloud> element in " + node1SolrXml);
+    }
+    Files.writeString(
+        node1SolrXml,
+        solrXml.replaceFirst(
+            "<solrcloud>", "<solrcloud>\n    <str name=\"zkHost\">" + zkHost + "</str>"));
     writeSecureExampleFile(
         include,
         String.format(
@@ -699,6 +714,7 @@ public class RunExampleTool extends ToolBase {
             SOLR_ULIMIT_CHECKS=false
             SOLR_HOST_BIND=127.0.0.1
             SOLR_HOST_ADVERTISE=127.0.0.1
+            ZK_CREATE_CHROOT=true
             SOLR_PID_DIR=%s
             SOLR_OPTS=%s
             """,

@@ -107,9 +107,15 @@ teardown() {
     assert_failure
   done
 
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT"
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT/solr"
   assert_success
   assert_output --partial 'collections'
+
+  # The example uses a /solr chroot: ZooKeeper's root holds the chroot, not Solr's own znodes.
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT"
+  assert_success
+  assert_output --partial 'solr'
+  refute_output --partial 'collections'
 
   # The Admin UI's ZK status page (ZookeeperStatusHandler) talks to ZooKeeper over a raw
   # socket with four-letter-word commands, separately from the SolrZkClient used above;
@@ -142,21 +148,21 @@ teardown() {
   assert_output --partial 'Timeout while waiting for Zookeeper Client to connect'
 
   run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS= \
-    solr zk ls / --zk-host "localhost:$ZK_PORT"
+    solr zk ls / --zk-host "localhost:$ZK_PORT/solr"
   assert_failure
   assert_output --partial 'NoAuth'
 
   local readonly_opts="-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=$password"
   run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk ls /collections --zk-host "localhost:$ZK_PORT"
+    solr zk ls /collections --zk-host "localhost:$ZK_PORT/solr"
   assert_success
   assert_output --partial 'techproducts'
   run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" --zk-host "localhost:$ZK_PORT"
+    solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" --zk-host "localhost:$ZK_PORT/solr"
   assert_failure
   assert_output --partial 'NoAuth'
   run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT"
+    solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT/solr"
   assert_failure
   assert_output --partial 'NoAuth'
 

@@ -39,13 +39,16 @@ umask 077  # Makes new files and directories accessible only to your user
 export TUTORIAL_HOME="$PWD/tutorial/secure"
 mkdir -p "$TUTORIAL_HOME/node1/solr" "$TUTORIAL_HOME/node2/solr" "$TUTORIAL_HOME/tls"
 for node in node1 node2; do
-  cp server/solr/solr.xml "$TUTORIAL_HOME/$node/solr/"
   cp server/solr/zoo.cfg "$TUTORIAL_HOME/$node/solr/"
 done
+cp server/solr/solr.xml "$TUTORIAL_HOME/node2/solr/"
+awk '/<solrcloud>/ { print; print "    <str name=\"zkHost\">localhost:9983/solr</str>"; next } { print }' \
+  server/solr/solr.xml > "$TUTORIAL_HOME/node1/solr/solr.xml"
 cat > "$TUTORIAL_HOME/tls/solr.in.sh" <<EOF
 SOLR_ULIMIT_CHECKS=false
 SOLR_HOST_BIND=127.0.0.1
 SOLR_HOST_ADVERTISE=127.0.0.1
+ZK_CREATE_CHROOT=true
 SOLR_PID_DIR="$TUTORIAL_HOME"
 SOLR_OPTS="-Dsolr.security.allow.paths=$TUTORIAL_HOME"
 EOF
@@ -67,7 +70,7 @@ Check that it responds over HTTP, then start the second node:
 ----
 curl --fail 'http://localhost:8983/api/node/health'
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
-  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983/solr
 curl --fail 'http://localhost:8984/api/node/health'
 curl --fail --silent --show-error \
   'http://localhost:8983/api/cluster/nodes'
@@ -76,8 +79,10 @@ curl --fail --silent --show-error \
 Wait for each health request to succeed before proceeding; repeat the corresponding `curl` command if the node is still initializing.
 A listening TCP port alone does not mean Solr has finished starting.
 
-Both nodes use ZooKeeper's root namespace.
-The first node runs embedded ZooKeeper; the second joins it with `-z localhost:9983`.
+Both nodes use the `/solr` ZooKeeper namespace, also called a chroot, so Solr's znodes live under `/solr` instead of at ZooKeeper's root.
+The first node runs embedded ZooKeeper, so it is started without `-z`; the `awk` command instead writes its `solr.xml` with the chrooted connect string added to the `<solrcloud>` element.
+`ZK_CREATE_CHROOT=true` in the include file creates the namespace the first time a node connects.
+The second node joins with `-z localhost:9983/solr`.
 Each home starts with only configuration files and stores its own data.
 
 The response's `nodes` array must contain two nodes, with ports 8983 and 8984.
@@ -126,6 +131,7 @@ cat > "$TUTORIAL_HOME/tls/solr.in.sh" <<EOF
 SOLR_ULIMIT_CHECKS=false
 SOLR_HOST_BIND=127.0.0.1
 SOLR_HOST_ADVERTISE=127.0.0.1
+ZK_CREATE_CHROOT=true
 SOLR_PID_DIR="$TUTORIAL_HOME"
 SOLR_OPTS="-Dsolr.security.allow.paths=$TUTORIAL_HOME"
 SOLR_SSL_ENABLED=true
@@ -162,7 +168,7 @@ export SOLR_INCLUDE="$TUTORIAL_HOME/tls/solr.in.sh"
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
   bin/solr start -p 8983 --solr-home "$TUTORIAL_HOME/node1/solr"
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
-  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983/solr
 ----
 
 Verify each node with the trusted PEM certificate:
@@ -207,8 +213,8 @@ Confirm the embedded ZooKeeper is reachable over TLS, and that a client that nev
 
 [source,bash]
 ----
-bin/solr zk ls / -z localhost:9983
-SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= bin/solr zk ls / -z localhost:9983
+bin/solr zk ls / -z localhost:9983/solr
+SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= bin/solr zk ls / -z localhost:9983/solr
 ----
 
 The first command succeeds, using the explicit client TLS switch and SSL settings in `$SOLR_INCLUDE`.
@@ -222,7 +228,7 @@ It writes authentication settings into the private include file and creates `bas
 [source,bash]
 ----
 SOLR_HOME="$TUTORIAL_HOME/tls" bin/solr auth enable --type basicAuth \
-  --credentials admin:SolrRocks --block-unknown true -z localhost:9983
+  --credentials admin:SolrRocks --block-unknown true -z localhost:9983/solr
 chmod 600 "$TUTORIAL_HOME/tls/basicAuth.conf" "$SOLR_INCLUDE"
 ----
 
@@ -298,8 +304,8 @@ bin/solr stop -p 8983
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
   bin/solr start -p 8983 --solr-home "$TUTORIAL_HOME/node1/solr"
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
-  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
-bin/solr zk updateacls / -z localhost:9983
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983/solr
+bin/solr zk updateacls / -z localhost:9983/solr
 ----
 
 The `tail` command displays the two settings just appended to the include file.
@@ -307,13 +313,14 @@ The `tail` command displays the two settings just appended to the include file.
 The servers authenticate as `zk-admin` and create znodes with administrator access plus read-only access for `zk-readonly`.
 The `zk-readonly` account is for direct inspection of ordinary cluster metadata; Solr nodes do not use it.
 The `updateacls` command migrates existing znodes: changing the provider alone would leave their previous ACLs in place.
+It works within the `/solr` namespace; ZooKeeper's own root, outside that namespace, keeps its default open ACL.
 The ACL provider always gives `/security.json` administrator-only ACLs, so `zk-readonly` cannot read the Solr passwords stored there.
 
 Check administrator access:
 
 [source,bash]
 ----
-bin/solr zk ls / -z localhost:9983
+bin/solr zk ls / -z localhost:9983/solr
 ----
 
 For a read-only CLI session, bypass the include file so its administrator credentials aren't used: the `TLS_ENV` array sets `SOLR_INCLUDE=/dev/null` and supplies the client TLS switch and truststore directly.
@@ -332,14 +339,14 @@ TLS_ENV=(
 )
 READONLY_ZK_OPTS='-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=SolrRocks'
 env "${TLS_ENV[@]}" SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
-  bin/solr zk ls /collections -z localhost:9983
+  bin/solr zk ls /collections -z localhost:9983/solr
 printf 'read-only probe\n' > "$TUTORIAL_HOME/readonly-probe.txt"
 env "${TLS_ENV[@]}" SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
-  bin/solr zk cp "$TUTORIAL_HOME/readonly-probe.txt" zk:/readonly-probe -z localhost:9983
+  bin/solr zk cp "$TUTORIAL_HOME/readonly-probe.txt" zk:/readonly-probe -z localhost:9983/solr
 env "${TLS_ENV[@]}" SOLR_ZK_CREDS_AND_ACLS="$READONLY_ZK_OPTS" \
-  bin/solr zk cp zk:/security.json "$TUTORIAL_HOME/forbidden-security.json" -z localhost:9983
+  bin/solr zk cp zk:/security.json "$TUTORIAL_HOME/forbidden-security.json" -z localhost:9983/solr
 env "${TLS_ENV[@]}" SOLR_ZK_CREDS_AND_ACLS= \
-  bin/solr zk ls / -z localhost:9983
+  bin/solr zk ls / -z localhost:9983/solr
 ----
 
 The directory listing as `zk-readonly` succeeds.
@@ -423,7 +430,7 @@ keytool -importcert -noprompt -alias unrelated -storetype PKCS12 \
 bin/solr stop -p 8984
 SOLR_SSL_CLIENT_TRUST_STORE="$TUTORIAL_HOME/tls/untrusted-truststore.p12" \
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
-  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983/solr
 curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
   'https://localhost:8983/api/node/health'
 curl --fail --cacert "$TUTORIAL_HOME/tls/cert.pem" -u admin:SolrRocks \
@@ -461,7 +468,7 @@ Restore node 2's normal outbound trust by starting it without the temporary over
 ----
 bin/solr stop -p 8984
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
-  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983/solr
 ----
 
 Repeat the collection-state and local-query checks above until node 2's replica is `active`, then run:
@@ -496,7 +503,7 @@ export SOLR_INCLUDE="$TUTORIAL_HOME/tls/solr.in.sh"
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node1/logs" \
   bin/solr start -p 8983 --solr-home "$TUTORIAL_HOME/node1/solr"
 SOLR_LOGS_DIR="$TUTORIAL_HOME/node2/logs" \
-  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983
+  bin/solr start -p 8984 --solr-home "$TUTORIAL_HOME/node2/solr" -z localhost:9983/solr
 ----
 
 The certificate expires after 365 days.
