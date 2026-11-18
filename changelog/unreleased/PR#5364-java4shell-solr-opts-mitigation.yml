@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  Document an opt-in -XX:-UseBASE64Intrinsics setting in solr.in.sh/solr.in.cmd as an interim
+  mitigation for CVE-2026-114938 ("Java4Shell"), a JDK-level Base64 decoder RCE, until JDK vendors
+  ship a patched build
+type: security # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Marc Byrd
+links:
+  - name: PR#5364
+    url: https://github.com/apache/solr/pull/5364
