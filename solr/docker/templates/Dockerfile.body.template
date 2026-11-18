@@ -67,6 +67,13 @@ RUN set -ex; \
   mkdir -p -m0770 /var/solr; \
   chown -R "$SOLR_USER:0" /var/solr;
 
+# Interim mitigation for CVE-2026-114938 ("Java4Shell"), a heap-overflow RCE in the JDK's AVX-512
+# Base64 decoder intrinsic (OpenJDK 17.0.6+/21/25/27 on x86-64 hosts with AVX-512 VBMI). Enabled by
+# default in this image, unlike the commented-out example in solr.in.sh, since users who just pull
+# the published image don't necessarily read that file. Remove once the image is rebuilt on a JDK
+# carrying the fix (17.0.21.1/21.0.13.1/25.0.5.1/27.0.1.1+), or override SOLR_OPTS to drop it.
+RUN echo 'SOLR_OPTS="$SOLR_OPTS -XX:-UseBASE64Intrinsics"' >> /etc/default/solr.in.sh;
+
 RUN set -ex; \
     apt-get update; \
     apt-get -y --no-install-recommends install curl acl procps wget netcat-openbsd tini jattach; \
