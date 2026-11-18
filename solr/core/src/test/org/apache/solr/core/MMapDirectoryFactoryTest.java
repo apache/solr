@@ -16,9 +16,14 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.util.function.BiPredicate;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 
@@ -95,6 +100,25 @@ public class MMapDirectoryFactoryTest extends SolrTestCase {
     assertMatches(predicate, "_0.vec");
     assertDoesNotMatch(predicate, "_0.vector");
     assertDoesNotMatch(predicate, "_0.vec.tmp");
+  }
+
+  public void testPreloadIsSkippedForNonMMapDirectory() throws IOException {
+    NamedList<Object> args = new NamedList<>();
+    args.add("preload", true);
+    args.add("preloadExtensions", ".vex");
+    MMapDirectoryFactory factory = new MMapDirectoryFactory();
+    factory.init(args);
+
+    try (Directory directory = new NIOFSDirectory(createTempDir())) {
+      factory.applyPreload(directory);
+
+      try (IndexOutput output = directory.createOutput("_0.vex", IOContext.DEFAULT)) {
+        output.writeInt(42);
+      }
+      try (IndexInput input = directory.openInput("_0.vex", IOContext.DEFAULT)) {
+        assertEquals(42, input.readInt());
+      }
+    }
   }
 
   private static BiPredicate<String, IOContext> preloadPredicate(NamedList<Object> args) {
