@@ -27,13 +27,26 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 
-/** Tests TLS initialization before the startup ZooKeeper connection check. */
+/** Tests the startup ZooKeeper connection check, and its TLS initialization. */
 @ThreadLeakLingering(linger = NodeConfigZookeeperTlsTest.NETTY_SHUTDOWN_DEADLINE_MS)
 public class NodeConfigZookeeperTlsTest extends SolrTestCase {
   static final int NETTY_SHUTDOWN_DEADLINE_MS = 5000;
   private static final int CONNECT_TIMEOUT_SECONDS = 1;
   private static final long SERVER_DEADLINE_MS =
       TimeUnit.SECONDS.toMillis(CONNECT_TIMEOUT_SECONDS) * 10;
+
+  /** A node running the embedded ZooKeeper starts it later, so it can't be checked yet. */
+  public void testEmbeddedZooKeeperSkipsPreflightConnection() throws Exception {
+    System.setProperty("solr.zookeeper.server.enabled", "true");
+    System.setProperty("solr.cloud.wait.for.zk.seconds", Integer.toString(CONNECT_TIMEOUT_SECONDS));
+    int unusedPort;
+    try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+      unusedPort = socket.getLocalPort();
+    }
+    Properties properties = new Properties();
+    properties.setProperty("zkHost", "127.0.0.1:" + unusedPort + "/solr");
+    assertNotNull(NodeConfig.loadNodeConfig(createTempDir(), properties));
+  }
 
   public void testPreflightConnectionUsesTls() throws Exception {
     System.setProperty("zookeeper.client.secure", "true");

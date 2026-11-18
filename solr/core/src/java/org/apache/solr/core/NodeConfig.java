@@ -244,7 +244,9 @@ public class NodeConfig {
     //  delay starting a solr core to satisfy
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (StrUtils.isNotNullOrEmpty(zkHost)) {
+    // An embedded ZooKeeper isn't running yet: this node starts it later, in ZkContainer.
+    boolean embeddedZk = EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
+    if (StrUtils.isNotNullOrEmpty(zkHost) && !embeddedZk) {
       SSLConfigurationsFactory.current().initZooKeeper();
       int startUpZkTimeOut =
           1000

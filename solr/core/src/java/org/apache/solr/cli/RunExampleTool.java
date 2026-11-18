@@ -692,20 +692,6 @@ public class RunExampleTool extends ToolBase {
         Files.copy(serverDir.resolve("solr").resolve(file), nodeHome.resolve(file));
       }
     }
-    // Node 1 runs the embedded ZooKeeper, so it can't be started with -z (that would mean an
-    // external ensemble); it picks up the chrooted connect string from its solr.xml instead.
-    // Deciding if an bin/solr start -e secure can take in other params like -z or not would
-    // simplify a lot of logic.
-    Path node1SolrXml = home.resolve("node1").resolve("solr").resolve("solr.xml");
-    String solrXml = Files.readString(node1SolrXml);
-    if (!solrXml.contains("<solrcloud>")) {
-      throw new IllegalStateException(
-          "Cannot add the ZooKeeper chroot: no <solrcloud> element in " + node1SolrXml);
-    }
-    Files.writeString(
-        node1SolrXml,
-        solrXml.replaceFirst(
-            "<solrcloud>", "<solrcloud>\n    <str name=\"zkHost\">" + zkHost + "</str>"));
     writeSecureExampleFile(
         include,
         String.format(
@@ -1053,6 +1039,11 @@ public class RunExampleTool extends ToolBase {
                   serverDir.toAbsolutePath().toString(),
                   "-p",
                   Integer.toString(params.basePort() + node - 1)));
+      // Node 1 runs the embedded ZooKeeper, so it can't be started with -z (that would mean an
+      // external ensemble); it gets the chrooted connect string as -DzkHost instead.
+      // Deciding if an bin/solr start -e secure can take in other params like -z or not would
+      // simplify a lot of logic.
+      if (node == 1) command.add("-DzkHost=" + zkHost);
       if (node == 2) command.addAll(List.of("-z", zkHost));
       if (params.start().force()) command.add("--force");
       if (params.start().memory() != null) command.addAll(List.of("-m", params.start().memory()));
