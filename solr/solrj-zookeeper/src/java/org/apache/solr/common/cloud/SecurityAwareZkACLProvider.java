@@ -50,11 +50,9 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
 
   public SecurityAwareZkACLProvider(ZkCredentialsInjector zkCredentialsInjector, String chroot) {
     this.zkCredentialsInjector = zkCredentialsInjector;
-    // With no chroot, Solr lives in ZooKeeper's root namespace, so the security znodes are at
-    // the root.
-    String root = chroot == null ? "/" : chroot;
-    this.securityConfPath = ZKPaths.makePath(root, ZkStateReader.SOLR_SECURITY_CONF_PATH);
-    this.securityZNodePath = ZKPaths.makePath(root, SECURITY_ZNODE_PATH);
+    // ZKPaths.makePath treats a null chroot as ZooKeeper's root namespace.
+    this.securityConfPath = ZKPaths.makePath(chroot, ZkStateReader.SOLR_SECURITY_CONF_PATH);
+    this.securityZNodePath = ZKPaths.makePath(chroot, SECURITY_ZNODE_PATH);
     this.securityZNodePathDir = securityZNodePath + "/";
   }
 
