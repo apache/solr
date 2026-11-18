@@ -920,20 +920,9 @@ public class RunExampleTool extends ToolBase {
             "admin:" + password,
             "https://localhost:" + nodePort + "/api/node/health");
       }
+      // DigestZkACLProvider gives /security.json admin-only ACLs during this migration; the
+      // zk-readonly account can read the rest of the tree but not Solr's credentials.
       runSecureCommand(environment, script, "zk", "updateacls", "/", "-z", zkHost);
-      Map<String, String> adminEnvironment = new HashMap<>(environment);
-      adminEnvironment.put("SOLR_INCLUDE", "/dev/null");
-      adminEnvironment.put(
-          "SOLR_ZK_CREDS_AND_ACLS",
-          zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=" + password);
-      adminEnvironment.put("SOLR_SSL_ENABLED", "true");
-      adminEnvironment.put(
-          "SOLR_SSL_CLIENT_TRUST_STORE", tls.resolve("solr-ssl.truststore.p12").toString());
-      adminEnvironment.put("SOLR_SSL_CLIENT_TRUST_STORE_TYPE", "PKCS12");
-      adminEnvironment.put("SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD", password);
-      adminEnvironment.put("SOLR_TOOL_OPTS", "-Dzookeeper.client.secure=true");
-      runSecureCommand(
-          adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
 
       echo("\n");
       echo("6. Create one shard per node and index the techproducts documents over HTTPS.");
