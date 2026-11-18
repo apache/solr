@@ -361,13 +361,36 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testZkAliasRequestsResolveAndQuery() throws Exception {
+    String collection = getSaferTestName();
+    String alias = collection + "_alias";
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 2, 2);
+    CollectionAdminRequest.createAlias(alias, collection).process(cluster.getSolrClient());
+
+    try (CloudSolrClient client =
+        new CloudSolrClient.Builder(cluster.getZkServer().getZkAddress()).build()) {
+      assertEquals(List.of(collection), client.getClusterStateProvider().resolveAlias(alias));
+      assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
+      for (int i = 0; i < 3; i++) {
+        assertEquals(0, client.query(alias, params("q", "*:*")).getResults().getNumFound());
+      }
+    } finally {
+      CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
+      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+    }
+  }
+
+  @Test
   public void testShardReplicationFactors() throws Exception {
     final String collection = "replication_factor_collection";
     CloudSolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(client);
     cluster.waitForActiveCollection(collection, 2, 2);
 
-    DocCollection col = client.getClusterState().getCollection(collection);
+    DocCollection col =
+        client.getClusterStateProvider().getClusterState().getCollection(collection);
     String shard1Url = col.getSlice("shard1").getLeader().getCoreUrl();
     String shard2Url = col.getSlice("shard2").getLeader().getCoreUrl();
     NamedList<NamedList<?>> routeResponses = new NamedList<>();
@@ -460,7 +483,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // Test that queries with _route_ params are routed by the client
 
     // Track request counts on each node before query calls
-    ClusterState clusterState = cluster.getSolrClient().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
     Map<String, Double> requestCountsMap = new HashMap<>();
     for (Slice slice : col.getSlices()) {
@@ -831,7 +854,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-    DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
+    DocCollection coll =
+        cluster
+            .getSolrClient()
+            .getClusterStateProvider()
+            .getClusterState()
+            .getCollection(COLLECTION);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
@@ -874,7 +902,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       }
     }
     String theNode = null;
-    Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
+    Set<String> liveNodes =
+        cluster.getSolrClient().getClusterStateProvider().getClusterState().getLiveNodes();
     for (String s : liveNodes) {
       String n = cluster.getZkStateReader().getBaseUrlForNodeName(s);
       if (!allNodesOfColl.contains(n)) {
@@ -1047,7 +1076,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices =
-        cluster.getSolrClient().getClusterState().getCollection(COL).getSlices();
+        cluster
+            .getSolrClient()
+            .getClusterStateProvider()
+            .getClusterState()
+            .getCollection(COL)
+            .getSlices();
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();
     assertEquals(1, slice.getReplicas().size()); // sanity check
@@ -1103,7 +1137,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   /** Asserts that each doc is on the leader of the shard it routes to, querying that core alone. */
   private static void assertDocsOnShardLeaders(String collection, String... ids) throws Exception {
-    DocCollection col = cluster.getSolrClient().getClusterState().getCollection(collection);
+    DocCollection col =
+        cluster
+            .getSolrClient()
+            .getClusterStateProvider()
+            .getClusterState()
+            .getCollection(collection);
     for (String id : ids) {
       String coreUrl =
           col.getRouter().getTargetSlice(id, null, null, null, col).getLeader().getCoreUrl();
@@ -1122,7 +1161,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     NamedList<?> rfByRoute = (NamedList<?>) header.get(CloudSolrClient.REPFACT_BY_ROUTE);
     assertNotNull("no per-route rf in " + header, rfByRoute);
     DocCollection col =
-        cluster.getSolrClient().getClusterState().getCollection("routing_collection");
+        cluster
+            .getSolrClient()
+            .getClusterStateProvider()
+            .getClusterState()
+            .getCollection("routing_collection");
     Set<String> leaderUrls = new HashSet<>();
     for (Slice slice : col.getSlices()) {
       leaderUrls.add(slice.getLeader().getCoreUrl());
@@ -1241,6 +1284,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("deprecation") // covers the deprecated ping()
   public void testPing() throws Exception {
     final String testCollection = "ping_test";
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
@@ -1253,6 +1297,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertEquals("This should be OK", 0, response.getStatus());
   }
 
+  @SuppressWarnings("deprecation") // covers the deprecated ping()
   public void testPerReplicaStateCollection() throws Exception {
     String collection = getSaferTestName();
 
