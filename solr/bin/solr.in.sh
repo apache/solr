@@ -280,6 +280,15 @@
 # then enable the following setting to address CVE-2021-44228
 #SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
 
+# CVE-2026-114938 ("Java4Shell") is a heap-overflow RCE in the JDK's AVX-512 Base64 decoder
+# intrinsic. It affects OpenJDK 17.0.6+, 21, 25 and 27 (not 8 or 11) running on x86-64 hosts with
+# AVX-512 VBMI support; Solr's BasicAuthPlugin and PKIAuthenticationPlugin both decode
+# request-supplied Base64 input. If your JDK vendor has not yet shipped a build with the fix
+# (17.0.21.1, 21.0.13.1, 25.0.5.1, 27.0.1.1 or later), enable the following setting as an interim
+# mitigation. It disables the intrinsic in favor of the plain decoder and is safe on any platform,
+# including ones unaffected by this CVE.
+#SOLR_OPTS="$SOLR_OPTS -XX:-UseBASE64Intrinsics"
+
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 #SOLR_MODULES=extraction,ltr
 

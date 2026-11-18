@@ -248,6 +248,15 @@ REM Some previous versions of Solr use an outdated log4j dependency. If you are 
 REM then enable the following setting to address CVE-2021-44228
 REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
 
+REM CVE-2026-114938 ("Java4Shell") is a heap-overflow RCE in the JDK's AVX-512 Base64 decoder
+REM intrinsic. It affects OpenJDK 17.0.6+, 21, 25 and 27 (not 8 or 11) running on x86-64 hosts with
+REM AVX-512 VBMI support; Solr's BasicAuthPlugin and PKIAuthenticationPlugin both decode
+REM request-supplied Base64 input. If your JDK vendor has not yet shipped a build with the fix
+REM (17.0.21.1, 21.0.13.1, 25.0.5.1, 27.0.1.1 or later), enable the following setting as an interim
+REM mitigation. It disables the intrinsic in favor of the plain decoder and is safe on any platform,
+REM including ones unaffected by this CVE.
+REM set SOLR_OPTS=%SOLR_OPTS% -XX:-UseBASE64Intrinsics
+
 REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 REM set SOLR_MODULES=extraction,ltr
 
