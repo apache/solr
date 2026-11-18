@@ -85,6 +85,14 @@ Test group filters can be combined into Boolean expressions:
 gradlew -p solr/core test -Ptests.filter="default and not(@awaitsfix)"
 
 
+Docker (Testcontainers) tests
+-----------------------------
+
+Some tests need Docker and are skipped if it isn't available. Control this with
+-Ptests.docker (or env var TESTS_DOCKER): false skips them without contacting
+Docker, true fails them if Docker is unavailable, unset auto-detects.
+
+
 Reiteration ("beasting")
 ------------------------
 

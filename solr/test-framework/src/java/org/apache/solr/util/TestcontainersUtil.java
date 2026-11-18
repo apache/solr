@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.common.util.EnvUtils;
 import org.junit.Assume;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,16 +37,27 @@ public final class TestcontainersUtil {
   private TestcontainersUtil() {}
 
   /**
+   * System property controlling Docker use: {@code false} skips Docker tests without contacting
+   * Docker, {@code true} fails them if Docker is unavailable, unset auto-detects.
+   */
+  public static final String SYSPROP_DOCKER = "tests.docker";
+
+  /**
    * Asserts that Docker/Testcontainers is available in the current environment and that the
    * specified image has a platform variant compatible with the current architecture (specifically
-   * verifying on s390x). If either check fails, the calling test is skipped via {@link Assume}.
+   * verifying on s390x). If either check fails, the calling test is skipped via {@link Assume}. See
+   * {@link #SYSPROP_DOCKER}.
    *
    * @param dockerImage the Docker image to check
    */
   public static void assumeContainerAvailable(String dockerImage) {
-    Assume.assumeTrue(
-        "Docker/Testcontainers not available; skipping test",
-        DockerClientFactory.instance().isDockerAvailable());
+    String dockerProp = EnvUtils.getProperty(SYSPROP_DOCKER);
+    Assume.assumeFalse(SYSPROP_DOCKER + "=false; skipping test", "false".equals(dockerProp));
+    boolean available = DockerClientFactory.instance().isDockerAvailable();
+    if ("true".equals(dockerProp) && !available) {
+      throw new IllegalStateException(SYSPROP_DOCKER + "=true but Docker is not available");
+    }
+    Assume.assumeTrue("Docker/Testcontainers not available; skipping test", available);
     if (S390X.equalsIgnoreCase(System.getProperty("os.arch"))) {
       Assume.assumeTrue(
           dockerImage + " has no s390x variant; skipping test", hasS390xVariant(dockerImage));
