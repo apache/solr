@@ -27,8 +27,8 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 
-/** Test-case for MMapDirectoryFactory */
-public class MMapDirectoryFactoryTest extends SolrTestCase {
+/** Tests the preload settings of {@link StandardDirectoryFactory} and its subclasses. */
+public class StandardDirectoryFactoryTest extends SolrTestCase {
 
   public void testPreloadDefaultsToNoFiles() {
     assertSame(MMapDirectory.NO_FILES, preloadPredicate(new NamedList<>()));
@@ -106,7 +106,7 @@ public class MMapDirectoryFactoryTest extends SolrTestCase {
     NamedList<Object> args = new NamedList<>();
     args.add("preload", true);
     args.add("preloadExtensions", ".vex");
-    MMapDirectoryFactory factory = new MMapDirectoryFactory();
+    StandardDirectoryFactory factory = new StandardDirectoryFactory();
     factory.init(args);
 
     try (Directory directory = new NIOFSDirectory(createTempDir())) {
@@ -122,7 +122,7 @@ public class MMapDirectoryFactoryTest extends SolrTestCase {
   }
 
   private static BiPredicate<String, IOContext> preloadPredicate(NamedList<Object> args) {
-    MMapDirectoryFactory factory = new MMapDirectoryFactory();
+    StandardDirectoryFactory factory = new StandardDirectoryFactory();
     factory.init(args);
     return factory.preloadPredicate();
   }
