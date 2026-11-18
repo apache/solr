@@ -26,9 +26,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.util.AddressUtils;
+import org.apache.solr.util.configuration.ZookeeperSSLConfigurations;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -92,9 +95,18 @@ public class SolrZkServer {
   }
 
   private InetSocketAddress getClientAddress() {
-    return zkProps.getClientPortAddress() != null
-        ? zkProps.getClientPortAddress()
-        : zkProps.getSecureClientPortAddress();
+    return isClientSecure() ? zkProps.getSecureClientPortAddress() : zkProps.getClientPortAddress();
+  }
+
+  /** Whether Solr's client should use the embedded server's secure listener. */
+  public boolean isClientSecure() {
+    return zkProps.getSecureClientPortAddress() != null
+        && (zkProps.getClientPortAddress() == null
+            || EnvUtils.getPropertyAsBool(ZKClientConfig.SECURE_CLIENT, isHttpsEnabled()));
+  }
+
+  private static boolean isHttpsEnabled() {
+    return EnvUtils.getProperty(ZkStateReader.HTTPS_PORT_PROP) != null;
   }
 
   public void parseConfig() {
@@ -123,17 +135,20 @@ public class SolrZkServer {
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
+      if (props.getProperty("clientPort") == null
+          && props.getProperty("secureClientPort") == null) {
+        props.setProperty("clientPort", Integer.toString(solrPort + 1000));
+      }
+      if (zkRun && isHttpsEnabled()) {
+        ZookeeperSSLConfigurations.configureServer(props);
+      }
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
       String bindHost = EnvUtils.getProperty("solr.zookeeper.embedded.host", "127.0.0.1");
-      boolean hasClientPort = props.getProperty("clientPort") != null;
-      boolean hasSecureClientPort = props.getProperty("secureClientPort") != null;
-      if (!hasClientPort && !hasSecureClientPort) {
-        props.setProperty("clientPort", Integer.toString(solrPort + 1000));
-        hasClientPort = true;
+      if (props.containsKey("clientPort")) props.setProperty("clientPortAddress", bindHost);
+      if (props.containsKey("secureClientPort")) {
+        props.setProperty("secureClientPortAddress", bindHost);
       }
-      if (hasClientPort) props.setProperty("clientPortAddress", bindHost);
-      if (hasSecureClientPort) props.setProperty("secureClientPortAddress", bindHost);
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
       if (zkRun) {
@@ -177,9 +192,9 @@ public class SolrZkServer {
             },
             "embeddedZkServer");
 
+    InetSocketAddress clientAddress = getClientAddress();
     if (log.isInfoEnabled()) {
-      InetSocketAddress clientAddress = getClientAddress();
-      log.info( // nowarn
+      log.info(
           "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at {}:{}",
           clientAddress.getAddress().getHostAddress(),
           clientAddress.getPort());

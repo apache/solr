@@ -46,6 +46,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.ModuleUtils;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -244,6 +245,7 @@ public class NodeConfig {
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
+      SSLConfigurationsFactory.current().initZooKeeper();
       int startUpZkTimeOut =
           1000
               * Integer.getInteger(

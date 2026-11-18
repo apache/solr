@@ -79,6 +79,12 @@ public class SSLConfigurations {
     }
   }
 
+  /** Initializes outbound SSL and, when explicitly enabled, ZooKeeper client TLS defaults. */
+  public void initZooKeeper() {
+    init();
+    ZookeeperSSLConfigurations.configureClient();
+  }
+
   /**
    * @return password for keystore used for SSL connections
    */

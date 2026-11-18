@@ -675,7 +675,6 @@ public class RunExampleTool extends ToolBase {
     environment.put("SOLR_PID_DIR", home.toString());
     environment.put("SOLR_HOME", tls.toString());
     environment.remove("SOLR_ZK_CREDS_AND_ACLS");
-    environment.remove("SOLR_ZK_TLS_OPTS");
     environment.remove("ZK_HOST");
     echo(
         "Generated password: "
@@ -800,6 +799,8 @@ public class RunExampleTool extends ToolBase {
               SOLR_SSL_NEED_CLIENT_AUTH=false
               SOLR_SSL_WANT_CLIENT_AUTH=false
               SOLR_SSL_CHECK_PEER_NAME=true
+              SOLR_OPTS="$SOLR_OPTS -Dzookeeper.client.secure=true"
+              SOLR_TOOL_OPTS="$SOLR_TOOL_OPTS -Dzookeeper.client.secure=true"
               """,
               secureExampleShellQuote(tls.resolve("solr-ssl.keystore.p12").toString()),
               secureExampleShellQuote(password),
@@ -925,10 +926,12 @@ public class RunExampleTool extends ToolBase {
       adminEnvironment.put(
           "SOLR_ZK_CREDS_AND_ACLS",
           zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=" + password);
-      // SOLR_INCLUDE=/dev/null above skips the include file where bin/solr persisted
-      // SOLR_ZK_TLS_OPTS, so this one bypass call needs its own copy to still reach the
-      // now TLS-only embedded ZooKeeper.
-      adminEnvironment.put("SOLR_ZK_TLS_OPTS", extractZkTlsOpts(include));
+      adminEnvironment.put("SOLR_SSL_ENABLED", "true");
+      adminEnvironment.put(
+          "SOLR_SSL_CLIENT_TRUST_STORE", tls.resolve("solr-ssl.truststore.p12").toString());
+      adminEnvironment.put("SOLR_SSL_CLIENT_TRUST_STORE_TYPE", "PKCS12");
+      adminEnvironment.put("SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD", password);
+      adminEnvironment.put("SOLR_TOOL_OPTS", "-Dzookeeper.client.secure=true");
       runSecureCommand(
           adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
 
@@ -1056,23 +1059,6 @@ public class RunExampleTool extends ToolBase {
     for (int nodePort : List.of(port + 1, port)) {
       runSecureCommand(environment, script, "stop", "-p", Integer.toString(nodePort));
     }
-  }
-
-  /**
-   * Reads the {@code SOLR_ZK_TLS_OPTS} value that {@code bin/solr} added to {@code include} when it
-   * started node 1's embedded ZooKeeper with {@code SOLR_SSL_ENABLED=true}.
-   */
-  private String extractZkTlsOpts(Path include) throws IOException {
-    String marker = "SOLR_ZK_TLS_OPTS=\"";
-    for (String line : Files.readAllLines(include)) {
-      if (line.startsWith(marker)) {
-        return line.substring(marker.length(), line.length() - 1);
-      }
-    }
-    throw new IllegalStateException(
-        "Expected bin/solr to have added SOLR_ZK_TLS_OPTS to "
-            + include
-            + " when starting the embedded ZooKeeper with SOLR_SSL_ENABLED=true.");
   }
 
   private static String secureExampleShellQuote(String value) {

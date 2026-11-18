@@ -1,12 +1,9 @@
 title: >
-  bin/solr now automatically secures the embedded ZooKeeper's transport with TLS,
-  reusing Solr's own keystore/truststore, whenever SOLR_SSL_ENABLED=true and Solr is
-  starting its own embedded ZooKeeper (no -z/--zk-host). This changes default behavior
-  on upgrade for any such deployment, not just the bin/solr start -e secure example and
-  tutorial, which also use it: an embedded ZooKeeper that was previously plaintext will
-  come up TLS-only. This has no effect when pointing Solr at an external ZooKeeper
-  ensemble, which must be secured independently. Unix/macOS (bin/solr) only; on Windows
-  (bin/solr.cmd) the embedded ZooKeeper remains plaintext, unchanged.
+  Embedded ZooKeeper now configures its client listener for TLS at runtime when
+  Solr HTTPS is enabled, reusing Solr's SSL settings and credential providers.
+  Joining Solr nodes and CLI clients must explicitly enable zookeeper.client.secure
+  and supply matching client SSL settings. External ensembles remain independently
+  configured; ZooKeeper quorum and election traffic is unchanged.
 type: changed
 authors:
   - name: Eric Pugh
