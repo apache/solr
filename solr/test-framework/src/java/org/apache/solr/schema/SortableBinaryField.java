@@ -19,8 +19,6 @@ package org.apache.solr.schema;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Pruning;
@@ -33,6 +31,10 @@ public class SortableBinaryField extends BinaryField {
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
+  }
+
+  @Override
+  protected void checkSupportsDocValuesSkipList() { // we support DocValues skip lists
   }
 
   @Override
@@ -53,9 +55,11 @@ public class SortableBinaryField extends BinaryField {
               byteBuffer.arrayOffset() + byteBuffer.position(),
               byteBuffer.remaining());
       if (field.multiValued()) {
-        fields.add(new SortedSetDocValuesField(field.getName(), bytes));
+        fields.add(
+            createSortedSetDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList()));
       } else {
-        fields.add(new SortedDocValuesField(field.getName(), bytes));
+        fields.add(
+            createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList()));
       }
       return fields;
     } else {

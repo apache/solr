@@ -39,6 +39,10 @@ public abstract class PrimitiveFieldType extends FieldType {
   }
 
   @Override
+  protected void checkSupportsDocValuesSkipList() { // primitive types support DocValues skip lists
+  }
+
+  @Override
   protected boolean enableDocValuesByDefault() {
     return true;
   }
