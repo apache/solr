@@ -22,10 +22,12 @@ import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,6 +64,7 @@ import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -1447,16 +1450,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     String asyncId = "lock-fail-test-async-123";
 
     // Create a real OverseerCollectionMessageHandler so we exercise the real LockTree locking
-    OverseerCollectionMessageHandler collHandler =
-        new OverseerCollectionMessageHandler(
-            zkStateReaderMock,
-            "1234",
-            shardHandlerFactoryMock,
-            ADMIN_PATH,
-            new Stats(),
-            overseerMock,
-            new OverseerNodePrioritizer(
-                zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock));
+    OverseerCollectionMessageHandler collHandler = newCollectionMessageHandler();
 
     // Acquire a lock on collA by calling lockTask directly.
     // This puts a real lock into the LockTree's allLocks map.
@@ -1471,38 +1465,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     assertNotNull("Should have acquired lock on collA", collALock);
     String collALockId = collALock.id();
 
-    // Build a selector that always returns our real handler
-    OverseerTaskProcessor.OverseerMessageHandlerSelector selector =
-        new OverseerTaskProcessor.OverseerMessageHandlerSelector() {
-          @Override
-          public void close() {
-            IOUtils.closeQuietly(collHandler);
-          }
-
-          @Override
-          public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
-            return collHandler;
-          }
-        };
-
-    // Create a processor using the real handler
-    OverseerTaskProcessor processor =
-        new OverseerTaskProcessor(
-            zkStateReaderMock,
-            "1234",
-            new Stats(),
-            selector,
-            mock(OverseerNodePrioritizer.class),
-            workQueueMock,
-            runningMapMock,
-            completedMapMock,
-            failureMapMock,
-            solrMetricsContextMock) {
-          @Override
-          protected LeaderStatus amILeader() {
-            return LeaderStatus.YES;
-          }
-        };
+    // Create a processor that always routes tasks to our real handler
+    OverseerTaskProcessor processor = newProcessor(collHandler);
 
     Thread processorThread = new Thread(processor);
     processorThread.start();
@@ -1538,5 +1502,171 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       processorThread.interrupt();
       processorThread.join(MAX_WAIT_MS);
     }
+  }
+
+  /**
+   * Verify that when marking an async task as running in ZooKeeper fails with an unexpected
+   * KeeperException, the collection lock taken for that task is released. Otherwise no later task
+   * for the collection could acquire it.
+   */
+  @Test
+  public void testRunningMapFailureReleasesCollectionLock() throws Exception {
+    commonMocks(2, false);
+
+    String asyncId = "running-map-fail-test-async-123";
+    doThrow(new KeeperException.OperationTimeoutException())
+        .when(runningMapMock)
+        .put(eq(asyncId), any());
+
+    OverseerCollectionMessageHandler collHandler = newCollectionMessageHandler();
+
+    OverseerTaskProcessor processor = newProcessor(collHandler);
+
+    Thread processorThread = new Thread(processor);
+    processorThread.start();
+
+    ZkNodeProps collAMessage =
+        new ZkNodeProps(
+            Map.of(
+                Overseer.QUEUE_OPERATION,
+                CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+                "name",
+                "collA",
+                "async",
+                asyncId));
+    try {
+      queue.add(new QueueEvent("runningMapFailTask", Utils.toJSON(collAMessage), null));
+      verify(runningMapMock, timeout(MAX_WAIT_MS).atLeastOnce()).put(eq(asyncId), any());
+    } finally {
+      processor.close();
+      processorThread.interrupt();
+      processorThread.join(MAX_WAIT_MS);
+    }
+
+    // A fresh session ignores the processor's busy markers, so this only fails if a lock on collA
+    // is still held.
+    OverseerMessageHandler.Lock lock = collHandler.lockTask(collAMessage, Long.MAX_VALUE, null);
+    assertNotNull("The lock on collA was not released after the running map failure", lock);
+    lock.unlock();
+  }
+
+  /** Creates a real OverseerCollectionMessageHandler, so tests exercise the real LockTree. */
+  private OverseerCollectionMessageHandler newCollectionMessageHandler() {
+    return new OverseerCollectionMessageHandler(
+        zkStateReaderMock,
+        "1234",
+        shardHandlerFactoryMock,
+        ADMIN_PATH,
+        new Stats(),
+        overseerMock,
+        new OverseerNodePrioritizer(
+            zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock));
+  }
+
+  /** Creates a processor that always routes tasks to the given handler. */
+  private OverseerTaskProcessor newProcessor(OverseerCollectionMessageHandler collHandler) {
+    OverseerTaskProcessor.OverseerMessageHandlerSelector selector =
+        new OverseerTaskProcessor.OverseerMessageHandlerSelector() {
+          @Override
+          public void close() {
+            IOUtils.closeQuietly(collHandler);
+          }
+
+          @Override
+          public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
+            return collHandler;
+          }
+        };
+    return new OverseerTaskProcessor(
+        zkStateReaderMock,
+        "1234",
+        new Stats(),
+        selector,
+        mock(OverseerNodePrioritizer.class),
+        workQueueMock,
+        runningMapMock,
+        completedMapMock,
+        failureMapMock,
+        solrMetricsContextMock) {
+      @Override
+      protected LeaderStatus amILeader() {
+        return LeaderStatus.YES;
+      }
+    };
+  }
+
+  @Test
+  public void testLockTaskResolvesFollowedAlias() throws Exception {
+    commonMocks(2, false);
+    when(zkStateReaderMock.getAliases())
+        .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("aliasA", "collA"));
+
+    try (OverseerCollectionMessageHandler collHandler =
+        new OverseerCollectionMessageHandler(
+            zkStateReaderMock,
+            "1234",
+            shardHandlerFactoryMock,
+            ADMIN_PATH,
+            new Stats(),
+            overseerMock,
+            new OverseerNodePrioritizer(
+                zkStateReaderMock, overseerMock, ADMIN_PATH, shardHandlerFactoryMock))) {
+      OverseerMessageHandler.Lock collALock =
+          collHandler.lockTask(
+              new ZkNodeProps(
+                  Overseer.QUEUE_OPERATION,
+                  CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+                  "name",
+                  "collA"),
+              1,
+              null);
+      assertNotNull(collALock);
+
+      OverseerMessageHandler.Lock aliasLock =
+          collHandler.lockTask(
+              new ZkNodeProps(
+                  Overseer.QUEUE_OPERATION,
+                  CollectionParams.CollectionAction.MOCK_SHARD_TASK.toLower(),
+                  ZkStateReader.COLLECTION_PROP,
+                  "aliasA",
+                  ZkStateReader.SHARD_ID_PROP,
+                  "shard1",
+                  CollectionAdminParams.FOLLOW_ALIASES,
+                  "true"),
+              1,
+              null);
+      assertNull("aliasA resolves to collA, which is locked", aliasLock);
+      collALock.unlock();
+    }
+  }
+
+  @Test
+  public void testLockTaskMultiCollectionAliasReturnsBadRequest() throws Exception {
+    commonMocks(2, false);
+    when(zkStateReaderMock.getAliases())
+        .thenReturn(Aliases.EMPTY.cloneWithCollectionAlias("aliasAB", "collA,collB"));
+    createAndStartProcessor(null);
+
+    ZkNodeProps props =
+        new ZkNodeProps(
+            Overseer.QUEUE_OPERATION,
+            CollectionParams.CollectionAction.MOCK_SHARD_TASK.toLower(),
+            ZkStateReader.COLLECTION_PROP,
+            "aliasAB",
+            ZkStateReader.SHARD_ID_PROP,
+            "shard1",
+            CollectionAdminParams.FOLLOW_ALIASES,
+            "true");
+    queue.add(
+        new QueueEvent("multiAliasTask", Utils.toJSON(props), null) {
+          @Override
+          public void setBytes(byte[] bytes) {
+            lastProcessMessageResult = OverseerSolrResponseSerializer.deserialize(bytes);
+          }
+        });
+    waitForEmptyQueue();
+
+    SolrException e = (SolrException) lastProcessMessageResult.getException();
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 }

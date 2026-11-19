@@ -275,7 +275,7 @@ class CSVWriter extends TabularResponseWriter {
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
 
     for (String field : fields) {
-      if (!returnFields.wantsField(field)) {
+      if (!returnFields.returnsField(field)) {
         continue;
       }
       if (field.equals("score")) {
