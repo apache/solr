@@ -1,0 +1,7 @@
+title: Explain ZooKeeper connection timeouts in the Solr CLI
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18138
+    url: https://issues.apache.org/jira/browse/SOLR-18138

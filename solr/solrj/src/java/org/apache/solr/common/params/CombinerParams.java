@@ -29,7 +29,10 @@ public class CombinerParams {
   public static final String COMBINER_QUERY = COMBINER + ".query";
   public static final String RECIPROCAL_RANK_FUSION = "rrf";
   public static final String COMBINER_RRF_K = COMBINER + "." + RECIPROCAL_RANK_FUSION + ".k";
+  public static final String COMBINER_RRF_WEIGHT =
+      COMBINER + "." + RECIPROCAL_RANK_FUSION + ".weight";
   public static final String DEFAULT_COMBINER = RECIPROCAL_RANK_FUSION;
   public static final int DEFAULT_COMBINER_RRF_K = 60;
+  public static final float DEFAULT_COMBINER_RRF_WEIGHT = 1f;
   public static final int DEFAULT_MAX_COMBINER_QUERIES = 5;
 }
