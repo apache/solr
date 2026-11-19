@@ -354,7 +354,7 @@ public class RealTimeGetComponent extends SearchComponent {
           reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
         }
         docFetcher.decorateDocValueFields(
-            doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
+            doc, docid, docFetcher.getNonStoredDVsUsedAsStored(), reuseDvIters);
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
