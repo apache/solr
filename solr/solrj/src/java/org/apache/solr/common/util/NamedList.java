@@ -53,10 +53,13 @@ import org.apache.solr.common.params.SolrParams;
  * allows order to be easily preserved in various clients (i.e. not a straight map). If access by
  * key is more important for serialization, see {@link SimpleOrderedMap}, or simply use a regular
  * {@link Map}
+ *
+ * <p>This class is sealed: {@link SimpleOrderedMap} is its only direct subclass.
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class NamedList<T>
-    implements Cloneable, Serializable, Iterable<Map.Entry<String, T>>, MapWriter {
+public sealed class NamedList<T>
+    implements Cloneable, Serializable, Iterable<Map.Entry<String, T>>, MapWriter
+    permits SimpleOrderedMap {
 
   private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
@@ -312,8 +315,12 @@ public class NamedList<T>
   }
 
   public NamedList<T> getImmutableCopy() {
-    NamedList<T> copy = clone();
-    return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
+    return new NamedList<>(immutablePairs());
+  }
+
+  /** A read-only copy of the pairs; nulls are allowed, so this cannot use {@link List#copyOf}. */
+  List<Object> immutablePairs() {
+    return Collections.unmodifiableList(Arrays.asList(nvPairs.toArray()));
   }
 
   @SuppressWarnings("rawtypes")

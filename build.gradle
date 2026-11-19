@@ -78,7 +78,7 @@ ext {
   baseVersion = {
     def m = (version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
     if (!m) {
-      throw GradleException("Can't strip version to just x.y.z: " + rootProject.version)
+      throw new GradleException("Can't strip version to just x.y.z: " + rootProject.version)
     }
     return m[0][1]
   }()
@@ -86,7 +86,7 @@ ext {
   majorVersion = {
     def m = (version =~ /^(\d+)\.\d+\.\d+(-(.+))?/)
     if (!m) {
-      throw GradleException("Can't strip version to just major version: " + rootProject.version)
+      throw new GradleException("Can't strip version to just major version: " + rootProject.version)
     }
     return m[0][1] as int
   }
@@ -110,7 +110,7 @@ ext {
     def luceneVersion = libs.versions.apache.lucene.get()
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
-      throw GradleException("Can't strip base version from " + luceneVersion)
+      throw new GradleException("Can't strip base version from " + luceneVersion)
     }
     def luceneBaseVersion = m[0]
     logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
@@ -209,7 +209,6 @@ apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
-apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 

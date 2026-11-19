@@ -1,0 +1,10 @@
+title: >
+  Fix mmap and virtual-memory leak in IndexFetcher
+type: fixed
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18551
+    url: https://issues.apache.org/jira/browse/SOLR-18551
+  - name: Lucene Bug Report
+    url: https://github.com/apache/lucene/issues/15068

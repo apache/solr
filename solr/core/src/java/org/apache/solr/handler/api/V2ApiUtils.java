@@ -34,6 +34,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -156,6 +157,9 @@ public class V2ApiUtils {
   private static Object convertReflectWriteableValue(Object value, boolean stringifyBooleans) {
     if (stringifyBooleans && value instanceof Boolean bool) {
       return bool.toString();
+    }
+    if (value instanceof Enum<?> e) {
+      return SolrJacksonMapper.getObjectMapper().convertValue(e, Object.class);
     }
     if (value instanceof ReflectWritable) {
       NamedList<Object> result = new SimpleOrderedMap<>();
