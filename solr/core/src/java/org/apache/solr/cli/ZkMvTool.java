@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.packagemanager.PackageUtils.format;
+import static org.apache.solr.cli.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
@@ -114,7 +114,9 @@ public class ZkMvTool extends ToolBase {
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       doMv(zkClient, zkHost, src, dst);
     } catch (Exception e) {
-      log.error("Could not complete mv operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete mv operation for reason: ", e);
+      }
       throw (e);
     }
   }
@@ -152,7 +154,9 @@ public class ZkMvTool extends ToolBase {
       doMv(zkClient, zkHost, src, dst);
       return 0;
     } catch (Exception e) {
-      log.error("Could not complete mv operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete mv operation for reason: ", e);
+      }
       throw (e);
     }
   }

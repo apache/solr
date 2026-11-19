@@ -18,7 +18,7 @@
 load bats_helper
 
 setup_file() {
-  common_clean_setup
+  common_setup
 }
 
 teardown_file() {
@@ -30,8 +30,11 @@ setup() {
 }
 
 @test "Cleanup" {
-  sleep 1
   run solr stop --all
-  run solr status --max-wait-secs 10
-  assert_output --partial "No Solr nodes are running"
+  assert_success
+  run solr status --short
+  assert_success
+  for port in "$SOLR_PORT" "$SOLR2_PORT" "$SOLR3_PORT"; do
+    refute_output --partial "://localhost:${port}/"
+  done
 }
