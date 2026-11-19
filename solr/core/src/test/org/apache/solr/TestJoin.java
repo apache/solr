@@ -490,4 +490,19 @@ public class TestJoin extends SolrTestCaseJ4 {
         return "{!join " + allProvidedParams + " method=topLevelDV}";
     }
   }
+
+  @Test
+  public void testJoinMissingFromToReturns400() {
+    for (String method :
+        List.of("", "method=dvWithScore score=none", "method=topLevelDV", "score=none")) {
+      assertMissingJoinParam("{!join to=id " + method + "}*:*", "from");
+      assertMissingJoinParam("{!join from=id " + method + "}*:*", "to");
+    }
+  }
+
+  private void assertMissingJoinParam(String query, String missing) {
+    SolrException e = expectThrows(SolrException.class, () -> h.query(req("q", query, "fl", "id")));
+    assertEquals(query, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage(), e.getMessage().contains("'" + missing + "'"));
+  }
 }
