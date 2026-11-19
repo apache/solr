@@ -439,7 +439,7 @@ To modify all existing ACLs, you can use the `bin/solr zk updateacls` command wi
 First uncomment the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.*` and fill in the passwords for the admin-user and the readonly-user as described above in <<ZooKeeper ACLs in Solr CLI>>.
 
 If the target ZooKeeper requires TLS, enable `-Dzookeeper.client.secure=true` in `SOLR_TOOL_OPTS` and configure the matching client SSL settings alongside the credentials above.
-If you bypass the include file (for example with `SOLR_INCLUDE=/dev/null`), supply the TLS switch and truststore explicitly, as shown for `/security.json` in xref:getting-started:tutorial-securing-solr.adoc[].
+If you bypass the include file (for example with `SOLR_INCLUDE=/dev/null`), supply the TLS switch and truststore explicitly, as the read-only session in xref:getting-started:tutorial-securing-solr.adoc[] does.
 
 Then run the command below appropriate for your operating system:
 
