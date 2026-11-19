@@ -709,6 +709,43 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   }
 
   /**
+   * A streaming response may be silent for a long time before its first byte (e.g. a streaming
+   * expression that must compute before emitting anything). The builder's idle timeout must govern
+   * that; nothing at the Jetty HttpClient level may cap it. See SOLR-17871.
+   */
+  @Test
+  @Nightly
+  public void testIdleTimeoutBeyondOneMinute() throws Exception {
+    long silenceMs = 65_000;
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .withIdleTimeout(silenceMs + 30_000, TimeUnit.MILLISECONDS)
+            .build()) {
+      var params = new ModifiableSolrParams().set("count", "1").set("packetMs", "" + silenceMs);
+      QueryRequest req = new QueryRequest(params);
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      assertEquals("0", InputStreamResponseParser.consumeResponseToString(client.request(req)));
+    }
+  }
+
+  /** A streaming response may take longer in total than the idle timeout. See SOLR-17433. */
+  @Test
+  public void testStreamLongerThanIdleTimeout() throws Exception {
+    int packets = 10;
+    long idleTimeoutMs = ServletFixtures.SlowStreamServlet.PACKET_MS * 2;
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .withIdleTimeout(idleTimeoutMs, TimeUnit.MILLISECONDS)
+            .build()) {
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "" + packets));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      String expect =
+          IntStream.range(0, packets).mapToObj(String::valueOf).collect(Collectors.joining());
+      assertEquals(expect, InputStreamResponseParser.consumeResponseToString(client.request(req)));
+    }
+  }
+
+  /**
    * How soon an aborted request must fail: well before the slow servlet would have answered on its
    * own, so passing proves the abort, not the servlet, ended it.
    */
@@ -786,9 +823,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       NamedList<Object> response = base.requestAsync(req).get(10, TimeUnit.SECONDS);
-      try (InputStream is = (InputStream) response.get("stream")) {
-        assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
-      }
+      assertEquals("0", InputStreamResponseParser.consumeResponseToString(response));
     }
   }
 
@@ -860,10 +895,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   public void testIdleTimeoutWithHttpClient() throws Exception {
     String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (var oldClient =
-        new HttpJettySolrClient.Builder(url)
-            .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
-            .withIdleTimeout(100, TimeUnit.MILLISECONDS)
-            .build()) {
+        new HttpJettySolrClient.Builder(url).withIdleTimeout(100, TimeUnit.MILLISECONDS).build()) {
 
       try (var onlyBaseUrlChangedClient =
           new HttpJettySolrClient.Builder(url).withHttpClient(oldClient).build()) {
@@ -889,11 +921,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
             oldClient.getIdleTimeoutMillis(), idleTimeoutChangedClient.getIdleTimeoutMillis());
         assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeoutMillis());
         NamedList<Object> response = idleTimeoutChangedClient.request(req);
-        try (InputStream is = (InputStream) response.get("stream")) {
-          String expect =
-              IntStream.range(0, packets).mapToObj(String::valueOf).collect(Collectors.joining());
-          assertEquals(expect, new String(is.readAllBytes(), StandardCharsets.UTF_8));
-        }
+        String expect =
+            IntStream.range(0, packets).mapToObj(String::valueOf).collect(Collectors.joining());
+        assertEquals(expect, InputStreamResponseParser.consumeResponseToString(response));
       }
     }
   }
@@ -925,9 +955,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
               .withRequestTimeout(newRequestTimeoutMs, TimeUnit.MILLISECONDS)
               .build()) {
         NamedList<Object> response = requestTimeoutChangedClient.request(req);
-        try (InputStream is = (InputStream) response.get("stream")) {
-          assertEquals("0123456789", new String(is.readAllBytes(), StandardCharsets.UTF_8));
-        }
+        assertEquals("0123456789", InputStreamResponseParser.consumeResponseToString(response));
       }
     }
   }
