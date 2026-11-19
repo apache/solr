@@ -16,7 +16,7 @@
 adobe-testing-s3mock = "5.2.0"
 amazon-awssdk = "2.54.6"
 # @keep Antora version used in ref-guide
-antora = "3.1.12"
+antora = "3.2.2"
 # @keep Most recent commit as of 2025-08-03, this repo does not have tags
 antora-default-ui = "782311344b54aaa734d4c86629b8cd75e4da36d6"
 # @keep Antora Lunr extensions version used in ref-guide
@@ -81,7 +81,7 @@ diffplug-spotless = "8.10.0"
 dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.39"
 eclipse-ecj = "3.46.0"
-eclipse-jetty = "12.1.12"
+eclipse-jetty = "12.1.14"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.7.1.202607240634-r"
 fasterxml = "2.22.3"
