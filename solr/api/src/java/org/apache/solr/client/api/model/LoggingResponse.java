@@ -19,7 +19,7 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** Generic logging response that includes the name of the log watcher (e.g. "Log4j2") */
-public class LoggingResponse extends SolrJerseyResponse {
+public class LoggingResponse extends NodeProxyingJerseyResponse {
   @JsonProperty("watcher")
   public String watcherName;
 }

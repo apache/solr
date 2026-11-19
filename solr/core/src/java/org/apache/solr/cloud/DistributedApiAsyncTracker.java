@@ -286,6 +286,11 @@ public class DistributedApiAsyncTracker {
         && trackedAsyncTasks.remove(asyncId);
   }
 
+  @VisibleForTesting
+  public Collection<String> getTrackedAsyncIds() throws Exception {
+    return trackedAsyncTasks.keys();
+  }
+
   /**
    * Deletes all async id's for completed or failed async jobs. Does not touch id's for submitted or
    * running jobs.

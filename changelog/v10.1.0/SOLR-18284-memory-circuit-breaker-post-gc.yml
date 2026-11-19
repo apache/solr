@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: MemoryCircuitBreaker now measures post-GC live heap data, so it no longer trips on collectible garbage.
+type: fixed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18284
+    url: https://issues.apache.org/jira/browse/SOLR-18284
