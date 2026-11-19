@@ -63,9 +63,8 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
     setText(By.id("password"), PASS);
     click(By.xpath("//div[@id='login']//button[@type='submit']"));
 
-    // after login the dashboard loads and shows the authenticated security info
-    waitFor(By.id("index"));
-    waitForPageContains("BasicAuthPlugin");
+    waitFor(By.id("nodes-table"));
+    waitFor(By.id("menu-section-cluster"));
 
     // the security screen shows the configured plugins and users
     openPage("~security", By.id("securityPanel"));

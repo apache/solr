@@ -42,7 +42,7 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   private final Function<String, String> pkgVersionSupplier;
 
   /** package name and the versions that we are tracking */
-  private Map<String, PackageAPI.PkgVersion> packageVersions = new ConcurrentHashMap<>(1);
+  private Map<String, PackageStore.PkgVersion> packageVersions = new ConcurrentHashMap<>(1);
 
   private Map<String, String> classNameVsPackageName = new ConcurrentHashMap<>();
   private final Runnable reloadAction;
@@ -99,7 +99,7 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
         p.getLatest(pkgVersionSupplier.apply(cName.pkg));
     if (registerListener) {
       classNameVsPackageName.put(cName.original, cName.pkg);
-      PackageAPI.PkgVersion pkgVersion = theVersion.getPkgVersion();
+      PackageStore.PkgVersion pkgVersion = theVersion.getPkgVersion();
       if (pkgVersion != null) packageVersions.put(cName.pkg, pkgVersion);
     }
     return theVersion;
@@ -111,7 +111,7 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   @Override
   public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
     if (cName.pkg == null) return null;
-    PackageAPI.PkgVersion p = packageVersions.get(cName.pkg);
+    PackageStore.PkgVersion p = packageVersions.get(cName.pkg);
     return p == null ? null : p::writeMap;
   }
 
@@ -162,15 +162,15 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   }
 
   @Override
-  public Map<String, PackageAPI.PkgVersion> packageDetails() {
-    Map<String, PackageAPI.PkgVersion> result = new LinkedHashMap<>();
+  public Map<String, PackageStore.PkgVersion> packageDetails() {
+    Map<String, PackageStore.PkgVersion> result = new LinkedHashMap<>();
     classNameVsPackageName.forEach((k, v) -> result.put(k, packageVersions.get(v)));
     return result;
   }
 
   @Override
   public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
-    PackageAPI.PkgVersion currVer = packageVersions.get(pkg.name);
+    PackageStore.PkgVersion currVer = packageVersions.get(pkg.name);
     if (currVer == null) {
       // not watching this
       return;

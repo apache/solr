@@ -225,7 +225,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
+curl 'http://localhost:8983/solr/admin/authentication' -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
   "set-property": {
     "blockUnknown":true,
     "wellKnownUrl": "https://example.com/.well-known/openid-configuration",
@@ -241,7 +241,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
+curl 'http://localhost:8983/api/cluster/security/authentication' -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
   "set-property": {
     "blockUnknown":true,
     "wellKnownUrl": "https://example.com/.well-known/openid-configuration",
@@ -276,7 +276,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" http://localhost:8983/solr/admin/info/system
+curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" 'http://localhost:8983/solr/admin/info/system'
 ----
 ====
 
@@ -285,7 +285,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" http://localhost:8983/api/node/system
+curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" 'http://localhost:8983/api/node/system'
 ----
 ====
 ======

@@ -26,8 +26,10 @@ from subprocess import TimeoutExpired
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import scriptutil
+from changes2html import write_changes_html
 
 LOG = '/tmp/release.log'
 dev_mode = False
@@ -112,13 +114,18 @@ def prepare(root, version, pause_before_sign, mf_username, gpg_key_id, gpg_passw
   checkDOAPfiles(version)
 
   if not dev_mode:
-    print('  ./gradlew --no-daemon -Dtests.badapples=false clean check')
-    run('./gradlew --no-daemon -Dtests.badapples=false clean check')
+    print('  ./gradlew --no-daemon clean check')
+    run('./gradlew --no-daemon clean check')
   else:
     print('  skipping precommit check due to dev-mode')
 
   if pause_before_sign:
     input("Tests complete! Please press ENTER to proceed to assembleRelease: ")
+
+  changes_html_dir = Path(root) / 'solr' / 'documentation' / 'build' / 'site' / 'changes'
+  print('  Generate Changes.html for the release')
+  changes_html_file = write_changes_html(Path(root) / 'CHANGELOG.md', changes_html_dir)
+  print('  Generated %s' % changes_html_file)
 
   print('  prepare-release')
   cmd = './gradlew --no-daemon assembleRelease' \
