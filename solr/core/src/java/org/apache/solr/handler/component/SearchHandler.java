@@ -61,8 +61,8 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -201,7 +201,7 @@ public class SearchHandler extends RequestHandlerBase
                 }
 
                 @Override
-                public Map<String, PackageAPI.PkgVersion> packageDetails() {
+                public Map<String, PackageStore.PkgVersion> packageDetails() {
                   return Map.of();
                 }
 
@@ -667,11 +667,6 @@ public class SearchHandler extends RequestHandlerBase
                 throwSolrException(shardException.get());
               } else {
                 rsp.setPartialResults(rb.req);
-                if (publishCpuTime) {
-                  totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
-                  rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
-                  rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
-                }
               }
             }
           }
