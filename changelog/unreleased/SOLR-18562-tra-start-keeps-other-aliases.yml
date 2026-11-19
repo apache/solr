@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Fixing a time routed alias's date math router.start when a document arrives no longer undoes
+  changes to aliases the receiving node hadn't seen yet, and no longer moves an already fixed start
+type: fixed
+authors:
+  - name: Boyi Dai
+    nick: SpookyJumpyBeans
+links:
+  - name: SOLR-18562
+    url: https://issues.apache.org/jira/browse/SOLR-18562
