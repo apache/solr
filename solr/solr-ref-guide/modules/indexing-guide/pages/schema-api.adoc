@@ -42,7 +42,11 @@ Prior to Solr 9, this xml file was referred to as `managed-schema` with no file 
 The API allows two output modes for all calls: JSON or XML.
 When requesting the complete schema, there is another output mode which is XML modeled after the managed-schema.xml file itself, which is in XML format.
 
-When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter.
+A request containing only `add-field`, `add-dynamic-field`, and `add-copy-field` commands is applied without a core reload, which would otherwise pause indexing.
+Documents indexed after the command returns can use the new schema elements immediately.
+In user-managed (standalone) mode, queries can use them as soon as the command returns.
+In SolrCloud, queries can use them after the next commit or soft commit opens a new searcher.
+Any other command, including a request mixing other commands with these, reloads the core, so avoid issuing those while the collection is under sustained indexing load.
 Previously indexed documents will *not* be automatically updated - they *must* be reindexed if existing index data uses schema elements that you changed.
 
 .Reindex after schema modifications!
@@ -88,7 +92,8 @@ Commands are executed in the order in which they are specified.
 
 In each case, the response will include the status and the time to process the request, but will not include the entire schema.
 
-When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter.
+Requests containing only `add-field`, `add-dynamic-field`, and `add-copy-field` commands do not reload the core; other schema commands do.
+See <<Modify the Schema>> above for when the changes become visible to indexing and queries.
 Previously indexed documents will *not* be automatically handled - they *must* be reindexed if they used schema elements that you changed.
 
 === Add a New Field

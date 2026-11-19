@@ -346,7 +346,7 @@ public class CreateTool extends ToolBase {
               + " using the Configsets V2 API");
       var uploadReq =
           new ConfigsetsApi.UploadConfigSet(
-              confName, new ByteArrayInputStream(zipConfigSet(confPath)));
+              confName, new ByteArrayInputStream(Utils.zipDirectory(confPath)));
       uploadReq.process(cloudSolrClient);
     }
 
@@ -386,11 +386,6 @@ public class CreateTool extends ToolBase {
     }
 
     echo(endMessage);
-  }
-
-  /** Zips the contents of a configset directory for upload. */
-  static byte[] zipConfigSet(Path confPath) throws IOException {
-    return Utils.zipDirectory(confPath);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {

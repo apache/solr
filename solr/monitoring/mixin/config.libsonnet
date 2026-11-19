@@ -31,5 +31,47 @@
     // Window for rate() queries, and the preselected value of the dashboard's
     // Interval dropdown. Raise it for sparse scrape intervals.
     rateInterval: '5m',
+
+    // Alert thresholds. Each is consumed by exactly one rule in alerts/.
+
+    // Fraction of the committed heap in use that fires SolrHighHeapUsage.
+    // bin/solr pins -Xms to -Xmx, so that is the maximum heap; where they
+    // differ, the rule measures the heap as currently sized.
+    heapUsageThreshold: 0.9,
+
+    // Seconds of garbage collection per minute that fire SolrJvmGcThrashing.
+    gcSecondsPerMinuteThreshold: 10,
+
+    // Fraction of the partition still free that fires SolrLowDiskSpace.
+    diskFreeThreshold: 0.15,
+
+    // 99th percentile /select latency in milliseconds that fires
+    // SolrHighSearchLatency.
+    searchLatencyThresholdMs: 1000,
+
+    // Fraction of requests failing that fires SolrHighErrorRate.
+    errorRateThreshold: 0.01,
+
+    // Pending Overseer collection operations that fire
+    // SolrOverseerQueueBuildup.
+    overseerQueueThreshold: 50,
+
+    // Percentage of the index that still fits in memory outside the heap,
+    // below which SolrHighMmapRatio fires.
+    mmapRatioThreshold: 10,
+
+    // How long a node may send no metrics before SolrNodeDown treats it as
+    // gone. Must comfortably exceed the scrape interval, or the OTLP push
+    // interval where metrics are pushed through a collector.
+    nodeReportingWindow: '5m',
+
+    // How far back SolrNodeDown looks to decide that a node ever existed, and
+    // so for how long it keeps firing for a node that never comes back. A node
+    // absent for longer than this is taken to be decommissioned.
+    nodeReportingLookback: '1h',
+
+    // How long SolrNodeDown must hold before it fires, on top of the detection
+    // above. Lower it to be told sooner, raise it to ride out longer restarts.
+    nodeDownFor: '5m',
   },
 }
