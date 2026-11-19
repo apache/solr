@@ -53,12 +53,12 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     setCoreContainer(zooKeeperController.getCoreContainer());
   }
 
-  public Pair<String, Integer> getZkResourceInfo(String resource) {
+  public Pair<String, Stat> getZkResourceInfo(String resource) {
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
     try {
       Stat stat = zkController.getZkClient().exists(file, null);
       if (stat != null) {
-        return new Pair<>(file, stat.getVersion());
+        return new Pair<>(file, stat);
       } else {
         return null;
       }
