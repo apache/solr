@@ -29,6 +29,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test SolrPing in Solrj */
+@SuppressWarnings("deprecation") // this suite exists to cover the deprecated SolrPing
 public class SolrPingTest extends SolrTestCase {
 
   @ClassRule

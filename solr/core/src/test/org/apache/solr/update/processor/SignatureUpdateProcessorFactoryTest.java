@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,17 +24,18 @@ import java.util.Map;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ContentStreamBase;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -294,7 +296,13 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), mmparams);
     try {
-      req.setContentStreams(List.of(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));
+      RequestWriter.ContentWriter writer = new JavaBinRequestWriter().getContentWriter(ureq);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      writer.write(baos);
+      req.setContentStreams(
+          List.of(
+              new ContentStreamBase.ByteArrayStream(
+                  baos.toByteArray(), null, writer.getContentType())));
       UpdateRequestHandler h = new UpdateRequestHandler();
       h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());

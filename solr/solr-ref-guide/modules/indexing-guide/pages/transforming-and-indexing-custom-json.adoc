@@ -351,7 +351,7 @@ V1 API::
 ====
 [source,bash]
 ----
- curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json' -d '{
+ curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-type:application/json' -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -365,7 +365,7 @@ V2 API User-Managed / Standalone Solr::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/cores/techproducts/config/params' -H 'Content-type:application/json' -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -379,7 +379,7 @@ V2 API SolrCloud::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/config/params -H 'Content-type:application/json' -d '{
+curl 'http://localhost:8983/api/collections/techproducts/config/params' -H 'Content-type:application/json' -d '{
  "set": {
    "my_params": {
      "split": "/exams",
@@ -885,7 +885,7 @@ V1 API::
 ====
 [source,bash]
 ----
- curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json' -d '{
+ curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-type:application/json' -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",
@@ -900,7 +900,7 @@ V2 API User-Managed / Standalone Solr::
 ====
 [source,bash]
 ----
- curl http://localhost:8983/api/cores/techproducts/config/params -H 'Content-type:application/json' -d '{
+ curl 'http://localhost:8983/api/cores/techproducts/config/params' -H 'Content-type:application/json' -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",
@@ -915,7 +915,7 @@ V2 API SolrCloud::
 ====
 [source,bash]
 ----
- curl http://localhost:8983/api/collections/techproducts/config/params -H 'Content-type:application/json' -d '{
+ curl 'http://localhost:8983/api/collections/techproducts/config/params' -H 'Content-type:application/json' -d '{
 "set": {
   "full_txt": {
     "srcField": "_src_",

@@ -230,8 +230,6 @@ Let's add a date range field to the schema.xml, so that we could index the infor
 
 Next, we will add two restaurants to the index:
 
-====
-[.tab-label]*JSON*
 [source,json]
 ----
 [{ "id": "r01",
@@ -248,7 +246,6 @@ Next, we will add two restaurants to the index:
                       "[2016-02-07T12:00Z TO 2016-02-07T16:00Z]" ]}
 ]
 ----
-====
 
 Each restaurant can have multiple opening hours in a single day,
 and the opening hours can be different on different days.
