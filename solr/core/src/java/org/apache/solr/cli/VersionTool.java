@@ -30,7 +30,18 @@ import org.apache.solr.client.solrj.response.SystemInfoResponse;
  * --solr-connection}, {@code --solr-url}, or {@code --zk-host}) is provided, also prints the
  * version of the remote Solr server.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(name = "version", description = "Prints the Solr version.")
 public class VersionTool extends ToolBase {
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  public VersionTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public VersionTool(ToolRuntime runtime) {
     super(runtime);
@@ -55,10 +66,27 @@ public class VersionTool extends ToolBase {
     if (CLIUtils.hasConnectionOption(cli)) {
       String solrUrl = CLIUtils.normalizeSolrUrl(cli);
       String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
-      try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
-        SystemInfoResponse sysResponse = new SystemInfoRequest().process(solrClient);
-        echo("Server version: " + sysResponse.getSolrImplVersion());
-      }
+      echoServerVersion(solrUrl, credentials);
+    }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    echo("Client version: " + SolrVersion.LATEST);
+
+    String solrUrl = connectionOptions == null ? null : connectionOptions.effectiveSolrUrl();
+    if (solrUrl != null) {
+      echoServerVersion(
+          CLIUtils.normalizeSolrUrl(solrUrl),
+          credentialsOptions == null ? null : credentialsOptions.credentials);
+    }
+    return 0;
+  }
+
+  private void echoServerVersion(String solrUrl, String credentials) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
+      SystemInfoResponse sysResponse = new SystemInfoRequest().process(solrClient);
+      echo("Server version: " + sysResponse.getSolrImplVersion());
     }
   }
 }
