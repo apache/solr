@@ -30,9 +30,10 @@ This feature is currently unsupported for grouping and Cursors.
 This feature works in both Standalone and SolrCloud modes and always performs distributed search execution.
 In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed using the *allowUrls* parameter, otherwise Solr returns HTTP 403. For example:
 
-```
+[source,bash]
+----
 "-Dsolr.security.allow.urls=http://localhost:8983/solr/"
-```
+----
 
 ====
 
@@ -40,18 +41,21 @@ In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed us
 
 Combined Query Feature has a separate handler with class `solr.CombinedQuerySearchHandler` which can be configured as below:
 
-```
+[source,xml]
+----
 <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
 .....
 </requestHandler>
-```
+----
 
 In addition, the `QueryComponent` has been extended to create a new `CombinedQueryComponent`, which must be declared as a search component:
-```
+
+[source,xml]
+----
 <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
     <int name="maxCombinerQueries">2</int>
 </searchComponent>
-```
+----
 
 
 The Search Component also accepts parameters as below:
@@ -75,10 +79,18 @@ The query structure is similar to JSON Query DSL except for how multiple queries
    Any other algorithm can be configured using xref:json-combined-query-dsl.adoc#combiner-algorithm-plugin[plugin].
 `combiner.rrf.k` | Default: `60`::
    The k parameter in the RRF algorithm.
+`combiner.rrf.weight.<queryName>` | Default: `1.0`::
+   A positive multiplier applied to the reciprocal rank contribution of the query named `<queryName>` (where `<queryName>` is an entry in `combiner.query`).
+   If omitted, the query's weight is `1.0`, so all queries contribute equally by default.
+   Weights are multipliers, not percentages, and need not sum to `1.0`; a weight of `2.0` makes a query twice as influential as a weight of `1.0`.
+   Use this to bias the fusion toward one list, for example to keep an exact lexical match above a merely similar vector match.
 
 [NOTE]
 ====
 Consider setting `shards.rows` to at least your deepest expected `start + rows` to enlarge the per-shard candidate pool used for fusion, giving more consistent ordering across pages.
+
+`numFound` in the response is the number of distinct documents in the fused result when `numFoundExact` is true.
+Otherwise it is a lower bound — at least the largest sub-query's match count — because a sub-query matched more documents than were retained for fusion (`shards.rows` or `start + rows`).
 ====
 
 === Example
@@ -92,7 +104,7 @@ curl::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/query -d '
+curl 'http://localhost:8983/solr/techproducts/query' -d '
 {
     "queries": {
         "lexical1": {
@@ -141,6 +153,49 @@ QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
 ====
 ======
 
+=== Weighted RRF Example
+
+To bias the fusion toward the lexical query, give it a higher weight than the vector query.
+The weight multiplies that query's reciprocal rank contribution; omitting a weight leaves it at the default `1.0`.
+
+[tabs#json-query-with-weights]
+======
+curl::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+    "queries": {
+        "lexical1": {
+            "lucene": {
+                "query": "name:apache"
+            }
+        },
+        "vector": {
+            "knn": {
+                "f": "vector",
+                "topK" :5,
+                "query": "[0.1,-0.34,0.89,0.02]"
+            }
+        }
+    },
+    "limit": 5,
+    "fields": ["id", "score", "name"],
+    "params": {
+        "combiner": true,
+        "combiner.query": ["lexical1", "vector"],
+        "combiner.algorithm": "rrf",
+        "combiner.rrf.k": "15",
+        "combiner.rrf.weight.lexical1": "2.0",
+        "combiner.rrf.weight.vector": "1.0"
+    }
+}'
+----
+====
+======
+
 == Combiner Algorithm Plugin
 
 As mentioned xref:json-combined-query-dsl.adoc#query-dsl-structure[above], custom algorithms can be configured to combine the results across multiple queries using a https://solr.apache.org/guide/solr/latest/configuration-guide/solr-plugins.html[Solr plugin].
@@ -150,7 +205,9 @@ The class to implement the custom logic has to extend `org.apache.solr.handler.c
 The Combined Query Component definition takes the `combiners` parameter, where the custom class can be declared by specifying a name and the custom parameters required by the custom algorithm.
 
 Example of the Search Component as below:
-```
+
+[source,xml]
+----
 <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
     <int name="maxCombinerQueries">2</int>
         <lst name="combiners">
@@ -161,11 +218,12 @@ Example of the Search Component as below:
             </lst>
         </lst>
 </searchComponent>
-```
+----
 
 Then, when executing the combined query, the only thing that changes in the JSON query payload is the value specified in the `combiner.algorithm` parameter:
 
-```
+[source,json]
+----
     ...
     "params": {
         "combiner": true,
@@ -173,7 +231,7 @@ Then, when executing the combined query, the only thing that changes in the JSON
         "combiner.algorithm": "customAlgorithm"
     }
 ...
-```
+----
 
 In this case, `customAlgorithm` is specified which is the name defined in the configuration; the RRF-specific parameters do not need to be provided.
 
