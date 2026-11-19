@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation") // covers the deprecated SolrQuery.setRequestHandler
 public class QueryRequestTest extends SolrTestCase {
 
   @Test
