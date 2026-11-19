@@ -1155,6 +1155,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
+  @SuppressWarnings("deprecation") // covers the deprecated ping()
   public void testPingHandler() throws Exception {
     SolrClient client = getSolrClient();
 

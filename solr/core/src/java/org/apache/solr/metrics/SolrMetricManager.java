@@ -46,6 +46,7 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.ExemplarFilter;
 import io.opentelemetry.sdk.metrics.InstrumentSelector;
@@ -473,6 +474,9 @@ public class SolrMetricManager {
                 builder.registerMetricReader(
                     PeriodicMetricReader.builder(metricExporter)
                         .setInterval(OTLP_EXPORTER_INTERVAL, TimeUnit.MILLISECONDS)
+                        // One reader per registry, all sharing a static ComponentId, means
+                        // identical self-telemetry series that the metrics endpoint rejects
+                        .setInternalTelemetryVersion(InternalTelemetryVersion.LEGACY)
                         .build());
               return new MeterProviderAndReaders(builder.build(), reader);
             })
