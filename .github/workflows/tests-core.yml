@@ -1,0 +1,91 @@
+name: Solr Core Tests
+
+# solr/core is most of the whole test suite, so it is split into four slices by
+# Java package that run in parallel. The slices are balanced from measured CI
+# timings: the cloud package alone is the largest unit in solr/core and sets
+# the critical path, so its api and overseer sub-packages run in the search
+# slice instead. The "other" slice is exclusion-based so that a new package
+# can never silently fall outside every slice.
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/tests-core.yml'
+      - 'gradle/libs.versions.toml'
+      - 'solr/core/**'
+      - 'solr/solrj-zookeeper/**'
+      # core tests are built on these; a change here can break them
+      - 'solr/test-framework/**'
+      - 'solr/api/**'
+      - 'solr/solrj/**'
+      - 'solr/solrj-jetty/**'
+      - 'solr/solrj-streaming/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Solr Core Tests (${{ matrix.slice }})
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        slice: [cloud, search, handler, other]
+
+    env:
+      # Top-level packages under org.apache.solr for each named slice.
+      # The "other" slice runs everything not listed here.
+      SLICE_CLOUD: cloud
+      SLICE_SEARCH: search uninverting spelling highlight analysis legacy index parser request cloud.api cloud.overseer
+      SLICE_HANDLER: handler response servlet jersey rest security api
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Test solr/core slice "${{ matrix.slice }}"
+      run: |
+        tasks=(:solr:core:test)
+        args=()
+        case "${{ matrix.slice }}" in
+          cloud)
+            pkgs="$SLICE_CLOUD"
+            args+=("-Ptests.exclude=org.apache.solr.cloud.api.*,org.apache.solr.cloud.overseer.*")
+            ;;
+          search)  pkgs="$SLICE_SEARCH" ;;
+          handler) pkgs="$SLICE_HANDLER" ;;
+          other)
+            # This slice has the most headroom, so it also runs solrj-zookeeper.
+            # It passes no --tests, so one invocation can drive both test tasks,
+            # and the excluded packages do not overlap solrj-zookeeper's tests.
+            pkgs=""
+            tasks+=(:solr:solrj-zookeeper:test)
+            excl=""
+            for p in $SLICE_CLOUD $SLICE_SEARCH $SLICE_HANDLER; do
+              excl="${excl:+$excl,}org.apache.solr.$p.*"
+            done
+            args+=("-Ptests.exclude=$excl")
+            ;;
+        esac
+        for p in $pkgs; do
+          args+=(--tests "org.apache.solr.$p.*")
+        done
+        ./gradlew "${tasks[@]}" -Ptests.jvms=2 "${args[@]}"
+
+    - name: Archive test output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output-core-${{ matrix.slice }}
+        path: |
+          solr/core/build/test-results/**
+          solr/solrj-zookeeper/build/test-results/**
