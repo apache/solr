@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
 import static org.apache.solr.handler.ReplicationHandler.OK_STATUS;
 
 import jakarta.ws.rs.core.StreamingOutput;
@@ -176,6 +175,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return dfs;
   }
 
+  /** A file-list failure that the v1 handler translates into its legacy response format. */
+  public static class FileListException extends SolrException {
+    private FileListException(ErrorCode code, String message, Exception cause) {
+      super(code, message, cause);
+    }
+  }
+
   protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
     final FileListResponse filesResponse = new FileListResponse();
@@ -196,8 +202,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         }
         if (null == commit) {
           // The gen they asked for either doesn't exist or has already been deleted
-          reportErrorOnResponse(filesResponse, "invalid index generation", null);
-          return filesResponse;
+          throw new FileListException(
+              SolrException.ErrorCode.CONFLICT, "invalid index generation: " + generation, null);
         }
       }
       assert null != commit;
@@ -246,9 +252,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       } catch (IOException e) {
         log.error(
             "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
-        reportErrorOnResponse(
-            filesResponse, "unable to get file names for given index generation", e);
-        return filesResponse;
+        throw new FileListException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "unable to get file names for given index generation",
+            e);
       } finally {
         if (dir != null) {
           try {
@@ -648,14 +655,5 @@ public abstract class ReplicationAPIBase extends JerseyResource {
           SolrException.ErrorCode.FORBIDDEN, "File path must be within the " + parentDescription);
     }
     return resolved.normalize();
-  }
-
-  private void reportErrorOnResponse(
-      FileListResponse fileListResponse, String message, Exception e) {
-    fileListResponse.status = ERR_STATUS;
-    fileListResponse.message = message;
-    if (e != null) {
-      fileListResponse.exception = e;
-    }
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.FAILURE;
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
@@ -74,6 +75,18 @@ public class NodeHealth extends JerseyResource implements NodeHealthApi {
   @Override
   @PermissionName(HEALTH_PERM)
   public NodeHealthResponse healthcheck(Boolean requireHealthyCores, Integer maxGenerationLag) {
+    final NodeHealthResponse response = checkHealthStatus(requireHealthyCores, maxGenerationLag);
+    if (response.status == FAILURE) {
+      throw new SolrException(
+          maxGenerationLag != null && maxGenerationLag < 0 ? BAD_REQUEST : SERVICE_UNAVAILABLE,
+          response.message);
+    }
+    return response;
+  }
+
+  /** Returns health data, retaining standalone failure results for the v1 adapter. */
+  public NodeHealthResponse checkHealthStatus(
+      Boolean requireHealthyCores, Integer maxGenerationLag) {
     if (coreContainer == null || coreContainer.isShutDown()) {
       throw new SolrException(
           SERVER_ERROR, "CoreContainer is either not initialized or shutting down");

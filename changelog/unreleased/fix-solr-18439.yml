@@ -1,0 +1,11 @@
+title: The v2 replication file-list and snapshot backup APIs no longer return HTTP 200
+  for errors. Missing index generations return HTTP 409; file-list read failures and
+  unexpected snapshot backup failures return HTTP 500. The v2 standalone node-health API returns
+  HTTP 400 for negative maxGenerationLag and HTTP 503 when followers fail the lag check.
+  V1 responses are unchanged.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18439
+    url: https://issues.apache.org/jira/browse/SOLR-18439
