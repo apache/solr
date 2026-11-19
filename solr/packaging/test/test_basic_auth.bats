@@ -25,7 +25,7 @@ setup() {
   
   # The auth command exports some system variables that are injected as basic auth username and password, 
   # however that defeats our test so fake that out via --solr-include-file param specifing a bogus path.
-  solr auth enable --type basicAuth --credentials name:password --solr-include-file /force/credentials/to/be/supplied
+  SOLR_INCLUDE=/force/credentials/to/be/supplied solr auth enable --type basicAuth --credentials name:password
   
   solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
@@ -74,7 +74,7 @@ run solr create -c COLL_NAME
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
-  run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
   
   # Test export
@@ -90,6 +90,13 @@ run solr create -c COLL_NAME
   assert_output --partial "Collection(s) doesn't exist: [foo-1.2]"
   #assert_output --partial "Deployment successful"
   #refute_output --partial "Invalid collection"
+}
+
+@test "start succeeds when the node rejects unauthenticated requests" {
+  solr stop --all
+  run solr start
+  assert_success
+  assert_output --partial "Happy searching!"
 }
 
 @test "admin UI static content is excepted from basic auth" {
