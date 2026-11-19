@@ -53,31 +53,30 @@ and adaptive user experience.
 The https://m3.material.io/[Material 3 website] gives a good introduction into user interface
 design and Material 3.
 
-=== Decompose
+=== AndroidX Lifecycle (ViewModel)
 
-Decompose is a library for managing the lifecycle of components in Compose Multiplatform
-applications. It provides tools for navigating between screens and managing state across
-different parts of an application.
+The UI state and the logic behind a screen are held by a
+https://developer.android.com/topic/libraries/architecture/viewmodel[ViewModel]. A `ViewModel`
+survives recompositions, provides a `viewModelScope` for coroutines that is cancelled
+automatically once the `ViewModel` is cleared, and can be created from within a composable with
+`viewModel { ... }`.
 
-The main features of Decompose include navigation, state management and component lifecycle.
-You can find out more and get started via the https://arkivanov.github.io/Decompose/[Decompose documentation].
+The state itself is exposed as `StateFlow` and one-shot events as `SharedFlow`, which makes the
+data flow between the UI and the logic unidirectional: the UI renders the state and forwards user
+interactions to the `ViewModel`, which updates the state.
 
-=== MVIKotlin
+The libraries are used through their Compose Multiplatform ports that are published by JetBrains
+(`org.jetbrains.androidx.lifecycle`). Most of the Android documentation therefore applies to the UI
+module as well, but keep in mind that some Android-specific features are not available on all
+targets.
 
-MVIKotlin is a library for implementing the Model-View-Intent (MVI) architecture pattern in
-Kotlin applications. It is particularly useful for managing complex state and side effects in a
-predictable manner. In combination with Decompose it provides a great foundation and
-unified structure for the UI components.
+=== Navigation 3
 
-You can find out more at https://arkivanov.github.io/MVIKotlin/.
+https://developer.android.com/guide/navigation/navigation-3[Navigation 3] is used for navigating
+between screens and sections. The navigation state is a simple back stack (a list of navigation
+keys) that is owned by a `ViewModel`, and the `NavDisplay` composable renders the entry on top
+of the back stack. The `ViewModel` scopes provided by the navigation entries make sure that the
+`ViewModel`s of an entry are cleared once the entry is removed from the back stack.
 
-=== Essenty
-
-Essenty is a collection of utility libraries that complement the Kotlin ecosystem,
-particularly useful in Compose Multiplatform projects. It includes tools for handling events,
-lifecycles, and other common tasks in a type-safe and idiomatic way.
-
-Similar to MVIKotlin, it adds the foundation and structure of the UI module and plays an
-essential part in Decompose.
-
-For more information, you can have a look at https://github.com/arkivanov/Essenty[GitHub - Essenty].
+Navigating therefore means to change the back stack. This makes the navigation logic easy to
+test without any UI.
