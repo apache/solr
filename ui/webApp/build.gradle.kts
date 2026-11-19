@@ -64,9 +64,6 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
-            implementation(libs.decompose.decompose)
-            implementation(libs.mvikotlin.main)
-            implementation(libs.mvikotlin.mvikotlin)
         }
     }
 }
