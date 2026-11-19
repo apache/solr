@@ -473,6 +473,7 @@ public class HttpJdkSolrClient extends HttpSolrClient {
     return headSucceeded;
   }
 
+  @SuppressWarnings("deprecation") // getContext() has no replacement yet; see SOLR-14720
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
 
