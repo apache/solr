@@ -111,7 +111,10 @@ public class CreateCoreBackup extends CoreAdminAPIBase implements CreateCoreBack
               // already
               // exist here if triggered via a collection backup on a shared file system. Otherwise,
               // perhaps the FS location isn't shared -- we want an error.
-              if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
+              // A repository that can't hold empty directories, such as S3, has no location until
+              // the first file is written to it, so a missing one is accepted there.
+              if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())
+                  && snapShooter.getBackupRepository().supportsEmptyDirectories()) {
                 throw new SolrException(
                     SolrException.ErrorCode.BAD_REQUEST,
                     "Directory to contain snapshots doesn't exist: "

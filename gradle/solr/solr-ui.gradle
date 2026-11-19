@@ -22,16 +22,20 @@
 import java.security.MessageDigest
 import org.gradle.tooling.GradleConnector
 
-def uiProps = new Properties()
-// gradle.properties is generated on demand (by gradlew) and gitignored, so it may not exist yet,
-// e.g. when this build is evaluated as an includeBuild from a consuming composite build. Fall back
-// to the tracked template, which carries the same real pinned defaults, rather than forcing that
-// generation step (or a build-from-source fallback) just to read them.
-def uiPropsFile = file("$rootDir/gradle.properties")
-if (!uiPropsFile.exists()) {
-  uiPropsFile = file("$rootDir/gradle/template.gradle.properties")
+def loadProps = { File f ->
+  def props = new Properties()
+  if (f.exists()) {
+    f.withInputStream {props.load(it)}
+  }
+  return props
 }
-uiPropsFile.withInputStream {uiProps.load(it)}
+def uiProps = loadProps(file("$rootDir/gradle.properties"))
+// gradle.properties is generated and gitignored, so it may be absent (e.g. an includeBuild) or lack
+// the solr.ui.* keys (e.g. a CI-provided copy). Then take the pinned commit and checksum from the
+// tracked template, together, so a checksum is never paired with a commit it doesn't belong to.
+if (!uiProps.getProperty('solr.ui.commit')) {
+  uiProps = loadProps(file("$rootDir/gradle/template.gradle.properties"))
+}
 
 def buildFromSource = project.hasProperty('solr.ui.buildFromSource') &&
     project.property('solr.ui.buildFromSource') == 'true'
@@ -133,6 +137,16 @@ tasks.register('buildUiFromSource') {
   inputs.dir(file("$rootDir/ui/shared/src"))
   inputs.dir(file("$rootDir/ui/webApp/src"))
   outputs.dir(uiFromSourceOutputDir)
+  doFirst {
+    // The source build resolves Compose Desktop's per-platform native libraries, which have no
+    // s390x variant. The published wasm artifact is platform independent, so use that instead.
+    if ("s390x".equalsIgnoreCase(System.getProperty("os.arch"))) {
+      throw new GradleException(
+          "Building the Admin UI from source is not supported on s390x; " +
+              "drop -Psolr.ui.buildFromSource=true to use the published artifact."
+      )
+    }
+  }
   doLast {
     def connector = GradleConnector.newConnector()
         .forProjectDirectory(file("$rootDir/ui"))

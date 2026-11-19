@@ -21,10 +21,7 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
-import static org.apache.solr.core.PluginInfo.APPENDS;
 import static org.apache.solr.core.PluginInfo.DEFAULTS;
-import static org.apache.solr.core.PluginInfo.INVARIANTS;
-import static org.apache.solr.core.RequestParams.USEPARAM;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
@@ -38,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -62,7 +58,6 @@ import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -70,7 +65,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -88,12 +82,10 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.api.GetConfig;
-import org.apache.solr.handler.admin.api.GetConfigAPI;
+import org.apache.solr.handler.admin.api.GetParamSets;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.pkg.PackageAPI;
-import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -101,7 +93,6 @@ import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,7 +165,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
-  private class Command {
+  private static class Command {
     private final SolrQueryRequest req;
     private final SolrQueryResponse resp;
     private final String method;
@@ -199,216 +190,66 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (parts.size() == 1) {
         // this is the whole config. sent out the whole payload
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-            resp, new GetConfig(req).getConfig(req.getParams().getBool("expandParams", false)));
+            resp,
+            new GetConfig(req)
+                .getConfigWithInternalNames(req.getParams().getBool("expandParams", false)));
       } else {
         if (ConfigOverlay.NAME.equals(parts.get(1))) {
-          resp.add(ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay());
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(resp, new GetConfig(req).getOverlay());
         } else if (RequestParams.NAME.equals(parts.get(1))) {
+          NamedList<Object> paramSets = new SimpleOrderedMap<>();
           if (parts.size() == 3) {
-            RequestParams params = req.getCore().getSolrConfig().getRequestParams();
-            RequestParams.ParamSet p = params.getParams(parts.get(2));
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put(ZNODEVER, params.getZnodeVersion());
-            if (p != null) {
-              m.put(RequestParams.NAME, Map.of(parts.get(2), p));
+            try {
+              V2ApiUtils.squashIntoNamedListWithoutHeader(
+                  paramSets, new GetParamSets(req).getParamSet(parts.get(2)));
+            } catch (SolrException e) {
+              if (e.code() != SolrException.ErrorCode.NOT_FOUND.code) {
+                throw e;
+              }
+              // v1 has always returned 200 here with no "params" entry for an unknown paramset
+              // name, rather than an error - preserve that for existing v1 callers. v2's
+              // GetParamSets keeps its own (more correct) 404 for its own callers.
+              paramSets.add(
+                  ZNODEVER, req.getCore().getSolrConfig().getRequestParams().getZnodeVersion());
             }
-            resp.add(SolrQueryResponse.NAME, m);
           } else {
-            resp.add(SolrQueryResponse.NAME, req.getCore().getSolrConfig().getRequestParams());
+            V2ApiUtils.squashIntoNamedListWithoutHeader(
+                paramSets, new GetParamSets(req).listParamSets());
           }
-
+          resp.add(SolrQueryResponse.NAME, paramSets);
         } else {
           if (ZNODEVER.equals(parts.get(1))) {
-            resp.add(
-                ZNODEVER,
-                Map.of(
-                    ConfigOverlay.NAME,
-                    req.getCore().getSolrConfig().getOverlay().getVersion(),
-                    RequestParams.NAME,
-                    req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
-            boolean isStale = false;
-            int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
-            int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();
-            if (expectedVersion > actualVersion) {
-              log.info(
-                  "expecting overlay version {} but my version is {}",
-                  expectedVersion,
-                  actualVersion);
-              isStale = true;
-            } else if (expectedVersion != -1) {
-              log.info("I already have the expected version {} of config", expectedVersion);
-            }
-            expectedVersion = req.getParams().getInt(RequestParams.NAME, -1);
-            actualVersion = req.getCore().getSolrConfig().getRequestParams().getZnodeVersion();
-            if (expectedVersion > actualVersion) {
-              log.info(
-                  "expecting params version {} but my version is {}",
-                  expectedVersion,
-                  actualVersion);
-              isStale = true;
-            } else if (expectedVersion != -1) {
-              log.info("I already have the expected version {} of params", expectedVersion);
-            }
-            if (isStale && req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
-              new Thread(
-                      () -> {
-                        if (!reloadLock.tryLock()) {
-                          log.info("Another reload is in progress . Not doing anything");
-                          return;
-                        }
-                        try {
-                          log.info("Trying to update my configs");
-                          SolrCore.getConfListener(
-                                  req.getCore(),
-                                  (ZkSolrResourceLoader) req.getCore().getResourceLoader())
-                              .run();
-                        } catch (Exception e) {
-                          log.error("Unable to refresh conf ", e);
-                        } finally {
-                          reloadLock.unlock();
-                        }
-                      },
-                      SolrConfigHandler.class.getSimpleName() + "-refreshconf")
-                  .start();
-            } else {
-              if (log.isInfoEnabled()) {
-                log.info(
-                    "isStale {} , resourceloader {}",
-                    isStale,
-                    req.getCore().getResourceLoader().getClass().getName());
-              }
-            }
-
-          } else {
-            Map<String, Object> m = getConfigDetails(parts.get(1), req);
-            Map<String, Object> val = new LinkedHashMap<>();
-            val.put(parts.get(1), m.get(parts.get(1)));
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                resp,
+                new GetConfig(req)
+                    .getZnodeVersion(
+                        req.getParams().getInt(ConfigOverlay.NAME, -1),
+                        req.getParams().getInt(RequestParams.NAME, -1)));
+          } else if (SolrRequestHandler.TYPE.equals(parts.get(1))) {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                resp,
+                new GetConfig(req)
+                    .getRequestHandler(
+                        parts.get(1),
+                        req.getParams().get("componentName"),
+                        req.getParams().getBool("expandParams", false),
+                        req.getParams().getBool("meta", false)));
+          } else if (GetConfig.MIGRATED_CONFIG_COMPONENTS.contains(parts.get(1))) {
             String componentName = req.getParams().get("componentName");
-            if (componentName != null) {
-              @SuppressWarnings({"rawtypes"})
-              Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
-              if (pluginNameVsPluginInfo != null) {
-                Object o =
-                    pluginNameVsPluginInfo instanceof MapWriter
-                        ? pluginNameVsPluginInfo
-                        : pluginNameVsPluginInfo.get(componentName);
-                Map<String, Object> pluginInfo =
-                    o instanceof MapWriter
-                        ? new SimpleOrderedMap<>((MapWriter) o)
-                        : (Map<String, Object>) o;
-                val.put(
-                    parts.get(1),
-                    pluginNameVsPluginInfo instanceof MapWriter
-                        ? pluginInfo
-                        : Map.of(componentName, pluginInfo));
-                if (req.getParams().getBool("meta", false)) {
-                  // meta=true is asking for the package info of the plugin
-                  // We go through all the listeners and see if there is one registered for this
-                  // plugin
-                  List<PackageListeners.Listener> listeners =
-                      req.getCore().getPackageListeners().getListeners();
-                  for (PackageListeners.Listener listener : listeners) {
-                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
-                    if (infos == null || infos.isEmpty()) continue;
-                    infos.forEach(
-                        (s, mapWriter) -> {
-                          Map<String, Object> componentInfo =
-                              getComponentInfo(pluginInfo, componentName);
-                          if (s.equals(componentInfo.get("class"))) {
-                            (componentInfo).put("_packageinfo_", mapWriter);
-                          }
-                        });
-                  }
-                }
-              }
-            }
-            resp.add("config", val);
-          }
-        }
-      }
-    }
-
-    @SuppressWarnings({"unchecked"})
-    private Map<String, Object> getComponentInfo(
-        Map<String, Object> pluginInfo, String componentName) {
-      if (pluginInfo.containsKey("class")) {
-        return pluginInfo;
-      }
-      return (Map<String, Object>)
-          pluginInfo.computeIfAbsent(componentName, k -> new LinkedHashMap<>());
-    }
-
-    private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
-      String componentName = componentType == null ? null : req.getParams().get("componentName");
-      boolean showParams = req.getParams().getBool("expandParams", false);
-      Map<String, Object> map =
-          Utils.convertToMap(this.req.getCore().getSolrConfig(), new LinkedHashMap<>());
-      if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
-
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> reqHandlers =
-          (Map<String, Object>)
-              map.computeIfAbsent(SolrRequestHandler.TYPE, k -> new LinkedHashMap<>());
-      List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
-      for (PluginInfo plugin : plugins) {
-        if (SolrRequestHandler.TYPE.equals(plugin.type)) {
-          if (!reqHandlers.containsKey(plugin.name)) {
-            reqHandlers.put(plugin.name, plugin);
-          }
-        }
-      }
-      if (!showParams) return map;
-      for (Map.Entry<String, Object> e : reqHandlers.entrySet()) {
-        if (componentName == null || e.getKey().equals(componentName)) {
-          Map<String, Object> m = expandUseParams(req, e.getValue());
-          e.setValue(m);
-        }
-      }
-
-      return map;
-    }
-
-    @SuppressWarnings({"unchecked"})
-    private Map<String, Object> expandUseParams(SolrQueryRequest req, Object plugin) {
-
-      Map<String, Object> pluginInfo = null;
-      if (plugin instanceof Map) {
-        pluginInfo = (Map) plugin;
-      } else if (plugin instanceof PluginInfo) {
-        pluginInfo = Utils.convertToMap((PluginInfo) plugin, new LinkedHashMap<>());
-      }
-      String useParams = (String) pluginInfo.get(USEPARAM);
-      String useParamsInReq = req.getOriginalParams().get(USEPARAM);
-      if (useParams != null || useParamsInReq != null) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        pluginInfo.put("_useParamsExpanded_", m);
-        List<String> params = new ArrayList<>();
-        if (useParams != null) params.addAll(StrUtils.splitSmart(useParams, ','));
-        if (useParamsInReq != null) params.addAll(StrUtils.splitSmart(useParamsInReq, ','));
-        for (String param : params) {
-          RequestParams.ParamSet p =
-              this.req.getCore().getSolrConfig().getRequestParams().getParams(param);
-          if (p != null) {
-            m.put(param, p);
+            GetConfig getConfig = new GetConfig(req);
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                resp,
+                componentName == null
+                    ? getConfig.getConfigComponent(parts.get(1))
+                    : getConfig.getConfigComponentByName(
+                        parts.get(1), componentName, req.getParams().getBool("meta", false)));
           } else {
-            m.put(param, "[NOT AVAILABLE]");
+            throw new SolrException(
+                SolrException.ErrorCode.NOT_FOUND,
+                "No config API for path: /config/" + parts.get(1));
           }
         }
-
-        SolrQueryRequest r = req.subRequest(req.getOriginalParams());
-        r.getContext().put(USEPARAM, useParams);
-        NamedList<?> nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
-        SolrPluginUtils.setDefaults(
-            r,
-            getSolrParamsFromNamedList(nl, DEFAULTS),
-            getSolrParamsFromNamedList(nl, APPENDS),
-            getSolrParamsFromNamedList(nl, INVARIANTS));
-        // SolrParams.wrapDefaults(maskUseParams, req.getParams())
-
-        MapSolrParams mask = new MapSolrParams(Map.of("componentName", "", "expandParams", ""));
-        pluginInfo.put("_effectiveParams_", SolrParams.wrapDefaults(mask, r.getParams()));
       }
-      return pluginInfo;
     }
 
     private void handlePOST() throws IOException {
@@ -970,6 +811,58 @@ public class SolrConfigHandler extends RequestHandlerBase
     return activeReplicas;
   }
 
+  public static void maybeRefreshStaleConfig(
+      SolrCore core, int expectedOverlayVersion, int expectedParamsVersion) {
+    boolean isStale =
+        isExpectedVersionStale(
+                "overlay", expectedOverlayVersion, core.getSolrConfig().getOverlay().getVersion())
+            | isExpectedVersionStale(
+                "params",
+                expectedParamsVersion,
+                core.getSolrConfig().getRequestParams().getZnodeVersion());
+    if (isStale && core.getResourceLoader() instanceof ZkSolrResourceLoader) {
+      final Lock reloadLock =
+          ((SolrConfigHandler) core.getRequestHandler("/config")).getReloadLock();
+      new Thread(
+              () -> {
+                if (!reloadLock.tryLock()) {
+                  log.info("Another reload is in progress . Not doing anything");
+                  return;
+                }
+                try {
+                  log.info("Trying to update my configs");
+                  SolrCore.getConfListener(core, (ZkSolrResourceLoader) core.getResourceLoader())
+                      .run();
+                } catch (Exception e) {
+                  log.error("Unable to refresh conf ", e);
+                } finally {
+                  reloadLock.unlock();
+                }
+              },
+              SolrConfigHandler.class.getSimpleName() + "-refreshconf")
+          .start();
+    } else {
+      if (log.isInfoEnabled()) {
+        log.info(
+            "isStale {} , resourceloader {}",
+            isStale,
+            core.getResourceLoader().getClass().getName());
+      }
+    }
+  }
+
+  private static boolean isExpectedVersionStale(String label, int expected, int actual) {
+    if (expected == -1) {
+      return false;
+    }
+    if (expected > actual) {
+      log.info("expecting {} version {} but my version is {}", label, expected, actual);
+      return true;
+    }
+    log.info("I already have the expected version {} of {}", expected, label);
+    return false;
+  }
+
   @Override
   public Name getPermissionName(AuthorizationContext ctx) {
     switch (ctx.getHttpMethod()) {
@@ -1064,7 +957,6 @@ public class SolrConfigHandler extends RequestHandlerBase
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));
     return apis;
@@ -1072,7 +964,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(GetConfig.class);
+    return List.of(GetConfig.class, GetParamSets.class);
   }
 
   @Override

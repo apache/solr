@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Admin UI's Stream screen now posts the streaming expression as a form-encoded body instead of a GET query-string parameter, so large expressions no longer silently fail, and a failed request now shows an error instead of leaving the screen blank.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-9759
+    url: https://issues.apache.org/jira/browse/SOLR-9759
