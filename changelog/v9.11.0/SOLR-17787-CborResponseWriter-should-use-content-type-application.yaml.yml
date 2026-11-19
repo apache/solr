@@ -1,0 +1,7 @@
+title: CborResponseWriter should use content-typ- application/cbor
+type: other
+authors:
+- name: Sanjay Kumar Yadav
+links:
+- name: SOLR-17787
+  url: https://issues.apache.org/jira/browse/SOLR-17787

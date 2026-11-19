@@ -584,7 +584,9 @@ public class ExtendedDismaxQParser extends QParser {
       for (String qs : config.boostParams) {
         if (qs.trim().length() == 0) continue;
         Query q = subQuery(qs, null).getQuery();
-        boostQueries.add(q);
+        if (!isEmpty(q)) {
+          boostQueries.add(q);
+        }
       }
     }
     return boostQueries;
@@ -625,8 +627,11 @@ public class ExtendedDismaxQParser extends QParser {
       final int slop)
       throws SyntaxError {
 
-    if (null == fields || fields.isEmpty() || null == clauses || clauses.size() < shingleSize)
-      return;
+    if (null == fields
+        || fields.isEmpty()
+        || null == clauses
+        || clauses.isEmpty()
+        || clauses.size() < shingleSize) return;
 
     if (0 == shingleSize) shingleSize = clauses.size();
 
@@ -676,7 +681,8 @@ public class ExtendedDismaxQParser extends QParser {
     // TODO: perhaps we shouldn't use synonyms either...
 
     Query phrase = pp.parse(userPhraseQuery.toString());
-    if (phrase != null) {
+    // parse returns an empty BooleanQuery when minClauseSize discards every phrase
+    if (!isEmpty(phrase)) {
       mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
     }
   }

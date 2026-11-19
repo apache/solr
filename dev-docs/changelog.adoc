@@ -5,7 +5,7 @@
 
 The project no longer maintains a monolithic *CHANGES.txt* file directly.
 Instead, we create small YAML fragments **per bug-fix or feature**, checked into
-the `solr/changelog/unreleased/ folder`. At release time these fragments are
+the `changelog/unreleased/` folder at the root of the repository. At release time these fragments are
 organized in versioned folders and collated into a human-readable *CHANGELOG.md* file.
 
 This document walks you through the workflow, explains the Gradle helpers
@@ -22,17 +22,18 @@ the changelog.
 . Commit the YAML fragment along with the code change.
 . Open your PR as usual.
 
+You can also run `./gradlew writeChangelogPr` to generate a changelog entry in a followup commit after the PR is published.
+This is the ideal approach when there's no JIRA.
+
 == 2. Directory Layout
 
 [source]
 ----
-solr/
-└── changelog/
-    ├── unreleased/         ← new fragments live here
-    |   └── SOLR-12345-fix-memory-leak.yml
-    ├── v9.8.0/            ← changes in already released versions
-    ├── v9.8.0/
-    └── v9.9.0/
+changelog/
+├── unreleased/         ← new fragments live here
+|   └── SOLR-12345-fix-memory-leak.yml
+├── v9.11.0/            ← changes in already released versions
+└── v10.0.0/
 ----
 
 == 3. The YAML format
@@ -81,8 +82,8 @@ links:
 | Removing a previously deprecated parameter, class, or legacy module.
 
 | `dependency_update`
-| For updates to dependencies.
-| Bumping third-party library versions (e.g., Lucene, Jetty, Jackson).
+| For updates to dependencies (non-trivial).
+| Updating major third-party library versions (e.g., Lucene, Jetty, Jackson).
 
 | `other`
 | For anything else. Most such changes are too small/minor to bother with a changelog entry.
@@ -92,7 +93,7 @@ links:
 === 3.1 Tool to draft a YAML for your change
 
 We have two gradle tasks that bootstraps a YAML file in the `changelog/unreleased/` directory.
-`writeChangeLog` will infer the JIRA id from the current branch if possible, otherwise you'll need to add the JIRA link manually.
+`writeChangelog` will infer the JIRA id from the current branch if possible, otherwise you'll need to add the JIRA link manually.
 If the change isn't worth a JIRA yet a changelog would still be nice, use `writeChangelogPr` after you've created the PR.  It will incorporate a link to the PR in the entry.
 If `writeChangelogPr` can't auto-detect the PR for your current branch (e.g. `gh` can't correlate a differently-named local branch to it), pass the PR explicitly: `./gradlew writeChangelogPr -Ppr=4677` or `-Ppr=https://github.com/apache/solr/pull/4677`.
 
@@ -120,14 +121,14 @@ The changelog has comments to help you fill it out.  Remove them after filling o
 
 TIP: Aliases for the `writeChangelog` task are `changelog` and `newChangelog`.
 
-== 4. Changelog Validation in Pull Requests
+== 4. Changelog Checks in Pull Requests
 
-The `validate-changelog` GitHub workflow automatically checks that:
+The `validate-changelog` GitHub workflow checks that any entry added under
+`changelog/unreleased/` is structurally valid. It does not require an entry.
 
-. **CHANGES.txt is not edited directly** - All changes must use the YAML fragment approach
-. **A changelog entry is added** - Code changes must include a corresponding YAML file in `changelog/unreleased/`
-
-If your change does not require a changelog entry, it is still possible to merge the PR.
+Whether a change warrants an entry is a judgement call; it's not mandatory and for minor things, it's discouraged!
+See the changelog types for further guidance.
+There may be PR automation that offers a suggestion either-way.
 
 == 5. For release managers
 
@@ -274,6 +275,13 @@ Example report output (Json or Markdown):
 `dev-tools/scripts/logchange.py` handles changelog git operations for each RC
 and the final post-vote forward-porting.  It is integrated into the Release
 Wizard but can also be run standalone.  Run with `--help` for usage.
+
+=== 5.5 Dependency changes summary
+
+`dev-tools/scripts/dependencyChanges.py` summarizes the third-party dependency changes
+since the previous release by diffing `solr/licenses/`.  By default it prints to stdout;
+with `--write`, the Release Wizard uses it to write `dependency_update` changelog entries
+(one each for added, upgraded, and removed).
 
 == 6. Further Reading
 
