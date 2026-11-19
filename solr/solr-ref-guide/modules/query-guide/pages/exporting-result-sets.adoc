@@ -65,7 +65,7 @@ V1 API::
 ====
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
 ----
 ====
 
@@ -74,7 +74,7 @@ V2 API::
 ====
 [source,text]
 ----
-http://localhost:8983/api/collections/collection_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
 ----
 ====
 ======
@@ -101,6 +101,10 @@ Note that sort fields still require docValues, regardless of this setting.
 
 Wildcard patterns can be used for the field list (e.g. `fl=*_i`) and will be expanded to the list of fields that match the pattern and are able to be exported, see <<Field Requirements>>.
 
+Field aliases (e.g. `fl=id,price:price_d`) and xref:document-transformers.adoc[document transformers] (e.g. `fl=id,[docid]`) are supported, and their output is also visible to a local streaming expression.
+Transformers are applied one document at a time, and those that depend on scores or on a list of matching documents won't work.
+Some transformers, like `[subquery]` and `[child]`, produce output that might not work well, or at all, with `/export` and streaming expressions.
+
 Returning scores is not supported at this time.
 
 === Specifying the Local Streaming Expression
@@ -124,7 +128,7 @@ V1 API::
 ====
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
 ----
 ====
 
@@ -133,7 +137,7 @@ V2 API::
 ====
 [source,text]
 ----
-http://localhost:8983/api/collections/collection_name/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=timestamp+desc,&fl=timestamp,reporter,severity&expr=top(n=2,input(),sort="timestamp+desc")
 ----
 ====
 ======
@@ -150,7 +154,7 @@ V1 API::
 ====
 [source,text]
 ----
-http://localhost:8983/solr/collection_name/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+http://localhost:8983/solr/{collectionName}/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
 ----
 ====
 
@@ -159,7 +163,7 @@ V2 API::
 ====
 [source,text]
 ----
-http://localhost:8983/api/collections/collection_name/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
+http://localhost:8983/api/collections/{collectionName}/export?q=my-query&sort=reporter+desc,&fl=reporter&expr=unique(input(),over="reporter")
 ----
 ====
 ======

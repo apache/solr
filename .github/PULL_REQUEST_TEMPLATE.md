@@ -37,10 +37,3 @@ Please describe the tests you've developed or run to confirm this patch implemen
 Please review the following and check all that apply:
 
 - [ ] I have reviewed the guidelines for [How to Contribute](https://github.com/apache/solr/blob/main/CONTRIBUTING.md) and my code conforms to the standards described there to the best of my ability.
-- [ ] I have created a Jira issue and added the issue ID to my pull request title.
-- [ ] I have given Solr maintainers [access](https://help.github.com/en/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork) to contribute to my PR branch. (optional but recommended, not available for branches on forks living under an organisation)
-- [ ] I have developed this patch against the `main` branch.
-- [ ] I have run `./gradlew check`.
-- [ ] I have added tests for my changes.
-- [ ] I have added documentation for the [Reference Guide](https://github.com/apache/solr/tree/main/solr/solr-ref-guide)
-- [ ] I have added a [changelog entry](https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc) for my change
