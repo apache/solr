@@ -128,7 +128,9 @@ teardown() {
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
 
   echo "Add some sample data"
-  docker exec --user=solr solr-node1 solr post -c test-collection example/exampledocs/mem.xml
+  run docker exec solr-node1 curl -fsS -H 'Content-Type: application/json' \
+    --data-binary '[{"id":"rolling-upgrade-smoke"}]' \
+    'http://localhost:8983/solr/test-collection/update?commit=true'
   assert_success
 
   # Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
@@ -171,6 +173,12 @@ teardown() {
 
   # Final collection health check
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+
+  echo "Checking the indexed document survived the upgrade"
+  run docker exec solr-node1 curl -fsS \
+    'http://localhost:8983/solr/test-collection/select?q=id%3Arolling-upgrade-smoke&wt=json'
+  assert_success
+  assert_equal "$(echo "$output" | jq '.response.numFound')" "1"
 
   echo "checking cluster has exactly 3 live nodes"
   run docker exec solr-node1 curl -s "http://solr-node1:8983/solr/admin/collections?action=CLUSTERSTATUS"

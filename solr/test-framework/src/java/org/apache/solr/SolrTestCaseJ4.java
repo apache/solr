@@ -92,7 +92,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -120,6 +119,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.ContentStreamBase;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -1204,12 +1204,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @return the ModifiableSolrParams generated from the given list of strings.
    */
   public static ModifiableSolrParams params(String... params) {
-    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-    for (int i = 0; i < params.length; i += 2) {
-      msp.add(params[i], params[i + 1]);
-    }
-    return msp;
+    return ModifiableSolrParams.of(params);
   }
 
   public static Map<String, String> map(String... params) {

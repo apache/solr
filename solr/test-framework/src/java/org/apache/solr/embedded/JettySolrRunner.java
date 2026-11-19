@@ -57,6 +57,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.AuthenticationFilter;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.LoadAdminUiServlet;
+import org.apache.solr.servlet.NodeTargetProxyFilter;
 import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrServlet;
@@ -351,6 +352,7 @@ public class JettySolrRunner implements SolrBackend {
         staticHolder.setHeldClass(ResourceServlet.class);
         staticHolder.setInitParameter("pathInfoOnly", "false");
         staticHolder.setInitParameter("dirAllowed", "false");
+        staticHolder.setInitParameter("cacheControl", "no-cache");
         for (String pathSpec :
             new String[] {
               "/partials/*", "/libs/*", "/css/*", "/js/*", "/img/*", "/templates/*", "/ui/*"
@@ -375,7 +377,8 @@ public class JettySolrRunner implements SolrBackend {
               RequiredSolrRequestFilter.class,
               RateLimitFilter.class,
               TracingFilter.class,
-              AuthenticationFilter.class)) {
+              AuthenticationFilter.class,
+              NodeTargetProxyFilter.class)) {
         FilterHolder fh = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         fh.setName(filterClass.getSimpleName());
         fh.setHeldClass(filterClass);
