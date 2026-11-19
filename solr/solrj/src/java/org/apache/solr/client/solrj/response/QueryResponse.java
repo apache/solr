@@ -340,7 +340,7 @@ public class QueryResponse extends SolrResponseBase {
     // Parse pivot facets
     var pf = (NamedList<List<NamedList>>) info.get("facet_pivot");
     if (pf != null) {
-      _facetPivot = new NamedList<>();
+      _facetPivot = new SimpleOrderedMap<>();
       pf.forEach((name, pivot) -> _facetPivot.add(name, readPivots(pivot)));
     }
 
