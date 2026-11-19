@@ -485,6 +485,39 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
+  public void testGlobsAndExplicitNonStoredDocValues() {
+    // _version_ is useDocValuesAsStored=false, so only returned when named explicitly
+    assertQ(
+        req("q", "*:*", "rows", "1", "fl", "val_*,_version_"),
+        "//result[@numFound='5']",
+        "//result/doc/int[@name='val_i']",
+        "//result/doc/long[@name='_version_']",
+        "//result/doc[count(*)=2]");
+  }
+
+  public void testGlobsAndTransformerField() {
+    // the field read by the transformer is fetched, though the glob doesn't match it
+    assertQ(
+        req("q", "*:*", "rows", "1", "fl", "val_*,x:[json f=ssto]"),
+        "//result[@numFound='5']",
+        "//result/doc/int[@name='val_i']",
+        "//result/doc/str[@name='x'][.='X']",
+        "//result/doc[count(*)=2]");
+  }
+
+  public void testGlobsAndTransformerFieldRTG() {
+    // behavior shouldn't matter if we are committed or uncommitted
+    for (String id : Arrays.asList("42", "99")) {
+      assertQ(
+          id + ": fl=val_*,x:[json f=ssto]",
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "val_*,x:[json f=ssto]"),
+          "count(//doc)=1",
+          "//doc/int[@name='val_i'][.=1]",
+          "//doc/str[@name='x'][.='X']",
+          "//doc[count(*)=2]");
+    }
+  }
+
   public void testGlobsAndScore() {
     assertQ(
         "fl=val_*,score",
