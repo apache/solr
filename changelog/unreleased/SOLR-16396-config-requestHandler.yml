@@ -1,0 +1,12 @@
+title: >
+  Migrate GET /config/requestHandler to JAX-RS; V2 path and response key
+  are now plural requestHandlers (V1 unchanged)
+type: changed
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+  - name: Eric Pugh
+    nick: epugh
+links:
+  - name: SOLR-16396
+    url: https://issues.apache.org/jira/browse/SOLR-16396
