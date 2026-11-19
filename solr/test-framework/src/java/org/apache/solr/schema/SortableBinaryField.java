@@ -59,7 +59,8 @@ public class SortableBinaryField extends BinaryField {
       }
       return fields;
     } else {
-      return List.of(createField(field, value));
+      IndexableField fval = createField(field, value);
+      return fval == null ? List.of() : List.of(fval);
     }
   }
 
