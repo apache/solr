@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Request authorization in SolrCloud now uses the collection of the core serving the request.
+type: changed
+authors:
+  - name: David Smiley
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18230
+    url: https://issues.apache.org/jira/browse/SOLR-18230

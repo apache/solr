@@ -26,8 +26,19 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 
 /** Supports snapshot-list command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "list",
+    description = "Lists the snapshots for a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {"  # List a collection's snapshots", "  bin/solr snapshot list -c mycollection"})
 public class SnapshotListTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -39,6 +50,19 @@ public class SnapshotListTool extends ToolBase {
 
   /** Parameters for the snapshot-list command, independent of the command line parser. */
   record SnapshotListParams(String solrUrl, String credentials, String collectionName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  public SnapshotListTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotListTool(ToolRuntime runtime) {
     super(runtime);
@@ -99,6 +123,12 @@ public class SnapshotListTool extends ToolBase {
 
   @Override
   public int callTool() throws Exception {
-    throw new UnsupportedOperationException("This tool does not yet support PicoCli");
+    SnapshotListParams params =
+        new SnapshotListParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name);
+    listSnapshots(params);
+    return 0;
   }
 }
