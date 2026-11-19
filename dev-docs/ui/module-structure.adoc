@@ -16,34 +16,57 @@ if not the same, structure and files.
 
 The logical part of a simple component (`org/apache/solr/ui/components`) usually consists of:
 
-- **The component interface** (`[ComponentName]Component.kt`), that defines the UI state and the
-interaction options,
+- **The component interface** (`[ComponentName]Component.kt`), that provides the dependencies of
+the component (repositories and use cases) and factory methods for creating its view models. It
+does not hold any state itself,
 
-- **The store interface** (`store/[ComponentName]Store.kt`), that defines the (Solr) API state,
-intents for interacting with the state and optional labels (fire-and-forget events),
+- **The component implementation** (`integration/Default[ComponentName]Component.kt`), that
+creates the dependencies lazily and passes them to the view models it creates. Some components
+keep the interface and the implementation together in a `di` package instead (see `configsets`),
 
-- **The store provider** (`store/[ComponentName]StoreProvider.kt`), that defines an API client
-interface that is used for making requests against the Solr API by consuming intents,
-updates the state and publishes labels,
+- **The repository interface** (`repository/[ComponentName]Repository.kt`), that defines the
+requests that can be made against the (Solr) API, and its implementation (usually
+`data/Http[ComponentName]Repository.kt`), that uses a preconfigured HTTP client,
 
-- **The implementations** (`integration/*`), including component-specific mappings
-(`integration/Mappers.kt`) and interface implementations (like
-`integration/[Variant][ComponentName]Component.kt`),
+- **The use cases** (`domain/*UseCase.kt`), that encapsulate a single piece of business logic like
+loading, validating or mapping errors. They are defined as an interface and have a default
+implementation (`Default[Name]UseCase`) that is using the repository,
 
-- **Component-specific data classes** (`domain/*`), that are used only by the UI module
+- **The state holder** (`viewmodel/[ComponentName]StateHolder.kt`), a plain class that holds the
+UI state as `StateFlow` and emits events as `SharedFlow`. It is created with a `CoroutineScope`,
+so that it can be tested without Android or UI dependencies. The UI state class
+(`[ComponentName]UiState`) is defined next to it,
+
+- **The view model** (`viewmodel/[ComponentName]ViewModel.kt`), that is created by the component
+implementation and provides the scope for the state holder. It exposes the state, the events and
+the functions that the UI can call. Simple components may implement their state in the view model
+directly,
+
+- **Component-specific events** (`domain/*Event.kt`), that are emitted by the state holder to let
+the parent (for example the screen that navigates) know that something happened,
 
 - **Component-specific API classes** (`data/*`), that are used for representing API requests /
 responses.
 
-Some components may use multiple stores to consume different API endpoints or no store at all
-if no API interaction is necessary. Multiple components may also be used to simplify the complexity
-or separate the responsibilities into smaller UI elements.
+Some components may use multiple repositories to consume different API endpoints or none at all
+if no API interaction is necessary. Multiple state holders may also be used to simplify the
+complexity or separate the responsibilities into smaller UI elements, and can be shared between
+view models (see `configsets`). The `auth` component, for example, uses one state holder per
+authentication method and a parent state holder that holds the shared state.
 
 Component data classes for API and internal use may also be merged and used interchangeably to
 reduce overall complexity. However, this affects the separation of concerns and may require
 in a later state the separation and mapping again.
 
-This structure is strongly inspired by Decompose's https://arkivanov.github.io/Decompose/samples/[samples].
+=== Navigation
+
+The screens and sections are navigated with Navigation 3. The navigation state is a back stack
+of navigation keys (`RootScene`, `MainScene`, `ConfigsetsScene`) that is owned by a view model
+(`RootViewModel`, `MainViewModel`, `ConfigsetsRouteViewModel`). The parent components provide the
+components of the screens they display, like `RootComponent.createStartComponent()`.
+
+Screens report user flows to their parent via events, like `StartEvent` or `AuthenticationEvent`.
+The parent view model handles the event by changing the back stack.
 
 == User Interface (UI)
 
@@ -61,9 +84,13 @@ Theme-related classes, functions and variables are all placed inside `.ui.theme`
 is making strong use of and customizes Material 3. You can find more information about
 Compose and Material 3 at https://m3.material.io/develop/android/jetpack-compose[Material Design - Jetpack Compose].
 
-Composables may accept a component interface and be stateful, or simply hoist the entire
-state via parameters and be stateless. For more information about state hoisting,
-you can have a look at https://developer.android.com/develop/ui/compose/state[Managing state].
+Composables may accept a component, retrieve the view model from it and therefore be stateful, or
+simply hoist the entire state via parameters and be stateless. A common approach is to provide both:
+a stateful composable that connects the view model to a stateless composable of the same name that
+takes the UI state and callbacks (for example `StartContent(component, onEvent)` and
+`StartContent(uiState, onSolrUrlChange, onConnect)`). The stateless variants are used for
+previews and UI tests, as they do not need any further setup. For more information about state
+hoisting, you can have a look at https://developer.android.com/develop/ui/compose/state[Managing state].
 
 === Compose Resources
 

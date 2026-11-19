@@ -1,0 +1,10 @@
+title: >
+  The Admin UI replication screen no longer fails with a JavaScript TypeError when the server
+  runs in a time zone without an abbreviation, such as Etc/GMT-5, which Java renders as GMT+05:00.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: PR#5318
+    url: https://github.com/apache/solr/pull/5318
