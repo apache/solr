@@ -28,6 +28,7 @@ import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Test;
 
 /** Test properties in configuration files. */
+@SuppressWarnings("deprecation") // the embedded base class is deprecated, not this test
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
 
   @Test

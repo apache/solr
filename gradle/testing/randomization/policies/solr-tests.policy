@@ -189,9 +189,12 @@ grant {
   permission java.net.NetPermission "requestPasswordAuthentication";
 
   // for java.net.http.HttpClient.  See HttpJdkSolrClientTest
-  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
-  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
-  permission "java.net.URLPermission" "socket://127.0.0.1:*", "CONNECT:*";
+  // JDK-8305346: a URLPermission with a numeric IPv4 host cannot be parsed while the policy is
+  // bootstrapping, so such a grant is dropped with a warning; the SocketPermissions above are what
+  // actually confine these to loopback, so the host is a wildcard here.
+  permission "java.net.URLPermission" "http://*:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://*:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://*:*", "CONNECT:*";
 
   permission "java.net.URLPermission" "http://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
@@ -202,8 +205,8 @@ grant {
   permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
 
   // for java.net.http.HttpClient.  See ConcurrentUpdateJdkSolrClientTest
-  permission "java.net.URLPermission" "http://127.0.0.1:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
-  permission "java.net.URLPermission" "https://127.0.0.1:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://*:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://*:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://localhost:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://localhost:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://[::1]:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
@@ -292,4 +295,8 @@ grant {
 
 grant {
     permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+    // OtelRuntimeJvmMetrics opens a JFR recording stream for the JVM metrics
+    permission jdk.jfr.FlightRecorderPermission "registerEvent";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
 };
