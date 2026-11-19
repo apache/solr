@@ -1,0 +1,10 @@
+title: >-
+  The per-core /solr/{core}/replication endpoint is now authorized per command:
+  state-changing commands require the "update" permission, while read-only
+  commands continue to require "read".
+type: changed
+authors:
+  - name: Mark Robert Miller
+links:
+  - name: SOLR-18225
+    url: https://issues.apache.org/jira/browse/SOLR-18225

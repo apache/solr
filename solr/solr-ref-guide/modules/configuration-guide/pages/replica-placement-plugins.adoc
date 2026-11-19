@@ -46,7 +46,7 @@ For example, in order to use the `AffinityPlacementFactory` plugin the following
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
@@ -63,7 +63,6 @@ curl -X POST -H 'Content-type: application/json' -d '{
           }
         }
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 Similarly, the configuration can be updated or removed.
@@ -219,18 +218,17 @@ This is a simple configuration that uses default values:
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory"
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 This configuration specifies the base parameters:
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
@@ -239,7 +237,6 @@ curl -X POST -H 'Content-type: application/json' -d '{
           "prioritizedFreeDiskGB": 100
         }
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 This configuration defines that collection `A_primary` must be co-located with
@@ -247,7 +244,7 @@ collection `Common_secondary`, and collection `B_primary` must be co-located als
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
@@ -258,7 +255,6 @@ curl -X POST -H 'Content-type: application/json' -d '{
           }
         }
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
 
 This configuration defines that collection `collection_A` must be placed only on the nodes with the `node_type` system property containing either `searchNode` or `indexNode` (for example, a node may be labeled as `-Dnode_type=searchNode,indexNode,uiNode,zkNode`).
@@ -266,7 +262,7 @@ Similarly, the collection `collection_B` must be placed only on the nodes that c
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
+curl 'http://localhost:8983/api/cluster/plugin' -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
@@ -277,5 +273,4 @@ curl -X POST -H 'Content-type: application/json' -d '{
           }
         }
     }}'
-  http://localhost:8983/api/cluster/plugin
 ----
