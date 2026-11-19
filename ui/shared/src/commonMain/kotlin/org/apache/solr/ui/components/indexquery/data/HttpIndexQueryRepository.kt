@@ -86,13 +86,13 @@ private suspend fun <T> requestResult(block: suspend () -> Result<T>): Result<T>
 }
 
 @Serializable
-private data class CollectionsResponse(val collections: List<String> = emptyList())
+private data class CollectionsResponse(val collections: List<String>)
 
 @Serializable
 private data class RequestHandlersResponse(val config: ConfigResponse)
 
 @Serializable
-private data class ConfigResponse(val requestHandlers: Map<String, RequestHandlerResponse> = emptyMap())
+private data class ConfigResponse(val requestHandlers: Map<String, RequestHandlerResponse>)
 
 @Serializable
 private data class RequestHandlerResponse(@SerialName("class") val className: String = "")
