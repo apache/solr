@@ -31,8 +31,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -43,6 +41,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
