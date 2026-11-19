@@ -18,11 +18,11 @@
 package org.apache.solr.crossdc.manager;
 
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.util.TestcontainersUtil;
 import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -44,9 +44,7 @@ public class KafkaContainerRule extends ExternalResource {
 
   @Override
   protected void before() {
-    Assume.assumeTrue(
-        "Docker/Testcontainers not available; skipping test",
-        DockerClientFactory.instance().isDockerAvailable());
+    TestcontainersUtil.assumeContainerAvailable(KAFKA_DOCKER_IMAGE);
     kafkaContainer = new KafkaContainer(DockerImageName.parse(KAFKA_DOCKER_IMAGE));
     kafkaContainer.start();
   }

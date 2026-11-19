@@ -19,9 +19,11 @@ package org.apache.solr.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.StartupLoggingUtils;
 import picocli.CommandLine;
 
@@ -111,7 +113,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
       runImpl(cli);
     } catch (Exception exc) {
       // since this is a CLI, spare the user the stacktrace
-      String excMsg = exc.getMessage();
+      String excMsg = errorMessage(exc);
       if (excMsg != null) {
         CLIO.err("\nERROR: " + excMsg + "\n");
         if (verbose) {
@@ -129,6 +131,28 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
     if (!verbose) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
+  }
+
+  // SolrZkClient wraps its initial connection timeout in a SolrException. Do not
+  // mistake other timeouts (including timeouts after connecting) for this case.
+  protected static boolean isZkConnectTimeout(Exception exc) {
+    return exc instanceof SolrException
+        && exc.getCause() instanceof TimeoutException
+        && exc.getCause().getMessage() != null
+        && exc.getCause()
+            .getMessage()
+            .startsWith("Timeout while waiting for Zookeeper Client to connect: ");
+  }
+
+  static String errorMessage(Exception exc) {
+    if (isZkConnectTimeout(exc)) {
+      return "ZooKeeper did not respond within the connection timeout. "
+          + "Check that ZooKeeper is running and reachable; if it is embedded in Solr, "
+          + "check that the Solr node hosting it is running. ("
+          + exc.getCause().getMessage()
+          + ")";
+    }
+    return exc.getMessage();
   }
 
   /**
@@ -156,7 +180,7 @@ public abstract class ToolBase implements Tool, Callable<Integer> {
       toolExitStatus = callTool();
     } catch (Exception exc) {
       // since this is a CLI, spare the user the stacktrace
-      String excMsg = exc.getMessage();
+      String excMsg = errorMessage(exc);
       if (excMsg != null) {
         CLIO.err("\nERROR: " + excMsg + "\n");
         if (verbose) {

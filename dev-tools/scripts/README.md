@@ -1,3 +1,8 @@
+<!--
+  Keep this listing very brief: 3 sentences at most per script plus any applicable links.
+  This is not the place to document each script in detail; put that at the head of the script itself.
+-->
+
 # Developer Scripts
 
 This folder contains various useful scripts for developers, mostly related to
@@ -8,6 +13,10 @@ Python scripts require Python 3.6 or above. To install necessary python modules,
     pip3 install -r requirements.txt
 
 ## Scripts description
+
+### pr-triage-llm.py
+
+Advisory LLM-based triage comment on new PRs, run from GitHub Actions. See the script's header for details.
 
 ### smokeTestRelease.py
 
