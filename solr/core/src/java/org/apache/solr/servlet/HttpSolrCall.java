@@ -73,7 +73,6 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -103,6 +102,7 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
+import org.apache.solr.util.ContentStream;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.HttpClient;
@@ -606,7 +606,7 @@ public class HttpSolrCall {
     return coreOrColName;
   }
 
-  private boolean shouldAuthorize() {
+  protected boolean shouldAuthorize() {
     if (PublicKeyHandler.PATH.equals(path)) return false;
     // admin/info/key is the path where public key is exposed . it is always unsecured
     if (StrUtils.isNullOrEmpty(path) || "/".equals(path) || "/solr/".equals(path))
