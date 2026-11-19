@@ -92,7 +92,13 @@ class IndexQueryViewModel internal constructor(
                     }
                 }
                 .onFailure {
-                    uiState.update { it.copy(handlersLoading = false, error = true) }
+                    uiState.update {
+                        it.copy(
+                            handlersLoading = false,
+                            selectedHandler = null,
+                            error = true,
+                        )
+                    }
                 }
         }
     }

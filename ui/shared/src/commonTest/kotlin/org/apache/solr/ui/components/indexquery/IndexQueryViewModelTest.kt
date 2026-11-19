@@ -91,4 +91,26 @@ class IndexQueryViewModelTest {
         assertTrue(holder.uiState.value.error)
         assertFalse(holder.uiState.value.collectionsLoading)
     }
+
+    @Test
+    fun testFailedHandlerLoadClearsSelectionAndSetsError() = runTest {
+        val repository = FakeIndexQueryRepository(
+            handlers = mapOf(
+                "films" to Result.success(listOf(selectHandler)),
+                "books" to Result.failure(Exception("down")),
+            ),
+        )
+        val holder = IndexQueryViewModel(repository, this)
+
+        holder.selectCollection("films")
+        advanceUntilIdle()
+        holder.selectHandler("/select")
+
+        holder.selectCollection("books")
+        advanceUntilIdle()
+
+        assertNull(holder.uiState.value.selectedHandler)
+        assertTrue(holder.uiState.value.error)
+        assertFalse(holder.uiState.value.handlersLoading)
+    }
 }

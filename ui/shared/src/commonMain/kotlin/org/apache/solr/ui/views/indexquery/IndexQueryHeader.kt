@@ -45,16 +45,18 @@ import org.jetbrains.compose.resources.stringResource
  *
  * @param collectionDropdown Dropdown state for the available collections.
  * @param requestHandlers Dropdown state for the selected collection's request handlers.
+ * @param hasError Whether loading collections or request handlers failed.
  * @param modifier Modifier to apply to the root column.
  */
 @Composable
 fun IndexQueryHeader(
     collectionDropdown: HeaderDropdownState,
     requestHandlers: HeaderDropdownState,
+    hasError: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val hasCollectionSelection = collectionDropdown.selectedKey != null
-    val noCollections = !collectionDropdown.isLoading && collectionDropdown.options.isEmpty()
+    val noCollections = !hasError && !collectionDropdown.isLoading && collectionDropdown.options.isEmpty()
     val requestHandlersDropdown = requestHandlers.copy(
         isEnabled = requestHandlers.isEnabled &&
             !collectionDropdown.isLoading &&
@@ -89,6 +91,7 @@ fun IndexQueryHeader(
         }
         if (
             hasCollectionSelection &&
+            !hasError &&
             !requestHandlers.isLoading &&
             requestHandlers.options.isEmpty()
         ) {

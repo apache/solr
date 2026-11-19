@@ -65,6 +65,7 @@ fun IndexQueryContent(
                 selectedKey = state.selectedHandler,
                 onSelect = viewModel::selectHandler,
             ),
+            hasError = state.error,
         )
         if (state.error) {
             Text(

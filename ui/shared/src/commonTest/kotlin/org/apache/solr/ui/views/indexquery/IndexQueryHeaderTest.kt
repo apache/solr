@@ -18,6 +18,7 @@
 package org.apache.solr.ui.views.indexquery
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
@@ -51,6 +52,34 @@ class IndexQueryHeaderTest {
         onNodeWithTag("index_query_no_collections").assertExists()
         onNodeWithTag("index_query_collection_dropdown").assertIsNotEnabled()
         onNodeWithTag("index_query_handler_dropdown").assertIsNotEnabled()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testCollectionLoadErrorDoesNotShowEmptyMessage() = runComposeUiTest {
+        setContent {
+            IndexQueryHeader(
+                collectionDropdown = collectionDropdown(options = emptyList(), selectedKey = null),
+                requestHandlers = requestHandlersDropdown(options = emptyList()),
+                hasError = true,
+            )
+        }
+
+        onNodeWithTag("index_query_no_collections").assertDoesNotExist()
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testHandlerLoadErrorDoesNotShowEmptyMessage() = runComposeUiTest {
+        setContent {
+            IndexQueryHeader(
+                collectionDropdown = collectionDropdown(),
+                requestHandlers = requestHandlersDropdown(options = emptyList()),
+                hasError = true,
+            )
+        }
+
+        onNodeWithTag("index_query_no_handlers").assertDoesNotExist()
     }
 
     @OptIn(ExperimentalTestApi::class)
