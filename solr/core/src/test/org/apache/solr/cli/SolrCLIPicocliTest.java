@@ -116,6 +116,19 @@ public class SolrCLIPicocliTest extends SolrTestCase {
     }
   }
 
+  /**
+   * The bin/solr script handles start, stop and restart itself, but still hands {@code --help} for
+   * them to this tool, so each one must be a registered command.
+   */
+  @Test
+  public void testScriptHandledCommandsAreRegistered() {
+    for (String name : new String[] {"start", "stop", "restart"}) {
+      assertNotNull(
+          "'bin/solr " + name + " --help' is dispatched to the tool, so " + name + " must exist",
+          rootCommand().getSubcommands().get(name));
+    }
+  }
+
   /** {@code --version} is only meaningful on the top-level command. */
   @Test
   public void testOnlyRootDeclaresVersionOption() {

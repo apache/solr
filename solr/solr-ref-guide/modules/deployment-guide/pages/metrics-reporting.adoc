@@ -180,6 +180,8 @@ See https://prometheus.io/docs/concepts/data_model/[Prometheus Data Model] docum
 
 This endpoint can be used to pull/scrape metrics to a Prometheus server or any Prometheus-compatible backend directly from Solr.
 
+TIP: For a worked Prometheus and Grafana setup, including the dashboard and alert rules Solr ships, see xref:monitoring-with-prometheus-and-grafana.adoc[].
+
 ==== Prometheus Setup
 
 The `prometheus-config.yml` file needs to be configured for a Prometheus server to scrape and collect metrics. A basic configuration for SolrCloud mode is as follows:

@@ -1,0 +1,13 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Admin UI adds a node picker so Thread Dump, Java Properties, Logging, Cores, and Dashboard can target any live SolrCloud node, with the sidebar split into Cluster and Node sections.
+type: added
+authors:
+  - name: Prithvi S.
+    nick: iprithv
+links:
+  - name: PR#5110
+    url: https://github.com/apache/solr/pull/5110
+  - name: SOLR-12613
+    url: https://issues.apache.org/jira/browse/SOLR-12613
+  - name: SOLR-18537
+    url: https://issues.apache.org/jira/browse/SOLR-18537
