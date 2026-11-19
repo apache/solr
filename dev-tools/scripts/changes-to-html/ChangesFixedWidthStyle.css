@@ -1,29 +1,33 @@
-body {
-  font-family: Courier New, monospace;
-  font-size: 10pt;
-}
+/*
+ * Apache Solr Release Notes - fixed-width alternate stylesheet.
+ * Everything in one monospace size, for diffing or plain-text style reading.
+ */
 
-h1 {
-  font-family: Courier New, monospace;
-  font-size: 10pt;
-}
-
-h2 {
-  font-family: Courier New, monospace;
-  font-size: 10pt; 
-}
-
+body,
+h1,
+h2,
 h3 {
-  font-family: Courier New, monospace;
-  font-size: 10pt; 
+  font-family: Menlo, Consolas, "Liberation Mono", Courier, monospace;
+  font-size: 10pt;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: bold;
 }
 
 a:link {
-  color: blue;
+  color: #d9411e;
 }
 
 a:visited {
-  color: purple; 
+  color: #a82e15;
+}
+
+ul.sections,
+ul.changes {
+  list-style: disc;
 }
 
 li.bulleted-list {
@@ -34,4 +38,37 @@ li.bulleted-list {
 li {
   margin-top: 1em;
   margin-bottom: 1em;
+}
+
+.brand-logo {
+  height: 3em;
+}
+
+/* The dark palette only exists in the Fancy stylesheet */
+.theme-toggle {
+  display: none;
+}
+
+.masthead-nav > a {
+  text-transform: uppercase;
+}
+
+.reldate:before {
+  content: "[";
+}
+
+.reldate:after {
+  content: "]";
+}
+
+.count:before {
+  content: "(";
+}
+
+.count:after {
+  content: ")";
+}
+
+span.attrib {
+  color: #666;
 }
