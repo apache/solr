@@ -37,7 +37,7 @@
     <!-- Various BSD-like third-party libraries with non-standard copyright headers -->
     <license family="BSD-modi" id="BSD-modi" name="Modified BSD License">
       <any>
-        <text>THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS</text>          <!-- highlight.js -->
+        <text>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS</text> <!-- highlight.js -->
       </any>
     </license>
 
