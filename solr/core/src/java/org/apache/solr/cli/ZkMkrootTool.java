@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.packagemanager.PackageUtils.format;
+import static org.apache.solr.cli.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
@@ -125,7 +125,9 @@ public class ZkMkrootTool extends ToolBase {
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       doMkroot(zkClient, zkHost, znode, failOnExists);
     } catch (Exception e) {
-      log.error("Could not complete mkroot operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete mkroot operation for reason: ", e);
+      }
       throw (e);
     }
   }
@@ -149,7 +151,9 @@ public class ZkMkrootTool extends ToolBase {
       doMkroot(zkClient, zkHost, path, failOnExists());
       return 0;
     } catch (Exception e) {
-      log.error("Could not complete mkroot operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete mkroot operation for reason: ", e);
+      }
       throw (e);
     }
   }

@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
+  function($scope, $route, $routeParams, $location, $timeout, Query, Constants, ParamSetsV2, ApiErrorHandler){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
@@ -40,28 +40,18 @@ solrAdminApp.controller('QueryController',
     });
 
     function getParamsets() {
-
-      var params = {};
-      params.core = $routeParams.core;
-      // The v2 config/params API needs to know up front whether ":core" is a collection name
+      // The v2 config/paramsets API needs to know up front whether ":core" is a collection name
       // (SolrCloud) or an actual core name (standalone/user-managed); see paramsets.js for details.
-      params.indexType = $scope.isCloudEnabled ? "collections" : "cores";
-      params.wt = "json";
+      var indexType = $scope.isCloudEnabled ? "collections" : "cores";
 
-      ParamSet.get(params, callback, failure);
+      ParamSetsV2.listParamSets(indexType, $routeParams.core, function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); $scope.responseStatus = response; return; }
 
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
-      }
-
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
+          $scope.responseStatus = "success";
+          $scope.paramsetList = data.params ? Object.keys(data.params) : [];
+        });
+      });
     }
 
     // get list of ng-models that have a form element
