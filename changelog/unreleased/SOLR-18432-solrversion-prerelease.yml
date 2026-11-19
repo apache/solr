@@ -1,0 +1,7 @@
+title: SolrVersion now tolerates a prerelease qualifier such as -SNAPSHOT. Package version constraints are matched ignoring the qualifier, the cluster version-compatibility warning no longer treats a prerelease as older than its release, and /api/node/system reports the correct Solr implementation version.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18432
+    url: https://issues.apache.org/jira/browse/SOLR-18432

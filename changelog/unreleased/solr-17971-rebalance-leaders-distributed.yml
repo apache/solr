@@ -1,0 +1,7 @@
+title: "REBALANCELEADERS no longer waits until timeout or leaves async ids behind when the Overseer is disabled."
+type: fixed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-17971
+    url: https://issues.apache.org/jira/browse/SOLR-17971

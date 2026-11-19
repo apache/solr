@@ -1,0 +1,13 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  Solr now ships Prometheus alert rules in `solr/monitoring/prometheus-solr-alerts.yml`, covering
+  heap usage, GC time, disk space, unreachable nodes, search latency, request error rate, Overseer
+  queue buildup and index-to-memory ratio. The reference guide lists the rules and their thresholds.
+type: added
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18535
+    url: https://issues.apache.org/jira/browse/SOLR-18535
