@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  CREATESNAPSHOT now fails instead of reporting success when a shard has no active replica with a
+  core snapshot
+type: fixed
+authors:
+  - name: Boyi Dai
+    nick: SpookyJumpyBeans
+links:
+  - name: SOLR-18538
+    url: https://issues.apache.org/jira/browse/SOLR-18538
