@@ -22,6 +22,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.appendPathSegments
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.domain.RequestHandlerOption
@@ -39,17 +40,17 @@ private fun isValidCollectionName(collection: String): Boolean =
         }
 
 class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryRepository {
-    override suspend fun listCollections(): Result<List<String>> {
+    override suspend fun listCollections(): Result<List<String>> = requestResult {
         val response = httpClient.get("api/collections")
-        return when {
+        when {
             response.status.isSuccess() -> Result.success(response.body<CollectionsResponse>().collections)
             else -> Result.failure(Exception("Unknown Error"))
         }
     }
 
-    override suspend fun listRequestHandlers(collection: String): Result<List<RequestHandlerOption>> {
+    override suspend fun listRequestHandlers(collection: String): Result<List<RequestHandlerOption>> = requestResult {
         if (collection == "." || collection == ".." || !isValidCollectionName(collection)) {
-            return Result.failure(IllegalArgumentException("Invalid collection name"))
+            return@requestResult Result.failure(IllegalArgumentException("Invalid collection name"))
         }
 
         val response = httpClient.get {
@@ -64,7 +65,7 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
                 )
             }
         }
-        return when {
+        when {
             response.status.isSuccess() -> {
                 val handlers = response.body<RequestHandlersResponse>().config.requestHandlers
                 Result.success(
@@ -74,6 +75,14 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
             else -> Result.failure(Exception("Unknown Error"))
         }
     }
+}
+
+private suspend fun <T> requestResult(block: suspend () -> Result<T>): Result<T> = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    Result.failure(e)
 }
 
 @Serializable

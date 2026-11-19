@@ -17,12 +17,12 @@
 package org.apache.solr.ui.views.configsets
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,12 +39,14 @@ import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.configsets_index_query
 import org.apache.solr.ui.shared.generated.resources.configsets_request_handlers
 import org.apache.solr.ui.shared.generated.resources.configsets_search_components
+import org.apache.solr.ui.shared.generated.resources.configsets_tab_unavailable
 import org.apache.solr.ui.shared.generated.resources.configsets_update_configuration
 import org.apache.solr.ui.shared.generated.resources.files
 import org.apache.solr.ui.shared.generated.resources.overview
 import org.apache.solr.ui.shared.generated.resources.schema
 import org.apache.solr.ui.views.indexquery.IndexQueryContent
 import org.apache.solr.ui.views.navigation.NavigationTabs
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -87,14 +89,19 @@ fun ConfigsetsScene(
                         modifier = Modifier.fillMaxSize().padding(16.dp),
                     )
                 }
-                entry<ConfigsetsScene.Files> { Box(Modifier.fillMaxSize()) }
-                entry<ConfigsetsScene.Schema> { Box(Modifier.fillMaxSize()) }
-                entry<ConfigsetsScene.UpdateConfig> { Box(Modifier.fillMaxSize()) }
-                entry<ConfigsetsScene.Handlers> { Box(Modifier.fillMaxSize()) }
-                entry<ConfigsetsScene.SearchComponents> { Box(Modifier.fillMaxSize()) }
+                entry<ConfigsetsScene.Files> { UnavailableConfigsetsSection() }
+                entry<ConfigsetsScene.Schema> { UnavailableConfigsetsSection() }
+                entry<ConfigsetsScene.UpdateConfig> { UnavailableConfigsetsSection() }
+                entry<ConfigsetsScene.Handlers> { UnavailableConfigsetsSection() }
+                entry<ConfigsetsScene.SearchComponents> { UnavailableConfigsetsSection() }
             },
         )
     }
+}
+
+@Composable
+private fun UnavailableConfigsetsSection() {
+    Text(stringResource(Res.string.configsets_tab_unavailable), modifier = Modifier.padding(16.dp))
 }
 
 private fun tabLabelRes(item: ConfigsetsTab) = when (item) {
