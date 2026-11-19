@@ -98,8 +98,10 @@ REM Most properties have an environment variable equivalent.
 REM A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
 REM SOLR_CLUSTERING_ENABLED=true
 
-REM Location where the bin\solr script will save the files recording running instances
+REM Location where the bin\solr script will save the PID files for running instances
 REM If not set, the script will create them in %SOLR_TIP%\bin
+REM A solr-<port>.port file is written next to the PID file for external scripts to read.
+REM That file is deprecated as of Solr 10.2 and will no longer be written in Solr 11.0.
 REM set SOLR_PID_DIR=
 
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr

@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  `bin\solr.cmd` writes a real `solr-<port>.pid` file and reads only PID files; the
+  `solr-<port>.port` file is still written but deprecated, and goes away in Solr 11.0.
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18661
+    url: https://issues.apache.org/jira/browse/SOLR-18661
