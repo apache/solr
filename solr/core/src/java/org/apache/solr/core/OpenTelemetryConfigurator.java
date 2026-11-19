@@ -20,20 +20,28 @@ package org.apache.solr.core;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
 import java.lang.invoke.MethodHandles;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.logging.DeprecationLog;
+import org.apache.solr.util.AddressUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.slf4j.Logger;
@@ -51,7 +59,31 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
+  private static final AttributeKey<String> SERVICE_INSTANCE_ID =
+      AttributeKey.stringKey("service.instance.id");
+  private static final AttributeKey<String> HOST_NAME = AttributeKey.stringKey("host.name");
+
+  /** What the SDK uses for {@code service.name} when nothing configures it. */
+  private static final String UNKNOWN_SERVICE = "unknown_service:java";
+
+  /**
+   * {@code OTEL_METRICS_EXPORTER} as configured, captured before the {@code opentelemetry} module
+   * overwrites the system property with {@code none}.
+   */
+  private static final String CONFIGURED_METRICS_EXPORTER =
+      getConfig("OTEL_METRICS_EXPORTER", System.getenv());
+
   private static volatile boolean loaded = false;
+
+  /**
+   * Resource attributes describing this node, shared by every signal. Resolved once by {@link
+   * #initializeOpenTelemetrySdk}; until then, and in processes that never call it, the SDK default.
+   */
+  private static volatile Resource telemetryResource = Resource.getDefault();
+
+  /** Solr's identity for this node, below anything the configuration supplies. */
+  private static volatile Resource nodeDefaults = Resource.empty();
 
   /** Is the OpenTelemetry Java agent present? */
   protected static final boolean OTEL_AGENT_PRESENT;
@@ -79,6 +111,13 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     if (loaded) return;
     loaded = true;
 
+    Map<String, String> nodeAttrs = nodeDefaultAttributes(cfg);
+    nodeDefaults = toResource(nodeAttrs);
+    // Publish before any configurator reads it, so the SDK and Solr's meter providers agree. Not
+    // otel.service.name: that one doubles as the module's auto-activation switch.
+    setDefaultResourceAttributes(nodeAttrs, cfg, System.getenv());
+    telemetryResource = resourceFromConfig(System.getenv());
+
     // Check for the agent explicitly; older agents don't instrument isSet(), so it returns false
     if (OTEL_AGENT_PRESENT) {
       log.info("OpenTelemetry Java agent is installed; using the OpenTelemetry it registered.");
@@ -93,6 +132,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
             loader.newInstance(info.className, OpenTelemetryConfigurator.class);
         configurator.init(info.initArgs);
         otel = configurator.createOpenTelemetry();
+        adoptConfiguredResource(configurator);
         log.info("OpenTelemetry loaded via {}", info.className);
       } else if (shouldAutoConfigOTEL()) {
         otel = autoConfigOTEL(loader); // null if it failed to load
@@ -123,7 +163,9 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
           loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
       configurator.init(new NamedList<>());
       log.info("OpenTelemetry loaded via auto configuration.");
-      return configurator.createOpenTelemetry();
+      OpenTelemetry otel = configurator.createOpenTelemetry();
+      adoptConfiguredResource(configurator);
+      return otel;
     } catch (SolrException e) {
       log.error(
           "Unable to auto-config OpenTelemetry with class {}. Make sure you have enabled the 'opentelemetry' module",
@@ -143,6 +185,154 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     DeprecationLog.log(
         "createOpenTelemetry", getClass() + " should implement createOpenTelemetry()");
     return getOpenTelemetrySdk();
+  }
+
+  /**
+   * The resource the configurator resolved for the OpenTelemetry it created, or {@code null} to let
+   * Solr derive one from the standard {@code OTEL_*} configuration. Overriding this is what keeps
+   * traces and metrics on an identical resource, including attributes contributed by {@code
+   * ResourceProvider} implementations that only the SDK knows about.
+   */
+  protected Resource getResource() {
+    return null;
+  }
+
+  /**
+   * Resource attributes describing this node, for any signal Solr exports itself. Reflects {@code
+   * OTEL_SERVICE_NAME} and {@code OTEL_RESOURCE_ATTRIBUTES} (or their {@code otel.*} system
+   * property equivalents), with Solr supplying {@code service.name}, {@code service.instance.id}
+   * and {@code host.name} where they are not configured.
+   */
+  public static Resource getTelemetryResource() {
+    return telemetryResource;
+  }
+
+  /**
+   * The {@code OTEL_METRICS_EXPORTER} the operator configured, or {@code null}. Solr's own OTLP
+   * metric exporter honours it; see {@code org.apache.solr.metrics.otel.MetricExporterFactory}.
+   */
+  public static String getConfiguredMetricsExporter() {
+    return CONFIGURED_METRICS_EXPORTER;
+  }
+
+  private static void adoptConfiguredResource(OpenTelemetryConfigurator configurator) {
+    Resource configured = configurator.getResource();
+    if (configured != null) {
+      telemetryResource = withSolrDefaults(configured);
+    }
+  }
+
+  /**
+   * Builds the resource from the standard OTEL configuration, for when no configurator supplies
+   * one: no {@code opentelemetry} module, or a Java agent owning tracing.
+   */
+  private static Resource resourceFromConfig(Map<String, String> env) {
+    AttributesBuilder attrs = Attributes.builder();
+    parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env)).forEach(attrs::put);
+    // OTEL_SERVICE_NAME wins over a service.name given among the resource attributes, per spec.
+    String serviceName = getConfig("OTEL_SERVICE_NAME", env);
+    if (serviceName != null) {
+      attrs.put(SERVICE_NAME, serviceName);
+    }
+    return withSolrDefaults(Resource.getDefault().merge(Resource.create(attrs.build())));
+  }
+
+  /** Fills in Solr's node identity and service name for whatever the configuration left unset. */
+  private static Resource withSolrDefaults(Resource base) {
+    String serviceName = base.getAttribute(SERVICE_NAME);
+    Resource resource = nodeDefaults.merge(base);
+    if (serviceName == null || UNKNOWN_SERVICE.equals(serviceName)) {
+      resource = resource.merge(Resource.create(Attributes.of(SERVICE_NAME, "solr")));
+    }
+    return resource;
+  }
+
+  /** {@code host.name} and {@code service.instance.id} as Solr knows them. */
+  private static Map<String, String> nodeDefaultAttributes(NodeConfig cfg) {
+    Map<String, String> attrs = new LinkedHashMap<>();
+    String host = nodeHost(cfg);
+    String port = nodePort(cfg);
+    if (host != null) {
+      attrs.put(HOST_NAME.getKey(), host);
+      if (port != null) {
+        attrs.put(SERVICE_INSTANCE_ID.getKey(), host + ":" + port);
+      }
+    }
+    return attrs;
+  }
+
+  private static Resource toResource(Map<String, String> attrs) {
+    AttributesBuilder builder = Attributes.builder();
+    attrs.forEach(builder::put);
+    return Resource.create(builder.build());
+  }
+
+  /**
+   * Merges Solr's defaults into {@code otel.resource.attributes}, below the environment, a system
+   * property and {@code <tracerConfig>} init args, in that order of precedence.
+   */
+  private static void setDefaultResourceAttributes(
+      Map<String, String> nodeAttrs, NodeConfig cfg, Map<String, String> env) {
+    Map<String, String> attrs = new LinkedHashMap<>(nodeAttrs);
+    // The property set below would shadow the configurator's own init args, so fold them in here.
+    attrs.putAll(parseResourceAttributes(tracerConfigResourceAttributes(cfg)));
+    attrs.putAll(parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env)));
+    if (attrs.isEmpty()) return;
+    EnvUtils.setProperty(
+        "otel.resource.attributes",
+        attrs.entrySet().stream()
+            .map(e -> e.getKey() + "=" + e.getValue())
+            .collect(Collectors.joining(",")));
+  }
+
+  /** {@code otel.resource.attributes} as supplied through {@code <tracerConfig>}, or null. */
+  private static String tracerConfigResourceAttributes(NodeConfig cfg) {
+    PluginInfo info = (cfg != null) ? cfg.getTracerConfiguratorPluginInfo() : null;
+    if (info == null || !info.isEnabled() || info.initArgs == null) return null;
+    for (Map.Entry<String, Object> arg : info.initArgs) {
+      if (arg.getValue() != null
+          && "otel.resource.attributes".equals(envNameToSyspropName(arg.getKey()))) {
+        return arg.getValue().toString();
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Parses the comma separated {@code key=value} form of {@code OTEL_RESOURCE_ATTRIBUTES}, skipping
+   * entries that lack a value.
+   */
+  protected static Map<String, String> parseResourceAttributes(String commaSeparated) {
+    Map<String, String> parsed = new LinkedHashMap<>();
+    if (commaSeparated == null) return parsed;
+    for (String entry : commaSeparated.split(",")) {
+      int eq = entry.indexOf('=');
+      if (eq > 0) {
+        parsed.put(entry.substring(0, eq).strip(), entry.substring(eq + 1).strip());
+      }
+    }
+    return parsed;
+  }
+
+  private static String nodeHost(NodeConfig cfg) {
+    String host =
+        (cfg != null && cfg.getCloudConfig() != null) ? cfg.getCloudConfig().getHost() : null;
+    if (host == null || host.isBlank()) {
+      host = EnvUtils.getProperty("solr.host.advertise");
+    }
+    if (host == null || host.isBlank()) {
+      host = AddressUtils.getHostToAdvertise();
+    }
+    if (host == null || host.isBlank()) return null;
+    return URLUtil.hasScheme(host) ? URLUtil.removeScheme(host) : host;
+  }
+
+  private static String nodePort(NodeConfig cfg) {
+    if (cfg != null && cfg.getCloudConfig() != null && cfg.getCloudConfig().getSolrHostPort() > 0) {
+      return Integer.toString(cfg.getCloudConfig().getSolrHostPort());
+    }
+    Integer listen = EnvUtils.getPropertyAsInteger("solr.port.listen", null);
+    return listen != null ? Integer.toString(listen) : null;
   }
 
   /**
@@ -225,6 +415,8 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   @VisibleForTesting
   public static void resetForTest() {
     loaded = false;
+    telemetryResource = Resource.getDefault();
+    nodeDefaults = Resource.empty();
     GlobalOpenTelemetry.resetForTest();
   }
 }
