@@ -25,7 +25,7 @@ To control user permissions, you may need to configure an authorization plugin a
 == Enable Basic Authentication
 
 When running in cloud mode, Basic authentication can be enabled from the command line using the `bin/solr auth enable` command, which applies a best-practice security template with pre-configured roles and permissions.
-See xref:solr-control-script-reference.adoc#enabling-basic-authentication[Enabling Basic Authentication] in the Solr Control Script Reference for details.
+See xref:cli/solr-auth.adoc[Enabling Basic Authentication] for details.
 
 Alternatively, you can create the `security.json` file manually.
 This file and where to put it is described in detail in the section xref:authentication-and-authorization-plugins.adoc#configuring-security-json[Configuring security.json].
@@ -214,7 +214,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
+curl --user solr:SolrRocks 'http://localhost:8983/solr/admin/authentication' -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
 ----
 ====
 
@@ -223,7 +223,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
+curl --user solr:SolrRocks 'http://localhost:8983/api/cluster/security/authentication' -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
 ----
 ====
 ======
@@ -241,7 +241,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
+curl --user solr:SolrRocks 'http://localhost:8983/solr/admin/authentication' -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
 ----
 ====
 
@@ -250,7 +250,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
+curl --user solr:SolrRocks 'http://localhost:8983/api/cluster/security/authentication' -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
 ----
 ====
 ======
@@ -267,7 +267,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
+curl --user solr:SolrRocks 'http://localhost:8983/solr/admin/authentication' -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
 ----
 ====
 
@@ -276,7 +276,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
+curl --user solr:SolrRocks 'http://localhost:8983/api/cluster/security/authentication' -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
 ----
 ====
 ======
@@ -291,7 +291,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
+curl --user solr:SolrRocks 'http://localhost:8983/solr/admin/authentication' -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
 ----
 ====
 
@@ -300,7 +300,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
+curl --user solr:SolrRocks 'http://localhost:8983/api/cluster/security/authentication' -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
 ----
 ====
 ======
@@ -361,21 +361,16 @@ This will ensure all requests issued with this particular client get the Basic A
 
 NOTE: The examples below use `HttpJettySolrClient`, which requires the `solr-solrj-jetty` maven dependency.
 
-[source,java]
+[source,java,indent=0]
 ----
-var client = new HttpJettySolrClient.Builder(solrUrl)
-        .withBasicAuthCredentials(userName, password).build();
-QueryResponse rsp = req.process(client);
+include::example$BasicAuthenticationRefGuideExamplesTest.java[tag=solrj-basicauth-per-client-httpjettysolrclient]
 ----
 
-CloudSolrClient's Builder supports receiving an `Http2SolrClient.Builder` instance for creating its internal client, so to set the credentials at the client level you could use a code like:
+CloudSolrClient's Builder supports receiving an `HttpSolrClient.BuilderBase` instance for creating its internal client, so to set the credentials at the client level you could use a code like:
 
-[source,java]
+[source,java,indent=0]
 ----
-var httpClientBuilder = HttpJettySolrClient.Builder().withBasicAuthCredentials(userName, password);
-var client = new CloudSolrClient.Builder(zkHostList, chroot)
-            .withInternalClientBuilder(httpClientBuilder).build();
-QueryResponse rsp = req.process(client);
+include::example$BasicAuthenticationRefGuideExamplesTest.java[tag=solrj-basicauth-per-client-cloudsolrclient]
 ----
 
 === Global (JVM) Basic Auth Credentials
