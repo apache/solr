@@ -54,6 +54,11 @@ public class SolrReturnFields extends ReturnFields {
 
   private final List<String> globs = new ArrayList<>(1);
 
+  // Exclusions requested with a leading '-' (e.g. fl=-title,-attr_*). They only subtract from
+  // fields matched by "*" or by a glob; explicitly named fields are always returned.
+  private final Set<String> excludedFields = new HashSet<>();
+  private final List<String> excludedGlobs = new ArrayList<>(1);
+
   // The lucene field names to request from the SolrIndexSearcher
   // This *may* include fields that will not be in the final response
   private final Set<String> loadFields = new HashSet<>();
@@ -180,6 +185,14 @@ public class SolrReturnFields extends ReturnFields {
     for (String fieldList : fl) {
       add(fieldList, deferredRenameAugmenters, augmenters, req);
     }
+    if (!excludedFields.isEmpty() || !excludedGlobs.isEmpty()) {
+      // Exclusions subtract from "all fields" (fl=-a is the same as fl=*,-a). Handle that as a
+      // glob so that everything downstream already knows to load all fields and filter.
+      if (_returnAllFields || (globs.isEmpty() && explicitReturnFields == null)) {
+        _returnAllFields = false;
+        globs.add("*");
+      }
+    }
     Map<String, String> renamedNotCopied = new HashMap<>();
     for (DeferredRenameEntry e : deferredRenameAugmenters) {
       DocTransformer t = e.create(renamedNotCopied, explicitReturnFields);
@@ -245,6 +258,27 @@ public class SolrReturnFields extends ReturnFields {
         if (sp.pos >= sp.end) break;
 
         int start = sp.pos;
+
+        // exclusion: -field or -glob*
+        if (sp.ch() == '-') {
+          sp.pos++;
+          String excluded = getFieldName(sp);
+          char next = sp.ch();
+          if (excluded == null || !(Character.isWhitespace(next) || next == ',' || next == 0)) {
+            sp.pos = start + 1;
+            excluded = sp.getGlobbedId(null);
+            next = sp.ch();
+          }
+          if (excluded != null && (Character.isWhitespace(next) || next == ',' || next == 0)) {
+            if (excluded.indexOf('*') >= 0 || excluded.indexOf('?') >= 0) {
+              excludedGlobs.add(excluded);
+            } else {
+              excludedFields.add(excluded);
+            }
+            continue;
+          }
+          sp.pos = start; // not an exclusion, e.g. a negative number in a function
+        }
 
         // short circuit test for a really simple field name
         String key = null;
@@ -536,7 +570,24 @@ public class SolrReturnFields extends ReturnFields {
     if (explicitReturnFields != null && explicitReturnFields.contains(field)) {
       return false; // the name of a pseudo field
     }
+    return matchesGlobs(field);
+  }
+
+  /** True if a glob matches the field name and no exclusion removes it. */
+  private boolean matchesGlobs(String field) {
     for (String s : globs) {
+      if (GlobPatternUtil.matches(s, field)) {
+        return !isExcluded(field);
+      }
+    }
+    return false;
+  }
+
+  private boolean isExcluded(String field) {
+    if (excludedFields.contains(field)) {
+      return true;
+    }
+    for (String s : excludedGlobs) {
       if (GlobPatternUtil.matches(s, field)) {
         return true;
       }
@@ -554,11 +605,9 @@ public class SolrReturnFields extends ReturnFields {
     if (_returnAllFields || returnFields.contains(name)) {
       return true;
     }
-    for (String s : globs) {
-      if (GlobPatternUtil.matches(s, name)) {
-        returnFields.add(name); // Don't calculate it again
-        return true;
-      }
+    if (matchesGlobs(name)) {
+      returnFields.add(name); // Don't calculate it again
+      return true;
     }
     return false;
   }
