@@ -88,13 +88,14 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testException() {
     String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
-    String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
+    String incorrectPayload = "{\"maxAtOnce\": \"abc\", \"maxWaitSeconds\": \"xyz\"}";
+    String rebalancePath = "/collections/" + COLL_NAME + "/rebalance-leaders";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new JavaBinResponseParser(), 404, notFoundPath, incorrectPayload);
-    testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(new JavaBinResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(new JsonMapResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(new XMLResponseParser(), 400, rebalancePath, incorrectPayload);
+    testException(new JavaBinResponseParser(), 400, rebalancePath, incorrectPayload);
+    testException(new JsonMapResponseParser(), 400, rebalancePath, incorrectPayload);
   }
 
   @Test

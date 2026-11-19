@@ -1027,12 +1027,10 @@ V2 API::
 ====
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts_v2' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts_v2/migrate' -H 'Content-Type: application/json' -d '
   {
-    "migrate-docs": {
-      "target": "postMigrationCollection",
-      "splitKey": "key1!"
-    }
+    "target": "postMigrationCollection",
+    "splitKey": "key1!"
   }
 '
 ----
@@ -2417,15 +2415,13 @@ http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=
 V2 API::
 +
 ====
-With the v2 API, the `rebalance-leaders` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, send the parameters in a JSON body to the collection's `rebalance-leaders` endpoint:
 
 [source,bash]
 ----
-curl 'http://localhost:8983/api/collections/techproducts' -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/rebalance-leaders' -H 'Content-Type: application/json' -d '
   {
-    "rebalance-leaders": {
-      "maxAtOnce": 3
-    }
+    "maxAtOnce": 3
   }
 '
 ----
