@@ -109,7 +109,9 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
     } catch (CoreAdminAPIBaseException e) {
       throw e.trueException;
     } finally {
-      rsp.setHttpCaching(false);
+      if (rsp != null) {
+        rsp.setHttpCaching(false);
+      }
     }
 
     return solrJerseyResponse;

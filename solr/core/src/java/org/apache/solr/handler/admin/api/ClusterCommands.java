@@ -255,11 +255,31 @@ public class ClusterCommands extends AdminAPIBase implements ClusterCommandsApi 
       return;
     }
     final Object statusVal = values.getVal(idx);
+    final String stateKey;
+    final String msgKey;
     if (statusVal instanceof CommandStatus commandStatus) {
-      final SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
-      status.add("state", commandStatus.state.getKey());
-      status.add("msg", commandStatus.msg);
-      values.setVal(idx, status);
+      stateKey = commandStatus.state == null ? null : commandStatus.state.getKey();
+      msgKey = commandStatus.msg;
+    } else if (statusVal instanceof NamedList<?> namedList) {
+      stateKey = requestStateWireKey(namedList.get("state"));
+      msgKey = namedList.get("msg") == null ? null : namedList.get("msg").toString();
+    } else {
+      return;
     }
+
+    final SimpleOrderedMap<String> status = new SimpleOrderedMap<>();
+    status.add("state", stateKey);
+    status.add("msg", msgKey);
+    values.setVal(idx, status);
+  }
+
+  private static String requestStateWireKey(Object state) {
+    if (state == null) {
+      return null;
+    }
+    if (state instanceof CommandStatus.RequestState requestState) {
+      return requestState.getKey();
+    }
+    return CommandStatus.RequestState.fromKey(state.toString()).getKey();
   }
 }
