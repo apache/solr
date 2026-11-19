@@ -32,7 +32,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConnectionManager implements Watcher {
+public class ConnectionManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String name;
@@ -195,15 +195,6 @@ public class ConnectionManager implements Watcher {
     return true;
   }
 
-  @Override
-  public void process(WatchedEvent event) {
-    process(event, nextEventSequence());
-  }
-
-  void process(WatchedEvent event, long sequence) {
-    process(event, sequence, sessionGeneration.get());
-  }
-
   private void process(WatchedEvent event, long sequence, long generation) {
     if (event.getState() == AuthFailed
         || event.getState() == Disconnected
@@ -236,7 +227,7 @@ public class ConnectionManager implements Watcher {
 
     if (state == KeeperState.SyncConnected) {
       if (!connected(sequence)) {
-        log.warn("Ignoring stale connected event {}", event);
+        log.info("Ignoring stale connected event {}", event);
         return;
       }
       log.info("zkClient has connected");
@@ -246,7 +237,7 @@ public class ConnectionManager implements Watcher {
         return;
       }
       if (!expired(sequence, generation)) {
-        log.warn("Ignoring stale expired event {} of a replaced session", event);
+        log.info("Ignoring stale expired event {} of a replaced session", event);
         return;
       }
 
@@ -319,7 +310,7 @@ public class ConnectionManager implements Watcher {
       log.info("zkClient Connected: {}", connected);
     } else if (state == KeeperState.Disconnected) {
       if (!disconnected(sequence)) {
-        log.warn("Ignoring stale disconnected event {}", event);
+        log.info("Ignoring stale disconnected event {}", event);
         return;
       }
       log.warn("zkClient has disconnected");
