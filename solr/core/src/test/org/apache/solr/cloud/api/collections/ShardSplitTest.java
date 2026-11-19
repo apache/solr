@@ -328,7 +328,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * <p>See SOLR-9439
    */
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
@@ -384,7 +383,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   @Test
   @Nightly
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18277")
   public void testSplitAfterFailedSplit2() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 

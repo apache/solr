@@ -24,10 +24,15 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.extraction.fromtika.ToXMLContentHandler;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -193,6 +198,66 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
             "Expected message to mention max size exceeded",
             e.getMessage().contains("exceeded the configured maximum size"));
       }
+    }
+  }
+
+  /**
+   * Races the last backend's close() (which stops the shared HttpClient) against construction of a
+   * new backend, which must end up with a working client rather than the one being stopped.
+   */
+  @Test
+  public void testConcurrentCloseAndAcquireSharedResources() throws Exception {
+    String baseUrl = tikaContainer.getBaseUrl();
+    int iterations = atLeast(25);
+    ExecutorService exec =
+        ExecutorUtil.newMDCAwareFixedThreadPool(2, new SolrNamedThreadFactory("tikaRace"));
+    try {
+      for (int i = 0; i < iterations; i++) {
+        TikaServerExtractionBackend last = new TikaServerExtractionBackend(baseUrl);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        Future<?> closer =
+            exec.submit(
+                () -> {
+                  barrier.await();
+                  last.close();
+                  return null;
+                });
+        Future<TikaServerExtractionBackend> opener =
+            exec.submit(
+                () -> {
+                  barrier.await();
+                  return new TikaServerExtractionBackend(baseUrl);
+                });
+        closer.get();
+        try (TikaServerExtractionBackend fresh = opener.get()) {
+          assertExtracts(fresh, "iteration " + i);
+        }
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(exec);
+    }
+  }
+
+  @Test
+  public void testCloseIsIdempotent() throws Exception {
+    String baseUrl = tikaContainer.getBaseUrl();
+    TikaServerExtractionBackend first = new TikaServerExtractionBackend(baseUrl);
+    try (TikaServerExtractionBackend second = new TikaServerExtractionBackend(baseUrl)) {
+      first.close();
+      first.close();
+      assertExtracts(second, "after double close");
+    }
+    try (TikaServerExtractionBackend third = new TikaServerExtractionBackend(baseUrl)) {
+      assertExtracts(third, "after all closed");
+    }
+  }
+
+  private void assertExtracts(TikaServerExtractionBackend backend, String marker) throws Exception {
+    byte[] data = ("Hello " + marker).getBytes(StandardCharsets.UTF_8);
+    try (ByteArrayInputStream in = new ByteArrayInputStream(data)) {
+      ExtractionResult res = backend.extract(in, newRequest("test.txt", "text/plain", "text"));
+      assertNotNull(res);
+      assertTrue(res.getContent().contains("Hello " + marker));
     }
   }
 }
