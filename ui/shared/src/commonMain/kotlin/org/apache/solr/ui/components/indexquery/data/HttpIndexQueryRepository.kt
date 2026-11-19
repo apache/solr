@@ -20,6 +20,7 @@ package org.apache.solr.ui.components.indexquery.data
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.http.appendPathSegments
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -35,10 +36,25 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
     }
 
     override suspend fun listRequestHandlers(collection: String): Result<List<RequestHandlerOption>> {
-        val response = httpClient.get("api/collections/$collection/config/requestHandler")
+        if (collection.isEmpty() || collection == "." || collection == "..") {
+            return Result.failure(IllegalArgumentException("Invalid collection name"))
+        }
+
+        val response = httpClient.get {
+            url {
+                appendPathSegments(
+                    "api",
+                    "collections",
+                    collection,
+                    "config",
+                    "requestHandlers",
+                    encodeSlash = true,
+                )
+            }
+        }
         return when {
             response.status.isSuccess() -> {
-                val handlers = response.body<RequestHandlersResponse>().config.requestHandler
+                val handlers = response.body<RequestHandlersResponse>().config.requestHandlers
                 Result.success(
                     handlers.map { (name, handler) -> RequestHandlerOption(name, handler.className) }.sortedBy { it.name },
                 )
@@ -55,7 +71,7 @@ private data class CollectionsResponse(val collections: List<String> = emptyList
 private data class RequestHandlersResponse(val config: ConfigResponse)
 
 @Serializable
-private data class ConfigResponse(val requestHandler: Map<String, RequestHandlerResponse> = emptyMap())
+private data class ConfigResponse(val requestHandlers: Map<String, RequestHandlerResponse> = emptyMap())
 
 @Serializable
 private data class RequestHandlerResponse(@SerialName("class") val className: String = "")

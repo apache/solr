@@ -56,9 +56,9 @@ class HttpIndexQueryRepositoryTest {
     fun `lists request handlers with their class names sorted by name`() = runTest {
         val engine = createMockEngine(
             { request ->
-                assertEquals("/api/collections/books/config/requestHandler", request.url.fullPath)
+                assertEquals("/api/collections/books/config/requestHandlers", request.url.fullPath)
                 respond(
-                    content = """{"config":{"requestHandler":{"/update":{"class":"solr.UpdateRequestHandler"},"/select":{"class":"solr.SearchHandler"}}}}""",
+                    content = """{"config":{"requestHandlers":{"/update":{"class":"solr.UpdateRequestHandler"},"/select":{"class":"solr.SearchHandler"}}}}""",
                     headers = jsonHeaders,
                 )
             },
