@@ -120,10 +120,7 @@ public class RuleBasedAuthorizationCoreCollectionTest extends SolrCloudAuthTestC
 
   @Test
   public void testSearchAcrossPermittedCollections() throws Exception {
-    Response rsp =
-        request(
-            "/" + coreName(PUBLIC_COLL) + "/select?collection=" + BOTH_ALIAS + "&q=*:*",
-            BOTH_READER);
+    Response rsp = request("/" + BOTH_ALIAS + "/select?q=*:*", BOTH_READER);
     assertEquals(rsp.body, 200, rsp.status);
     assertTrue(rsp.body, rsp.body.contains(PRIVATE_DOC_MARKER));
 
