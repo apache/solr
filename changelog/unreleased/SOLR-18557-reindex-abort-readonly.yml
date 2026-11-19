@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  REINDEXCOLLECTION now restores the source collection when its cleanup can't delete the target or
+  checkpoint collection, instead of leaving the source read-only
+type: fixed
+authors:
+  - name: Boyi Dai
+    nick: SpookyJumpyBeans
+links:
+  - name: SOLR-18557
+    url: https://issues.apache.org/jira/browse/SOLR-18557
