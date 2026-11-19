@@ -119,7 +119,13 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       throws KeeperException, IOException, InterruptedException {
     CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, COUNT_PROP);
     int count = Integer.parseInt(message.getStr(COUNT_PROP));
-    String collectionName = message.getStr(COLLECTION_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
+    String collectionName =
+        message.getBool(FOLLOW_ALIASES, false)
+            ? ccc.getSolrCloudManager()
+                .getClusterStateProvider()
+                .resolveSimpleAlias(extCollectionName)
+            : extCollectionName;
     String shard = message.getStr(SHARD_ID_PROP);
     DocCollection coll = adminCmdContext.getClusterState().getCollection(collectionName);
     Slice slice = null;

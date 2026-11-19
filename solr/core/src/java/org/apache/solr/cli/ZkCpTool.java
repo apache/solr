@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.packagemanager.PackageUtils.format;
+import static org.apache.solr.cli.packagemanager.PackageUtils.format;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
@@ -257,7 +257,9 @@ public class ZkCpTool extends ToolBase {
       zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recursive);
 
     } catch (Exception e) {
-      log.error("Could not complete the zk operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete the zk operation for reason: ", e);
+      }
       throw (e);
     }
   }
