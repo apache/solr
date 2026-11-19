@@ -99,6 +99,32 @@ In addition to returning the top N sorted results (where you can control N using
 You then take the `nextCursorMark` String value from the response, and pass it back to Solr as the `cursorMark` parameter for your next request.
 You can repeat this process until you've fetched as many docs as you want, or until the `nextCursorMark` returned matches the `cursorMark` you've already specified -- indicating that there are no more results.
 
+=== Going Backwards
+
+Cursor responses also include `previousCursorMark`, based on the first document on the page.
+Pass that value as the next request's `cursorMark` to fetch the preceding page.
+Keep the same query, filters, `sort`, and `rows`.
+Documents on a backwards page are returned in the original requested sort order.
+The returned `nextCursorMark` moves forwards again from that page.
+
+For example, with `sort=id asc` and `rows=3`, moving back from a page containing IDs 4, 5, and 6 returns IDs 1, 2, and 3 in that order.
+To begin at the end of the result set, use `cursorMark=<` (URL-encode the value as `%3C`).
+Solr returns the last `rows` documents in the original sort order.
+If the number of matches is not a multiple of `rows`, those page boundaries can differ from a traversal that starts at `*`.
+
+When a backwards request returns no documents, its `previousCursorMark` equals the supplied cursor, indicating the beginning has been reached.
+For an empty forward page, `previousCursorMark` is `<`, allowing a backwards traversal to start at the end.
+For an empty backwards page, `nextCursorMark` is `*`, allowing a forward traversal to restart at the beginning.
+Partial results retain the same limitations described below.
+
+With `rows=0`, no page boundary is observed.
+The cursor for the requested direction is unchanged; the other cursor represents the same input boundary in the opposite direction.
+An initial cursor with no document boundary remains `*` forwards and `<` backwards.
+
+Forward cursors retain their existing encoding.
+Backwards cursors require support on the coordinator and every participating shard; use them only after those nodes have been upgraded.
+In SolrJ, use `QueryResponse.getPreviousCursorMark()` to retrieve the backwards cursor.
+
 === Constraints when using Cursors
 
 There are a few important constraints to be aware of when using `cursorMark` parameter in a Solr request.
