@@ -25,7 +25,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -33,6 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.ContentStream;
 
 /**
  * Provides the ability to specify multiple field types and field names in the same request.
@@ -211,27 +211,26 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return NamedList containing the tokens produced by the analyzers of the given field, separated
    *     into an index and a query group
    */
-  // package access for testing
   @SuppressWarnings({"rawtypes"})
-  NamedList<NamedList> analyzeValues(
+  protected NamedList<NamedList> analyzeValues(
       FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
     final String queryValue = analysisRequest.getQuery();
     final Set<BytesRef> termsToMatch =
         (queryValue != null && analysisRequest.isShowMatch())
-            ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+            ? getQueryTokenSet(queryValue, getQueryAnalyzer(fieldType))
             : EMPTY_BYTES_SET;
 
     NamedList<NamedList> analyzeResults = new SimpleOrderedMap<>();
     if (analysisRequest.getFieldValue() != null) {
       AnalysisContext context =
-          new AnalysisContext(fieldName, fieldType, fieldType.getIndexAnalyzer(), termsToMatch);
+          new AnalysisContext(fieldName, fieldType, getIndexAnalyzer(fieldType), termsToMatch);
       NamedList analyzedTokens = analyzeValue(analysisRequest.getFieldValue(), context);
       analyzeResults.add("index", analyzedTokens);
     }
     if (analysisRequest.getQuery() != null) {
       AnalysisContext context =
-          new AnalysisContext(fieldName, fieldType, fieldType.getQueryAnalyzer());
+          new AnalysisContext(fieldName, fieldType, getQueryAnalyzer(fieldType));
       NamedList analyzedTokens = analyzeValue(analysisRequest.getQuery(), context);
       analyzeResults.add("query", analyzedTokens);
     }

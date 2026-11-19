@@ -60,7 +60,6 @@ public class PackageUtils {
   /** Represents a version which denotes the latest version available at the moment. */
   public static String LATEST = "latest";
 
-  public static String PACKAGE_PATH = "/api/cluster/package";
   public static String CLUSTER_PLUGINS_PATH = "/api/cluster/plugin";
   public static String REPOSITORIES_ZK_PATH = "/repositories.json";
   public static String CLUSTERPROPS_PATH = "/api/cluster/zk/data/clusterprops.json";
@@ -275,8 +274,14 @@ public class PackageUtils {
     return collections;
   }
 
+  /** Path for setting/unsetting request param sets (POST), per {@code ModifyParamSetAPI}. */
   public static String getCollectionParamsPath(String collection) {
     return "/api/collections/" + collection + "/config/params";
+  }
+
+  /** Path for reading request param sets (GET), per {@code ParamSetsApi.Get}. */
+  public static String getCollectionParamSetsPath(String collection) {
+    return "/api/collections/" + collection + "/config/paramsets";
   }
 
   public static void uploadKey(byte[] bytes, String path, Path home) throws IOException {

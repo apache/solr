@@ -167,7 +167,7 @@ Examples on this page refer to the V2 API.
 
 [source.bash]
 ----
-curl http://localhost:8983/api/node/system
+curl 'http://localhost:8983/api/node/system'
 ----
 
 [source.json]
