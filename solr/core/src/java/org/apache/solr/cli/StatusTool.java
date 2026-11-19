@@ -18,6 +18,7 @@
 package org.apache.solr.cli;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -241,8 +242,15 @@ public class StatusTool extends ToolBase {
       }
     }
 
-    // No URL or port, scan for running processes
-    Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
+    // No URL or port. Scanning the PID files first prunes stale ones, then the live process list
+    // is authoritative, as it already is for "status -p <port>". Reporting only PID files here
+    // would both miss nodes started in the foreground, which write none, and be non-monotonic:
+    // stopping the last background node would make the listing grow.
+    processMgr.scanSolrPidFiles();
+    Collection<SolrProcess> procs =
+        processMgr.getAllRunning().stream()
+            .sorted(Comparator.comparingInt(SolrProcess::port))
+            .toList();
     if (!procs.isEmpty()) {
       for (SolrProcess process : procs) {
         if (shortFormat) {
@@ -298,7 +306,8 @@ public class StatusTool extends ToolBase {
   }
 
   /**
-   * Wait for Solr to come online and return true if it does, false otherwise.
+   * Wait for Solr to come online and return true if it does, false otherwise. A node that rejects
+   * the request as unauthenticated or unauthorized counts as online.
    *
    * @return true if Solr comes online, false otherwise
    */
@@ -308,6 +317,11 @@ public class StatusTool extends ToolBase {
       return true;
     } catch (TimeoutException timeout) {
       return false;
+    } catch (Exception e) {
+      if (CLIUtils.exceptionIsAuthRelated(e)) {
+        return true;
+      }
+      throw e;
     }
   }
 

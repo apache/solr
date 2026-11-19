@@ -16,12 +16,18 @@ concurrency:
 
 jobs:
   test:
-    name: Build and test Docker image
+    name: Build and test Docker image (${{ matrix.dist }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        dist: [full, slim]
 
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     env:
+      SOLR_DOCKER_DIST: ${{ matrix.dist }}
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
 
