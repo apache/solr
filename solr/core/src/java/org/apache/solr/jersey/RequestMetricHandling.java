@@ -121,8 +121,13 @@ public class RequestMetricHandling {
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
+      // Jersey can re-invoke response filters a second time when an exception occurs while
+      // building the first response (e.g. via CatchAllExceptionMapper), so guard against
+      // double-stopping the same timer.
       final var timer = (AttributedLongTimer.MetricTimer) requestContext.getProperty(TIMER);
+      if (timer == null) return;
       timer.stop();
+      requestContext.setProperty(TIMER, null);
     }
   }
 }

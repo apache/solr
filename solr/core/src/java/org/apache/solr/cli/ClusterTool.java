@@ -32,9 +32,23 @@ import org.apache.solr.common.cloud.SolrZkClient;
  *
  * <p>Set cluster properties by directly manipulating ZooKeeper.
  */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "cluster",
+    description = "Set cluster properties by directly manipulating ZooKeeper.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Set the urlScheme cluster property",
+      "  bin/solr cluster --property urlScheme --value https"
+    })
 public class ClusterTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option PROPERTY_OPTION =
       Option.builder()
           .longOpt("property")
@@ -44,6 +58,11 @@ public class ClusterTool extends ToolBase {
           .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option VALUE_OPTION =
       Option.builder()
           .longOpt("value")
@@ -54,6 +73,27 @@ public class ClusterTool extends ToolBase {
 
   /** Parameters for the cluster command, independent of the command line parser. */
   record ClusterParams(String propertyName, String propertyValue, String zkHost) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.Option(
+      names = "--property",
+      required = true,
+      paramLabel = "PROPERTY",
+      description = "Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
+  private String propertyOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--value",
+      paramLabel = "VALUE",
+      description = "Set the property to this value.")
+  private String valueOpt;
+
+  @picocli.CommandLine.Mixin private ZkConnectionOptions zkOpts;
+
+  public ClusterTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public ClusterTool(ToolRuntime runtime) {
     super(runtime);
@@ -107,5 +147,12 @@ public class ClusterTool extends ToolBase {
                 + ex.getLocalizedMessage());
       }
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    ClusterParams params = new ClusterParams(propertyOpt, valueOpt, zkOpts.resolveZkHost());
+    setClusterProperty(params);
+    return 0;
   }
 }

@@ -148,7 +148,7 @@ class GeoJSONWriter extends JSONWriter {
 
     boolean first = true;
     for (String fname : doc.getFieldNames()) {
-      if (fname.equals(geofield) || ((returnFields != null && !returnFields.wantsField(fname)))) {
+      if (fname.equals(geofield) || ((returnFields != null && !returnFields.returnsField(fname)))) {
         continue;
       }
       writeMapSeparator();
