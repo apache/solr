@@ -20,7 +20,7 @@ package org.apache.solr.ui.components.indexquery
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.apache.solr.ui.components.indexquery.data.IndexQueryRepository
-import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryStateHolder
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
 import org.apache.solr.ui.domain.RequestHandlerOption
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,14 +40,13 @@ private class FakeIndexQueryRepository(
         handlers[collection] ?: Result.success(emptyList())
 }
 
-class IndexQueryStateHolderTest {
+class IndexQueryViewModelTest {
 
     @Test
     fun testLoadCollectionsPopulatesList() = runTest {
         val repository = FakeIndexQueryRepository(collections = Result.success(listOf("films", "shop")))
-        val holder = IndexQueryStateHolder(repository, this)
+        val holder = IndexQueryViewModel(repository, this)
 
-        holder.loadCollections()
         advanceUntilIdle()
 
         assertEquals(listOf("films", "shop"), holder.uiState.value.collections)
@@ -55,11 +54,15 @@ class IndexQueryStateHolderTest {
     }
 
     @Test
-    fun testSelectingCollectionLoadsItsHandlersAndClearsHandlerChoice() = runTest {
+    fun testSelectingCollectionPreservesAvailableHandlerAndClearsUnavailableHandler() = runTest {
         val repository = FakeIndexQueryRepository(
-            handlers = mapOf("films" to Result.success(listOf(selectHandler))),
+            handlers = mapOf(
+                "films" to Result.success(listOf(selectHandler)),
+                "books" to Result.success(listOf(selectHandler)),
+                "empty" to Result.success(emptyList()),
+            ),
         )
-        val holder = IndexQueryStateHolder(repository, this)
+        val holder = IndexQueryViewModel(repository, this)
 
         holder.selectCollection("films")
         advanceUntilIdle()
@@ -67,14 +70,22 @@ class IndexQueryStateHolderTest {
         assertEquals(listOf(selectHandler), holder.uiState.value.handlers)
         assertNull(holder.uiState.value.selectedHandler)
         assertFalse(holder.uiState.value.handlersLoading)
+
+        holder.selectHandler("/select")
+        holder.selectCollection("books")
+        advanceUntilIdle()
+        assertEquals("/select", holder.uiState.value.selectedHandler)
+
+        holder.selectCollection("empty")
+        advanceUntilIdle()
+        assertNull(holder.uiState.value.selectedHandler)
     }
 
     @Test
     fun testFailedLoadSetsError() = runTest {
         val repository = FakeIndexQueryRepository(collections = Result.failure(Exception("down")))
-        val holder = IndexQueryStateHolder(repository, this)
+        val holder = IndexQueryViewModel(repository, this)
 
-        holder.loadCollections()
         advanceUntilIdle()
 
         assertTrue(holder.uiState.value.error)

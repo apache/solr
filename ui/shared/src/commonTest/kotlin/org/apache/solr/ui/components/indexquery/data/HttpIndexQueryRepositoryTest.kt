@@ -44,15 +44,11 @@ class HttpIndexQueryRepositoryTest {
                 )
             },
         )
-        val httpClient = testHttpClient(engine)
-
-        try {
+        testHttpClient(engine).use { httpClient ->
             val result = HttpIndexQueryRepository(httpClient).listCollections()
 
             assertEquals(listOf("films", "books"), result.getOrThrow())
             assertEquals(1, engine.requestHistory.size)
-        } finally {
-            httpClient.close()
         }
     }
 
@@ -67,9 +63,7 @@ class HttpIndexQueryRepositoryTest {
                 )
             },
         )
-        val httpClient = testHttpClient(engine)
-
-        try {
+        testHttpClient(engine).use { httpClient ->
             val result = HttpIndexQueryRepository(httpClient).listRequestHandlers("books")
 
             assertEquals(
@@ -80,8 +74,6 @@ class HttpIndexQueryRepositoryTest {
                 result.getOrThrow(),
             )
             assertEquals(1, engine.requestHistory.size)
-        } finally {
-            httpClient.close()
         }
     }
 
@@ -90,14 +82,10 @@ class HttpIndexQueryRepositoryTest {
         val engine = createMockEngine(
             { _ -> respond(content = "{}", status = HttpStatusCode.ServiceUnavailable) },
         )
-        val httpClient = testHttpClient(engine)
-
-        try {
+        testHttpClient(engine).use { httpClient ->
             val result = HttpIndexQueryRepository(httpClient).listCollections()
 
             assertTrue(result.isFailure)
-        } finally {
-            httpClient.close()
         }
     }
 

@@ -34,7 +34,6 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsScene
-import org.apache.solr.ui.views.indexquery.IndexQueryContent
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsTab
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.configsets_index_query
@@ -44,6 +43,7 @@ import org.apache.solr.ui.shared.generated.resources.configsets_update_configura
 import org.apache.solr.ui.shared.generated.resources.files
 import org.apache.solr.ui.shared.generated.resources.overview
 import org.apache.solr.ui.shared.generated.resources.schema
+import org.apache.solr.ui.views.indexquery.IndexQueryContent
 import org.apache.solr.ui.views.navigation.NavigationTabs
 
 @OptIn(ExperimentalLayoutApi::class)

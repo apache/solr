@@ -47,8 +47,7 @@ fun IndexQueryContent(
     viewModel: IndexQueryViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val stateHolder = viewModel.stateHolder
-    val state by stateHolder.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsState()
 
     Column(modifier = modifier.fillMaxWidth()) {
         IndexQueryHeader(
@@ -56,7 +55,7 @@ fun IndexQueryContent(
                 options = state.collections.map { HeaderDropdownOption(key = it, label = it) },
                 isLoading = state.collectionsLoading,
                 selectedKey = state.selectedCollection,
-                onSelect = stateHolder::selectCollection,
+                onSelect = viewModel::selectCollection,
             ),
             requestHandlers = HeaderDropdownState(
                 options = state.handlers.map {
@@ -64,7 +63,7 @@ fun IndexQueryContent(
                 },
                 isLoading = state.handlersLoading,
                 selectedKey = state.selectedHandler,
-                onSelect = stateHolder::selectHandler,
+                onSelect = viewModel::selectHandler,
             ),
         )
         if (state.error) {

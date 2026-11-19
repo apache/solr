@@ -49,13 +49,13 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
 }
 
 @Serializable
-private class CollectionsResponse(val collections: List<String> = emptyList())
+private data class CollectionsResponse(val collections: List<String> = emptyList())
 
 @Serializable
-private class RequestHandlersResponse(val config: ConfigResponse)
+private data class RequestHandlersResponse(val config: ConfigResponse)
 
 @Serializable
-private class ConfigResponse(val requestHandler: Map<String, RequestHandlerResponse> = emptyMap())
+private data class ConfigResponse(val requestHandler: Map<String, RequestHandlerResponse> = emptyMap())
 
 @Serializable
-private class RequestHandlerResponse(@SerialName("class") val className: String = "")
+private data class RequestHandlerResponse(@SerialName("class") val className: String = "")

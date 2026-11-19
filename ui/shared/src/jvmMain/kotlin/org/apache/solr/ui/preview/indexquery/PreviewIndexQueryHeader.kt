@@ -29,13 +29,13 @@ import org.apache.solr.ui.views.indexquery.IndexQueryHeader
 internal fun PreviewBasicIndexQueryHeader() = PreviewContainer {
     IndexQueryHeader(
         collectionDropdown = HeaderDropdownState(
-            options = listOf("dog", "cat").map { HeaderDropdownOption(key = it, label = it) },
+            options = listOf("films", "techproducts").map { HeaderDropdownOption(key = it, label = it) },
             isLoading = false,
-            selectedKey = "cat",
+            selectedKey = "films",
             onSelect = {},
         ),
         requestHandlers = HeaderDropdownState(
-            options = listOf(HeaderDropdownOption(key = "Handle", label = "Handle", subtitle = "solr.myRequestHandler")),
+            options = listOf(HeaderDropdownOption(key = "/select", label = "/select", subtitle = "solr.SearchHandler")),
             isLoading = false,
             selectedKey = null,
             onSelect = {},
@@ -48,15 +48,15 @@ internal fun PreviewBasicIndexQueryHeader() = PreviewContainer {
 internal fun PreviewLoadingIndexQueryHeader() = PreviewContainer {
     IndexQueryHeader(
         collectionDropdown = HeaderDropdownState(
-            options = listOf("dog", "cat").map { HeaderDropdownOption(key = it, label = it) },
+            options = listOf("films", "techproducts").map { HeaderDropdownOption(key = it, label = it) },
             isLoading = true,
-            selectedKey = "cat",
+            selectedKey = "films",
             onSelect = {},
         ),
         requestHandlers = HeaderDropdownState(
-            options = listOf(HeaderDropdownOption(key = "Handle", label = "Handle", subtitle = "solr.myRequestHandler")),
+            options = listOf(HeaderDropdownOption(key = "/select", label = "/select", subtitle = "solr.SearchHandler")),
             isLoading = true,
-            selectedKey = "Handle",
+            selectedKey = "/select",
             onSelect = {},
         ),
     )
@@ -86,9 +86,9 @@ internal fun PreviewNoCollectionsIndexQueryHeader() = PreviewContainer {
 internal fun PreviewNoRequestHandlersIndexQueryHeader() = PreviewContainer {
     IndexQueryHeader(
         collectionDropdown = HeaderDropdownState(
-            options = listOf(HeaderDropdownOption(key = "dog", label = "dog")),
+            options = listOf(HeaderDropdownOption(key = "films", label = "films")),
             isLoading = false,
-            selectedKey = "dog",
+            selectedKey = "films",
             onSelect = {},
         ),
         requestHandlers = HeaderDropdownState(

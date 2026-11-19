@@ -13,16 +13,91 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package org.apache.solr.ui.components.indexquery.viewmodel
+ */
+
+package org.apache.solr.ui.components.indexquery.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.apache.solr.ui.components.indexquery.data.IndexQueryRepository
+import org.apache.solr.ui.domain.RequestHandlerOption
 
-class IndexQueryViewModel(repository: IndexQueryRepository) : ViewModel() {
-    val stateHolder = IndexQueryStateHolder(repository, viewModelScope)
+data class IndexQueryUiState(
+    val collections: List<String> = emptyList(),
+    val collectionsLoading: Boolean = false,
+    val selectedCollection: String? = null,
+    val handlers: List<RequestHandlerOption> = emptyList(),
+    val handlersLoading: Boolean = false,
+    val selectedHandler: String? = null,
+    val error: Boolean = false,
+)
+
+/** Loads and manages the Index & Query header state. */
+class IndexQueryViewModel internal constructor(
+    private val repository: IndexQueryRepository,
+    private val testScope: CoroutineScope?,
+) : ViewModel() {
+    constructor(repository: IndexQueryRepository) : this(repository, null)
+
+    val uiState: StateFlow<IndexQueryUiState>
+        field = MutableStateFlow(IndexQueryUiState())
+
+    private val scope get() = testScope ?: viewModelScope
+    private var handlersJob: Job? = null
 
     init {
-        stateHolder.loadCollections()
+        loadCollections()
+    }
+
+    private fun loadCollections() {
+        uiState.update { it.copy(collectionsLoading = true, error = false) }
+        scope.launch {
+            repository.listCollections()
+                .onSuccess { names ->
+                    uiState.update { it.copy(collections = names, collectionsLoading = false) }
+                }
+                .onFailure {
+                    uiState.update { it.copy(collectionsLoading = false, error = true) }
+                }
+        }
+    }
+
+    fun selectCollection(collection: String) {
+        handlersJob?.cancel()
+        uiState.update {
+            it.copy(
+                selectedCollection = collection,
+                handlers = emptyList(),
+                handlersLoading = true,
+                error = false,
+            )
+        }
+        handlersJob = scope.launch {
+            repository.listRequestHandlers(collection)
+                .onSuccess { handlers ->
+                    uiState.update { state ->
+                        state.copy(
+                            handlers = handlers,
+                            handlersLoading = false,
+                            selectedHandler = state.selectedHandler?.takeIf { selected ->
+                                handlers.any { it.name == selected }
+                            },
+                        )
+                    }
+                }
+                .onFailure {
+                    uiState.update { it.copy(handlersLoading = false, error = true) }
+                }
+        }
+    }
+
+    fun selectHandler(handler: String) {
+        uiState.update { it.copy(selectedHandler = handler) }
     }
 }

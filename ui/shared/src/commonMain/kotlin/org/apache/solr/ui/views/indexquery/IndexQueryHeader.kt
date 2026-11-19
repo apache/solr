@@ -53,20 +53,24 @@ fun IndexQueryHeader(
     requestHandlers: HeaderDropdownState,
     modifier: Modifier = Modifier,
 ) {
+    val hasCollectionSelection = collectionDropdown.selectedKey != null
+    val noCollections = !collectionDropdown.isLoading && collectionDropdown.options.isEmpty()
     val requestHandlersDropdown = requestHandlers.copy(
         isEnabled = requestHandlers.isEnabled &&
             !collectionDropdown.isLoading &&
-            collectionDropdown.selectedKey != null,
+            hasCollectionSelection,
     )
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Collection dropdown
             HeaderDropdown(
                 label = stringResource(Res.string.label_collection_core),
                 state = collectionDropdown,
                 testTag = "index_query_collection_dropdown",
                 modifier = Modifier.width(256.dp),
             )
+            // Request handler dropdown
             HeaderDropdown(
                 label = stringResource(Res.string.label_request_handler),
                 state = requestHandlersDropdown,
@@ -75,7 +79,7 @@ fun IndexQueryHeader(
                 placeholder = stringResource(Res.string.placeholder_select_request_handler),
             )
         }
-        if (!collectionDropdown.isLoading && collectionDropdown.options.isEmpty()) {
+        if (noCollections) {
             Text(
                 text = stringResource(Res.string.no_collections_available),
                 style = MaterialTheme.typography.bodyMedium,
@@ -84,7 +88,7 @@ fun IndexQueryHeader(
             )
         }
         if (
-            collectionDropdown.selectedKey != null &&
+            hasCollectionSelection &&
             !requestHandlers.isLoading &&
             requestHandlers.options.isEmpty()
         ) {
