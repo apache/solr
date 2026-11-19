@@ -21,7 +21,6 @@ import static org.apache.solr.cloud.ThreadBoundLock.TIMEOUT_MS;
 import static org.apache.solr.cloud.ThreadBoundLock.awaitAcquired;
 
 import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -33,7 +32,8 @@ public abstract class ApiLockingTestBase extends SolrTestCaseJ4 {
 
   protected static final String LOCK_ROOT = "/apiLockTestRoot";
 
-  private final Map<DistributedMultiLock, ThreadBoundLock> boundLocks = new IdentityHashMap<>();
+  private final IdentityHashMap<DistributedMultiLock, ThreadBoundLock> boundLocks =
+      new IdentityHashMap<>();
   private ZkTestServer server;
   protected SolrZkClient zkClient;
 
