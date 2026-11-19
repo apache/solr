@@ -155,8 +155,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     replicas2.removeAll(replicas);
     assertEquals(1, replicas2.size());
 
-    // use waitForFinalState
-    addReplica.setWaitForFinalState(true);
     addReplica.processAsync("001", cloudClient);
     requestStatus = CollectionAdminRequest.requestStatus("001");
     rsp = requestStatus.process(cloudClient);
@@ -205,7 +203,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
         CollectionAdminRequest.addReplicaToShard(collectionName, "shard1");
     addReplica.withProperty("customProp2", "val2.1");
     addReplica.withProperty("customProp3", "val3");
-    addReplica.setWaitForFinalState(true);
     addReplica.process(cloudClient);
 
     // Verify that the new core was created with user-defined properties coming from the request
