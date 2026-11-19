@@ -16,12 +16,19 @@
  */
 package org.apache.solr.core.backup;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.Test;
 
 /** Unit tests for {@link BackupFilePaths} */
+@LuceneTestCase.SuppressFileSystems("ExtrasFS")
 public class BackupFilePathsTest extends SolrTestCase {
 
   @Test
@@ -82,5 +89,42 @@ public class BackupFilePathsTest extends SolrTestCase {
         BackupFilePaths.findMostRecentBackupIdFromFileListing(backupFiles);
     assertTrue(filenameOption.isPresent());
     assertEquals(new BackupId(2), filenameOption.get());
+  }
+
+  @Test
+  public void testExistingBackupLocationIgnoresHiddenEntries() throws Exception {
+    Path backupDir = backupDirWith(".DS_Store", "coll1/");
+    assertEquals(backupDir.resolve("coll1").toUri(), existingBackupLocation(backupDir));
+  }
+
+  @Test
+  public void testExistingBackupLocationAllowsLoneHiddenCollection() throws Exception {
+    Path backupDir = backupDirWith(".coll1/");
+    assertEquals(backupDir.resolve(".coll1").toUri(), existingBackupLocation(backupDir));
+  }
+
+  @Test
+  public void testExistingBackupLocationRejectsMultipleCollections() throws Exception {
+    Path backupDir = backupDirWith("coll1/", "coll2/");
+    expectThrows(IllegalStateException.class, () -> existingBackupLocation(backupDir));
+  }
+
+  private Path backupDirWith(String... entries) throws IOException {
+    Path backupDir = createTempDir().resolve("mybackup");
+    for (String entry : entries) {
+      if (entry.endsWith("/")) {
+        Files.createDirectories(backupDir.resolve(entry));
+      } else {
+        Files.createDirectories(backupDir);
+        Files.writeString(backupDir.resolve(entry), "x");
+      }
+    }
+    return backupDir;
+  }
+
+  private URI existingBackupLocation(Path backupDir) throws IOException {
+    LocalFileSystemRepository repository = new LocalFileSystemRepository();
+    return BackupFilePaths.buildExistingBackupLocationURI(
+        repository, backupDir.getParent().toUri(), backupDir.getFileName().toString());
   }
 }
