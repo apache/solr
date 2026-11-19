@@ -519,7 +519,7 @@ The search results retrieved are the k=10 nearest documents to the vector in inp
 +
 ACORN is an algorithm designed to make hybrid searches consisting of a filter and a vector search more efficient.
 This approach tackles both the performance limitations of pre- and post- filtering.
-It modifies the construction of the HNSW graph and the search on it. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
+It modifies how the HNSW graph is searched. Based on https://arxiv.org/abs/2403.04871[ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data (2024)].
 +
 Solr relies on Lucene's implementation of the `filteredSearchThreshold` in the  {lucene-javadocs}/core/org/apache/lucene/search/knn/KnnSearchStrategy.html[KnnSearchStrategy].
 +
@@ -1042,6 +1042,12 @@ Details about using the ReRank Query Parser can be found in the xref:query-guide
 [NOTE]
 This is feature is currently experimental.
 
+[WARNING]
+====
+Vector indexing with GPU acceleration does not work in Solr 10.1 (see SOLR-18556), and is expected to be fixed in a subsequent Solr 10.x release.
+See xref:upgrade-notes:major-changes-in-solr-10.adoc#cuvs-gpu-acceleration-broken[Major Changes in Solr 10] for details.
+====
+
 Building HNSW graphs, esp. with high dimensions and cardinality, is usually slow. If you have a NVIDIA GPU, then building HNSW based indexes can be sped up manifold. This is powered by the https://github.com/rapidsai/cuvs-lucene[cuVS-Lucene] library, a pluggable vectors format for Apache Lucene. It uses the state of the art https://arxiv.org/abs/2308.15136[CAGRA algorithm] for quickly building a fixed degree connected graph, which is then serialized into a HNSW graph. https://developer.nvidia.com/cuda-downloads[CUDA 13.0+] and https://jdk.java.net/archive/[JDK 22] are required to use this feature.
 
 You can know more about Nvidia's cuVS library here: https://developer.nvidia.com/cuvs
@@ -1271,7 +1277,7 @@ EOF
 +
 [source,bash]
 ----
-curl -s "http://localhost:8983/solr/vectors/update?commit=true" \
+curl -s 'http://localhost:8983/solr/vectors/update?commit=true' \
      -H "Content-Type: application/json" \
      -d '[
        {"id": "doc1", "article_vector": [0.35648, 0.11664, 0.85660, 0.25043, 0.80778, 0.08031, 0.48444, 0.39083]},

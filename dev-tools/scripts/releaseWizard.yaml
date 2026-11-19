@@ -561,40 +561,16 @@ groups:
     - https://projects.apache.org/doap.html
   - !Todo
     id: new_jenkins_builds
-    title: Add Jenkins tasks for new branch(es)
+    title: Add Jenkins tasks for the new stable branch
     description: |
-      This will make sure we are continuously testing the new branch(es) we have created.
+      This will make sure we are continuously testing the new stable branch we have created.
+      Release branches are short-lived and don't get Jenkins jobs of their own.
       Consult the JenkinsReleaseBuilds page for more information.
-      
+
       Job Suffixes to create:
-        {% if release_type == 'major' %}
         *-{{release_version_major}}.x (The new stable branch)
-        {% endif %}
-        *-{{release_version_major}}.{{release_version_minor}} (The new release branch)
     types:
     - major
-    - minor
-    links:
-      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
-      - https://ci-builds.apache.org/job/Solr/
-  - !Todo
-    id: old_jenkins_builds
-    title: Remove old Jenkins tasks for decommissioned branches
-    description: |
-      This will make sure we aren't using resources to test branches no longer in development.
-      Consult the JenkinsReleaseBuilds page for more information.
-      
-      Job Suffixes to delete:
-        {% if release_type == 'major' %}
-        *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
-        *-{{latest_version_major}}.x (The previous stable branch)
-        {% else %}
-        *-{{latest_version_major}}.{{latest_version_minor}} (The previous release branch)
-        {% endif %}
-    depends: new_jenkins_builds
-    types:
-      - major
-      - minor
     links:
       - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
       - https://ci-builds.apache.org/job/Solr/
@@ -707,6 +683,9 @@ groups:
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
       NOTE: Do not add every single JIRA issue, but distill the release notes into important changes!
+
+      Leave a clear all-caps placeholder at the end of the page, e.g. `TODO: THANK CONTRIBUTORS`.
+      The list of contributors is only final after the vote, and is added in a later step.
     links:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
@@ -801,7 +780,7 @@ groups:
         cmd: git diff --stat changelog CHANGELOG.md
         stdout: true
       - !Command
-        cmd: "{{ gradle_cmd }} :solr:documentation:changesToHtml"
+        cmd: python3 -u dev-tools/scripts/changes2html.py CHANGELOG.md --output-dir solr/documentation/build/site/changes
         logfile: changes-to-html.log
         tee: true
       - !Command
@@ -939,7 +918,9 @@ groups:
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
+      commands_text: |-
+        Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
+        Optionally, have a Docker daemon running first; some integration tests use Docker and are skipped without it.
       remove_files:
       - '{{ tmp_dir }}'
       commands:
@@ -1012,6 +993,9 @@ groups:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
       {{ release_candidate_location }}
+
+      Optionally, have a Docker daemon running before starting the smoke tester;
+      some integration tests use Docker and are skipped without it.
 
       You can build a release-candidate of the official docker images (full & slim) using the following command:
 
@@ -1512,9 +1496,33 @@ groups:
     post_description: |
       You will push and verify all changes in a later step
   - !Todo
+    id: release_notes_contributors
+    title: Add contributors to the release notes
+    depends: website_update_antora_htaccess
+    description: |
+      The changelog for {{ release_version }} is final, and the next step copies the Wiki Release Notes
+      page into the website news. List the contributors, to thank them in the release notes.
+
+      The script prints the unique authors of `changelog/v{{ release_version }}/`, excluding `solrbot`.
+      Its output is raw; merge duplicates (e.g. differing case, trailing commas, handles vs. real names),
+      split any entry holding several people, and drop placeholders like "various contributors".
+
+      Paste the cleaned list into the Wiki Release Notes page, replacing the all-caps
+      `TODO: THANK CONTRIBUTORS` placeholder.
+    links:
+    - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: List contributors of {{ release_version }}
+      commands:
+        - !Command
+          cmd: python3 -u dev-tools/scripts/parseContributorsFromChanges.py {{ release_version }}
+          comment: Print the contributors of this release
+          tee: true
+  - !Todo
     id: prepare_announce_solr
     title: Author the Solr release news
-    depends: website_update_antora_htaccess
+    depends: release_notes_contributors
     description: |
       Edit a news text for the Solr website. This text will be the basis for the release announcement email later.
       This step will open an editor with a template. You will need to copy/paste the final release announcement text
@@ -1931,3 +1939,16 @@ groups:
           svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-solr.log
         comment: Delete from new Solr dist area
+  - !Todo
+    id: discuss_old_lts_retirement
+    title: Discuss retiring the old LTS branch
+    description: |
+      With this major release, the previous stable branch becomes the LTS branch.
+      Start a discussion on dev@ about retiring the older LTS branch, branch_{{ release_version_major - 2 }}x.
+
+      Retiring it includes removing its Jenkins jobs (*-{{ release_version_major - 2 }}.x),
+      so that we aren't using resources to test a branch no longer in development.
+    types:
+    - major
+    links:
+    - https://ci-builds.apache.org/job/Solr/
