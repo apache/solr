@@ -568,12 +568,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   private void dropBufferIfIncomplete(SolrCore core, boolean successfulRecovery) {
     // on shutdown UpdateLog.close() keeps the buffer tlog as an unfinished-recovery marker
-    if (successfulRecovery
-        || !startedBuffering
-        || Thread.currentThread().isInterrupted()
-        || (cc != null && cc.isShutDown())) {
+    if (successfulRecovery || !startedBuffering || (cc != null && cc.isShutDown())) {
       return;
     }
+    // close() may have interrupted this thread via cancelPrepRecoveryCmd(); tlog I/O would fail
+    boolean interrupted = Thread.interrupted();
     try {
       UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
       if (ulog != null && ulog.dropBufferedUpdates()) {
@@ -583,6 +582,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     } catch (Exception e) {
       log.warn("Could not drop buffered updates after incomplete recovery. core=[{}]", coreName, e);
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 

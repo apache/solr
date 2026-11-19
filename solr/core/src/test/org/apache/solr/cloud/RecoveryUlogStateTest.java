@@ -34,6 +34,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.LogListener;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -312,6 +313,41 @@ public class RecoveryUlogStateTest extends SolrCloudTestCase {
 
     assertTrue(
         "buffer tlog (unfinished-recovery marker) was deleted on shutdown", hasBufferTlog(tlogDir));
+  }
+
+  @Test
+  public void testCancelledDuringPrepRecoveryLeavesUlogActive() throws Exception {
+    String collection = "prep_recovery";
+    createCollection(collection);
+
+    Replica replica = getNonLeader(collection);
+    CoreContainer cc = cluster.getReplicaJetty(replica).getCoreContainer();
+
+    TestInjection.prepRecoveryOpPauseForever = "true:100";
+    try (SolrCore core = cc.getCore(replica.getCoreName());
+        LogListener recoveryFinished = recoveryFinishedListener();
+        LogListener prepPaused =
+            LogListener.info(TestInjection.class).substring("inject pause forever")) {
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+      core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
+      assertNotNull(
+          "prep recovery was never paused",
+          prepPaused.getQueue().poll(WAIT_SECONDS, TimeUnit.SECONDS));
+
+      indexAndCommit(collection, 3000, 20);
+      assertTrue("no buffer tlog was written", hasBufferTlog(Path.of(ulog.getTlogDir())));
+
+      core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+      waitForRecoveryToFinish(recoveryFinished);
+
+      assertEquals(
+          "UpdateLog left in non-ACTIVE state after recovery was cancelled during prep recovery",
+          UpdateLog.State.ACTIVE,
+          ulog.getState());
+    } finally {
+      TestInjection.reset();
+    }
   }
 
   private static boolean hasBufferTlog(Path tlogDir) throws Exception {
