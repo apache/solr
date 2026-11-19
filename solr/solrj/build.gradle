@@ -110,6 +110,7 @@ dependencies {
 openApiGenerate {
   generatorName = "java"
   inputSpec = project(":solr:api").openApiSpecFile
+  quiet = true // Suppress the "Thanks for using OpenAPI Generator" banner.
 
   // Add 'debugModels: ""' or 'debugOperations: ""' to get the JSON input to mustache templating for those components
   globalProperties.set([apis: "", models: "false"])
