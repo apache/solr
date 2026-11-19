@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -345,7 +346,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
               log.error(
                   "Error occurred while trying to acquire lock for task [{}]", head.getId(), e);
               NamedList<Object> errResp = new NamedList<>();
-              errResp.add("exception", e.getMessage());
+              CollectionHandlingUtils.addExceptionToNamedList(operation, e, errResp);
               OverseerSolrResponse response = new OverseerSolrResponse(errResp);
               if (asyncId != null) {
                 failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));

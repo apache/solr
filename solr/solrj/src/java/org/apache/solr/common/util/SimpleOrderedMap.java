@@ -45,6 +45,8 @@ import org.apache.solr.common.params.SolrParams;
  */
 public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
 
+  private static final long serialVersionUID = -8705511030983987520L;
+
   private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
 
   /** Creates an empty instance */
@@ -92,6 +94,11 @@ public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<Strin
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<>(newList);
+  }
+
+  @Override
+  public SimpleOrderedMap<T> getImmutableCopy() {
+    return new SimpleOrderedMap<>(immutablePairs());
   }
 
   @SuppressWarnings("EqualsDoesntCheckParameterClass")
