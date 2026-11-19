@@ -32,6 +32,10 @@ CORE_DIR="$coresdir/demo"
 if [ -d "$CORE_DIR" ]; then
   echo "$CORE_DIR exists; skipping demo creation"
 else
+  if [ ! -d /opt/solr/example/exampledocs ]; then
+    echo "solr-demo requires the full Solr distribution with example data" >&2
+    exit 1
+  fi
   start-local-solr
   echo "Creating $CORE"
   /opt/solr/bin/solr create -c "$CORE"
