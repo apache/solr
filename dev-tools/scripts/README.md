@@ -1,3 +1,8 @@
+<!--
+  Keep this listing very brief: 3 sentences at most per script plus any applicable links.
+  This is not the place to document each script in detail; put that at the head of the script itself.
+-->
+
 # Developer Scripts
 
 This folder contains various useful scripts for developers, mostly related to
@@ -8,6 +13,10 @@ Python scripts require Python 3.6 or above. To install necessary python modules,
     pip3 install -r requirements.txt
 
 ## Scripts description
+
+### pr-triage-llm.py
+
+Advisory LLM-based triage comment on new PRs, run from GitHub Actions. See the script's header for details.
 
 ### smokeTestRelease.py
 
@@ -37,6 +46,14 @@ the full tests.
     Example usage:
     python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-10.0.0-RC1-rev-c7510a0...
 
+
+### releaseDryRun.sh
+
+Dry run of the release process for the version in `build.gradle`, without signing or
+publishing anything: prepares the changelog on a local branch, builds an RC with
+`buildAndPushRelease.py`, and smoke tests it. Used by the `Solr-Smoketest-*` Jenkins jobs.
+
+    Usage: dev-tools/scripts/releaseDryRun.sh [TMP_DIR]
 
 ### releaseWizard.py
 

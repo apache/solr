@@ -17,6 +17,8 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
+
 import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
@@ -76,6 +78,17 @@ public class JerseyApplications {
             protected void configure() {
               bindFactory(InjectionFactories.SolrQueryResponseFactory.class)
                   .to(SolrQueryResponse.class)
+                  .in(RequestScoped.class);
+            }
+          });
+
+      register(
+          new AbstractBinder() {
+            @Override
+            protected void configure() {
+              bindFactory(InjectionFactories.CallingLockIdFactory.class)
+                  .to(String.class)
+                  .named(CALLING_LOCK_ID_HEADER)
                   .in(RequestScoped.class);
             }
           });

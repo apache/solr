@@ -16,14 +16,23 @@
 */
 
 solrAdminApp.controller('JavaPropertiesController',
-  function($scope, $timeout, NodeV2, Constants, ApiErrorHandler){
+  function($scope, $timeout, NodeV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("java-props", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
+      if (NodeTarget.needsSelection()) {
+        return;
+      }
+      NodeTarget.withNodes();
       NodeV2.getNodeProperties(function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
 
-          var sysprops = data["system.properties"];
+          var payload = NodeTarget.unwrap(data, response) || {};
+          var sysprops = payload["system.properties"] || payload.systemProperties;
+          if (!sysprops) {
+            $scope.props = [];
+            return;
+          }
           var sep = sysprops["path.separator"]
           var props = [];
           for (var key in sysprops) {
@@ -45,5 +54,5 @@ solrAdminApp.controller('JavaPropertiesController',
       });
     };
 
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh, $scope);
   });
