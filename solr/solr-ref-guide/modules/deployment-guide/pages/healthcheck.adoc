@@ -46,7 +46,7 @@ Confusing them is easy, since both are casually called a "healthcheck", so this 
 
 == Node Healthcheck
 
-The `api/node/health` endpoint ({solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
+The `api/node/health` endpoint ({solr-core-javadocs}/org/apache/solr/handler/admin/api/NodeHealth.html[NodeHealth]) reports whether a single Solr node is alive and able to participate in the cluster.
 It is designed to be cheap enough to poll frequently from a load balancer or an orchestrator like Kubernetes.
 
 [IMPORTANT]
@@ -68,7 +68,7 @@ In SolrCloud mode, the endpoint returns HTTP `200 OK` only if all of the followi
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health"
+curl 'http://localhost:8983/api/node/health'
 ----
 
 Healthy node:
@@ -99,7 +99,7 @@ This is useful as a readiness probe during a rolling restart, so an orchestrator
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health?requireHealthyCores=true"
+curl 'http://localhost:8983/api/node/health?requireHealthyCores=true'
 ----
 
 === User-Managed (Leader-Follower) Mode
@@ -109,7 +109,7 @@ Set `maxGenerationLag=<n>` to fail the healthcheck once a follower falls more th
 
 [source,bash]
 ----
-curl "http://localhost:8983/api/node/health?maxGenerationLag=100"
+curl 'http://localhost:8983/api/node/health?maxGenerationLag=100'
 ----
 
 Healthy node (all followers within the allowed lag):
@@ -166,4 +166,4 @@ bin/solr healthcheck -c gettingstarted
 
 TIP: Healthy, well-functioning replicas often disagree on exact document counts due to slightly staggered autoCommit periods or in-flight updates. Small, momentary count discrepancies between replicas are normal and should not automatically be treated as an issue unless the mismatch persists.
 
-See xref:solr-control-script-reference.adoc#healthcheck[the `healthcheck` command reference] for the full list of options.
+See xref:cli/solr-healthcheck.adoc[the `healthcheck` command reference] for the full list of options.

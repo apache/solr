@@ -119,12 +119,12 @@ public class JavaBinResponseWriter implements QueryResponseWriter {
 
     @Override
     public boolean isWritable(String name) {
-      return returnFields.wantsField(name);
+      return returnFields.returnsField(name);
     }
 
     @Override
     public boolean wantsAllFields() {
-      return returnFields.wantsAllFields();
+      return returnFields.returnsAllFields();
     }
 
     protected void writeResultsBody(ResultContext res, JavaBinCodec codec) throws IOException {

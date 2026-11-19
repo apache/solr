@@ -275,7 +275,7 @@ Expects a single content stream shaped like this, where every document includes 
 +
 [source,bash]
 ----
-curl "http://localhost:8983/solr/<collection>/analysis/document" -H "Content-type:text/xml" --data-binary @mydoc.xml
+curl 'http://localhost:8983/solr/<collection>/analysis/document' -H "Content-type:text/xml" --data-binary @mydoc.xml
 ----
 +
 The response breaks each field down by analysis stage, alternating the analyzer/filter class name with the tokens it produced (trimmed here for brevity):
@@ -693,12 +693,12 @@ V2 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/api/collections/gettingstarted/config/requestHandler?componentName=/export&expandParams=true
+http://localhost:8983/api/collections/gettingstarted/config/requestHandlers?componentName=/export&expandParams=true
 ----
 ====
 ======
 
-The response will look similar to:
+The response will look similar to (V1 nests under `requestHandler`; V2 nests under `requestHandlers`):
 
 [source,json]
 ----
