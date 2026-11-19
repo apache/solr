@@ -1,0 +1,8 @@
+title: Fix for SortedIntDocSet union affecting facet in Combined Query
+type: fixed
+authors:
+  - name: Sonu Sharma
+    nick: ercsonusharma
+links:
+  - name: SOLR-18522
+    url: https://issues.apache.org/jira/browse/SOLR-18522

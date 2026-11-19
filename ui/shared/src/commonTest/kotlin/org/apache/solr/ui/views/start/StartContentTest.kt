@@ -17,6 +17,7 @@
 
 package org.apache.solr.ui.views.start
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -33,7 +34,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.apache.solr.ui.components.start.StartComponent.Model
+import org.apache.solr.ui.components.start.viewmodel.StartUiState
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.error_invalid_url
 import org.jetbrains.compose.resources.stringResource
@@ -44,7 +45,7 @@ class StartContentTest {
     @Test
     fun `WHEN initialized THEN input is empty`() = runComposeUiTest {
         setContent {
-            StartContent(createComponent())
+            TestStartContent(uiState = StartUiState())
         }
 
         assertEquals(
@@ -61,7 +62,7 @@ class StartContentTest {
     @Ignore // TODO Currently fails on wasmJs
     fun `GIVEN input error THEN error text shown`() = runComposeUiTest {
         setContent {
-            StartContent(createComponent(Model(error = Res.string.error_invalid_url)))
+            TestStartContent(uiState = StartUiState(error = Res.string.error_invalid_url))
         }
 
         onNodeWithTag("input_error").assertIsDisplayed()
@@ -69,19 +70,19 @@ class StartContentTest {
 
     @Test
     fun `WHEN on connect clicked THEN onConnect called`() = runComposeUiTest {
-        val component = createComponent()
+        var onConnectClicked = false
         setContent {
-            StartContent(component)
+            TestStartContent(onConnect = { onConnectClicked = true })
         }
 
         onNodeWithTag("connect_button").performClick()
-        assertTrue(component.onConnectClicked)
+        assertTrue(onConnectClicked)
     }
 
     @Test
     fun `WHEN isConnecting THEN connect inputs disabled`() = runComposeUiTest {
         setContent {
-            StartContent(createComponent(Model(isConnecting = true)))
+            TestStartContent(uiState = StartUiState(isConnecting = true))
         }
 
         onNodeWithTag("solr_url_input").assertIsNotEnabled()
@@ -91,11 +92,19 @@ class StartContentTest {
     @Test
     fun `WHEN isConnecting THEN loading indicator displayed`() = runComposeUiTest {
         setContent {
-            StartContent(createComponent(Model(isConnecting = true)))
+            TestStartContent(uiState = StartUiState(isConnecting = true))
         }
 
         onNodeWithTag("loading_indicator").assertIsDisplayed()
     }
 
-    private fun createComponent(model: Model = Model()) = TestStartComponent(model)
+    @Composable
+    private fun TestStartContent(
+        uiState: StartUiState = StartUiState(),
+        onConnect: () -> Unit = {},
+    ) = StartContent(
+        uiState = uiState,
+        onSolrUrlChange = {},
+        onConnect = onConnect,
+    )
 }

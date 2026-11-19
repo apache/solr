@@ -222,7 +222,7 @@ This command uses HTTP GET and returns a list of loaded plugins and their config
 
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/plugin
+curl 'http://localhost:8983/api/cluster/plugin'
 ----
 
 === Add Plugin

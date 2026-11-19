@@ -16,39 +16,43 @@
 */
 
 solrAdminApp.controller('ReplicationController',
-    function($scope, $rootScope, $routeParams, $interval, $timeout, Replication, Constants) {
+    function($scope, $rootScope, $routeParams, $interval, $timeout, Replication, ReplicationV2, Constants, ApiErrorHandler) {
         $scope.resetMenu("replication", Constants.IS_CORE_PAGE);
 
         $scope.iterationCount = 1;
 
         $scope.refresh = function() {
-            Replication.details({core:$routeParams.core}, function(response) {
-                var timeout;
-                var interval;
-                if ($scope.interval) $interval.cancel($scope.interval);
-                $scope.isFollower = (response.details.isFollower === 'true');
-                if ($scope.isFollower) {
-                    $scope.progress = getProgressDetails(response.details.follower);
-                    $scope.iterations = getIterations(response.details.follower);
-                    $scope.versions = getFollowerVersions(response.details);
-                    $scope.settings = getFollowerSettings(response.details);
-                    if ($scope.settings.isReplicating) {
-                        timeout = $timeout($scope.refresh, 1000);
-                    } else if(!$scope.settings.isPollingDisabled && $scope.settings.pollInterval) {
-                        interval = $scope.interval = $interval(function() {
-                            $scope.settings.tick--;
-                        }, 1000, $scope.settings.tick);
-                        timeout = $timeout($scope.refresh, 1000*(1+$scope.settings.tick));
-                    }
-                } else {
-                    $scope.versions = getLeaderVersions(response.details);
-                }
-                $scope.leader = getLeaderSettings(response.details, $scope.isFollower);
+            ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) { ApiErrorHandler.handle(response); return; }
 
-                var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
-                    if (interval) $interval.cancel(interval);
-                    if (timeout) $timeout.cancel(timeout);
-                    onRouteChangeOff();
+                    var timeout;
+                    var interval;
+                    if ($scope.interval) $interval.cancel($scope.interval);
+                    $scope.isFollower = isTruthy(data.details.isFollower);
+                    if ($scope.isFollower) {
+                        $scope.progress = getProgressDetails(data.details.follower);
+                        $scope.iterations = getIterations(data.details.follower);
+                        $scope.versions = getFollowerVersions(data.details);
+                        $scope.settings = getFollowerSettings(data.details);
+                        if ($scope.settings.isReplicating) {
+                            timeout = $timeout($scope.refresh, 1000);
+                        } else if(!$scope.settings.isPollingDisabled && $scope.settings.pollInterval) {
+                            interval = $scope.interval = $interval(function() {
+                                $scope.settings.tick--;
+                            }, 1000, $scope.settings.tick);
+                            timeout = $timeout($scope.refresh, 1000*(1+$scope.settings.tick));
+                        }
+                    } else {
+                        $scope.versions = getLeaderVersions(data.details);
+                    }
+                    $scope.leader = getLeaderSettings(data.details, $scope.isFollower);
+
+                    var onRouteChangeOff = $scope.$on('$routeChangeStart', function() {
+                        if (interval) $interval.cancel(interval);
+                        if (timeout) $timeout.cancel(timeout);
+                        onRouteChangeOff();
+                    });
                 });
             });
 
@@ -58,11 +62,36 @@ solrAdminApp.controller('ReplicationController',
             Replication.command({core:$routeParams.core, command:command}, function(data){$scope.refresh()});
         }
 
+        $scope.setReplicationEnabled = function(enabled) {
+            ReplicationV2.setReplicationEnabled($routeParams.core, {enabled: enabled}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) { ApiErrorHandler.handle(response); return; }
+                    $scope.refresh();
+                });
+            });
+        }
+
+        $scope.setReplicationPolling = function(enabled) {
+            ReplicationV2.setReplicationPolling($routeParams.core, {enabled: enabled}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) { ApiErrorHandler.handle(response); return; }
+                    $scope.refresh();
+                });
+            });
+        }
+
         $scope.showIterations = function() { $scope.iterationCount = 100000}; // limitTo should accept undefined, but doesn't work.
         $scope.hideIterations = function() { $scope.iterationCount = 1};
 
         $scope.refresh();
     });
+
+// follower.leaderDetails comes from an internal v1 call to the leader, so its booleans are
+// always the stringified "true"/"false" form, even though the rest of this response is v2.
+// TODO: drop this once that internal leader fetch is v2-native too.
+var isTruthy = function(value) {
+    return value === true || value === 'true';
+};
 
 var getProgressDetails = function(progress) {
 
@@ -157,7 +186,8 @@ var getFollowerVersions = function(data) {
 
 var parseDateToEpoch = function(date) {
     // ["Sat Mar 03 11:00:00 CET 2012", "Sat", "Mar", "03", "11:00:00", "CET", "2012"]
-    var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\w+)\s+(\d+)$/ );
+    // The zone may also be an offset such as "GMT+05:00", so it must not be restricted to \w+
+    var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\S+)\s+(\d+)$/ );
 
     // "Sat Mar 03 2012 10:37:33"
     var d = new Date( parts[1] + ' ' + parts[2] + ' ' + parts[3] + ' ' + parts[6] + ' ' + parts[4] );
@@ -184,9 +214,9 @@ var parseSeconds = function(time) {
 var getFollowerSettings = function(data) {
     var settings = {};
     settings.leaderUrl = data.follower.leaderUrl;
-    settings.isPollingDisabled = data.follower.isPollingDisabled == 'true';
+    settings.isPollingDisabled = isTruthy(data.follower.isPollingDisabled);
     settings.pollInterval = data.follower.pollInterval;
-    settings.isReplicating = data.follower.isReplicating == 'true';
+    settings.isReplicating = isTruthy(data.follower.isReplicating);
     settings.nextExecutionAt = data.follower.nextExecutionAt;
 
     if(settings.isReplicating) {
@@ -209,7 +239,7 @@ var getFollowerSettings = function(data) {
 var getLeaderSettings = function(details, isFollower) {
     var leader = {};
     var leaderData = isFollower ? details.follower.leaderDetails.leader : details.leader;
-    leader.replicationEnabled = leaderData.replicationEnabled == "true";
+    leader.replicationEnabled = isTruthy(leaderData.replicationEnabled);
     leader.replicateAfter = leaderData.replicateAfter.join(", ");
 
     if (leaderData.confFiles) {
