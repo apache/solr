@@ -32,11 +32,9 @@ or testing.
 | `mixin/` | Jsonnet source (single source of truth used to regenerate the artifacts above) |
 | `dev/` | **Developer convenience only** — docker-compose stack for testing changes to the artifacts |
 
-> **Both artifacts are placeholders right now** — a two-panel dashboard and a single alert, which
-> exist to prove the build pipeline works end to end. The real dashboard arrives in
-> [SOLR-18534](https://issues.apache.org/jira/browse/SOLR-18534), the alert rules in
-> [SOLR-18535](https://issues.apache.org/jira/browse/SOLR-18535), and OTLP push support in
-> [SOLR-18536](https://issues.apache.org/jira/browse/SOLR-18536).
+> **The dashboard is still a placeholder**, enough to exercise the build pipeline. The real one
+> arrives in [SOLR-18534](https://issues.apache.org/jira/browse/SOLR-18534) and OTLP push support
+> in [SOLR-18536](https://issues.apache.org/jira/browse/SOLR-18536). The alert rules are complete.
 
 For the full integration guide see the Solr Reference Guide:
 **[Monitoring Solr with Prometheus and Grafana](../solr-ref-guide/modules/deployment-guide/pages/monitoring-with-prometheus-and-grafana.adoc)**
@@ -71,8 +69,28 @@ Validate locally before deploying:
 promtool check rules prometheus-solr-alerts.yml
 ```
 
-One placeholder rule is included: `SolrNodeDown`, which fires when a Solr target has failed to
-scrape for 2 minutes.
+The rules live in the group `SolrAlerts`. Every expression carries `solrSelector` and aggregates
+`by (instance)`, so a rule alerts and recovers per node:
+
+| Alert | Severity | Fires when | Setting |
+|---|---|---|---|
+| `SolrHighHeapUsage` | critical | `jvm_memory_used_bytes` / `jvm_memory_committed_bytes` (heap, summed over pools) above 90% for 2m | `heapUsageThreshold` |
+| `SolrJvmGcThrashing` | critical | `rate(jvm_gc_duration_seconds_sum)` over 10 s/min for 3m | `gcSecondsPerMinuteThreshold` |
+| `SolrLowDiskSpace` | critical | `solr_disk_space_megabytes` usable/total under 15% for 5m | `diskFreeThreshold` |
+| `SolrNodeDown` | warning | Scrape failing, or no metrics for 5m, for 5m | `nodeDownFor`, `nodeReportingWindow`, `nodeReportingLookback` |
+| `SolrHighSearchLatency` | warning | p99 of `solr_core_requests_times_milliseconds` for `/select*`, `internal="false"`, above 1000 ms for 5m | `searchLatencyThresholdMs` |
+| `SolrHighErrorRate` | warning | `solr_core_requests_errors_total` / `solr_core_requests_total` over 1% for 5m | `errorRateThreshold` |
+| `SolrOverseerQueueBuildup` | warning | `solr_overseer_collection_work_queue_size` over 50 for 5m (SolrCloud only) | `overseerQueueThreshold` |
+| `SolrHighMmapRatio` | warning | Index size against `jvm_system_memory_bytes` minus committed heap, under 10% for 5m | `mmapRatioThreshold` |
+
+`rateInterval` sets the window for the `rate()` queries in the GC, latency and error-rate rules.
+
+Two details the expressions depend on. Heap is measured against committed rather than
+`jvm_memory_limit_bytes`, because generational ZGC reports the whole `-Xmx` as the limit of both its
+young and old pool; committed is a partition of one heap under every collector, and `bin/solr` pins
+`-Xms` to `-Xmx`. The request counters and the latency histogram carry `core!=""`, because a handler
+with `aggregateNodeLevelMetricsEnabled` emits a node rollup under the same metric name, without the
+`core`, `collection` and `shard` attributes.
 
 ---
 
@@ -85,6 +103,7 @@ All tunable settings live in `mixin/config.libsonnet`:
   _config:: {
     solrSelector: 'job="solr"',   // label selector identifying Solr targets
     rateInterval: '5m',           // window for rate() queries
+    // ... one threshold per alert rule, see the table above
   },
 }
 ```
@@ -130,7 +149,7 @@ Install the required tools once:
 | `jsonnet` (go-jsonnet) | Evaluate jsonnet source | `brew install go-jsonnet` or `go install github.com/google/go-jsonnet/cmd/jsonnet@latest` |
 | `jb` (jsonnet-bundler) | Manage dependencies | `brew install jsonnet-bundler` or `go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest` |
 | `gojsontoyaml` | Convert JSON→YAML for alert rules | `go install github.com/brancz/gojsontoyaml@latest` |
-| `promtool` *(optional)* | Validate alert rules | `brew install prometheus` |
+| `promtool` *(optional)* | Validate and unit-test alert rules | `brew install prometheus` |
 
 Then build:
 
@@ -153,7 +172,8 @@ Both `./make.sh <target>` and `make <target>` accept the same targets:
 | `dashboards` | Regenerate `grafana-solr-dashboard.json` |
 | `alerts` | Regenerate `prometheus-solr-alerts.yml` |
 | `all` | Regenerate both outputs |
-| `check` | Run `promtool check rules` on alert rules |
+| `test` | Run the alert rule unit tests in `mixin/tests/` with `promtool test rules` |
+| `check` | Run `promtool check rules` on alert rules, then the unit tests |
 | `fmt` | Auto-format all `.libsonnet` source files |
 
 `vendor/` is not checked in; `jsonnetfile.lock.json` pins the exact grafonnet revision, so
@@ -161,6 +181,11 @@ Both `./make.sh <target>` and `make <target>` accept the same targets:
 
 **Commit the regenerated artifacts together with the jsonnet change that produced them** —
 nothing in the Gradle build regenerates or verifies them.
+
+`mixin/tests/` holds `promtool test rules` cases that feed synthetic series to the generated rules.
+They pin the metric properties the expressions depend on — a ZGC heap reporting `-Xmx` as the limit
+of two pools, a ParallelGC heap partitioned across three, a node rollup sharing a core metric name,
+and the MiB units of the index-size gauge — so run `make test` after editing `alerts/`.
 
 ---
 
