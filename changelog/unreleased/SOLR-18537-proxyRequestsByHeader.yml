@@ -1,0 +1,10 @@
+title: >
+  Any request can now be routed to a specific SolrCloud node by setting the `X-Solr-targetNode` header
+  (or, for GET requests, a query parameter of the same name). The receiving node proxies the request there.
+  This is useful for reaching a particular node behind a load balancer, including for node-level admin APIs.
+type: added
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18537
+    url: https://issues.apache.org/jira/browse/SOLR-18537
