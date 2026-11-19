@@ -39,7 +39,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @see PointField
  * @see LongPoint
  */
-public class LongPointField extends PointField implements LongValueFieldType {
+public class LongPointField extends PointField
+    implements LongValueFieldType, FieldType.ExternalizeStoredValuesAsObjects {
 
   public LongPointField() {
     type = NumberType.LONG;
