@@ -1,0 +1,10 @@
+title: >
+  Fix the metrics endpoints returning HTTP 500 (`DuplicateLabelsException`) when the OTLP metric
+  exporter is enabled, by switching off the OpenTelemetry SDK's own reader telemetry.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18595
+    url: https://issues.apache.org/jira/browse/SOLR-18595
