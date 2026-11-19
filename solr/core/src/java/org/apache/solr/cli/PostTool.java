@@ -74,6 +74,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -82,6 +83,23 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /** Supports post command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "post",
+    description =
+        "The Post command sends one or more files, directories, URLs or literal data to a"
+            + " collection for indexing.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Index all JSON files into a collection",
+      "  bin/solr post -c gettingstarted *.json",
+      "",
+      "  # Index a tab-separated file, using the CSV handler's separator param",
+      "  bin/solr post -c gettingstarted --params \"separator=%%09\" --type text/csv data.tsv",
+      "",
+      "  # Crawl a website one layer deep and index the pages found",
+      "  bin/solr post -c gettingstarted --mode web --recursive 1 https://solr.apache.org/"
+    })
 public class PostTool extends ToolBase {
 
   public static final String DEFAULT_FILE_TYPES =
@@ -96,6 +114,11 @@ public class PostTool extends ToolBase {
   private static final int MAX_WEB_DEPTH = 10;
   public static final String DEFAULT_CONTENT_TYPE = "application/json";
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -105,18 +128,33 @@ public class PostTool extends ToolBase {
           .desc("Name of the collection.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SKIP_COMMIT_OPTION =
       Option.builder()
           .longOpt("skip-commit")
           .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option OPTIMIZE_OPTION =
       Option.builder("o")
           .longOpt("optimize")
           .desc("Issue an optimize at end of posting documents.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option MODE_OPTION =
       Option.builder()
           .longOpt("mode")
@@ -126,6 +164,11 @@ public class PostTool extends ToolBase {
               "Specifies how to run: 'files' crawls local directories, 'web' crawls websites, 'args' processes positional arguments, and 'stdin' reads standard input stream. Default: files.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option RECURSIVE_OPTION =
       Option.builder("r")
           .longOpt("recursive")
@@ -135,6 +178,11 @@ public class PostTool extends ToolBase {
           .desc("For web crawl, how deep to go. default: 1")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option DELAY_OPTION =
       Option.builder("d")
           .longOpt("delay")
@@ -145,6 +193,11 @@ public class PostTool extends ToolBase {
               "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option TYPE_OPTION =
       Option.builder("t")
           .longOpt("type")
@@ -153,6 +206,11 @@ public class PostTool extends ToolBase {
           .desc("Specify a specific mimetype to use, such as application/json.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option FILE_TYPES_OPTION =
       Option.builder("ft")
           .longOpt("filetypes")
@@ -161,6 +219,11 @@ public class PostTool extends ToolBase {
           .desc("default: " + DEFAULT_FILE_TYPES)
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option PARAMS_OPTION =
       Option.builder()
           .longOpt("params")
@@ -169,6 +232,11 @@ public class PostTool extends ToolBase {
           .desc("Values must be URL-encoded; these pass through to Solr update request.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
@@ -176,6 +244,11 @@ public class PostTool extends ToolBase {
               "sends application/json content as Solr commands to /update instead of /update/json/docs.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option DRY_RUN_OPTION =
       Option.builder()
           .longOpt("dry-run")
@@ -211,6 +284,98 @@ public class PostTool extends ToolBase {
   static final Set<String> DATA_MODES = new HashSet<>();
 
   PostTool.PageFetcher pageFetcher = new PostTool.PageFetcher();
+
+  // --- picocli fields ---
+  // Named distinctly from the commons-cli-era instance fields above (type, recursive, delay,
+  // fileTypes, params, commit, optimize, dryRun, args), which postDocuments() still populates from
+  // whichever parser ran.
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Option(
+      names = {"-c", "--name"},
+      required = true,
+      paramLabel = "name",
+      description = "Name of the collection.")
+  private String nameOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--skip-commit",
+      description = "Do not 'commit', and thus changes won't be visible till a commit occurs.")
+  private boolean skipCommitOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-o", "--optimize"},
+      description = "Issue an optimize at end of posting documents.")
+  private boolean optimizeOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--mode",
+      defaultValue = DATA_MODE_FILES,
+      paramLabel = "mode",
+      description =
+          "Which mode the Post command is running in, 'files' crawls local directory, 'web'"
+              + " crawls website, 'args' processes input args, and 'stdin' reads a command from"
+              + " standard in. default: files.")
+  private String modeOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-r", "--recursive"},
+      defaultValue = "1",
+      paramLabel = "recursive",
+      description = "For web crawl, how deep to go. default: 1")
+  private int recursiveOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-d", "--delay"},
+      paramLabel = "delay",
+      description =
+          "If recursive then delay will be the wait time between posts.  default: 10 for web, 0"
+              + " for files")
+  private Integer delayOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-t", "--type"},
+      paramLabel = "content-type",
+      description = "Specify a specific mimetype to use, such as application/json.")
+  private String typeOpt;
+
+  @picocli.CommandLine.Option(
+      names = {"-ft", "--filetypes"},
+      defaultValue = DEFAULT_FILE_TYPES,
+      paramLabel = "<type>[,<type>,...]",
+      description = "default: " + DEFAULT_FILE_TYPES)
+  private String fileTypesOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--params",
+      defaultValue = "",
+      paramLabel = "<key>=<value>[&<key>=<value>...]",
+      description = "Values must be URL-encoded; these pass through to Solr update request.")
+  private String paramsOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--format",
+      description =
+          "sends application/json content as Solr commands to /update instead of"
+              + " /update/json/docs.")
+  private boolean formatOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--dry-run",
+      description =
+          "Performs a dry run of the posting process without actually sending documents to"
+              + " Solr.  Only works with files mode.")
+  private boolean dryRunOpt;
+
+  @picocli.CommandLine.Parameters(
+      arity = "0..*",
+      paramLabel = "FILE",
+      description = "Files, directories, urls or literal data to post, depending on --mode.")
+  private String[] postArgs = new String[0];
 
   static {
     DATA_MODES.add(DATA_MODE_FILES);
@@ -279,6 +444,10 @@ public class PostTool extends ToolBase {
       ContentOptions content,
       CrawlOptions crawl,
       UpdateOptions update) {}
+
+  public PostTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public PostTool(ToolRuntime runtime) {
     super(runtime);
@@ -482,6 +651,10 @@ public class PostTool extends ToolBase {
     return Files.exists(srcFile);
   }
 
+  private boolean matchesFileTypes(Path file) {
+    return !auto || fileFilter == null || fileFilter.test(file);
+  }
+
   private static Collection<Path> listFiles(Path directory, Predicate<Path> fileFilter)
       throws IOException {
     Predicate<Path> filter = fileFilter != null ? fileFilter : p -> true;
@@ -523,7 +696,7 @@ public class PostTool extends ToolBase {
     reset();
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
-      filesPosted = getFilesPosted(out, type, args[j]);
+      filesPosted += getFilesPosted(out, type, args[j]);
     }
     return filesPosted;
   }
@@ -536,7 +709,11 @@ public class PostTool extends ToolBase {
     if (isValidPath && Files.isDirectory(srcFile) && Files.isReadable(srcFile)) {
       filesPosted += postDirectory(srcFile, out, type);
     } else if (isValidPath && Files.isRegularFile(srcFile) && Files.isReadable(srcFile)) {
-      filesPosted += postFiles(List.of(srcFile), out, type);
+      if (matchesFileTypes(srcFile)) {
+        filesPosted += postFiles(List.of(srcFile), out, type);
+      } else {
+        warn("Skipping " + srcFile + ", its file type is not in " + fileTypes);
+      }
     } else {
       filesPosted += handleGlob(src, out, type);
     }
@@ -612,9 +789,12 @@ public class PostTool extends ToolBase {
     }
     String fileGlob = globPath.getFileName().toString();
     GlobFilter ff = new GlobFilter(fileGlob, false);
-    Collection<Path> fileList = listFiles(parent, ff);
-    if (fileList.isEmpty()) {
+    Collection<Path> matches = listFiles(parent, ff);
+    List<Path> fileList = matches.stream().filter(this::matchesFileTypes).toList();
+    if (matches.isEmpty()) {
       warn("No files or directories matching " + globPath);
+    } else if (fileList.isEmpty()) {
+      warn("No files matching " + globPath + " have a file type in " + fileTypes);
     } else {
       filesPosted = postFiles(fileList, out, type);
     }
@@ -1386,6 +1566,41 @@ public class PostTool extends ToolBase {
 
       return linksFromPage;
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    String resolvedSolrUrl = resolveSolrUrl(credentialsOptions.credentials);
+    URI updateUrl = new URI(resolvedSolrUrl + "/solr/" + nameOpt + "/update");
+    int defaultDelay = modeOpt.equals(DATA_MODE_WEB) ? DEFAULT_WEB_DELAY : 0;
+
+    PostToolParams postParams =
+        new PostToolParams(
+            updateUrl,
+            modeOpt,
+            dryRunOpt,
+            credentialsOptions.credentials,
+            postArgs,
+            new ContentOptions(typeOpt, formatOpt ? FORMAT_SOLR : "", paramsOpt),
+            new CrawlOptions(
+                fileTypesOpt, delayOpt != null ? delayOpt : defaultDelay, recursiveOpt),
+            new UpdateOptions(!skipCommitOpt, optimizeOpt));
+    postDocuments(postParams);
+    return 0;
+  }
+
+  /** As under commons-cli, a missing connection option falls back to the default URL silently. */
+  private String resolveSolrUrl(String credentials) throws Exception {
+    String solrUrlArg = (connectionOptions != null) ? connectionOptions.effectiveSolrUrl() : null;
+    if (solrUrlArg != null) {
+      return CLIUtils.normalizeSolrUrl(solrUrlArg);
+    }
+    String zkHostArg = (connectionOptions != null) ? connectionOptions.effectiveZkHost() : null;
+    if (zkHostArg != null) {
+      return CLIUtils.solrUrlFromConnection(
+          CloudSolrClient.CloudSolrClientConnection.parse(zkHostArg), credentials);
+    }
+    return CLIUtils.getDefaultSolrUrl();
   }
 
   /** Utility class to hold the result form a page fetch */
