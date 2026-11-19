@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
 
 import java.lang.invoke.MethodHandles;
@@ -94,6 +94,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
     final List<Replica> allReplicas =
         cluster
             .getSolrClient()
+            .getClusterStateProvider()
             .getClusterState()
             .getCollection(COLLECTION_NAME)
             .replicaStream()
@@ -194,7 +195,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
     assertThat(
         "post-distrib should never be PULL replica",
         results.postDistribCores.keySet(),
-        everyItem(not(isIn(PULL_REPLICA_CORE_NAMES))));
+        everyItem(not(in(PULL_REPLICA_CORE_NAMES))));
 
     return results;
   }
@@ -252,7 +253,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "add pre-distrib must be leader",
           add.preDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertEquals(
           "add pre and post should match",
           add.preDistribCores.keySet(),
@@ -286,7 +287,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "dbq pre-distrib must be leader",
           record.preDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertThat("dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
       assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
 
@@ -315,7 +316,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "multi pre-distrib must be leaders",
           record.preDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertThat(
           "multi pre-distrib req != pre-distrib num cores",
           record.preDistribRequests.keySet(),
@@ -356,7 +357,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "add pre-distrib must be PULL",
           add.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
       assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
 
@@ -365,7 +366,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "add post-distrib must be leader",
           add.postDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertThat("add post-distrib size", add.postDistribRequests.keySet(), hasSize(1));
       assertThat("add post-distrib size", add.postDistribCommands, hasSize(1));
 
@@ -378,7 +379,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "del pre-distrib must be PULL",
           del.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
       assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
 
@@ -398,7 +399,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "dbq pre-distrib must be PULL",
           record.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
       assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
 
@@ -425,7 +426,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "multi pre-distrib must be PULL",
           record.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("multi pre-distrib req size", record.preDistribRequests.keySet(), hasSize(1));
       assertThat("multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
 
@@ -440,7 +441,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "multi post-distrib cores",
           record.postDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertThat("multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
     }
   }
@@ -462,7 +463,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "add pre-distrib must be PULL",
           add.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
       assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
 
@@ -471,7 +472,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "add post-distrib must be leader",
           add.postDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertThat("add post-distrib size", add.postDistribRequests.keySet(), hasSize(1));
       assertThat("add post-distrib size", add.postDistribCommands, hasSize(1));
 
@@ -485,7 +486,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "del pre-distrib must be PULL",
           del.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
       assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
 
@@ -506,7 +507,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "dbq pre-distrib must be PULL",
           record.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
       assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
 
@@ -534,7 +535,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "multi pre-distrib must be PULL",
           record.preDistribCores.keySet(),
-          everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
+          everyItem(in(PULL_REPLICA_CORE_NAMES)));
       assertThat("multi pre-distrib req size", record.preDistribRequests.keySet(), hasSize(1));
       assertThat("multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
 
@@ -549,7 +550,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       assertThat(
           "multi post-distrib cores",
           record.postDistribCores.keySet(),
-          everyItem(isIn(LEADER_CORE_NAMES)));
+          everyItem(in(LEADER_CORE_NAMES)));
       assertThat("multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
     }
   }

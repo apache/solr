@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Introduce new `IntRangeField` field type and (experimental) `{!numericRange}` query parser for storing and querying integer ranges.
+type: added 
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-13309
+    url: https://issues.apache.org/jira/browse/SOLR-13309
