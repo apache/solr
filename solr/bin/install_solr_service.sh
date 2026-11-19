@@ -196,7 +196,6 @@ if [[ $SOLR_START == "true" ]] ; then
   systemctl --version &>/dev/null || print_error "Script requires the 'systemctl' command"
   java -version &>/dev/null       || print_error "Solr requires java, please install or set JAVA_HOME properly"
 fi
-lsof -h &>/dev/null             || echo "We recommend installing the 'lsof' command for more stable start/stop of Solr"
 
 
 if [ -z "$SOLR_EXTRACT_DIR" ]; then
