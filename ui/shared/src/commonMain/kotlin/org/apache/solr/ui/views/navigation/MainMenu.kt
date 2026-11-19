@@ -31,7 +31,7 @@ enum class MainMenu {
     Security,
     Configsets,
     Collections,
-    QueriesAndOperations,
+    IndexAndQuery,
     Environment,
     Logging,
     ThreadDump,
