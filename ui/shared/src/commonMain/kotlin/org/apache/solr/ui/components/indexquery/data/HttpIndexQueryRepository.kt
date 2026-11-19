@@ -26,6 +26,18 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.domain.RequestHandlerOption
 
+private fun isValidCollectionName(collection: String): Boolean =
+    collection.isNotEmpty() &&
+        collection.first() != '-' &&
+        collection.all {
+            it in 'A'..'Z' ||
+                it in 'a'..'z' ||
+                it in '0'..'9' ||
+                it == '.' ||
+                it == '_' ||
+                it == '-'
+        }
+
 class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryRepository {
     override suspend fun listCollections(): Result<List<String>> {
         val response = httpClient.get("api/collections")
@@ -36,7 +48,7 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
     }
 
     override suspend fun listRequestHandlers(collection: String): Result<List<RequestHandlerOption>> {
-        if (collection.isEmpty() || collection == "." || collection == "..") {
+        if (collection == "." || collection == ".." || !isValidCollectionName(collection)) {
             return Result.failure(IllegalArgumentException("Invalid collection name"))
         }
 

@@ -78,6 +78,23 @@ class HttpIndexQueryRepositoryTest {
     }
 
     @Test
+    fun `rejects invalid collection path segments before making a request`() = runTest {
+        val engine = createMockEngine(
+            { _ -> respond(content = "{}", headers = jsonHeaders) },
+        )
+        testHttpClient(engine).use { httpClient ->
+            val repository = HttpIndexQueryRepository(httpClient)
+
+            listOf("", ".", "..", "-books", "books/admin", "books?name=admin", "books%2fadmin")
+                .forEach { collection ->
+                    assertTrue(repository.listRequestHandlers(collection).isFailure)
+                }
+
+            assertEquals(0, engine.requestHistory.size)
+        }
+    }
+
+    @Test
     fun `returns failure for a non-success response`() = runTest {
         val engine = createMockEngine(
             { _ -> respond(content = "{}", status = HttpStatusCode.ServiceUnavailable) },
