@@ -61,7 +61,7 @@ In the following example, we are setting 2 sets of parameters named 'myFacets' a
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-type:application/json'  -d '{
   "set":{
     "myFacets":{
       "facet":"true",
@@ -79,7 +79,7 @@ It is possible to add invariants and appends as follows:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-type:application/json'  -d '{
   "set":{
     "my_handler_params":{
       "facet.limit":5,
@@ -96,7 +96,7 @@ In the following example, two set of parameters named 'myFacets' and 'myQueries'
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-type:application/json'  -d '{
   "delete":[
     "myFacets",
     "myQueries"
@@ -108,7 +108,7 @@ When deleting a single parameter set, the value could be specified as string ins
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:application/json'  -d '{
+curl 'http://localhost:8983/solr/techproducts/config/params' -H 'Content-type:application/json'  -d '{
   "delete":"myFacets"
 }'
 ----
@@ -154,20 +154,45 @@ As an example, for the `/export` request handler:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/export&expandParams=true
+curl 'http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/export&expandParams=true'
 ----
 
 == Viewing Request Parameters
 
-To see the paramsets that have been created, you can use the `/config/params` endpoint to read the contents of `params.json`, or use the name in the request:
+To see the paramsets that have been created, we can read the contents of `params.json`, or request a single paramset by name:
 
+[tabs#viewparamsets]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl http://localhost:8983/solr/techproducts/config/params
+curl 'http://localhost:8983/solr/techproducts/config/params'
 
 #Or use the paramset name
-curl http://localhost:8983/solr/techproducts/config/params/myQueries
+curl 'http://localhost:8983/solr/techproducts/config/params/myQueries'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/config/paramsets
+
+#Or use the paramset name
+curl http://localhost:8983/api/collections/techproducts/config/paramsets/myQueries
+----
+
+Creating, updating and deleting paramsets still uses `POST api/collections/techproducts/config/params`.
+
+====
+
+Both APIs return a `404` if the named paramset does not exist.
+
+======
 
 == The useParams Parameter
 
