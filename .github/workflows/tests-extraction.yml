@@ -1,0 +1,41 @@
+name: Extraction Module Tests
+
+# The extraction module tests need Docker for the TikaServer tests of SolrCell,
+# so they get a workflow of their own.
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/tests-extraction.yml'
+      - 'gradle/libs.versions.toml'
+      - 'solr/modules/extraction/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Extraction Module Tests
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/prepare-for-build
+
+      - name: Run extraction module tests
+        run: ./gradlew --no-daemon :solr:modules:extraction:check
+
+      - name: Archive test output
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-output-extraction
+          path: |
+            solr/modules/extraction/build/test-results/**

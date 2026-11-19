@@ -16,17 +16,22 @@
 */
 
 solrAdminApp.controller('ThreadsController',
-  function($scope, $timeout, SystemV2, Constants, ApiErrorHandler){
+  function($scope, $timeout, SystemV2, Constants, ApiErrorHandler, NodeTarget){
     $scope.resetMenu("threads", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
+      if (NodeTarget.needsSelection()) {
+        return;
+      }
+      NodeTarget.withNodes();
       SystemV2.getThreadDump(function(error, data, response) {
         $timeout(function() {
           if (error) { ApiErrorHandler.handle(response); return; }
-          if (!data || !data.system) {
+          var payload = NodeTarget.unwrap(data, response);
+          if (!payload || !payload.system) {
             $scope.threads = [];
             return;
           }
-          var threadDump = data.system.threadDump;
+          var threadDump = payload.system.threadDump;
           var threads = [];
           for (var i=0; i<threadDump.length; i++) {
             var thread = threadDump[i].thread;
@@ -53,5 +58,5 @@ solrAdminApp.controller('ThreadsController',
         $scope.threads[i].showStackTrace = $scope.showAllStacktraces;
       }
     };
-    $scope.refresh();
+    NodeTarget.whenReady($scope.refresh, $scope);
 });

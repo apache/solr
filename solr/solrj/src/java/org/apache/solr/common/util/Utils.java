@@ -43,6 +43,11 @@ import java.net.URL;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
@@ -69,6 +74,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -1044,5 +1051,68 @@ public class Utils {
       is.transferTo(bos);
       return bos.getByteBuffer();
     }
+  }
+
+  /**
+   * Zips the contents of {@code rootPath} into an in-memory archive. Hidden files and directories
+   * (as determined by {@link Files#isHidden}) are skipped, directory entries are written for
+   * non-empty subdirectories, and zip entry names are normalized to use {@code /} separators
+   * regardless of platform.
+   *
+   * @param rootPath the directory to zip
+   * @return the zipped bytes
+   */
+  public static byte[] zipDirectory(Path rootPath) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    zipDirectory(rootPath, baos);
+    return baos.toByteArray();
+  }
+
+  /**
+   * Zips the contents of {@code rootPath}, writing the archive to {@code out} instead of buffering
+   * it in memory. See {@link #zipDirectory(Path)} for the skipped/normalized entry rules. Does not
+   * close {@code out}.
+   *
+   * @param rootPath the directory to zip
+   * @param out the stream to write the zip archive to
+   */
+  public static void zipDirectory(Path rootPath, OutputStream out) throws IOException {
+    ZipOutputStream zipOut = new ZipOutputStream(out);
+    Files.walkFileTree(
+        rootPath,
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+              throws IOException {
+            if (Files.isHidden(dir)) {
+              return FileVisitResult.SKIP_SUBTREE;
+            }
+            String dirName = rootPath.relativize(dir).toString().replace('\\', '/');
+            if (!dirName.isEmpty()) {
+              if (!dirName.endsWith("/")) {
+                dirName += "/";
+              }
+              zipOut.putNextEntry(new ZipEntry(dirName));
+              zipOut.closeEntry();
+            }
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+              throws IOException {
+            if (Files.isHidden(file)) {
+              return FileVisitResult.CONTINUE;
+            }
+            String entryName = rootPath.relativize(file).toString().replace('\\', '/');
+            zipOut.putNextEntry(new ZipEntry(entryName));
+            Files.copy(file, zipOut);
+            zipOut.closeEntry();
+            return FileVisitResult.CONTINUE;
+          }
+        });
+    // finish(), not close(): flushes the central directory without closing out, which this
+    // method doesn't own.
+    zipOut.finish();
   }
 }
