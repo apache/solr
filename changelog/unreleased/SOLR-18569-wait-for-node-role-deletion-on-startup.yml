@@ -1,0 +1,9 @@
+title: >
+  Solr startup no longer hangs if ephemeral "node-role" znodes from a previous process are still present.
+type: fixed
+authors:
+  - name: Jason Gerlowski
+  - name: Nick Shanin
+links:
+  - name: SOLR-18569
+    url: https://issues.apache.org/jira/browse/SOLR-18569

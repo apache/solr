@@ -1,0 +1,10 @@
+title: >
+  A transient connection failure from a shard leader to one of its replicas is now retried when the
+  failure arrives wrapped inside another exception, instead of sending the replica into recovery.
+  Previously whether the retry happened depended on which exception the client reported outermost.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18346
+    url: https://issues.apache.org/jira/browse/SOLR-18346
