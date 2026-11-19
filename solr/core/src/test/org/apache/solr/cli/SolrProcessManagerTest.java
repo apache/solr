@@ -25,8 +25,10 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
@@ -43,13 +45,16 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static Pair<Integer, Process> processHttp;
   private static Pair<Integer, Process> processHttps;
 
+  /** Explicit stop port of the https process, as STOP_PORT would set it */
+  private static final int EXPLICIT_STOP_PORT = 12345;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     boolean isWindows = random().nextBoolean();
     String PID_SUFFIX = isWindows ? ".port" : ".pid";
     log.info("Simulating pid file on {}", isWindows ? "Windows" : "Linux");
-    processHttp = createProcess(findAvailablePort(), false);
-    processHttps = createProcess(findAvailablePort(), true);
+    processHttp = createProcess(findAvailablePort(), false, 0);
+    processHttps = createProcess(findAvailablePort(), true, EXPLICIT_STOP_PORT);
     long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
@@ -78,7 +83,8 @@ public class SolrProcessManagerTest extends SolrTestCase {
   }
 
   @SuppressWarnings("SystemGetProperty")
-  private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
+  private static Pair<Integer, Process> createProcess(int port, boolean https, int stopPort)
+      throws IOException {
     // Get the path to the java executable from the current JVM
 
     String pathSeparator = System.getProperty("path.separator");
@@ -87,16 +93,24 @@ public class SolrProcessManagerTest extends SolrTestCase {
             .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
             .collect(Collectors.joining(pathSeparator));
 
-    ProcessBuilder processBuilder =
-        new ProcessBuilder(
-            System.getProperty("java.home") + "/bin/java",
-            "-Dsolr.port.listen=" + port,
-            "-DisHttps=" + https,
-            "-DmockSolr=true",
+    List<String> command =
+        new ArrayList<>(
+            List.of(
+                System.getProperty("java.home") + "/bin/java",
+                "-Dsolr.port.listen=" + port,
+                "-DisHttps=" + https,
+                "-DmockSolr=true"));
+    if (stopPort > 0) {
+      command.add("-DSTOP.PORT=" + stopPort);
+    }
+    command.addAll(
+        List.of(
             "-cp",
             classPath,
             "org.apache.solr.cli.SolrProcessManagerTest$MockSolrProcess",
-            https ? "--module=https" : "--module=http");
+            https ? "--module=https" : "--module=http"));
+
+    ProcessBuilder processBuilder = new ProcessBuilder(command);
 
     // Start the process and read first line of output
     Process process = processBuilder.start();
@@ -163,12 +177,14 @@ public class SolrProcessManagerTest extends SolrTestCase {
     SolrProcess http = solrProcessManager.processForPort(processHttp.getKey()).orElseThrow();
     assertEquals(processHttp.getValue().pid(), http.pid());
     assertEquals(processHttp.getKey().intValue(), http.port());
+    assertEquals(processHttp.getKey() - 1000, http.stopPort());
     assertFalse(http.isHttps());
     assertEquals("http://localhost:" + processHttp.getKey() + "/solr", http.getLocalUrl());
 
     SolrProcess https = solrProcessManager.processForPort(processHttps.getKey()).orElseThrow();
     assertEquals(processHttps.getValue().pid(), https.pid());
     assertEquals(processHttps.getKey().intValue(), https.port());
+    assertEquals(EXPLICIT_STOP_PORT, https.stopPort());
     assertTrue(https.isHttps());
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
   }

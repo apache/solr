@@ -115,6 +115,16 @@ public class StatusTool extends ToolBase {
       description = "Short format. Prints one URL per line for running instances")
   private boolean shortFormat;
 
+  /**
+   * Hidden because it exists for the {@code bin/solr} stop logic rather than for people: the
+   * scripts need each node's own stop port, and nothing else prints it.
+   */
+  @picocli.CommandLine.Option(
+      names = {"--stop-port"},
+      hidden = true,
+      description = "Print only the Jetty stop port of the node running on the port given by -p.")
+  private boolean printStopPort;
+
   @picocli.CommandLine.Option(
       names = {"-u", "--credentials"},
       description =
@@ -162,6 +172,18 @@ public class StatusTool extends ToolBase {
           .desc("Short format. Prints one URL per line for running instances")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
+  public static final Option STOP_PORT_OPTION =
+      Option.builder()
+          .longOpt("stop-port")
+          .deprecated() // Will make it a stealth option, not printed or complained about
+          .desc("Print only the Jetty stop port of the node running on the port given by -p.")
+          .get();
+
   private final SolrProcessManager processMgr;
 
   public StatusTool() {
@@ -188,6 +210,7 @@ public class StatusTool extends ToolBase {
     return super.getOptions()
         .addOption(MAX_WAIT_SECS_OPTION)
         .addOption(SHORT_OPTION)
+        .addOption(STOP_PORT_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOptionGroup(optionGroup);
   }
@@ -197,6 +220,7 @@ public class StatusTool extends ToolBase {
     solrUrl = CLIUtils.hasConnectionOption(cli) ? CLIUtils.normalizeSolrUrl(cli) : null;
     port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
     shortFormat = cli.hasOption(SHORT_OPTION);
+    printStopPort = cli.hasOption(STOP_PORT_OPTION);
     maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
     credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
 
@@ -204,6 +228,21 @@ public class StatusTool extends ToolBase {
   }
 
   public int runTool() throws Exception {
+    // Answered from the process arguments alone, and deliberately before any HTTP call: a node
+    // that no longer serves requests is exactly the one that still has to be stopped.
+    if (printStopPort) {
+      Optional<SolrProcess> proc =
+          port == null ? Optional.empty() : processMgr.processForPort(port);
+      if (proc.isEmpty()) {
+        CLIO.err("Could not find a running Solr on port " + port);
+        runtime.exit(1);
+        return 1;
+      }
+      CLIO.out(String.valueOf(proc.get().stopPort()));
+      runtime.exit(0);
+      return 0;
+    }
+
     if (solrUrl != null) {
       if (!URLUtil.hasScheme(solrUrl)) {
         CLIO.err("Invalid URL provided: " + solrUrl);
