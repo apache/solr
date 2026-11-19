@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
@@ -215,5 +216,44 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     map.add("one", 1);
     map.add("two", 2);
     map.add("three", 3);
+  }
+
+  @Test
+  public void testGetImmutableCopyKeepsType() {
+    map.put("one", 1);
+    map.put("two", 2);
+
+    NamedList<Integer> copy = map.getImmutableCopy();
+
+    assertTrue("immutable copy should stay a SimpleOrderedMap", copy instanceof SimpleOrderedMap);
+    assertEquals(map, copy);
+    assertEquals(List.of("one", 1, "two", 2), copy.nvPairs);
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("three", 3));
+    assertThrows(UnsupportedOperationException.class, () -> copy.remove("one"));
+    assertThrows(UnsupportedOperationException.class, () -> copy.setVal(0, 11));
+    Map<String, Integer> mapCopy = (SimpleOrderedMap<Integer>) copy;
+    assertThrows(UnsupportedOperationException.class, () -> mapCopy.put("one", 11));
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> mapCopy.entrySet().iterator().next().setValue(11));
+
+    map.put("three", 3);
+    assertEquals("copy must not see later changes to the original", 2, copy.size());
+  }
+
+  @Test
+  public void testGetImmutableCopyKeepsNullNamesAndValues() {
+    SimpleOrderedMap<Object> withNulls = new SimpleOrderedMap<>();
+    withNulls.add("aNull", null);
+    withNulls.add(null, 4);
+
+    NamedList<Object> copy = withNulls.getImmutableCopy();
+
+    assertEquals(withNulls, copy);
+    assertEquals("aNull", copy.getName(0));
+    assertNull(copy.getVal(0));
+    assertNull(copy.getName(1));
+    assertEquals(4, copy.getVal(1));
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("x", 1));
   }
 }
