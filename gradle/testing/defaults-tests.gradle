@@ -47,6 +47,9 @@ allprojects {
               description: "Number of forked test JVMs",
               includeInReproLine: false],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
+          [propName: 'tests.exclude', value: null,
+              description: "Comma-separated test class patterns to exclude (same syntax as --tests), e.g. org.apache.solr.cloud.*",
+              includeInReproLine: false],
           // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
               value: {->
@@ -116,6 +119,13 @@ allprojects {
       maxHeapSize = resolvedTestOption("tests.heapsize")
 
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
+
+      def excludePatterns = resolvedTestOption("tests.exclude")
+      if (excludePatterns) {
+        filter {
+          excludePatterns.split(',').each { excludeTestsMatching(it.trim()) }
+        }
+      }
 
       jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
 
