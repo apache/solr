@@ -106,6 +106,7 @@ public class CrossCollectionJoinQParser extends QParser {
     String collection = localParams.get(FROM_INDEX);
     String fromField = localParams.get(FROM);
     String toField = localParams.get(TO);
+    ScoreJoinQParserPlugin.requireFromAndTo(fromField, toField);
 
     boolean routedByJoinKey = localParams.getBool(ROUTED_BY_JOIN_KEY, toField.equals(routerField));
     int ttl = localParams.getInt(TTL, TTL_DEFAULT);
