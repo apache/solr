@@ -92,6 +92,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   private static class MyConfigSetAdminRequest
       extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {
+    @SuppressWarnings("deprecation") // the no-arg super constructor is deprecated
     public MyConfigSetAdminRequest() {}
 
     @Override
