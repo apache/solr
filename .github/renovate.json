@@ -208,7 +208,7 @@
     }
   ],
   "schedule": ["before 9am on the first day of the month"],
-  "prConcurrentLimit": 300,
+  "prConcurrentLimit": 7,
   "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
 }

@@ -257,11 +257,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   public static ModifiableSolrParams params(String... params) {
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-    for (int i = 0; i < params.length; i += 2) {
-      msp.add(params[i], params[i + 1]);
-    }
-    return msp;
+    return ModifiableSolrParams.of(params);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -314,7 +310,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
     // Internal APIs
     apis.addAll(AnnotatedApi.getApis(new RequestCoreRecoveryAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new PrepareCoreRecoveryAPI(this)));
@@ -339,6 +334,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         SwapCores.class,
         RenameCore.class,
         MergeIndexes.class,
+        SplitCoreAPI.class,
         GetNodeCommandStatus.class);
   }
 
