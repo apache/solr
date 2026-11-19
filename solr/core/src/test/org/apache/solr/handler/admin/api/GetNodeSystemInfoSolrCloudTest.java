@@ -44,5 +44,7 @@ public class GetNodeSystemInfoSolrCloudTest extends SolrCloudTestCase {
     assertEquals(0, infoRsp.responseHeader.status);
     assertNotNull(infoRsp.remoteNodeData);
     assertTrue(infoRsp.remoteNodeData.containsKey(nodeName));
+    assertNotNull(infoRsp.failedNodes);
+    assertTrue(infoRsp.failedNodes.isEmpty());
   }
 }

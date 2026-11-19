@@ -28,7 +28,10 @@ limitations under the License.
   </div>
   <div id="sql-response">
     <a ng-show="sqlData" id="url" class="address-bar" ng-href="{{url}}">{{hostPortContext}}{{url}}</a>
-    <div ng-show="sqlError"> {{sqlError}}</div>
+    <div ng-show="sqlError">
+      {{sqlError}}
+      <span ng-if="sqlModuleMissing">See <a href="https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html" target="_out">SQL documentation</a> for how to enable it.</span>
+    </div>
     <div ng-show="!sqlError" class="grid" ui-grid="gridOptions" id="sql-response"></div>
 
   </div>
