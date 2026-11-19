@@ -68,7 +68,7 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
       // we need to ensure the uniqueField is included for collating docs with their return fields
-      if (!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
+      if (!rb.rsp.getReturnFields().returnsField(uniqueField.getName())) {
         // the user didn't ask for it, so we have to...
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }
