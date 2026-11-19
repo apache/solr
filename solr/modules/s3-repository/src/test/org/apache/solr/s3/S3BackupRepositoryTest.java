@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -49,6 +51,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @ThreadLeakFilters(
     filters = {
@@ -97,8 +100,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
           "s3:///d/",
           directoryUri.toString());
 
-      repo.createDirectory(directoryUri);
-      assertTrue(repo.exists(directoryUri));
       directoryUri = repo.createDirectoryURI("d/");
       assertEquals(
           "createDirectoryURI should have a single trailing slash, even if one is provided",
@@ -118,15 +119,24 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       URI path = new URI("/test/");
       repo.createDirectory(path);
-      assertTrue(repo.exists(path));
-      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
+      assertFalse("An empty directory doesn't exist on S3", repo.exists(path));
       assertEquals("No files should exist in dir yet", 0, repo.listAll(path).length);
 
       URI subDir = new URI("/test/dir/");
       repo.createDirectory(subDir);
-      assertTrue(repo.exists(subDir));
-      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
       assertEquals("No files should exist in subdir yet", 0, repo.listAll(subDir).length);
+
+      try (OutputStream os = repo.createOutput(new URI("/test/dir/file"))) {
+        os.write(1);
+      }
+      assertTrue(repo.exists(path));
+      assertTrue(repo.exists(subDir));
+      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
+      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
+      assertEquals(
+          "No directory marker objects should be written",
+          List.of("test/dir/file"),
+          listKeys("test/"));
 
       assertEquals(
           "subDir should now be returned when listing all in parent dir",
@@ -136,6 +146,36 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       repo.deleteDirectory(path);
       assertFalse(repo.exists(path));
       assertFalse(repo.exists(subDir));
+    }
+  }
+
+  /**
+   * Older Solr versions wrote a zero-byte marker object (content type {@code
+   * application/x-directory}) for every directory. Backups containing them must keep working.
+   */
+  @Test
+  public void testLegacyDirectoryMarkers() throws Exception {
+    try (S3BackupRepository repo = getRepository()) {
+      pushDirectoryMarker("legacy/");
+      pushDirectoryMarker("legacy/empty/");
+      pushDirectoryMarker("legacy/dir/");
+      pushObject("legacy/dir/file", "content");
+
+      URI legacy = new URI("s3:/legacy/");
+      assertTrue(repo.exists(legacy));
+      assertTrue(repo.exists(repo.resolveDirectory(legacy, "empty")));
+      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(legacy));
+      assertEquals(
+          BackupRepository.PathType.DIRECTORY,
+          repo.getPathType(repo.resolveDirectory(legacy, "dir")));
+      assertEquals(
+          BackupRepository.PathType.FILE, repo.getPathType(repo.resolve(legacy, "dir", "file")));
+      assertEquals(Set.of("empty", "dir"), Set.of(repo.listAll(legacy)));
+      assertArrayEquals(new String[] {"file"}, repo.listAll(repo.resolveDirectory(legacy, "dir")));
+
+      repo.deleteDirectory(legacy);
+      assertFalse(repo.exists(legacy));
+      assertEquals("Directory markers should be deleted too", List.of(), listKeys("legacy/"));
     }
   }
 
@@ -345,6 +385,25 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   private void pushObject(String path, String content) {
     try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
       s3.putObject(b -> b.bucket(BUCKET_NAME).key(path), RequestBody.fromString(content));
+    }
+  }
+
+  private void pushDirectoryMarker(String path) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      s3.putObject(
+          b -> b.bucket(BUCKET_NAME).key(path).contentType("application/x-directory"),
+          RequestBody.empty());
+    }
+  }
+
+  private List<String> listKeys(String prefix) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      return s3
+          .listObjectsV2Paginator(b -> b.bucket(BUCKET_NAME).prefix(prefix))
+          .contents()
+          .stream()
+          .map(S3Object::key)
+          .toList();
     }
   }
 

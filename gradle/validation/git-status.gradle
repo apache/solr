@@ -37,13 +37,23 @@ buildscript {
 }
 
 configure(rootProject) {
+  // Only a repository rooted at the project dir counts, not a parent checkout that merely contains it
+  // (e.g. an unpacked source release inside a clone).
+  def findGitRepository = {
+    if (!rootProject.file(".git").exists()) {
+      throw new RepositoryNotFoundException(rootProject.projectDir)
+    }
+    return new FileRepositoryBuilder()
+        .findGitDir(rootProject.projectDir)
+        .setWorkTree(rootProject.projectDir)
+        .setMustExist(true)
+        .build()
+  }
+
   task gitStatus() {
     doFirst {
       try {
-        def repository = new FileRepositoryBuilder()
-            .setWorkTree(rootProject.projectDir)
-            .setMustExist(true)
-            .build()
+        def repository = findGitRepository()
 
         def ref = repository.findRef("HEAD").getObjectId()
         project.ext.gitRev = ref.name()
@@ -64,24 +74,15 @@ configure(rootProject) {
     doFirst {
       def status
       try {
-        def repository = new FileRepositoryBuilder()
-            .setWorkTree(rootProject.projectDir)
-            .setMustExist(true)
-            .build()
+        def repository = findGitRepository()
         status = new Git(repository).status().call()
       } catch (RepositoryNotFoundException | NoWorkTreeException e) {
         status = null
       }
       if (status == null) {
-        if (file("${rootProject.projectDir}/.git").exists()) {
-          // Ignore git worktree branches until jgit supports them.
-          logger
-              .warn("WARNING: git worktrees are not supported by jgit (won't check dirty files): ${rootProject.projectDir}")
-        } else {
-          // Ignore the check. This isn't a git checkout.
-          logger
-              .warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
-        }
+        // Ignore the check. This isn't a git checkout.
+        logger
+            .warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
       } else {
         // git ignores any folders which are empty (this includes folders with recursively empty sub-folders).
         def untrackedNonEmptyFolders = status.untrackedFolders.findAll {path ->
