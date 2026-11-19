@@ -1,0 +1,44 @@
+name: Misc Tests
+
+# Small test suites that do not belong to any other tests-* workflow.
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/tests-misc.yml'
+      - 'gradle/libs.versions.toml'
+      - 'solr/benchmark/**'
+      - 'solr/test-framework/**'
+      - 'solr/solr-ref-guide/modules/*/examples/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Misc Tests
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Test the test-framework, benchmark and ref-guide example code
+      run: ./gradlew :solr:test-framework:test :solr:benchmark:test :solr:solr-ref-guide:test
+
+    - name: Archive test output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output-misc
+        path: |
+          solr/test-framework/build/test-results/**
+          solr/benchmark/build/test-results/**
+          solr/solr-ref-guide/build/test-results/**
