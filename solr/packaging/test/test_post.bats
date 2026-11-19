@@ -39,7 +39,7 @@ teardown() {
 @test "Check help command" {
 
   run solr post
-  assert_output --partial 'Missing required option: c'
+  assert_output_for_cli "Missing required option: c" "Missing required option: '--name=name'"
 
   run solr post -h
   assert_output --partial 'usage: bin/solr post'
