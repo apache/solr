@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +73,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
@@ -189,14 +189,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
       this.location =
           repository.createDirectoryURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      final URI backupNameUri = repository.resolveDirectory(location, backupName);
-      final String[] entries = repository.listAll(backupNameUri);
-      final boolean incremental =
-          !Arrays.stream(entries)
-              .anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
-      // incremental backups have an extra path component representing the backed up collection
       this.backupPath =
-          (incremental) ? repository.resolveDirectory(backupNameUri, entries[0]) : backupNameUri;
+          BackupFilePaths.buildExistingBackupLocationURI(repository, location, backupName);
       this.zkStateReader = ccc.getZkStateReader();
       this.backupManager =
           backupId == -1

@@ -49,7 +49,7 @@ function schemaApiErrorMessage(data, response) {
 }
 
 solrAdminApp.controller('SchemaController',
-    function($scope, $routeParams, $location, $cookies, $timeout, Luke, Constants, SchemaV2, Config, ApiErrorHandler) {
+    function($scope, $routeParams, $location, $cookies, $timeout, Luke, Constants, SchemaV2, ConfigV2, ApiErrorHandler) {
         $scope.resetMenu("schema", Constants.IS_COLLECTION_PAGE);
 
         $scope.refresh = function () {
@@ -117,8 +117,16 @@ solrAdminApp.controller('SchemaController',
                     $scope.types = Object.keys(schema.schema.types);
                 });
             });
-            Config.get({core: $routeParams.core}, function(data) {
-                $scope.isSchemaUpdatable = (data.config.hasOwnProperty('schemaFactory') == false || data.config.schemaFactory.class == "ManagedIndexSchemaFactory");
+            var configIndexType = $scope.isCloudEnabled ? "collections" : "cores";
+            ConfigV2.getConfig(configIndexType, $routeParams.core, {}, function(error, data, response) {
+                $timeout(function() {
+                    if (error || (data && data.error)) {
+                        ApiErrorHandler.handle(response);
+                        return;
+                    }
+                    var schemaFactory = data.config && data.config.schemaFactory;
+                    $scope.isSchemaUpdatable = !schemaFactory || schemaFactory.class == "ManagedIndexSchemaFactory";
+                });
             });
         };
         $scope.refresh();

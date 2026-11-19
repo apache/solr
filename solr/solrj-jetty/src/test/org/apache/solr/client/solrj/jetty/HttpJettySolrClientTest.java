@@ -24,6 +24,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -50,9 +55,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.ServletFixtures;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
+import org.apache.solr.util.ServletFixtures.SlowServlet;
+import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -696,6 +706,154 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         assertEquals(expected3, clone3.basicAuthAuthorizationStr());
       }
     }
+  }
+
+  /**
+   * How soon an aborted request must fail: well before the slow servlet would have answered on its
+   * own, so passing proves the abort, not the servlet, ended it.
+   */
+  private static final long ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2;
+
+  @Test
+  public void testAbortFailsAsyncRequestInFlight() throws Exception {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
+      CompletableFuture<Void> arrived = new CompletableFuture<>();
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(stallRequest(arrived));
+      arrived.get(SlowServlet.DELAY_MS, TimeUnit.MILLISECONDS);
+      client.abort(new IOException("test abort"));
+      expectThrows(
+          ExecutionException.class, () -> future.get(ABORT_DEADLINE_MS, TimeUnit.MILLISECONDS));
+      assertAllRequestsComplete(client);
+    }
+  }
+
+  @Test
+  public void testAbortFailsResponseMidBody() throws Exception {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
+      QueryRequest req = new QueryRequest(SolrParams.of(SlowServlet.FIRST_BYTE_PARAM, "true"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      NamedList<Object> response = client.requestAsync(req).get(10, TimeUnit.SECONDS);
+      try (InputStream is = (InputStream) response.get("stream")) {
+        assertEquals('0', is.read());
+        // The servlet now sends nothing more; the abort must wake the read rather than wait it out.
+        client.abort(new IOException("test abort"));
+        long start = System.nanoTime();
+        IOException e = expectThrows(IOException.class, is::read);
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        assertEquals("test abort", e.getMessage());
+        assertTrue("read took " + elapsedMs + "ms after abort", elapsedMs < ABORT_DEADLINE_MS);
+      }
+      assertAllRequestsComplete(client);
+    }
+  }
+
+  @Test
+  public void testAbortFailsLaterAsyncRequests() throws Exception {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
+      client.abort(new IOException("test abort"));
+      assertTrue(client.isAborted());
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(req);
+      expectThrows(
+          ExecutionException.class, () -> future.get(ABORT_DEADLINE_MS, TimeUnit.MILLISECONDS));
+      assertAllRequestsComplete(client);
+    }
+  }
+
+  @Test
+  public void testAbortIsScopedToOneClient() throws Exception {
+    String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
+    try (var base = new HttpJettySolrClient.Builder(url).build();
+        var copy =
+            new HttpJettySolrClient.Builder(url)
+                .withHttpClient(base)
+                .withAbortableRequests(true)
+                .build()) {
+      copy.abort(new IOException("test abort"));
+      assertTrue(copy.isAborted());
+      assertFalse(base.isAborted());
+      // The copy shares base's Jetty client, but not its tracker, so base still works.
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      NamedList<Object> response = base.requestAsync(req).get(10, TimeUnit.SECONDS);
+      try (InputStream is = (InputStream) response.get("stream")) {
+        assertEquals("0", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+      }
+    }
+  }
+
+  @Test
+  public void testAbortFailsSyncRequestInFlight() throws Exception {
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("syncRequest"));
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
+      CompletableFuture<Void> arrived = new CompletableFuture<>();
+      QueryRequest req = stallRequest(arrived);
+      Future<NamedList<Object>> call = executor.submit(() -> client.request(req));
+      arrived.get(SlowServlet.DELAY_MS, TimeUnit.MILLISECONDS);
+      client.abort(new IOException("test abort"));
+      ExecutionException e =
+          expectThrows(
+              ExecutionException.class, () -> call.get(ABORT_DEADLINE_MS, TimeUnit.MILLISECONDS));
+      assertTrue(e.getCause().toString(), e.getCause() instanceof SolrServerException);
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+  }
+
+  @Test
+  public void testAbortFailsLaterSyncRequests() {
+    try (var client =
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH)
+            .withAbortableRequests(true)
+            .build()) {
+      client.abort(new IOException("test abort"));
+      QueryRequest req = new QueryRequest(SolrParams.of("count", "1"));
+      req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+      expectThrows(SolrServerException.class, () -> client.request(req));
+    }
+  }
+
+  @Test
+  public void testAbortRequiresOptIn() {
+    try (var client = new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl()).build()) {
+      expectThrows(IllegalStateException.class, () -> client.abort(new IOException("test abort")));
+      assertFalse(client.isAborted());
+    }
+  }
+
+  /**
+   * Asserts every async request has completed, i.e. close() would not wait. Aborted requests
+   * complete straight away; without the abort these would stay open until the servlet answers.
+   */
+  private static void assertAllRequestsComplete(HttpJettySolrClient client) throws Exception {
+    new TimeOut(ABORT_DEADLINE_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "async requests still outstanding after abort",
+            () -> client.asyncTrackerAvailablePermits() == client.asyncTrackerMaxPermits());
+  }
+
+  /**
+   * A request to the stall servlet that completes {@code arrived} once it is parked there, so the
+   * test can abort it in flight without guessing how long it takes to get there.
+   */
+  private static QueryRequest stallRequest(CompletableFuture<Void> arrived) {
+    String arrivalId = UUID.randomUUID().toString();
+    SlowServlet.ARRIVALS.put(arrivalId, arrived);
+    return new QueryRequest(SolrParams.of(SlowServlet.ARRIVAL_PARAM, arrivalId));
   }
 
   @Test

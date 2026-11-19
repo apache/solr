@@ -1,0 +1,10 @@
+title: >
+  The SOLR_CONNECTION environment variable (solr.connection system property) is now honored by the
+  bin/solr commands as documented.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: PR#5054
+    url: https://github.com/apache/solr/pull/5054
