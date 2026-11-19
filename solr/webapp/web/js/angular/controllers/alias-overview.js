@@ -20,8 +20,11 @@ function($scope, $routeParams, Constants) {
   $scope.resetMenu("collection-overview", Constants.IS_COLLECTION_PAGE);
 
   $scope.refresh = function() {
-    $scope.selectedCollection = $scope.currentCollection;
+    var collection = $scope.currentCollection;
+    $scope.selectedCollection = collection && collection.type === 'alias' && collection.name === $routeParams.core
+      ? collection : undefined;
   };
 
+  $scope.$watch('currentCollection', $scope.refresh);
   $scope.refresh();
 });
