@@ -16,8 +16,10 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.List;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SortSpec;
 import org.mockito.Mockito;
 
@@ -36,6 +38,11 @@ public class MockSortSpecBuilder {
   public MockSortSpecBuilder withSortFields(SortField[] sortFields) {
     Sort sort = new Sort(sortFields);
     Mockito.when(sortSpec.getSort()).thenReturn(sort);
+    return this;
+  }
+
+  public MockSortSpecBuilder withSchemaFields(List<SchemaField> schemaFields) {
+    Mockito.when(sortSpec.getSchemaFields()).thenReturn(schemaFields);
     return this;
   }
 
