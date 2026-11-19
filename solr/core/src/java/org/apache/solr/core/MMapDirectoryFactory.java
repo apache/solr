@@ -37,10 +37,12 @@ import org.slf4j.LoggerFactory;
  *   <li>maxChunkSize -- The Max chunk size. See {@link MMapDirectory#MMapDirectory(Path,
  *       LockFactory, long)}
  * </ul>
+ *
+ * <p>The {@code preload} and {@code preloadExtensions} parameters of {@link
+ * StandardDirectoryFactory} are also honored.
  */
 public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  boolean preload;
   private long maxChunk;
 
   @Override
@@ -57,13 +59,12 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
       log.warn(
           "To disable unmapping, pass -Dorg.apache.lucene.store.MMapDirectory.enableUnmapHack=false on Solr's command line.");
     }
-    preload = params.getBool("preload", false); // default turn-off
   }
 
   @Override
   protected Directory create(String path, LockFactory lockFactory) throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    mapDirectory.setPreload((s, ioContext) -> preload);
+    applyPreload(mapDirectory);
     return mapDirectory;
   }
 }
