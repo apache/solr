@@ -191,4 +191,24 @@ public class NamedListTest extends SolrTestCase {
     Object enltest4 = enl._get(List.of("key2"), null);
     assertNull(enltest4);
   }
+
+  @Test
+  public void testGetImmutableCopyKeepsNullNamesAndValues() {
+    NamedList<Object> withNulls = new NamedList<>();
+    withNulls.add("aNull", null);
+    withNulls.add(null, 4);
+    withNulls.add("dup", 1);
+    withNulls.add("dup", 2);
+
+    NamedList<Object> copy = withNulls.getImmutableCopy();
+
+    assertEquals(withNulls, copy);
+    assertEquals("aNull", copy.getName(0));
+    assertNull(copy.getVal(0));
+    assertNull(copy.getName(1));
+    assertEquals(4, copy.getVal(1));
+    assertEquals(2, copy.getAll("dup").size());
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("x", 1));
+    assertThrows(UnsupportedOperationException.class, () -> copy.setVal(0, 11));
+  }
 }
