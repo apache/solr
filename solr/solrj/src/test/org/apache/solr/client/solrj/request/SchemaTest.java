@@ -104,6 +104,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @After
+  @SuppressWarnings("deprecation") // no replacement for SolrJettyTestRule.reset() yet
   public void cleanup() throws Exception {
     solrTestRule.reset();
   }
@@ -926,11 +927,11 @@ public class SchemaTest extends RestTestBase {
     assertThat(true, is(equalTo(field1Attributes.get("stored"))));
     assertThat(true, is(equalTo(field1Attributes.get("indexed"))));
 
-    SchemaRequest.Field field2SchemaRequest = new SchemaRequest.Field(field1Name);
+    SchemaRequest.Field field2SchemaRequest = new SchemaRequest.Field(field2Name);
     SchemaResponse.FieldResponse field2Response = field2SchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(field2Response);
     Map<String, ?> field2Attributes = field2Response.getField();
-    assertThat(field1Name, is(equalTo(field2Attributes.get("name"))));
+    assertThat(field2Name, is(equalTo(field2Attributes.get("name"))));
     assertThat(fieldTypeName, is(equalTo(field2Attributes.get("type"))));
     assertThat(true, is(equalTo(field2Attributes.get("stored"))));
     assertThat(true, is(equalTo(field2Attributes.get("indexed"))));
