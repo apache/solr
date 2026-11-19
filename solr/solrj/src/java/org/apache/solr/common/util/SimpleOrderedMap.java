@@ -43,7 +43,9 @@ import org.apache.solr.common.params.SolrParams;
  * hold data to be serialized. It aims to minimize overhead and to be efficient at adding new
  * elements.
  */
-public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
+public final class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> {
+
+  private static final long serialVersionUID = -8705511030983987520L;
 
   private static final SimpleOrderedMap<Object> EMPTY = new SimpleOrderedMap<>(List.of());
 
@@ -92,6 +94,11 @@ public class SimpleOrderedMap<T> extends NamedList<T> implements Map<String, T> 
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
     newList.addAll(nvPairs);
     return new SimpleOrderedMap<>(newList);
+  }
+
+  @Override
+  public SimpleOrderedMap<T> getImmutableCopy() {
+    return new SimpleOrderedMap<>(immutablePairs());
   }
 
   @SuppressWarnings("EqualsDoesntCheckParameterClass")

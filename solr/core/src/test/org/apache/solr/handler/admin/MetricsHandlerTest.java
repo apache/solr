@@ -18,13 +18,18 @@
 package org.apache.solr.handler.admin;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -39,6 +44,38 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-minimal.xml", "schema.xml");
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
+  }
+
+  @Test
+  public void testMetricsWithOtlpExporterEnabled() throws Exception {
+    SolrMetricManager metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
+    try {
+      for (String registry : List.of("registry_one", "registry_two", "registry_three")) {
+        metricManager.longCounter(registry, registry + "_counter", "desc", null).add(1);
+        // The SDK records its own collection telemetry on export, so provoke a cycle per registry
+        ((SdkMeterProvider) metricManager.meterProvider(registry))
+            .forceFlush()
+            .join(10, TimeUnit.SECONDS);
+      }
+
+      MetricsHandler handler = new MetricsHandler(metricManager);
+      SolrQueryResponse resp = new SolrQueryResponse();
+      handler.handleRequestBody(
+          reqWithPath(
+              CommonParams.METRICS_PATH, CommonParams.WT, MetricUtils.PROMETHEUS_METRICS_WT),
+          resp);
+      handler.close();
+
+      Set<String> names =
+          ((MetricSnapshots) resp.getValues().get("metrics"))
+              .stream().map(m -> m.getMetadata().getPrometheusName()).collect(Collectors.toSet());
+      assertTrue(
+          "Expected every registry's counter, got " + names,
+          names.containsAll(
+              Set.of("registry_one_counter", "registry_two_counter", "registry_three_counter")));
+    } finally {
+      metricManager.closeAllRegistries();
+    }
   }
 
   @Test
