@@ -71,6 +71,15 @@ solrAdminApp.controller('ReplicationController',
             });
         }
 
+        $scope.setReplicationPolling = function(enabled) {
+            ReplicationV2.setReplicationPolling($routeParams.core, {enabled: enabled}, function(error, data, response) {
+                $timeout(function() {
+                    if (error) { ApiErrorHandler.handle(response); return; }
+                    $scope.refresh();
+                });
+            });
+        }
+
         $scope.showIterations = function() { $scope.iterationCount = 100000}; // limitTo should accept undefined, but doesn't work.
         $scope.hideIterations = function() { $scope.iterationCount = 1};
 
@@ -177,7 +186,8 @@ var getFollowerVersions = function(data) {
 
 var parseDateToEpoch = function(date) {
     // ["Sat Mar 03 11:00:00 CET 2012", "Sat", "Mar", "03", "11:00:00", "CET", "2012"]
-    var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\w+)\s+(\d+)$/ );
+    // The zone may also be an offset such as "GMT+05:00", so it must not be restricted to \w+
+    var parts = date.match( /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+\:\d+\:\d+)\s+(\S+)\s+(\d+)$/ );
 
     // "Sat Mar 03 2012 10:37:33"
     var d = new Date( parts[1] + ' ' + parts[2] + ' ' + parts[3] + ' ' + parts[6] + ' ' + parts[4] );
