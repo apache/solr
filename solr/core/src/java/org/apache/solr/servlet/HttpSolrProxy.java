@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Set;
@@ -60,10 +61,7 @@ class HttpSolrProxy {
   private static final Set<String> NO_BODY_METHODS = Set.of("GET", "HEAD", "DELETE");
 
   static void doHttpProxy(
-      HttpClient httpClient,
-      HttpServletRequest servletReq,
-      HttpServletResponse servletRsp,
-      String url)
+      HttpClient httpClient, HttpServletRequest servletReq, HttpServletResponse servletRsp, URI url)
       throws Throwable {
     Request proxyReq = httpClient.newRequest(url).method(servletReq.getMethod());
 

@@ -21,7 +21,7 @@ public class DetectedLanguage {
   private final String langCode;
   private final Double certainty;
 
-  DetectedLanguage(String lang, Double certainty) {
+  public DetectedLanguage(String lang, Double certainty) {
     this.langCode = lang;
     this.certainty = certainty;
   }

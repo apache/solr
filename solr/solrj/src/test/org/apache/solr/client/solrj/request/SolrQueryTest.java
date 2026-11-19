@@ -308,6 +308,7 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals("+1MONTH", q.get("f.field." + FacetParams.FACET_RANGE_GAP));
   }
 
+  @SuppressWarnings("deprecation") // covers the deprecated requestHandler accessors too
   public void testSettersGetters() {
     SolrQuery q = new SolrQuery("foo");
     assertEquals(10, q.setFacetLimit(10).getFacetLimit());
