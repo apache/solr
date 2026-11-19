@@ -44,7 +44,7 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
         val response = httpClient.get("api/collections")
         when {
             response.status.isSuccess() -> Result.success(response.body<CollectionsResponse>().collections)
-            else -> Result.failure(Exception("Unknown Error"))
+            else -> Result.failure(IndexQueryHttpException(response.status.value))
         }
     }
 
@@ -72,10 +72,12 @@ class HttpIndexQueryRepository(private val httpClient: HttpClient) : IndexQueryR
                     handlers.map { (name, handler) -> RequestHandlerOption(name, handler.className) }.sortedBy { it.name },
                 )
             }
-            else -> Result.failure(Exception("Unknown Error"))
+            else -> Result.failure(IndexQueryHttpException(response.status.value))
         }
     }
 }
+
+internal class IndexQueryHttpException(val statusCode: Int) : Exception("Index and Query request failed: HTTP $statusCode")
 
 private suspend fun <T> requestResult(block: suspend () -> Result<T>): Result<T> = try {
     block()

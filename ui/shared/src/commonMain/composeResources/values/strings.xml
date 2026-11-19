@@ -108,4 +108,7 @@
   <string name="no_collections_available">No collections are available</string>
   <string name="no_request_handlers">This collection has no request handlers</string>
   <string name="index_query_error">The request could not be completed</string>
+  <string name="index_query_authentication_error">Authentication is required. Please sign in again.</string>
+  <string name="index_query_collections_forbidden">You do not have access to list collections.</string>
+  <string name="index_query_handlers_forbidden">You do not have access to load request handlers for this collection.</string>
 </resources>

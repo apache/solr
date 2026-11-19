@@ -25,8 +25,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.apache.solr.ui.components.indexquery.data.IndexQueryHttpException
 import org.apache.solr.ui.components.indexquery.data.IndexQueryRepository
 import org.apache.solr.ui.domain.RequestHandlerOption
+
+enum class IndexQueryError {
+    Authentication,
+    CollectionsForbidden,
+    HandlersForbidden,
+    Other,
+}
 
 data class IndexQueryUiState(
     val collections: List<String> = emptyList(),
@@ -35,8 +43,10 @@ data class IndexQueryUiState(
     val handlers: List<RequestHandlerOption> = emptyList(),
     val handlersLoading: Boolean = false,
     val selectedHandler: String? = null,
-    val error: Boolean = false,
-)
+    val errorKind: IndexQueryError? = null,
+) {
+    val error: Boolean get() = errorKind != null
+}
 
 /** Loads and manages the Index & Query header state. */
 class IndexQueryViewModel internal constructor(
@@ -56,14 +66,16 @@ class IndexQueryViewModel internal constructor(
     }
 
     private fun loadCollections() {
-        uiState.update { it.copy(collectionsLoading = true, error = false) }
+        uiState.update { it.copy(collectionsLoading = true, errorKind = null) }
         scope.launch {
             repository.listCollections()
                 .onSuccess { names ->
                     uiState.update { it.copy(collections = names, collectionsLoading = false) }
                 }
-                .onFailure {
-                    uiState.update { it.copy(collectionsLoading = false, error = true) }
+                .onFailure { cause ->
+                    uiState.update {
+                        it.copy(collectionsLoading = false, errorKind = classifyError(cause, false))
+                    }
                 }
         }
     }
@@ -75,7 +87,7 @@ class IndexQueryViewModel internal constructor(
                 selectedCollection = collection,
                 handlers = emptyList(),
                 handlersLoading = true,
-                error = false,
+                errorKind = null,
             )
         }
         handlersJob = scope.launch {
@@ -91,12 +103,12 @@ class IndexQueryViewModel internal constructor(
                         )
                     }
                 }
-                .onFailure {
+                .onFailure { cause ->
                     uiState.update {
                         it.copy(
                             handlersLoading = false,
                             selectedHandler = null,
-                            error = true,
+                            errorKind = classifyError(cause, true),
                         )
                     }
                 }
@@ -107,3 +119,10 @@ class IndexQueryViewModel internal constructor(
         uiState.update { it.copy(selectedHandler = handler) }
     }
 }
+
+private fun classifyError(cause: Throwable, handlers: Boolean): IndexQueryError =
+    when ((cause as? IndexQueryHttpException)?.statusCode) {
+        401 -> IndexQueryError.Authentication
+        403 -> if (handlers) IndexQueryError.HandlersForbidden else IndexQueryError.CollectionsForbidden
+        else -> IndexQueryError.Other
+    }

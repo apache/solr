@@ -26,9 +26,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryError
 import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
 import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.index_query_authentication_error
+import org.apache.solr.ui.shared.generated.resources.index_query_collections_forbidden
 import org.apache.solr.ui.shared.generated.resources.index_query_error
+import org.apache.solr.ui.shared.generated.resources.index_query_handlers_forbidden
 import org.apache.solr.ui.views.components.HeaderDropdownOption
 import org.apache.solr.ui.views.components.HeaderDropdownState
 import org.jetbrains.compose.resources.stringResource
@@ -69,7 +73,14 @@ fun IndexQueryContent(
         )
         if (state.error) {
             Text(
-                text = stringResource(Res.string.index_query_error),
+                text = stringResource(
+                    when (state.errorKind) {
+                        IndexQueryError.Authentication -> Res.string.index_query_authentication_error
+                        IndexQueryError.CollectionsForbidden -> Res.string.index_query_collections_forbidden
+                        IndexQueryError.HandlersForbidden -> Res.string.index_query_handlers_forbidden
+                        else -> Res.string.index_query_error
+                    },
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = 16.dp),
