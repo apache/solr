@@ -20,6 +20,11 @@ TEST_DIR="${TEST_DIR:-$(dirname -- "${BASH_SOURCE[0]}")}"
 source "${TEST_DIR}/../../shared.sh"
 
 echo "Running $container_name"
+if [[ "${SOLR_DOCKER_DIST:-full}" == "slim" ]]; then
+  echo "Skipping the demo with Tini: the slim image has no example data"
+  exit 0
+fi
+
 docker run --name "$container_name" -d -e TINI=yes "$tag" "solr-demo"
 
 wait_for_container_and_solr "$container_name"
