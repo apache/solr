@@ -1,0 +1,11 @@
+title:
+  Add V2 JAX-RS API to enable or disable replication (PUT /api/cores/coreName/replication, requires the core-admin-edit permission)
+type: added
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+  - name: Eric Pugh
+    nick: epugh
+links:
+  - name: SOLR-16398
+    url: https://issues.apache.org/jira/browse/SOLR-16398

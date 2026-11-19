@@ -75,9 +75,11 @@ import org.slf4j.LoggerFactory;
  *       lazy one never fires, so a log with no {@code cause=lazy-to-segment} line is the expected
  *       shape.
  *   <li>{@code evt=ctx} -- this context finished setting up: how many (from, to) pairs contributed,
- *       how many the a-priori from-edge check dropped before any column was opened, and how loose
- *       the resulting approximation is. Emitted from {@link #get}, with {@code mode=eager} when
- *       every column is drained up front instead of confirmed lazily.
+ *       how many the a-priori from-edge check dropped before any column was opened ({@code
+ *       cellsEmpty} of them because the pair maps no from doc at all, the rest because the query's
+ *       from matches miss the pair's from-range), and how loose the resulting approximation is.
+ *       Emitted from {@link #get}, with {@code mode=eager} when every column is drained up front
+ *       instead of confirmed lazily.
  *   <li>{@code evt=drain} -- one join column was read through during confirmation, and whether that
  *       read confirmed the doc under test (an early exit) or not.
  *   <li>{@code evt=done} -- confirmation reached a terminal state for this context: every column
@@ -139,6 +141,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
   /** pairs the a-priori from-edge check dropped, i.e. columns never opened at all */
   private int leafsDroppedApriori;
 
+  /**
+   * those of {@link #leafsDroppedApriori} whose pair maps no from doc to this to segment at all: a
+   * property of the index layout, not of the query
+   */
+  private int leafsEmpty;
+
   /** calls to {@link LazyConfirmationIterator#matches()} */
   private int confirmCalls;
 
@@ -147,6 +155,11 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
 
   /** columns read through during confirmation */
   private int leafsDrained;
+
+  /**
+   * columns dropped unread during confirmation, because the doc under test passed their to-range
+   */
+  private int leafsPassed;
 
   /** from-docs walked while draining, i.e. the column reads laziness is trying to avoid */
   private long fromDocsWalked;
@@ -199,6 +212,26 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         } // otherwise we don't know if 0 is real false
       }
 
+      // only cells whose to-range covers the doc can confirm it. One ending below it can't map it
+      // or any later doc, since the approximation only moves forward, so it's dropped unread. One
+      // starting above it stays for the docs to come.
+      final int doc = approximation.docID();
+      List<LeafJoin> covering = new ArrayList<>(leafJoins.size());
+      for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
+        if (doc > joinTask.toDocEdges()[1]) {
+          JoinIndexScorerSupplier.this.dropJoinLeaf(joinTask);
+          leafsPassed++;
+        } else if (doc >= joinTask.toDocEdges()[0]) {
+          covering.add(joinTask);
+        }
+      }
+      if (covering.isEmpty()) {
+        if (leafJoins.isEmpty()) {
+          converge(doc);
+        }
+        return false;
+      }
+
       IndexSearcher freshSearcher = JoinIndexScorerSupplier.this.joinIndex.acquire();
       try {
         // the result matters here too: a cell whose column the reaper dropped is rebuilt by the
@@ -208,13 +241,12 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
           entry.getKey().bind(entry.getValue());
         }
         assert Objects.equals(JoinIndexScorerSupplier.this.lastSeenJoinSearcher, freshSearcher);
-        for (LeafJoin joinTask : new ArrayList<>(leafJoins)) {
-          if (falseNegToDocsBits == null) {
-            this.shift = approximation.docID();
-            falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
-          }
-          DrainOutcome outcome =
-              joinTask.dumpMatchesInto(falseNegToDocsBits, shift, approximation.docID());
+        if (falseNegToDocsBits == null) {
+          this.shift = doc;
+          falseNegToDocsBits = new FixedBitSet(lastToDoc + 1 - shift);
+        }
+        for (LeafJoin joinTask : covering) {
+          DrainOutcome outcome = joinTask.dumpMatchesInto(falseNegToDocsBits, shift, doc);
           fromDocsWalked += joinTask.lastDrainWalked();
           if (outcome == DrainOutcome.CONFIRMED) {
             logDrain(joinTask, true, falseNegToDocsBits);
@@ -231,17 +263,30 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
       } finally {
         JoinIndexScorerSupplier.this.joinIndex.release(freshSearcher);
       }
-      // drop all to masks, got no hit - it means it's a true negative now.
+      // every covering cell was drained without a hit, so the doc is a true negative; cells
+      // starting above it may remain, and until they are gone the union is still half-read
+      if (leafJoins.isEmpty()) {
+        converge(doc);
+      }
+      return false;
+    }
 
-      falsePositiveToDocsBits.clear(shift, lastToDoc + 1);
-      FixedBitSet.orRange(
-          falseNegToDocsBits, 0, falsePositiveToDocsBits, shift, lastToDoc - shift + 1);
-
-      boolean matched = falsePositiveToDocsBits.get(approximation.docID());
-      // every column has now been drained: the half-read union has converged, so from here on
-      // every answer -- true or false -- is a free lookup and there is nothing left to prune
-      logConfirmationDone(matched ? "converged-on-match" : "converged-on-refutation");
-      return matched;
+    /**
+     * Narrows the approximation to the drained union once no cell is left, so from here on every
+     * answer -- true or false -- is a free lookup and there is nothing left to prune. Docs below
+     * {@code doc} are behind the iterator and left as they are.
+     */
+    private void converge(int doc) {
+      if (falseNegToDocsBits == null) {
+        // nothing was ever drained: every cell was passed unread, so nothing ahead can match
+        falsePositiveToDocsBits.clear(doc, lastToDoc + 1);
+      } else {
+        falsePositiveToDocsBits.clear(shift, lastToDoc + 1);
+        FixedBitSet.orRange(
+            falseNegToDocsBits, 0, falsePositiveToDocsBits, shift, lastToDoc - shift + 1);
+      }
+      assert !falsePositiveToDocsBits.get(doc);
+      logConfirmationDone("converged");
     }
 
     @Override
@@ -719,7 +764,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=ctx ctx={} toSeg={} mode={} toMaxDoc={} cellsCreated={}"
-            + " cellsDroppedApriori={} cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
+            + " cellsDroppedApriori={} cellsEmpty={} cellsLive={} buildMs={} approxCard={} approxSpanSum={} approxFrom={} approxTo={}"
             + " colToCountSum={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
@@ -727,6 +772,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         toContext.reader().maxDoc(),
         joinLeafsCreated,
         leafsDroppedApriori,
+        leafsEmpty,
         leafJoins.size(),
         joinIndexBuildNanos / 1_000_000L,
         falsePositiveToDocsBits == null ? 0 : falsePositiveToDocsBits.cardinality(),
@@ -749,7 +795,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     JoinIndexUtils.logDiagnostic(
         log,
         "AUXIJOIN evt=done ctx={} toSeg={} reason={} confirmCalls={} freeHits={} cellsDrained={}"
-            + " cellsLive={} fromDocsWalked={} rebindsAfterReap={} fkLateLoads={} modelsReleased={}"
+            + " cellsPassed={} cellsLive={} fromDocsWalked={} rebindsAfterReap={} fkLateLoads={} modelsReleased={}"
             + " buildMs={}",
         ctxId,
         JoinIndexUtils.segmentName(toContext),
@@ -757,6 +803,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
         confirmCalls,
         confirmFreeHits,
         leafsDrained,
+        leafsPassed,
         leafJoins.size(),
         fromDocsWalked,
         rebindsAfterReap,
@@ -988,6 +1035,7 @@ class JoinIndexScorerSupplier extends ScorerSupplier {
     if (minFromDoc < 0) {
       // {-1, -1} sentinel: this pair maps no from doc to any to doc at all
       leafsDroppedApriori++;
+      leafsEmpty++;
       dropJoinLeaf(cell);
       return false;
     }

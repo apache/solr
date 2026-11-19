@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler) {
+    function($scope, $location, $timeout, $q, Zookeeper, ZookeeperReadV2, Constants, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ZookeeperStatus, ApiErrorHandler, NodeTarget) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, $timeout, Zookeeper, ClusterV2, ApiErrorHandler);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, $timeout, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler);
+            nodesSubController($scope, $location, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -79,6 +79,14 @@ function ensureNodeInHosts(node_name, hosts) {
   ensureInList(node_name, hostNodes);
 }
 
+function nodeNameToAdminUrl(nodeName) {
+  var match = /^(.*):(\d+)_(.+)$/.exec(nodeName);
+  if (!match) {
+    return null;
+  }
+  return window.location.protocol + '//' + match[1] + ':' + match[2] + '/' + match[3];
+}
+
 // from http://scratch99.com/web-development/javascript/convert-bytes-to-mb-kb/
 function bytesToSize(bytes) {
   var sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb'];
@@ -107,7 +115,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, $timeout, Collections, ClusterV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler) {
+var nodesSubController = function($scope, $location, $timeout, ClusterV2, CollectionsV2, SystemV2, Metrics, MetricsExtractor, ApiErrorHandler, NodeTarget) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -118,6 +126,23 @@ var nodesSubController = function($scope, $timeout, Collections, ClusterV2, Syst
   $scope.from = 0;
   $scope.to = $scope.pageSize - 1;
   $scope.filterType = "node"; // Pre-initialize dropdown
+
+  $scope.openNodeDashboard = function(nodeName) {
+    if (!nodeName) {
+      return;
+    }
+    NodeTarget.selectNode(nodeName);
+    var parent = $scope.$parent;
+    while (parent) {
+      if (angular.isDefined(parent.liveNodes)) {
+        parent.selectedNode = nodeName;
+        parent.viewingRemoteNode = NodeTarget.isRemote();
+        break;
+      }
+      parent = parent.$parent;
+    }
+    $location.url('/');
+  };
 
   $scope.toggleAllDetails = function() {
     $scope.showAllDetails = !$scope.showAllDetails;
@@ -178,70 +203,77 @@ var nodesSubController = function($scope, $timeout, Collections, ClusterV2, Syst
     var live_nodes = [];
 
     // We build a node-centric view of the cluster state which we can easily consume to render the table
-    Collections.status(function (data) {
-      // Fetch cluster state from collections API and invert to a nodes structure
-      for (var name in data.cluster.collections) {
-        var collection = data.cluster.collections[name];
-        collection.name = name;
-        var shards = collection.shards;
-        collection.shards = [];
-        for (var shardName in shards) {
-          var shard = shards[shardName];
-          shard.name = shardName;
-          shard.collection = collection.name;
-          var replicas = shard.replicas;
-          shard.replicas = [];
-          for (var replicaName in replicas) {
-            var core = replicas[replicaName];
-            core.name = replicaName;
-            core.replica = core['core'].replace(/.*_(replica_.*)$/, '\$1');
-            core.collection = collection.name;
-            core.shard = shard.name;
-            core.shard_state = shard.state;
-            core.label = core['collection'] + "_"
-              + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
-              + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
+    CollectionsV2.listCollections({detailed: true}, function (error, data, response) {
+      $timeout(function() {
+        if (error) { ApiErrorHandler.handle(response); return; }
 
-            var node_name = core['node_name'];
-            var node = getOrCreateObj(node_name, nodes);
-            var cores = getOrCreateList("cores", node);
-            cores.push(core);
-            node['base_url'] = core.base_url;
-            node['id'] = core.base_url.replace(/[^\w\d]/g, '');
-            node['host'] = node_name.split(":")[0];
-            var collections = getOrCreateList("collections", node);
-            ensureInList(core.collection, collections);
-            ensureNodeInHosts(node_name, hosts);
+        // Fetch cluster state from CollectionsApi and invert to a nodes structure
+        for (var name in data.collectionsDetail) {
+          var collection = data.collectionsDetail[name];
+          collection.name = name;
+          var shards = collection.shards;
+          collection.shards = [];
+          for (var shardName in shards) {
+            var shard = shards[shardName];
+            shard.name = shardName;
+            shard.collection = collection.name;
+            var replicas = shard.replicas;
+            shard.replicas = [];
+            for (var replicaName in replicas) {
+              var core = replicas[replicaName];
+              core.name = replicaName;
+              core.replica = core['core'].replace(/.*_(replica_.*)$/, '\$1');
+              core.collection = collection.name;
+              core.shard = shard.name;
+              core.shard_state = shard.state;
+              core.label = core['collection'] + "_"
+                + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
+                + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
+
+              var node_name = core['node_name'];
+              var node = getOrCreateObj(node_name, nodes);
+              var cores = getOrCreateList("cores", node);
+              cores.push(core);
+              node['base_url'] = core.base_url;
+              node['id'] = core.base_url.replace(/[^\w\d]/g, '');
+              node['host'] = node_name.split(":")[0];
+              var collections = getOrCreateList("collections", node);
+              ensureInList(core.collection, collections);
+              ensureNodeInHosts(node_name, hosts);
+            }
           }
         }
-      }
 
-      ClusterV2.listClusterNodes(function (error, nodesData, response) {
-        $timeout(function() {
-          if (error) { ApiErrorHandler.handle(response); return; }
+        ClusterV2.listClusterNodes(function (error, nodesData, response) {
+          $timeout(function() {
+            if (error) { ApiErrorHandler.handle(response); return; }
 
-          live_nodes = nodesData.nodes;
-          for (n in live_nodes) {
-            node = live_nodes[n];
-            if (!(node in nodes)) {
-              var hostName = node.split(":")[0];
-              nodes[node] = {};
-              nodes[node]['host'] = hostName;
+            live_nodes = nodesData.nodes;
+            for (n in live_nodes) {
+              node = live_nodes[n];
+              if (!(node in nodes)) {
+                var hostName = node.split(":")[0];
+                nodes[node] = {};
+                nodes[node]['host'] = hostName;
+              }
+              if (!nodes[node]['base_url']) {
+                nodes[node]['base_url'] = nodeNameToAdminUrl(node);
+              }
+              ensureNodeInHosts(node, hosts);
             }
-            ensureNodeInHosts(node, hosts);
-          }
 
-          // Make sure nodes are sorted alphabetically to align with rowspan in table
-          for (var host in hosts) {
-            hosts[host].nodes.sort();
-          }
+            // Make sure nodes are sorted alphabetically to align with rowspan in table
+            for (var host in hosts) {
+              hosts[host].nodes.sort();
+            }
 
-          $scope.nodes = nodes;
-          $scope.hosts = hosts;
-          $scope.live_nodes = live_nodes;
+            $scope.nodes = nodes;
+            $scope.hosts = hosts;
+            $scope.live_nodes = live_nodes;
 
-          $scope.Math = window.Math;
-          $scope.reload();
+            $scope.Math = window.Math;
+            $scope.reload();
+          });
         });
       });
     });

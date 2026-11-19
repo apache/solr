@@ -1,0 +1,54 @@
+name: Search Modules Tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/tests-modules-search.yml'
+      - 'gradle/libs.versions.toml'
+      - 'solr/modules/analysis-extras/**'
+      - 'solr/modules/clustering/**'
+      - 'solr/modules/cuvs/**'
+      - 'solr/modules/langid/**'
+      - 'solr/modules/language-models/**'
+      - 'solr/modules/ltr/**'
+      - 'solr/modules/scripting/**'
+      - 'solr/modules/sql/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run Search Modules Tests
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - uses: ./.github/actions/prepare-for-build
+
+    - name: Test the search-related modules
+      run: >
+        ./gradlew
+        :solr:modules:analysis-extras:test
+        :solr:modules:clustering:test
+        :solr:modules:cuvs:test
+        :solr:modules:langid:test
+        :solr:modules:language-models:test
+        :solr:modules:ltr:test
+        :solr:modules:scripting:test
+        :solr:modules:sql:test
+
+    - name: Archive test output
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-output-modules-search
+        path: |
+          solr/modules/*/build/test-results/**

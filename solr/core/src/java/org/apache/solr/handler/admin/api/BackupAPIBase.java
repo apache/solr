@@ -46,6 +46,20 @@ public abstract class BackupAPIBase extends AdminAPIBase {
     }
   }
 
+  /**
+   * Like {@link #getAndValidateBackupLocation(String, String)}, for an API that writes a new backup
+   * to the location. On a repository that can't hold empty directories, a location that does not
+   * exist yet is accepted: it comes into existence with the first file of the backup.
+   */
+  protected String getAndValidateNewBackupLocation(String repositoryName, String location)
+      throws IOException {
+    try (final var repository = createBackupRepository(repositoryName)) {
+      location = getLocation(repository, location);
+      ensureBackupLocationExists(repository, location, !repository.supportsEmptyDirectories());
+      return location;
+    }
+  }
+
   protected String getAndValidateIncrementalBackupLocation(
       String repositoryName, String location, String backupName) throws IOException {
     try (final var repository = createBackupRepository(repositoryName)) {
@@ -80,10 +94,12 @@ public abstract class BackupAPIBase extends AdminAPIBase {
             + " parameter or as a default repository property or as a cluster property.");
   }
 
-  private void ensureBackupLocationExists(BackupRepository repository, String location) {
+  private void ensureBackupLocationExists(
+      BackupRepository repository, String location, boolean allowMissing) {
     final URI uri = repository.createDirectoryURI(location);
     try {
-      if (!repository.exists(uri)) {
+      // Checked even when a missing location is allowed, to fail early on an unreachable repository
+      if (!repository.exists(uri) && !allowMissing) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
       }
@@ -98,7 +114,7 @@ public abstract class BackupAPIBase extends AdminAPIBase {
   private String getAndValidateBackupLocation(BackupRepository backupRepository, String location)
       throws IOException {
     location = getLocation(backupRepository, location);
-    ensureBackupLocationExists(backupRepository, location);
+    ensureBackupLocationExists(backupRepository, location, false);
     return location;
   }
 
