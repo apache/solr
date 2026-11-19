@@ -36,17 +36,20 @@ import org.apache.solr.client.api.model.LogMessageInfo;
 import org.apache.solr.client.api.model.LogMessagesResponse;
 import org.apache.solr.client.api.model.LoggingResponse;
 import org.apache.solr.client.api.model.SetThresholdRequestBody;
+import org.apache.solr.client.solrj.request.LoggingApi;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.proxy.RemoteRequestProxy;
+import org.apache.solr.handler.admin.proxy.V2SolrRequestBasedProxy;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.logging.LogWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO Add support for 'nodes' param once SOLR-16738 is completed.
 /**
- * V2 APIs for getting or setting log levels on an individual node.
+ * V2 APIs for getting or setting log levels on an individual node, or for broadcasting log level
+ * changes across nodes.
  *
  * <p>These APIs ('/api/node/logging' and descendants) are analogous to the v1 /admin/info/logging.
  */
@@ -84,7 +87,7 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
   @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  public LoggingResponse modifyLocalLogLevel(List<LogLevelChange> requestBody) {
+  public LoggingResponse modifyLocalLogLevel(String nodes, List<LogLevelChange> requestBody) {
     ensureLogWatcherEnabled();
     final LoggingResponse response = instantiateLoggingResponse(LoggingResponse.class);
 
@@ -92,10 +95,53 @@ public class NodeLogging extends JerseyResource implements NodeLoggingApis {
       throw new SolrException(BAD_REQUEST, "Missing request body");
     }
 
+    if (nodes != null && !nodes.isEmpty()) {
+      proxyLevelChangesToNodes(response, nodes, requestBody);
+      return response;
+    }
+
     for (LogLevelChange change : requestBody) {
       watcher.setLogLevel(change.logger, change.level);
     }
     return response;
+  }
+
+  /**
+   * Applies the given log level changes on other nodes, mirroring how {@link GetNodeSystemInfo}
+   * fans its request out. The receiving node does not apply the changes locally; it is covered only
+   * if the resolved node set includes it, in which case it calls itself over HTTP.
+   *
+   * <p>{@link RemoteRequestProxy#validateNodeNames} rejects an unknown node name before any request
+   * goes out, so a broadcast either reaches every named node or none of them; a node that stops
+   * responding after that point (timeout, error, or leaving the live set mid-request) is instead
+   * reported via {@link RemoteRequestProxy#getFailedNodes()}.
+   */
+  private void proxyLevelChangesToNodes(
+      LoggingResponse response, String nodes, List<LogLevelChange> requestBody) {
+    if (coreContainer == null || coreContainer.getZkController() == null) {
+      throw new SolrException(
+          BAD_REQUEST, "The 'nodes' parameter is only supported in SolrCloud mode");
+    }
+    try {
+      final var req = new LoggingApi.ModifyLocalLogLevel();
+      requestBody.forEach(req::addLogLevelChange);
+      req.setNodes(nodes);
+      final var reqProxy =
+          new V2SolrRequestBasedProxy<LoggingResponse>(coreContainer, req) {
+            @Override
+            public void processTypedProxiedResponse(
+                String nodeName, LoggingResponse proxiedResponse) {
+              response.remoteNodeData.put(nodeName, proxiedResponse);
+            }
+          };
+      reqProxy.proxyRequest();
+      response.failedNodes = reqProxy.getFailedNodes();
+    } catch (SolrException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other nodes", e);
+    }
   }
 
   @Override

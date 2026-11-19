@@ -50,6 +50,7 @@ public class TermsResponseTest extends SolrTestCase {
   }
 
   @Test
+  @SuppressWarnings("deprecation") // SolrQuery.setRequestHandler is deprecated
   public void testTermsResponse() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);

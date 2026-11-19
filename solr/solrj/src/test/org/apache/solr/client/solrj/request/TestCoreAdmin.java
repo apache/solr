@@ -41,6 +41,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation") // the embedded base class is deprecated, not this test
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
   @Test
