@@ -311,10 +311,10 @@ Because we did not also specify `mlt.boost`, the boost values shown for the inte
         "genre_s":"fantasy",
         "_version_":1693062911095734272}]
   },
-  "interestingTerms":[
-    "author:r.r",1.0,
-    "author:george",1.0,
-    "author:martin",1.0]}
+  "interestingTerms":{
+    "author:r.r":1.0,
+    "author:george":1.0,
+    "author:martin":1.0}}
 ----
 
 If we had not requested `mlt.match.include=true`, the response would not have included the `match` section.
@@ -440,8 +440,8 @@ Each of these documents are similar to the document in the result list to varyin
         "genre_s":"fantasy",
         "_version_":1693062911095734272}]
   },
-  "moreLikeThis":[
-    "0553573403",{"numFound":6,"start":0,"maxScore":1.6554483,"numFoundExact":true,
+  "moreLikeThis":{
+    "0553573403":{"numFound":6,"start":0,"maxScore":1.6554483,"numFoundExact":true,
       "docs":[
         {
           "id":"055357342X",
@@ -459,7 +459,7 @@ Each of these documents are similar to the document in the result list to varyin
           "id":"978-1423103349",
           "score":0.7652973}]
     },
-    "0553579908",{"numFound":5,"start":0,"maxScore":1.6554483,"numFoundExact":true,
+    "0553579908":{"numFound":5,"start":0,"maxScore":1.6554483,"numFoundExact":true,
       "docs":[
         {
           "id":"055357342X",
@@ -477,7 +477,7 @@ Each of these documents are similar to the document in the result list to varyin
           "id":"VDBDB1A16",
           "score":0.68205893}]
     },
-    "055357342X",{"numFound":5,"start":0,"maxScore":1.6554483,"numFoundExact":true,
+    "055357342X":{"numFound":5,"start":0,"maxScore":1.6554483,"numFoundExact":true,
       "docs":[
         {
           "id":"0553579908",
@@ -494,7 +494,7 @@ Each of these documents are similar to the document in the result list to varyin
         {
           "id":"VDBDB1A16",
           "score":0.68205893}]
-    }]}
+    }}}
 ----
 
 == MoreLikeThis Query Parser
