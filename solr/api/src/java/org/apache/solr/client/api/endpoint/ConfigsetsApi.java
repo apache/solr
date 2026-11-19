@@ -20,6 +20,7 @@ import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
 import static org.apache.solr.client.api.util.Constants.RAW_OUTPUT_PROPERTY;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -119,18 +120,41 @@ public interface ConfigsetsApi {
   }
 
   /**
-   * V2 API definition for uploading an entire configset as a ZIP archive.
+   * V2 API definition for uploading an entire configset.
+   *
+   * <p>The configset is read either from the ZIP request body, or from a directory in a backup
+   * repository such as S3 or GCS, identified by {@code repository} and {@code location}. The two
+   * sources are mutually exclusive.
    *
    * <p>Equivalent to the existing v1 API /admin/configs?action=UPLOAD
    */
   @Path("/configsets/{configSetName}")
   interface Upload {
     @PUT
-    @Operation(summary = "Upload a configset as a ZIP archive.", tags = "configsets")
+    @Operation(
+        summary = "Upload a configset as a ZIP archive or from a backup repository.",
+        description =
+            "Provide exactly one source: either a ZIP archive as the request body, or"
+                + " 'repository' and 'location' (both required if either is given) naming a"
+                + " directory in a backup repository, with an empty request body. Providing both is"
+                + " an error.",
+        tags = "configsets")
     SolrJerseyResponse uploadConfigSet(
         @PathParam("configSetName") String configSetName,
         @QueryParam("overwrite") Boolean overwrite,
         @QueryParam("cleanup") Boolean cleanup,
+        @Parameter(
+                description =
+                    "Backup repository to read the configset from. Required if 'location' is"
+                        + " given; mutually exclusive with a request body.")
+            @QueryParam("repository")
+            String repository,
+        @Parameter(
+                description =
+                    "Directory in the backup repository holding the configset files. Required if"
+                        + " 'repository' is given; mutually exclusive with a request body.")
+            @QueryParam("location")
+            String location,
         @RequestBody(
                 required = true,
                 extensions = {
@@ -147,16 +171,36 @@ public interface ConfigsetsApi {
    * V2 API definition for putting a single file to an existing configset.
    *
    * <p>This endpoint allows updating individual configuration files without re-uploading the entire
-   * configset. The file path is specified as part of the URL path.
+   * configset. The file path is specified as part of the URL path. The file contents are either the
+   * request body, or a file in a backup repository identified by {@code repository} and {@code
+   * location}.
    */
   @Path("/configsets/{configSetName}")
   interface PutFile {
     @PUT
     @Path("/files/{filePath:.+}")
-    @Operation(summary = "Upload a single file to a configset.", tags = "configsets")
+    @Operation(
+        summary = "Upload a single file to a configset.",
+        description =
+            "Provide exactly one source: either the file contents as the request body, or"
+                + " 'repository' and 'location' (both required if either is given) naming a file in"
+                + " a backup repository, with an empty request body. Providing both is an error.",
+        tags = "configsets")
     SolrJerseyResponse uploadConfigSetFile(
         @PathParam("configSetName") String configSetName,
         @PathParam("filePath") String filePath,
+        @Parameter(
+                description =
+                    "Backup repository to read the file from. Required if 'location' is given;"
+                        + " mutually exclusive with a request body.")
+            @QueryParam("repository")
+            String repository,
+        @Parameter(
+                description =
+                    "Path of the file in the backup repository. Required if 'repository' is given;"
+                        + " mutually exclusive with a request body.")
+            @QueryParam("location")
+            String location,
         @RequestBody(
                 required = true,
                 extensions = {
