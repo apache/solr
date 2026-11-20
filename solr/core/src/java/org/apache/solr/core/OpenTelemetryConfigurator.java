@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
@@ -121,7 +122,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     try {
       OpenTelemetryConfigurator configurator =
           loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
-      configurator.init(new NamedList<>());
+      configurator.init(new SimpleOrderedMap<>());
       log.info("OpenTelemetry loaded via auto configuration.");
       return configurator.createOpenTelemetry();
     } catch (SolrException e) {

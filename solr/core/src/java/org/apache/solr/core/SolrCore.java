@@ -1573,7 +1573,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       factory.init(info.initArgs);
     } else {
       factory = new SchemaCodecFactory();
-      factory.init(new NamedList<>());
+      factory.init(new SimpleOrderedMap<>());
     }
     if (factory instanceof SolrCoreAware) {
       // CodecFactory needs SolrCore before inform() is called on all registered
@@ -3205,7 +3205,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     if (mgr == null) mgr = new RestManager();
 
-    if (initArgs == null) initArgs = new NamedList<>();
+    if (initArgs == null) initArgs = new SimpleOrderedMap<>();
 
     String collection = getCoreDescriptor().getCollectionName();
     StorageIO storageIO = ManagedResourceStorage.newStorageIO(collection, resourceLoader, initArgs);

@@ -43,6 +43,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.PathTrie;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.PluginBag;
@@ -457,7 +458,7 @@ public class ApiBag {
       ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands = readCommands(Set.of(stream), new NamedList<>());
+      parsedCommands = readCommands(Set.of(stream), new SimpleOrderedMap<>());
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands", e);
     }

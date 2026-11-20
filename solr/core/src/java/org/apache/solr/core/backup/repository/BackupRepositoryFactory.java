@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -106,7 +106,7 @@ public class BackupRepositoryFactory {
       return newInstance(loader, defaultBackupRepoPlugin.name);
     }
     LocalFileSystemRepository repo = new LocalFileSystemRepository();
-    repo.init(new NamedList<>());
+    repo.init(new SimpleOrderedMap<>());
     return repo;
   }
 }
