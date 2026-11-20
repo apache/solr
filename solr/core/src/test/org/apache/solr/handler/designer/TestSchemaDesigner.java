@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -159,6 +160,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     service.copyConfig("_multilingual", saved);
     service.deleteConfig("_multilingual");
     try {
+      assertTrue(availableLanguages().isEmpty());
       String configSet = "slimDistributionDesign";
       SchemaDesignerResponse response = schemaDesigner.prepNewSchema(configSet, null);
       assertNotNull(response.schemaVersion);
@@ -180,6 +182,63 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
       service.copyConfig(saved, "_multilingual");
       service.deleteConfig(saved);
     }
+  }
+
+  @Test
+  public void testAvailableLanguagesFollowMultilingualSchema() throws Exception {
+    Map<String, String> languages = availableLanguages();
+    assertEquals("English", languages.get("en"));
+    assertEquals("Czech", languages.get("cs"));
+    assertFalse(languages.containsKey("cz"));
+    assertEquals("Persian", languages.get("fa"));
+    assertEquals("CJK bigram", languages.get("cjk"));
+    assertTrue(languages.containsKey("fr"));
+    assertFalse(languages.containsKey("general"));
+    assertFalse(languages.containsKey("ws"));
+    assertFalse(languages.containsKey("en_splitting"));
+    var names = List.copyOf(languages.values());
+    assertEquals(names.stream().sorted().toList(), names);
+
+    var service = cc.getConfigSetService();
+    byte[] original = service.downloadFileFromConfig("_multilingual", "managed-schema.xml");
+    try {
+      var helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesigner.newSchemaSuggester());
+      var schema = helper.loadLatestSchema("_multilingual");
+      schema = schema.deleteDynamicFields(List.of("*_txt_fr"));
+      schema = schema.deleteFieldTypes(List.of("text_fr"));
+      var ukrainian =
+          schema.newFieldType(
+              "text_uk",
+              "solr.TextField",
+              Map.of(
+                  "name", "text_uk",
+                  "class", "solr.TextField",
+                  "analyzer", Map.of("tokenizer", Map.of("name", "standard"))));
+      schema = schema.addFieldTypes(List.of(ukrainian), false);
+      schema.persistManagedSchema(false);
+
+      languages = availableLanguages();
+      assertEquals("Ukrainian", languages.get("uk"));
+      assertFalse(languages.containsKey("fr"));
+      assertEquals("English", languages.get("en"));
+    } finally {
+      service.uploadFileToConfig("_multilingual", "managed-schema.xml", original, true);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, String> availableLanguages() throws Exception {
+    var response =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(schemaDesigner.listDesignerConfigs(), Map.class);
+    var languages = (List<Map<String, String>>) response.get("availableLanguages");
+    assertNotNull("Language choices must be included in the configs response", languages);
+    Map<String, String> result = new LinkedHashMap<>();
+    for (var language : languages) {
+      result.put(language.get("code"), language.get("name"));
+    }
+    assertEquals("Language codes must be unique", languages.size(), result.size());
+    return result;
   }
 
   @Test

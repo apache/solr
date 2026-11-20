@@ -425,6 +425,7 @@ public class SchemaDesigner extends JerseyResource
   public SchemaDesignerConfigsResponse listDesignerConfigs() throws Exception {
     final var response = instantiateJerseyResponse(SchemaDesignerConfigsResponse.class);
     response.configSets = listEnabledConfigs();
+    response.availableLanguages = configSetHelper.listAvailableLanguages();
     return response;
   }
 

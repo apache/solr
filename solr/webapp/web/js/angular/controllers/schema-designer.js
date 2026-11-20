@@ -136,6 +136,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     delete $scope.queryResultsTree;
 
     $scope.languages = ["*"];
+    $scope.languageOptions = [];
     $scope.copyFrom = "_default";
     delete $scope.sampleMessage;
     delete $scope.sampleDocuments;
@@ -181,6 +182,10 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
         $scope.schemas = [];
         $scope.publishedSchemas = ["_default"];
+        var availableLanguages = data.availableLanguages || [];
+        $scope.languageOptions = availableLanguages.length > 0
+          ? [{code: "*", name: "-- All --"}].concat(availableLanguages)
+          : [];
 
         for (var s in data.configSets) {
           // 1 means published but not editable

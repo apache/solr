@@ -601,12 +601,12 @@
     </fieldType>
 
     <!-- Czech -->
-    <dynamicField name="*_txt_cz" type="text_cz"  indexed="true"  stored="true"/>
-    <fieldType name="text_cz" class="solr.TextField" positionIncrementGap="100">
+    <dynamicField name="*_txt_cs" type="text_cs"  indexed="true"  stored="true"/>
+    <fieldType name="text_cs" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
         <tokenizer name="standard"/>
         <filter name="lowercase"/>
-        <filter name="stop" ignoreCase="true" words="lang/stopwords_cz.txt" />
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_cs.txt" />
         <filter name="czechStem"/>
       </analyzer>
     </fieldType>

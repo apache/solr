@@ -544,41 +544,11 @@ limitations under the License.
             </div>
             <div class="field-form-right">
               <label for="languages">Language(s):</label>
-              <select ng-model="languages" id="languages" ng-change="changeLanguages()" placeholder="Languages" size="12" multiple>
-                <option value="*">-- All --</option>
-                <option value="ar">Arabic</option>
-                <option value="hy">Armenian</option>
-                <option value="eu">Basque</option>
-                <option value="bg">Bulgarian</option>
-                <option value="ca">Catalan</option>
-                <option value="cjk">CJK bigram</option>
-                <option value="cz">Czech</option>
-                <option value="da">Danish</option>
-                <option value="nl">Dutch</option>
-                <option value="en">English</option>
-                <option value="et">Estonian</option>
-                <option value="fa">Farsi</option>
-                <option value="fi">Finnish</option>
-                <option value="fr">French</option>
-                <option value="gl">Galician</option>
-                <option value="de">German</option>
-                <option value="el">Greek</option>
-                <option value="hi">Hindi</option>
-                <option value="hu">Hungarian</option>
-                <option value="id">Indonesian</option>
-                <option value="ga">Irish</option>
-                <option value="it">Italian</option>
-                <option value="ja">Japanese</option>
-                <option value="ko">Korean</option>
-                <option value="lv">Latvian</option>
-                <option value="no">Norwegian</option>
-                <option value="pt">Portuguese</option>
-                <option value="ro">Romanian</option>
-                <option value="ru">Russian</option>
-                <option value="es">Spanish</option>
-                <option value="sv">Swedish</option>
-                <option value="th">Thai</option>
-                <option value="tr">Turkish</option>
+              <select ng-if="languageOptions.length > 0" ng-model="$parent.languages" id="languages" ng-change="changeLanguages()"
+                      ng-options="language.code as language.name for language in languageOptions" size="12" multiple>
+              </select>
+              <select ng-if="languageOptions.length === 0" id="languages" size="12" multiple disabled>
+                <option>No languages available</option>
               </select><a ng-click="showHelp('languagesHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
               <div id="languagesHelp" class="help" ng-show="helpId === 'languagesHelp'" escape-pressed="hideAll()">
                 <div class="help">

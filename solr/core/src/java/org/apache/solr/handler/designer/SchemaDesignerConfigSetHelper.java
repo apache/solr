@@ -36,9 +36,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,6 +49,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse.Language;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -584,6 +587,35 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
     return loadLatestSchema(loadSolrConfig(configSet));
+  }
+
+  List<Language> listAvailableLanguages() throws IOException {
+    if (!cc.getConfigSetService().checkConfigExists(MULTILINGUAL_CONFIGSET_NAME)) {
+      return List.of();
+    }
+    return loadLatestSchema(MULTILINGUAL_CONFIGSET_NAME).getFieldTypes().values().stream()
+        .filter(this::isTextType)
+        .map(FieldType::getTypeName)
+        .filter(name -> name.matches("text_[a-z]{2,3}"))
+        .map(name -> name.substring(TEXT_PREFIX_LEN))
+        .filter(code -> !includeLangIds.contains(code))
+        .map(
+            code -> {
+              Language language = new Language();
+              language.code = code;
+              language.name =
+                  switch (code) {
+                    case "cjk" -> "CJK bigram";
+                    default ->
+                        new Locale.Builder()
+                            .setLanguageTag(code)
+                            .build()
+                            .getDisplayLanguage(Locale.ENGLISH);
+                  };
+              return language;
+            })
+        .sorted(Comparator.comparing(language -> language.name))
+        .toList();
   }
 
   ManagedIndexSchema loadLatestSchema(SolrConfig solrConfig) {
