@@ -303,13 +303,17 @@ public class PackageStore {
   }
 
   /**
-   * Removes a specific version of a package from ZooKeeper.
+   * Removes a specific version of a package from ZooKeeper, then refreshes this node's package
+   * configuration to drop it immediately.
    *
+   * @return the new {@code packages.json} znode version, or {@code null} if the ZooKeeper update
+   *     failed (and so {@code pkgs} was left unchanged)
    * @throws SolrException NOT_FOUND if the package or version doesn't exist
    */
-  void deleteVersion(String packageName, String version) {
+  Integer deleteVersion(String packageName, String version) {
     requireEnabled();
 
+    final Packages[] finalState = new Packages[1];
     try {
       coreContainer
           .getZkController()
@@ -336,11 +340,20 @@ public class PackageStore {
                 }
                 versions.remove(idxToRemove);
                 packages.znodeVersion = stat.getVersion() + 1;
+                finalState[0] = packages;
                 return Utils.toJSON(packages);
               });
     } catch (KeeperException | InterruptedException e) {
+      finalState[0] = null;
       handleZkErr(e);
     }
+
+    if (finalState[0] == null) {
+      return null;
+    }
+    pkgs = finalState[0];
+    packageLoader.refreshPackageConf();
+    return pkgs.znodeVersion;
   }
 
   /**
