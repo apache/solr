@@ -54,7 +54,7 @@ import org.apache.solr.ui.shared.generated.resources.cd_collapse_folder
 import org.apache.solr.ui.shared.generated.resources.cd_expand_folder
 import org.apache.solr.ui.shared.generated.resources.chevron_right
 import org.apache.solr.ui.shared.generated.resources.expand_more
-import org.apache.solr.ui.shared.generated.resources.folder_data
+import org.apache.solr.ui.shared.generated.resources.folder
 import org.apache.solr.ui.shared.generated.resources.state_collapsed
 import org.apache.solr.ui.shared.generated.resources.state_expanded
 import org.jetbrains.compose.resources.painterResource
@@ -140,60 +140,63 @@ private fun FileTreeRow(
     onDoubleClick: () -> Unit,
 ) {
     val node = row.node
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-            .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick)
-            .padding(start = 8.dp + 16.dp * row.depth, end = 8.dp, top = 4.dp, bottom = 4.dp)
-            .semantics { selected = isSelected }
-            .testTag("item_${node.path}"),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (node is FileTreeFolder) {
-            val chevronContentDescription = stringResource(
-                if (row.expanded) Res.string.cd_collapse_folder else Res.string.cd_expand_folder,
-                node.name,
-            )
-            val chevronStateDescription = stringResource(
-                if (row.expanded) Res.string.state_expanded else Res.string.state_collapsed,
-            )
-            Icon(
-                painter = painterResource(if (row.expanded) Res.drawable.expand_more else Res.drawable.chevron_right),
-                contentDescription = chevronContentDescription,
-                modifier = Modifier
-                    .size(16.dp)
-                    .clickable(onClick = onToggle)
-                    .semantics {
-                        stateDescription = chevronStateDescription
-                        role = Role.Button
-                    }
-                    .testTag("chevron_${node.path}"),
-            )
-            Spacer(Modifier.width(4.dp))
-            Icon(
-                painter = painterResource(Res.drawable.folder_data),
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-        } else {
-            Spacer(Modifier.width(20.dp))
-            CompositionLocalProvider(
-                LocalContentColor provides if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else LocalContentColor.current,
-            ) {
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        LocalContentColor.current
+    }
+    CompositionLocalProvider(LocalContentColor provides contentColor) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick)
+                .padding(start = 8.dp + 16.dp * row.depth, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                .semantics { selected = isSelected }
+                .testTag("item_${node.path}"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (node is FileTreeFolder) {
+                val chevronContentDescription = stringResource(
+                    if (row.expanded) Res.string.cd_collapse_folder else Res.string.cd_expand_folder,
+                    node.name,
+                )
+                val chevronStateDescription = stringResource(
+                    if (row.expanded) Res.string.state_expanded else Res.string.state_collapsed,
+                )
+                Icon(
+                    painter = painterResource(if (row.expanded) Res.drawable.expand_more else Res.drawable.chevron_right),
+                    contentDescription = chevronContentDescription,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable(onClick = onToggle)
+                        .semantics {
+                            stateDescription = chevronStateDescription
+                            role = Role.Button
+                        }
+                        .testTag("chevron_${node.path}"),
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    painter = painterResource(Res.drawable.folder),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+            } else {
+                Spacer(Modifier.width(20.dp))
                 FileTypeIcon(
                     fileType = node.name.substringAfterLast('.', ""),
                     modifier = Modifier.size(16.dp),
                 )
             }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = node.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = LocalContentColor.current,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = node.name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }

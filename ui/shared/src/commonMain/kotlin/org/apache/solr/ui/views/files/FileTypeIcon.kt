@@ -18,8 +18,10 @@
 package org.apache.solr.ui.views.files
 
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import org.apache.solr.ui.shared.generated.resources.Res
 import org.apache.solr.ui.shared.generated.resources.draft
 import org.apache.solr.ui.shared.generated.resources.folder_zip
@@ -29,8 +31,10 @@ import org.jetbrains.compose.resources.painterResource
 fun FileTypeIcon(
     fileType: String,
     modifier: Modifier = Modifier,
+    tint: Color = LocalContentColor.current,
 ) = Icon(
     modifier = modifier,
+    tint = tint,
     painter = painterResource(
         when (fileType) {
             "zip", "rar", "gz", "7z" -> Res.drawable.folder_zip
