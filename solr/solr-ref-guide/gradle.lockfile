@@ -95,6 +95,7 @@ org.apache.commons:commons-math3:3.6.1=cliClasspath,testRuntimeClasspath
 org.apache.commons:commons-text:1.15.0=testRuntimeClasspath
 org.apache.curator:curator-client:5.9.0=cliClasspath,testCompileClasspath,testRuntimeClasspath
 org.apache.curator:curator-framework:5.9.0=cliClasspath,testCompileClasspath,testRuntimeClasspath
+org.apache.curator:curator-recipes:5.9.0=cliClasspath,testRuntimeClasspath
 org.apache.curator:curator-test:5.9.0=testRuntimeClasspath
 org.apache.httpcomponents.client5:httpclient5:5.5=testRuntimeClasspath
 org.apache.httpcomponents.core5:httpcore5-h2:5.3.4=testRuntimeClasspath

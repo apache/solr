@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Collection and ConfigSet API locks without the Overseer now use Apache Curator; upgrading such clusters needs a full restart or paused API commands
+type: changed
+authors:
+  - name: Amrit Sarkar
+links:
+  - name: SOLR-17704
+    url: https://issues.apache.org/jira/browse/SOLR-17704

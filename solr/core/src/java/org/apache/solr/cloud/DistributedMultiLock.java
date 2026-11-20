@@ -59,22 +59,21 @@ public class DistributedMultiLock {
 
   public void release() {
     isReleased = true;
+    RuntimeException failure = null;
     for (DistributedLock lock : locks) {
-      lock.release();
-    }
-  }
-
-  public boolean isAcquired() {
-    if (isReleased) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Released lock can't be tested");
-    }
-    for (DistributedLock lock : locks) {
-      if (!lock.isAcquired()) {
-        return false;
+      try {
+        lock.release();
+      } catch (RuntimeException e) {
+        if (failure == null) {
+          failure = e;
+        } else {
+          failure.addSuppressed(e);
+        }
       }
     }
-    return true;
+    if (failure != null) {
+      throw failure;
+    }
   }
 
   public String getLockId() {

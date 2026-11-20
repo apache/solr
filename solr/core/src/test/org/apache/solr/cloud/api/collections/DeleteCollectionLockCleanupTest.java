@@ -52,7 +52,7 @@ public class DeleteCollectionLockCleanupTest extends SolrCloudTestCase {
     SolrZkClient zkClient = cluster.getZkClient();
     ZkDistributedCollectionLockFactory factory =
         new ZkDistributedCollectionLockFactory(
-            zkClient, DistributedCollectionConfigSetCommandRunner.ZK_COLLECTION_LOCKS);
+            zkClient, DistributedCollectionConfigSetCommandRunner.ZK_COLLECTION_LOCKS, "testNode");
     String collLockDir =
         lockDir(factory.createLock(true, LockLevel.COLLECTION, collection, null, null, null));
     String shardLockDir =
@@ -69,8 +69,10 @@ public class DeleteCollectionLockCleanupTest extends SolrCloudTestCase {
   }
 
   private static String lockDir(DistributedLock lock) {
+    lock.waitUntilAcquired();
+    String lockId = lock.getLockId();
     lock.release();
-    return parent(lock.getLockId());
+    return parent(lockId);
   }
 
   private static String parent(String path) {

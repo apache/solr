@@ -22,17 +22,15 @@ import org.apache.solr.common.params.CollectionParams;
 
 public interface DistributedCollectionLockFactory {
   /**
-   * Create a new lock of the specified type (read or write) entering the "competition" for actually
-   * getting the lock at the given level for the given path i.e. a lock at {@code collName} or a
-   * lock at {@code collName/shardId} or a lock at {@code collName/shardId/replicaName}, depending
-   * on the passed {@code level}.
+   * Create a new lock of the specified type (read or write) at the given level for the given path
+   * i.e. a lock at {@code collName} or a lock at {@code collName/shardId} or a lock at {@code
+   * collName/shardId/replicaName}, depending on the passed {@code level}.
    *
    * <p>The paths are used to define which locks compete with each other (locks of equal paths
    * compete).
    *
-   * <p>Upon return from this call, the lock <b>has not been acquired</b> but the it had entered the
-   * lock acquiring "competition", and the caller can decide to wait until the lock is granted by
-   * calling {@link DistributedLock#waitUntilAcquired()}.<br>
+   * <p>Upon return, the lock <b>has not been acquired</b>. It enters the competition in {@link
+   * DistributedLock#waitUntilAcquired()}.<br>
    * Separating the lock creation from lock acquisition allows a more deterministic release of the
    * locks when/if they can't be acquired.
    *

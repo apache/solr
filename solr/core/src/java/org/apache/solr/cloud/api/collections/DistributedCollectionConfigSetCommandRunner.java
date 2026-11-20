@@ -407,7 +407,9 @@ public class DistributedCollectionConfigSetCommandRunner {
         // below
         ZkDistributedCollectionLockFactory lockFactory =
             new ZkDistributedCollectionLockFactory(
-                ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS);
+                ccc.getZkStateReader().getZkClient(),
+                ZK_COLLECTION_LOCKS,
+                coreContainer.getZkController().getNodeName());
         DistributedMultiLock lock =
             new CollectionApiLockFactory(lockFactory)
                 .createCollectionApiLock(adminCmdContext, lockCollName, shardId, replicaName);
@@ -527,7 +529,9 @@ public class DistributedCollectionConfigSetCommandRunner {
       DistributedMultiLock lock =
           new ConfigSetApiLockFactory(
                   new ZkDistributedConfigSetLockFactory(
-                      ccc.getZkStateReader().getZkClient(), ZK_CONFIG_SET_LOCKS))
+                      ccc.getZkStateReader().getZkClient(),
+                      ZK_CONFIG_SET_LOCKS,
+                      coreContainer.getZkController().getNodeName()))
               .createConfigSetApiLock(configSetName, baseConfigSetName);
 
       try {
@@ -554,7 +558,13 @@ public class DistributedCollectionConfigSetCommandRunner {
                 SolrException.ErrorCode.BAD_REQUEST, "Bug! Unknown Config Set action: " + action);
         }
       } finally {
-        lock.release();
+        try {
+          lock.release();
+        } catch (SolrException se) {
+          if (log.isErrorEnabled()) {
+            log.error("Error when releasing config set locks for action {}", action, se);
+          }
+        }
       }
 
       return null;
