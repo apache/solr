@@ -708,7 +708,9 @@ var getTermInfo = function(data) {
         termInfo.topTerms = [];
 
         var currentGroup = {count: 0};
-        var topTerms = namedListEntries(data.topTerms);
+        var topTerms = namedListEntries(data.topTerms)
+            .map(function(entry, index) { return {key: entry.key, value: entry.value, index: index}; })
+            .sort(function(a, b) { return b.value - a.value || a.index - b.index; });
         for (var i = 0; i < topTerms.length; i++) {
             var count = topTerms[i].value;
             if (currentGroup.count != count) {

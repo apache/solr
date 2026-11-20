@@ -149,8 +149,8 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     @Override
     public void complete() throws IOException {
       NamedList<Double> analytics = new SimpleOrderedMap<>();
-      NamedList<Integer> topFreq = new SimpleOrderedMap<>();
-      NamedList<Integer> allFreq = new SimpleOrderedMap<>();
+      NamedList<Integer> topFreq = new NamedList<>();
+      NamedList<Integer> allFreq = new NamedList<>();
 
       rb.rsp.add("featuredTerms", analytics);
       rb.rsp.add("docFreq", topFreq);

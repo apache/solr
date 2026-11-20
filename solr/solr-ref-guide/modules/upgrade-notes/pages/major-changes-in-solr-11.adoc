@@ -75,11 +75,10 @@ Existing casts to `NamedList` remain valid, but code that depends on the concret
 The affected sections are:
 
 * Core Admin `SPLIT`: the `response` section (`timing`, `failed`) is an object.
-* Luke request handler: a field's `histogram` and `topTerms` are objects. The Admin UI's Schema Browser reads both forms.
+* Luke request handler: a field's `histogram` is an object. (`topTerms` is unchanged: its readable keys can repeat for legacy Trie fields.)
 * MoreLikeThis handler: `interestingTerms` with `mlt.interestingTerms=details` is an object keyed by term.
 * MoreLikeThis component in SolrCloud: `moreLikeThis` is an object keyed by document, as it already was on a single node.
-* Managed resources (`/schema/analysis/...`): `initArgs` is an object.
-* The `logit` section of the `{!tlogit}` query parser and the `featuredTerms` and `docFreq` sections of the `{!igain}` query parser are objects.
+* The `logit` section of the `{!tlogit}` query parser and the `featuredTerms` section of the `{!igain}` query parser are objects.
 * A `debug` section on an empty result (`explain` is then empty) is an object, as the normal `debug` section already was.
 
 Sections designed around repeated or user-controlled keys, such as classic facet counts (`facet_fields`, `facet_ranges`, `facet_pivot`), the terms component, spellcheck suggestions and collations, term vectors and `sort_values`, are unchanged and still follow `json.nl`.

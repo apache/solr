@@ -1276,7 +1276,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
         aslist.add(0, pop());
       }
 
-      NamedList<Integer> list = new SimpleOrderedMap<>();
+      NamedList<Integer> list = new NamedList<>();
       for (TermInfo i : aslist) {
         String txt = i.term.text();
         SchemaField ft = schema.getFieldOrNull(i.term.field());

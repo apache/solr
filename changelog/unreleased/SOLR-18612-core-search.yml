@@ -2,9 +2,9 @@
 
 title: >
   Some search-side response sections whose keys never repeat are now JSON objects regardless of
-  json.nl: Luke's per-field histogram and topTerms, MoreLikeThis interestingTerms (details) and the
-  SolrCloud moreLikeThis section, managed-resource initArgs, the {!igain} featuredTerms/docFreq and
-  {!tlogit} logit sections, the Core Admin SPLIT response, and the debug section of an empty result.
+  json.nl: Luke's per-field histogram, MoreLikeThis interestingTerms (details) and the SolrCloud
+  moreLikeThis section, the {!igain} featuredTerms and {!tlogit} logit sections, the Core Admin SPLIT
+  response, and the debug section of an empty result.
   The Admin UI Schema Browser reads both the old and the new form. Clients using json.nl=map or XML
   see the same response shape; SolrJ decodes these sections as SimpleOrderedMap instances, which
   remain NamedList instances.
