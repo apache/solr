@@ -38,6 +38,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 When adding a test to a suite that already exists, match the design choices of the file you are editing.
 
+- Shell tests for `bin/solr`/`bin\solr.cmd` are CATS suites (`SolrCatsTestCase`); BATS was removed, don't add `.bats` files.
+
 ## Documentation
 
 - For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc

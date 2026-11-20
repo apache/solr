@@ -42,6 +42,8 @@ CATS suites in `src/test/org/apache/solr/shell/`. They are not in `check`: they 
 
 CI runs CATS on pull requests touching `solr/bin`, this module or the CLI (`.github/workflows/cats-test.yml`).
 
+Until SOLR-18645 this module also held the BATS suites in `test/*.bats`; they were ported to CATS and removed.
+
 ## See also
 
 - [`dev-docs/writing-tests.adoc`](../../dev-docs/writing-tests.adoc) — which kind of test to write, how to run each, what to read when one fails.

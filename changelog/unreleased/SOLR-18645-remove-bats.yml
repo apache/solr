@@ -3,7 +3,7 @@
 title: >
   The BATS suites in `solr/packaging/test` are removed, along with the `integrationTestsPicocli` and
   `downloadBats` Gradle tasks. CATS covers the same ground; `integrationTests` now runs `catsTests`.
-type: other
+type: removed
 authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
