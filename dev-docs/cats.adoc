@@ -4,11 +4,12 @@
 
 CATS (Cross-platform Automated Testing System) is how Solr tests `bin/solr` and `bin\solr.cmd`. A test is a Java class that runs real `solr` commands against an unpacked distribution, through `bash` on Unix and `cmd.exe` on Windows. The same test covers both platforms, so script, quoting and packaging bugs show up on the OS where they actually happen.
 
+CATS replaced the BATS suites that used to live in `solr/packaging/test/` (SOLR-18642); they were removed in SOLR-18645.
+
 * Suites: `solr/packaging/src/test/org/apache/solr/shell/`
 * Base class: `SolrCatsTestCase` (in `solr/test-framework`, package `org.apache.solr.shell`)
 * Harness internals: package `org.apache.solr.cats`, same module
 
-CATS replaces the BATS suites in `solr/packaging/test/`. Don't add new `.bats` files.
 
 == Running
 

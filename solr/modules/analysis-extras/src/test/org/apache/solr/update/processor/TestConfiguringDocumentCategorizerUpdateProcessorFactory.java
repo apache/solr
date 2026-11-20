@@ -29,7 +29,8 @@ import org.junit.Test;
  *
  * <p>Focused on verifying how DocumentCategorizerUpdateProcessorFactory is set up to run.
  *
- * <p>See test_opennlp.bats for a complete system test of DocumentCategorizerUpdateProcessorFactory.
+ * <p>See {@code org.apache.solr.shell.OpenNlpTest} in solr/packaging for a complete system test of
+ * DocumentCategorizerUpdateProcessorFactory.
  */
 public class TestConfiguringDocumentCategorizerUpdateProcessorFactory
     extends UpdateProcessorTestBase {
