@@ -28,6 +28,8 @@ import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.util.Map;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -50,6 +52,7 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
   private static ObjectMapper createObjectMapper() {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
+    customTypeModule.addSerializer(new SolrDocumentListSerializer(SolrDocumentList.class));
     customTypeModule.addSerializer(new SimpleOrderedMapSerializer(SimpleOrderedMap.class));
 
     return new ObjectMapper()
@@ -106,6 +109,51 @@ public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
           provider.defaultSerializeField(entry.getKey(), entry.getValue(), gen);
         }
       }
+      gen.writeEndObject();
+    }
+  }
+
+  /**
+   * Serializes {@link SolrDocumentList} to the standard Solr JSON format used by {@code
+   * JSONResponseWriter}: {@code {"numFound":N,"start":0,"numFoundExact":true,"docs":[...]}}.
+   *
+   * <p>This is needed so that JAX-RS endpoints that delegate to a legacy {@link
+   * org.apache.solr.handler.RequestHandlerBase} and copy handler results into a {@link
+   * org.apache.solr.client.api.model.GetDocumentsResponse} can be serialized correctly by Jackson
+   * without falling back to the legacy {@code JSONResponseWriter} path.
+   *
+   * <p>Only the outer {@code numFound}/{@code start}/{@code docs} wrapper is handled here -- each
+   * {@link SolrDocument}'s field values are serialized via Jackson's default {@link Map}
+   * handling.
+   */
+  public static class SolrDocumentListSerializer extends StdSerializer<SolrDocumentList> {
+
+    public SolrDocumentListSerializer() {
+      this(null);
+    }
+
+    public SolrDocumentListSerializer(Class<SolrDocumentList> clazz) {
+      super(clazz);
+    }
+
+    @Override
+    public void serialize(SolrDocumentList value, JsonGenerator gen, SerializerProvider provider)
+        throws IOException {
+      gen.writeStartObject();
+      gen.writeNumberField("numFound", value.getNumFound());
+      gen.writeNumberField("start", value.getStart());
+      if (value.getNumFoundExact() != null) {
+        gen.writeBooleanField("numFoundExact", value.getNumFoundExact());
+      }
+      if (value.getMaxScore() != null) {
+        gen.writeNumberField("maxScore", value.getMaxScore());
+      }
+      gen.writeArrayFieldStart("docs");
+      for (SolrDocument doc : value) {
+        // SolrDocument implements Map<String, Object>; Jackson serializes it as a JSON object.
+        gen.writeObject(doc);
+      }
+      gen.writeEndArray();
       gen.writeEndObject();
     }
   }
