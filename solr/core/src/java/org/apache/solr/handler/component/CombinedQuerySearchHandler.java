@@ -36,8 +36,10 @@ public class CombinedQuerySearchHandler extends SearchHandler {
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
       var rb = new CombinedQueryResponseBuilder(req, rsp, components);
-      // CombinedQueryComponent is only designed to work with distributed search.
-      rb.setForcedDistrib(true);
+      // In SolrCloud the coordinator always fuses, even for a collection of one shard it hosts.
+      // Elsewhere a request fuses on this core unless it names its shards (or asks for distrib).
+      rb.setForcedDistrib(
+          req.getCoreContainer() != null && req.getCoreContainer().isZooKeeperAware());
       return rb;
     }
     return super.newResponseBuilder(req, rsp, components);
