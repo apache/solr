@@ -1,0 +1,13 @@
+title: >
+  HttpJettySolrClient.Builder can now set the maximum lifetime of pooled connections
+  (withConnectionMaxDuration), the number of HTTP/2 connections per host (withMaxHttp2ConnectionsPerHost,
+  previously fixed at 4) and an idle timeout for connections (withConnectionIdleTimeout).
+type: added
+authors:
+  - name: Siju Varghese
+    nick: sijuv
+links:
+  - name: SOLR-18643
+    url: https://issues.apache.org/jira/browse/SOLR-18643
+  - name: PR#5322
+    url: https://github.com/apache/solr/pull/5322
