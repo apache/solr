@@ -1,0 +1,12 @@
+title: >-
+  Combined Query fuses on a single core in Standalone and embedded Solr instead of distributing a
+  request to the core itself, which embedded Solr could not do. A single-pass distributed combined
+  query now returns the fused score rather than one sub-query's, and elevation that matches the
+  text of only some sub-queries no longer fails the request.
+type: changed
+authors:
+  - name: Dmitrii Tikhonov
+    nick: squallsama
+links:
+  - name: SOLR-18676
+    url: https://issues.apache.org/jira/browse/SOLR-18676

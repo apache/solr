@@ -464,110 +464,9 @@ public class QueryComponent extends SearchComponent {
     boolean fsv = req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES, false);
     if (fsv) {
       try {
-        NamedList<Object[]> sortVals = new NamedList<>(); // order is important for the sort fields
-        IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-        List<LeafReaderContext> leaves = topReaderContext.leaves();
-        LeafReaderContext currentLeaf = null;
-        if (leaves.size() == 1) {
-          // if there is a single segment, use that subReader and avoid looking up each time
-          currentLeaf = leaves.get(0);
-          leaves = null;
-        }
-
-        final DocList docs = rb.getResults().docList;
-
-        // sort ids from lowest to highest so we can access them in order
-        int nDocs = docs.size();
-        final long[] sortedIds = new long[nDocs];
-        final float[] scores = new float[nDocs]; // doc scores, parallel to sortedIds
-        DocIterator it = docs.iterator();
-        for (int i = 0; i < nDocs; i++) {
-          sortedIds[i] = (((long) it.nextDoc()) << 32) | i;
-          scores[i] = docs.hasScores() ? it.score() : Float.NaN;
-        }
-
-        // sort ids and scores together
-        new InPlaceMergeSorter() {
-          @Override
-          protected void swap(int i, int j) {
-            long tmpId = sortedIds[i];
-            float tmpScore = scores[i];
-            sortedIds[i] = sortedIds[j];
-            scores[i] = scores[j];
-            sortedIds[j] = tmpId;
-            scores[j] = tmpScore;
-          }
-
-          @Override
-          protected int compare(int i, int j) {
-            return Long.compare(sortedIds[i], sortedIds[j]);
-          }
-        }.sort(0, sortedIds.length);
-
-        SortSpec sortSpec = rb.getSortSpec();
-        Sort sort = searcher.weightSort(sortSpec.getSort());
-        SortField[] sortFields =
-            sort == null ? new SortField[] {SortField.FIELD_SCORE} : sort.getSort();
-        List<SchemaField> schemaFields = sortSpec.getSchemaFields();
-
-        for (int fld = 0; fld < schemaFields.size(); fld++) {
-          SchemaField schemaField = schemaFields.get(fld);
-          FieldType ft = null == schemaField ? null : schemaField.getType();
-          SortField sortField = sortFields[fld];
-
-          SortField.Type type = sortField.getType();
-          // :TODO: would be simpler to always serialize every position of SortField[]
-          if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
-
-          FieldComparator<?> comparator =
-              sortField.getComparator(
-                  1,
-                  schemaFields.size() > 1
-                      ? Pruning.GREATER_THAN
-                      : Pruning.GREATER_THAN_OR_EQUAL_TO);
-          LeafFieldComparator leafComparator = null;
-          Object[] vals = new Object[nDocs];
-
-          int lastIdx = -1;
-          int idx = 0;
-
-          for (int i = 0; i < sortedIds.length; ++i) {
-            long idAndPos = sortedIds[i];
-            float score = scores[i];
-            int doc = (int) (idAndPos >>> 32);
-            int position = (int) idAndPos;
-
-            if (leaves != null) {
-              idx = ReaderUtil.subIndex(doc, leaves);
-              currentLeaf = leaves.get(idx);
-              if (idx != lastIdx) {
-                // we switched segments.  invalidate leafComparator.
-                lastIdx = idx;
-                leafComparator = null;
-              }
-            }
-
-            if (leafComparator == null) {
-              leafComparator = comparator.getLeafComparator(currentLeaf);
-            }
-
-            doc -= currentLeaf.docBase; // adjust for what segment this is in
-            leafComparator.setScorer(
-                new Scorable() {
-                  @Override
-                  public float score() {
-                    return score;
-                  }
-                });
-            leafComparator.copy(0, doc);
-            Object val = comparator.value(0);
-            if (null != ft) val = ft.marshalSortValue(val);
-            vals[position] = val;
-          }
-
-          sortVals.add(sortField.getField(), vals);
-        }
-        rsp.add("sort_values", sortVals);
+        rsp.add(
+            "sort_values",
+            computeFieldSortValues(rb.getResults().docList, rb.getSortSpec(), searcher));
       } catch (ExitableDirectoryReader.ExitingReaderException x) {
         // it's hard to understand where we stopped, so yield nothing
         // search handler will flag partial results
@@ -575,6 +474,112 @@ public class QueryComponent extends SearchComponent {
         throw x;
       }
     }
+  }
+
+  /**
+   * Computes the marshalled value of every non-score field of {@code sortSpec} for each document of
+   * {@code docs}, in the order of that list, keyed by sort field name.
+   */
+  protected NamedList<Object[]> computeFieldSortValues(
+      DocList docs, SortSpec sortSpec, SolrIndexSearcher searcher) throws IOException {
+    NamedList<Object[]> sortVals = new NamedList<>(); // order is important for the sort fields
+    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
+    List<LeafReaderContext> leaves = topReaderContext.leaves();
+    LeafReaderContext currentLeaf = null;
+    if (leaves.size() == 1) {
+      // if there is a single segment, use that subReader and avoid looking up each time
+      currentLeaf = leaves.get(0);
+      leaves = null;
+    }
+
+    // sort ids from lowest to highest so we can access them in order
+    int nDocs = docs.size();
+    final long[] sortedIds = new long[nDocs];
+    final float[] scores = new float[nDocs]; // doc scores, parallel to sortedIds
+    DocIterator it = docs.iterator();
+    for (int i = 0; i < nDocs; i++) {
+      sortedIds[i] = (((long) it.nextDoc()) << 32) | i;
+      scores[i] = docs.hasScores() ? it.score() : Float.NaN;
+    }
+
+    // sort ids and scores together
+    new InPlaceMergeSorter() {
+      @Override
+      protected void swap(int i, int j) {
+        long tmpId = sortedIds[i];
+        float tmpScore = scores[i];
+        sortedIds[i] = sortedIds[j];
+        scores[i] = scores[j];
+        sortedIds[j] = tmpId;
+        scores[j] = tmpScore;
+      }
+
+      @Override
+      protected int compare(int i, int j) {
+        return Long.compare(sortedIds[i], sortedIds[j]);
+      }
+    }.sort(0, sortedIds.length);
+
+    Sort sort = searcher.weightSort(sortSpec.getSort());
+    SortField[] sortFields =
+        sort == null ? new SortField[] {SortField.FIELD_SCORE} : sort.getSort();
+    List<SchemaField> schemaFields = sortSpec.getSchemaFields();
+
+    for (int fld = 0; fld < schemaFields.size(); fld++) {
+      SchemaField schemaField = schemaFields.get(fld);
+      FieldType ft = null == schemaField ? null : schemaField.getType();
+      SortField sortField = sortFields[fld];
+
+      SortField.Type type = sortField.getType();
+      // :TODO: would be simpler to always serialize every position of SortField[]
+      if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
+
+      FieldComparator<?> comparator =
+          sortField.getComparator(
+              1, schemaFields.size() > 1 ? Pruning.GREATER_THAN : Pruning.GREATER_THAN_OR_EQUAL_TO);
+      LeafFieldComparator leafComparator = null;
+      Object[] vals = new Object[nDocs];
+
+      int lastIdx = -1;
+      int idx = 0;
+
+      for (int i = 0; i < sortedIds.length; ++i) {
+        long idAndPos = sortedIds[i];
+        float score = scores[i];
+        int doc = (int) (idAndPos >>> 32);
+        int position = (int) idAndPos;
+
+        if (leaves != null) {
+          idx = ReaderUtil.subIndex(doc, leaves);
+          currentLeaf = leaves.get(idx);
+          if (idx != lastIdx) {
+            // we switched segments.  invalidate leafComparator.
+            lastIdx = idx;
+            leafComparator = null;
+          }
+        }
+
+        if (leafComparator == null) {
+          leafComparator = comparator.getLeafComparator(currentLeaf);
+        }
+
+        doc -= currentLeaf.docBase; // adjust for what segment this is in
+        leafComparator.setScorer(
+            new Scorable() {
+              @Override
+              public float score() {
+                return score;
+              }
+            });
+        leafComparator.copy(0, doc);
+        Object val = comparator.value(0);
+        if (null != ft) val = ft.marshalSortValue(val);
+        vals[position] = val;
+      }
+
+      sortVals.add(sortField.getField(), vals);
+    }
+    return sortVals;
   }
 
   protected void doPrefetch(ResponseBuilder rb) throws IOException {
