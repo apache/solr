@@ -43,6 +43,7 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetCollector;
 import org.apache.solr.search.DocSetUtil;
+import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
@@ -207,7 +208,7 @@ public class CommandHandler {
           query, filter, MultiCollector.wrap(collectors.toArray(new Collector[0])));
     }
 
-    return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
+    return new BitDocSet(Grouping.retrieveGroupHeads(allGroupHeadsCollector, searcher.maxDoc()));
   }
 
   private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors)

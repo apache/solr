@@ -119,9 +119,18 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
 
     @Override
     public SortField getSortField(boolean reverse) {
-      final Type type = childField.getSortField(reverse).getType();
+      final SortField childSort = childField.getSortField(reverse);
+      final Type type = childSort.getType();
+      final Object missingValue = childSort.getMissingValue();
       return new ToParentBlockJoinSortField(
-          childField.getName(), type, reverse, parentFilter, childFilter) {
+          childField.getName(),
+          type,
+          reverse,
+          reverse,
+          null,
+          missingValue,
+          parentFilter,
+          childFilter) {
         @SuppressWarnings("unchecked")
         @Override
         public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
