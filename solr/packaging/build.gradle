@@ -113,6 +113,12 @@ distributions {
       })
 
       from(configurations.server, {
+        exclude "solr/configsets/**"
+        into "server"
+      })
+
+      from(configurations.server, {
+        include "solr/configsets/_default/**"
         into "server"
       })
 
@@ -141,6 +147,12 @@ distributions {
     contents {
       // Build on-top of the slim distribution
       with(distributions.slim.getContents())
+
+      from(configurations.server, {
+        include "solr/configsets/**"
+        exclude "solr/configsets/_default/**"
+        into "server"
+      })
 
       from(configurations.example, {
         into "example"
