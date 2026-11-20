@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
@@ -28,9 +29,10 @@ import org.slf4j.Logger;
 public class ResponseUtils {
   private ResponseUtils() {}
 
-  // System property to use if the Solr core does not exist or solr.hideStackTrace is not
-  // configured. (i.e.: a lot of unit test).
-  private static final boolean SYSTEM_HIDE_STACK_TRACES = Boolean.getBoolean("solr.hideStackTrace");
+  // Default used when solr.responses.stacktrace.enabled is not explicitly set (e.g. in many unit
+  // tests).
+  private static final boolean STACKTRACE_ENABLED =
+      EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
   /**
    * Adds the given Throwable's message to the given NamedList.
@@ -61,7 +63,7 @@ public class ResponseUtils {
    * <p>Status codes less than 100 are adjusted to be 500.
    *
    * <p>Stack trace will not be output if hideTrace=true OR system property
-   * solr.hideStackTrace=true.
+   * solr.responses.stacktrace.enabled=false.
    *
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
@@ -160,7 +162,7 @@ public class ResponseUtils {
    * <p>Status codes less than 100 are adjusted to be 500.
    *
    * <p>Stack trace will not be output if hideTrace=true OR system property
-   * solr.hideStackTrace=true.
+   * solr.responses.stacktrace.enabled=false.
    *
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
@@ -231,6 +233,6 @@ public class ResponseUtils {
   }
 
   private static boolean hideStackTrace(final boolean hideTrace) {
-    return hideTrace || SYSTEM_HIDE_STACK_TRACES;
+    return hideTrace || !STACKTRACE_ENABLED;
   }
 }
