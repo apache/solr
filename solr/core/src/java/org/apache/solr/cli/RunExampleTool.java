@@ -668,7 +668,8 @@ public class RunExampleTool extends ToolBase {
             + serverDir.getParent().toAbsolutePath().normalize());
     Path tls = home.resolve("tls");
     Path include = tls.resolve("solr.in.sh");
-    String zkHost = "localhost:" + (port + 1000);
+    // The /solr chroot gives the example its own ZooKeeper namespace.
+    String zkHost = "localhost:" + (port + 1000) + "/solr";
     Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
     environment.put("SOLR_INCLUDE", include.toString());
     environment.put("SOLR_ULIMIT_CHECKS", "false");
@@ -680,15 +681,7 @@ public class RunExampleTool extends ToolBase {
         "Generated password: "
             + password
             + " (used for the keystore and all basic-auth/ZooKeeper demonstration accounts below).");
-    echo("ZooKeeper is protected by digest ACLs; its transport remains plaintext on loopback.");
-    if (!params.noPrompt()) {
-      prompt(
-          userInputScanner(),
-          "Press Enter to delete and recreate "
-              + secureExampleDisplayArgument(home.toString())
-              + ", or Ctrl-C to cancel: ",
-          "");
-    }
+
     resetSecureExampleHome(home, environment);
     Files.setPosixFilePermissions(home, PosixFilePermissions.fromString("rwx------"));
     Files.createDirectories(tls);
@@ -707,6 +700,7 @@ public class RunExampleTool extends ToolBase {
             SOLR_ULIMIT_CHECKS=false
             SOLR_HOST_BIND=127.0.0.1
             SOLR_HOST_ADVERTISE=127.0.0.1
+            ZK_CREATE_CHROOT=true
             SOLR_PID_DIR=%s
             SOLR_OPTS=%s
             """,
@@ -807,6 +801,8 @@ public class RunExampleTool extends ToolBase {
               SOLR_SSL_NEED_CLIENT_AUTH=false
               SOLR_SSL_WANT_CLIENT_AUTH=false
               SOLR_SSL_CHECK_PEER_NAME=true
+              SOLR_OPTS="$SOLR_OPTS -Dzookeeper.client.secure=true"
+              SOLR_TOOL_OPTS="$SOLR_TOOL_OPTS -Dzookeeper.client.secure=true"
               """,
               secureExampleShellQuote(tls.resolve("solr-ssl.keystore.p12").toString()),
               secureExampleShellQuote(password),
@@ -926,14 +922,9 @@ public class RunExampleTool extends ToolBase {
             "admin:" + password,
             "https://localhost:" + nodePort + "/api/node/health");
       }
+      // DigestZkACLProvider gives /security.json admin-only ACLs during this migration; the
+      // zk-readonly account can read the rest of the tree but not Solr's credentials.
       runSecureCommand(environment, script, "zk", "updateacls", "/", "-z", zkHost);
-      Map<String, String> adminEnvironment = new HashMap<>(environment);
-      adminEnvironment.put("SOLR_INCLUDE", "/dev/null");
-      adminEnvironment.put(
-          "SOLR_ZK_CREDS_AND_ACLS",
-          zkOptions + "-DzkDigestUsername=zk-admin -DzkDigestPassword=" + password);
-      runSecureCommand(
-          adminEnvironment, script, "zk", "updateacls", "/security.json", "-z", zkHost);
 
       echo("\n");
       echo("6. Create one shard per node and index the techproducts documents over HTTPS.");
@@ -1002,12 +993,10 @@ public class RunExampleTool extends ToolBase {
     echo(
         "HTTP accounts: admin (administration), index (indexing/search), search (search only)."
             + " Password: "
-            + password
-            + ".");
+            + password);
     echo(
         "ZooKeeper accounts: zk-admin (all), zk-readonly (metadata read only). Password: "
-            + password
-            + ".");
+            + password);
     echo("Configuration: " + secureExampleDisplayArgument(include.toString()));
     echo(
         "Check status: SOLR_INCLUDE='"
@@ -1050,6 +1039,11 @@ public class RunExampleTool extends ToolBase {
                   serverDir.toAbsolutePath().toString(),
                   "-p",
                   Integer.toString(params.basePort() + node - 1)));
+      // Node 1 runs the embedded ZooKeeper, so it can't be started with -z (that would mean an
+      // external ensemble); it gets the chrooted connect string as -DzkHost instead.
+      // Deciding if an bin/solr start -e secure can take in other params like -z or not would
+      // simplify a lot of logic.
+      if (node == 1) command.add("-DzkHost=" + zkHost);
       if (node == 2) command.addAll(List.of("-z", zkHost));
       if (params.start().force()) command.add("--force");
       if (params.start().memory() != null) command.addAll(List.of("-m", params.start().memory()));

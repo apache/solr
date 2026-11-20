@@ -43,7 +43,9 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,12 +103,18 @@ public class ZkContainer {
               zkConfHome,
               config.getSolrHostPort());
       zkServer.parseConfig();
+      if (zkServer.isClientSecure()) {
+        System.setProperty(ZKClientConfig.SECURE_CLIENT, "true");
+      }
+      SSLConfigurationsFactory.current().initZooKeeper();
       zkServer.start();
 
       // set client from server config if not already set
       if (zookeeperHost == null) {
         zookeeperHost = zkServer.getClientString();
       }
+    } else {
+      SSLConfigurationsFactory.current().initZooKeeper();
     }
 
     int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;

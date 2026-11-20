@@ -48,6 +48,8 @@ Protecting ZooKeeper itself could mean many different things.
 **This section is about protecting Solr content in ZooKeeper**.
 ZooKeeper content basically lives persisted on disk and (partly) in memory of the ZooKeeper processes.
 *This section is not about protecting ZooKeeper data at storage or ZooKeeper process levels* - that's for ZooKeeper to deal with.
+*This section is also not about encrypting the ZooKeeper connection itself* - ACLs control who can read or write content once connected, they do not encrypt the connection.
+For TLS on ZooKeeper connections, see the note in the Examples section below, and xref:getting-started:tutorial-securing-solr.adoc[] for a walkthrough combining TLS and ACLs.
 
 But this content is also available to "the outside" via the ZooKeeper API.
 Outside processes can connect to ZooKeeper and create/update/delete/read content.
@@ -238,6 +240,17 @@ authenticate with ZooKeeper via Kerberos.
 
 Below examples are for `digest` scheme.
 
+NOTE: These examples build `SOLR_ZK_CREDS_AND_ACLS` to control credentials and ACLs.
+Configure transport encryption separately: set `-Dzookeeper.client.secure=true` in `SOLR_OPTS` for joining Solr nodes and `SOLR_TOOL_OPTS` for CLI commands.
+With that explicit switch, Solr derives missing ZooKeeper client TLS settings from the existing `javax.net.ssl.*` settings, populated by `SOLR_SSL_CLIENT_*` settings (falling back to `SOLR_SSL_*`).
+Explicit `zookeeper.ssl.*` settings, including password-file settings, take precedence, and hostname verification defaults to `SOLR_SSL_CHECK_PEER_NAME`.
+When embedded ZooKeeper starts with Solr HTTPS enabled, Solr secures its client listener with the HTTPS SSL settings and credential providers, in memory at startup, without rewriting `zoo.cfg`, creating password files, or editing the include file.
+HTTPS alone does not enable TLS for an external ensemble or its clients; configure TLS on the ensemble independently.
+This covers ZooKeeper client connections, not quorum or election traffic.
+The server defaults to `ssl.clientAuth=none`; digest credentials and ACLs remain separate from TLS.
+ZooKeeper client-certificate authentication (`ssl.clientAuth=need` or `want`) requires a truststore containing trusted certificate entries.
+Use trusted certificate entries also when selecting a native ZooKeeper TLS provider or enabling `zookeeper.ssl.allowReverseDnsLookup`.
+
 * xref:#through-system-properties[System Properties]
 * xref:#through-a-file[Through a File]
 * xref:#through-a-custom-credentials-injector[Custom Credentials Injector]
@@ -424,6 +437,9 @@ Changing the configured `zkACLProvider` in `solr.xml` will ensure that newly cre
 
 To modify all existing ACLs, you can use the `bin/solr zk updateacls` command with Solr's CLI.
 First uncomment the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.*` and fill in the passwords for the admin-user and the readonly-user as described above in <<ZooKeeper ACLs in Solr CLI>>.
+
+If the target ZooKeeper requires TLS, enable `-Dzookeeper.client.secure=true` in `SOLR_TOOL_OPTS` and configure the matching client SSL settings alongside the credentials above.
+If you bypass the include file (for example with `SOLR_INCLUDE=/dev/null`), supply the TLS switch and truststore explicitly, as the read-only session in xref:getting-started:tutorial-securing-solr.adoc[] does.
 
 Then run the command below appropriate for your operating system:
 

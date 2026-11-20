@@ -19,6 +19,7 @@ package org.apache.solr.util.configuration;
 
 import static org.hamcrest.CoreMatchers.is;
 
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -186,5 +187,97 @@ public class SSLConfigurationsTest extends SolrTestCase {
     assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
     System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);
     assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
+  }
+
+  @Test
+  public void testZooKeeperTlsRequiresExplicitClientSwitch() {
+    System.setProperty("javax.net.ssl.trustStore", "/client/truststore.p12");
+    envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW1);
+    createSut().initZooKeeper();
+    assertNull(System.getProperty("zookeeper.client.secure"));
+    assertNull(System.getProperty("zookeeper.ssl.trustStore.location"));
+  }
+
+  @Test
+  public void testZooKeeperTlsUsesClientSslSettings() {
+    System.setProperty("zookeeper.client.secure", "true");
+    System.setProperty("javax.net.ssl.keyStore", "/client/keystore.p12");
+    System.setProperty("javax.net.ssl.keyStoreType", "PKCS12");
+    System.setProperty("javax.net.ssl.trustStore", "/client/truststore.p12");
+    System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
+    System.setProperty("solr.ssl.check.peer.name.enabled", "false");
+    envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW1);
+    envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW2);
+    createSut().initZooKeeper();
+    assertEquals(
+        "org.apache.zookeeper.ClientCnxnSocketNetty",
+        System.getProperty("zookeeper.clientCnxnSocket"));
+    assertEquals("/client/keystore.p12", System.getProperty("zookeeper.ssl.keyStore.location"));
+    assertEquals("PKCS12", System.getProperty("zookeeper.ssl.keyStore.type"));
+    assertEquals(SAMPLE_PW1, System.getProperty("zookeeper.ssl.keyStore.password"));
+    assertEquals("/client/truststore.p12", System.getProperty("zookeeper.ssl.trustStore.location"));
+    assertEquals("PKCS12", System.getProperty("zookeeper.ssl.trustStore.type"));
+    assertEquals(SAMPLE_PW2, System.getProperty("zookeeper.ssl.trustStore.password"));
+    assertEquals("false", System.getProperty("zookeeper.ssl.hostnameVerification"));
+  }
+
+  @Test
+  public void testZooKeeperExplicitSettingsTakePrecedence() {
+    System.setProperty("zookeeper.client.secure", "true");
+    System.setProperty("zookeeper.ssl.trustStore.location", "/zk/custom.jks");
+    System.setProperty("zookeeper.ssl.trustStore.passwordPath", "/zk/password");
+    System.setProperty("zookeeper.ssl.hostnameVerification", "true");
+    System.setProperty("javax.net.ssl.trustStore", "/solr/truststore.p12");
+    System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
+    System.setProperty("solr.ssl.check.peer.name.enabled", "false");
+    envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW1);
+    createSut().initZooKeeper();
+    assertEquals("/zk/custom.jks", System.getProperty("zookeeper.ssl.trustStore.location"));
+    assertEquals("/zk/password", System.getProperty("zookeeper.ssl.trustStore.passwordPath"));
+    assertNull(System.getProperty("zookeeper.ssl.trustStore.password"));
+    assertNull(System.getProperty("zookeeper.ssl.trustStore.type"));
+    assertEquals("true", System.getProperty("zookeeper.ssl.hostnameVerification"));
+  }
+
+  @Test
+  public void testZooKeeperDerivedStoresUseJsseDefaultType() {
+    System.setProperty("zookeeper.client.secure", "true");
+    System.setProperty("javax.net.ssl.keyStore", "/client/keystore");
+    System.setProperty("javax.net.ssl.trustStore", "/client/truststore");
+    createSut().initZooKeeper();
+    assertEquals(KeyStore.getDefaultType(), System.getProperty("zookeeper.ssl.keyStore.type"));
+    assertEquals(KeyStore.getDefaultType(), System.getProperty("zookeeper.ssl.trustStore.type"));
+    assertEquals(
+        ZookeeperSSLContextSupplier.class.getName(),
+        System.getProperty("zookeeper.ssl.context.supplier.class"));
+  }
+
+  @Test
+  public void testZooKeeperExplicitContextSupplierPreserved() {
+    assertContextSupplier(
+        "zookeeper.ssl.context.supplier.class", "custom.Supplier", "custom.Supplier");
+  }
+
+  @Test
+  public void testZooKeeperNativeProviderPreserved() {
+    assertContextSupplier("zookeeper.ssl.sslProvider", "OPENSSL", null);
+  }
+
+  @Test
+  public void testZooKeeperReverseDnsVerificationPreserved() {
+    assertContextSupplier("zookeeper.ssl.allowReverseDnsLookup", "true", null);
+  }
+
+  /**
+   * Enables a secure ZK client with a Solr truststore, sets one extra ZooKeeper property, and
+   * asserts the resulting context supplier class ({@code null} means Solr's supplier was not
+   * installed).
+   */
+  private void assertContextSupplier(String key, String value, String expectedSupplier) {
+    System.setProperty("zookeeper.client.secure", "true");
+    System.setProperty("javax.net.ssl.trustStore", "/client/truststore.p12");
+    System.setProperty(key, value);
+    createSut().initZooKeeper();
+    assertEquals(expectedSupplier, System.getProperty("zookeeper.ssl.context.supplier.class"));
   }
 }
