@@ -24,8 +24,9 @@ Such configuration, _configsets_, can be named and then referenced by collection
 The full Solr distribution ships with three configsets located in `server/solr/configsets`, which can be used as a base for your own:
 
 * `_default` provides general-purpose field types and dynamic fields, with generic stopword and synonym files.
-* `_multilingual` extends `_default` with language-specific text field types, dynamic fields, and supporting language files.
+* `_multilingual` provides general-purpose fields alongside language-specific text field types, dynamic fields, and supporting language files.
 Use it for types such as `text_en` and dynamic fields such as `*_txt_en` or `*_txt_fr`.
+Its generic text types do not remove stopwords or expand synonyms; English text types use `lang/stopwords_en.txt` and `lang/synonyms_en.txt`.
 * `sample_techproducts_configs` supports the techproducts example.
 
 The slim distribution ships only `_default`.
