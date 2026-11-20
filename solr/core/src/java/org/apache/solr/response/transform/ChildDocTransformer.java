@@ -358,45 +358,56 @@ class ChildDocTransformer extends DocTransformer {
       VectorEncoding encoding) {
     for (String multiValuedVectorField : multiValuedVectorFields) {
       List<SolrDocument> solrDocuments = children.get(multiValuedVectorField);
+      if (solrDocuments == null || solrDocuments.isEmpty()) {
+        continue;
+      }
+
       List<List<Number>> multiValuedVectors = new ArrayList<>(solrDocuments.size());
-      for (SolrDocument singleVector : solrDocuments) {
-        List<Number> extractedVectors;
-        switch (encoding) {
-          case FLOAT32:
-            extractedVectors =
-                this.extractFloatVector(singleVector.getFieldValues(multiValuedVectorField));
-            break;
-          case BYTE:
-            extractedVectors =
-                this.extractByteVector(singleVector.getFieldValues(multiValuedVectorField));
-            break;
-          default:
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "Unsupported vector encoding: " + encoding);
+      for (SolrDocument singleVectorDocument : solrDocuments) {
+        var values = singleVectorDocument.getFieldValues(multiValuedVectorField);
+        if (values == null || values.isEmpty()) {
+          continue;
         }
-        multiValuedVectors.add(extractedVectors);
+
+        multiValuedVectors.add(extractVector(encoding, values));
       }
       parent.setField(multiValuedVectorField, multiValuedVectors);
     }
   }
 
+  private List<Number> extractVector(VectorEncoding encoding, Collection<Object> values) {
+    return switch (encoding) {
+      case FLOAT32 -> extractFloatVector(values);
+      case BYTE -> extractByteVector(values);
+      default ->
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Unsupported vector encoding: " + encoding);
+    };
+  }
+
   private List<Number> extractFloatVector(Collection<Object> fieldValues) {
-    List<Number> vector = new ArrayList<>(fieldValues.size());
-    for (Object fieldValue : fieldValues) {
-      StoredField storedVectorValue = (StoredField) fieldValue;
-      vector.add(storedVectorValue.numericValue());
-    }
-    return vector;
+    return fieldValues.stream()
+        // If field values are Number instances that means they come from the vector values
+        .map(
+            value ->
+                value instanceof StoredField storedField
+                    ? storedField.numericValue()
+                    : (Number) value)
+        .toList();
   }
 
   private List<Number> extractByteVector(Collection<Object> singleVector) {
-    StoredField vector = (StoredField) singleVector.iterator().next();
-    BytesRef byteVector = vector.binaryValue();
-    List<Number> extractedVector = new ArrayList<>(byteVector.length);
-    for (Byte element : byteVector.bytes) {
-      extractedVector.add(element.byteValue());
+    if (singleVector.iterator().next() instanceof StoredField storedVector) {
+      BytesRef byteVector = storedVector.binaryValue();
+      List<Number> extractedVector = new ArrayList<>(byteVector.length);
+      for (int i = byteVector.offset; i < byteVector.offset + byteVector.length; i++) {
+        extractedVector.add(byteVector.bytes[i]);
+      }
+      return extractedVector;
     }
-    return extractedVector;
+
+    // If field values are Number instances that means they come from the vector values
+    return singleVector.stream().map(Number.class::cast).<Number>map(Number::byteValue).toList();
   }
 
   private static String getLastPath(String path) {

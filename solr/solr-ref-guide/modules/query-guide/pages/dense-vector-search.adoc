@@ -143,6 +143,25 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 +
 Accepted values: `FLOAT32`, `BYTE`.
 
+`useRawVectorsAsStored`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+When `true`, Solr returns vectors from Lucene's raw vector values, including when `stored="false"`.
+This option supports both `FLOAT32` and `BYTE` encodings, single-valued and multivalued dense vector fields.
+It can be set on the field type or an individual field.
++
+When both `useRawVectorsAsStored="true"` and `stored="true"` are set, raw vector values take precedence for retrieval, but Solr still writes the stored-field copy.
+Set `stored="false"` to avoid that duplicate storage.
++
+With `indexed="false"` and `useRawVectorsAsStored="true"`, Solr still writes the raw vector values needed for retrieval, using a flat vector format without building an HNSW graph.
+The `useRawVectorsAsStored` is only supported by `DenseVectorField` and its subclasses.
++
+Accepted values: `true`, `false`.
+
 
 `hnswM`::
 +
@@ -176,7 +195,40 @@ For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 pa
 Accepted values:
 Any integer.
 
-`DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
+`DenseVectorField` supports the attributes: `indexed`, `stored`, `multiValued`, `useRawVectorsAsStored`.
+
+For example, to index a vector and return it without a separate stored-field copy:
+
+[source,xml]
+----
+<fieldType name="raw_vector" class="solr.DenseVectorField" vectorDimension="4"
+           similarityFunction="cosine" useRawVectorsAsStored="true"/>
+<field name="vector" type="raw_vector" indexed="true" stored="false"/>
+----
+
+The vector can be returned by `/select` and xref:configuration-guide:realtime-get.adoc[RealTime Get].
+RealTime Get also returns vectors from uncommitted updates.
+The `fl` parameter controls which fields are returned, including explicit field names, wildcards, and aliases.
+Raw vector values are also preserved when atomic updates change other fields in the document.
+
+Multivalued dense vector fields support atomic `set`, `add`, `remove`, and `add-distinct` updates on the parent document.
+Each value is a whole vector: supply a list of vectors, even when updating only one vector.
+`add` preserves duplicates; `add-distinct` compares coordinates at the field's vector encoding precision.
+`remove` removes one matching occurrence for each vector supplied.
+Use `set: null` or `set: []` to remove all vectors from a field.
+
+[source,json]
+----
+[
+  {
+    "id": "1",
+    "vector_multivalued": {"add-distinct": [[1.0, 2.0, 3.0, 4.0]]}
+  }
+]
+----
+
+Reading raw vector values has a different access cost from reading stored fields.
+If your application frequently returns vectors, for example with `fl=*`, benchmark the retrieval workload before choosing between the two options.
 
 Here's how a `DenseVectorField` should be indexed when single valued:
 
@@ -188,11 +240,11 @@ JSON::
 [source,json]
 ----
 [
-  { 
+  {
     "id": "1",
     "vector": [1.0, 2.5, 3.7, 4.1]
   },
-  { 
+  {
     "id": "2",
     "vector": [1.5, 5.5, 6.7, 65.1]
   }
@@ -255,11 +307,11 @@ JSON::
 [source,json]
 ----
 [
-  { 
+  {
     "id": "1",
     "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
   },
-  { 
+  {
     "id": "2",
     "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
   }
@@ -620,6 +672,8 @@ So you should query a multivalued vector fields following the same syntax:
 &someParents=color_s:RED
 
 In terms of rendering the results, you need the child transformer if you want to output them flat (you can choose to only return the best vector per result or all vectors):
+
+The same transformer syntax applies when the vector field uses `useRawVectorsAsStored="true"` and `stored="false"`.
 
 All Children
 [source,text]

@@ -169,6 +169,10 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return (properties & LARGE_FIELD) != 0;
   }
 
+  public boolean useRawVectorsAsStored() {
+    return (properties & USE_RAW_VECTORS_AS_STORED) != 0;
+  }
+
   public Map<String, ?> getArgs() {
     return Collections.unmodifiableMap(args);
   }
@@ -466,6 +470,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       properties.add(getPropertyName(REQUIRED), isRequired());
       properties.add(getPropertyName(TOKENIZED), isTokenized());
       properties.add(getPropertyName(USE_DOCVALUES_AS_STORED), useDocValuesAsStored());
+      properties.add(getPropertyName(USE_RAW_VECTORS_AS_STORED), useRawVectorsAsStored());
       // The BINARY property is always false
       // properties.add(getPropertyName(BINARY), isBinary());
     } else {

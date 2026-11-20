@@ -111,7 +111,7 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   }
 
   @Override
-  public KnnVectorsFormat buildKnnVectorsFormat() {
+  public KnnVectorsFormat buildIndexedKnnVectorsFormat() {
     ScalarEncoding encoding = ScalarEncoding.fromNumBits(getBits());
     if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
       return new Lucene104ScalarQuantizedVectorsFormat(encoding);
@@ -124,11 +124,10 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   @Override
   public void checkSchemaField(final SchemaField field) throws SolrException {
     super.checkSchemaField(field);
-
     try {
       // format does not expose any validation, however by constructing
       // we will run lucene level argument validation
-      buildKnnVectorsFormat();
+      buildKnnVectorsFormatFor(field);
     } catch (IllegalArgumentException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

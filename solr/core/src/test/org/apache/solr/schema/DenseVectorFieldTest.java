@@ -1312,4 +1312,17 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       deleteCore();
     }
   }
+
+  @Test
+  public void fieldDefinition_useRawVectorsAsStoredOnNonVectorFieldType_shouldThrowException()
+      throws Exception {
+    for (var fieldType : List.of("string", "boolean", "pint", "plong", "pfloat", "pdouble")) {
+      System.setProperty("solr.tests.rawvectors.invalidFieldType", fieldType);
+
+      assertConfigs(
+          "solrconfig-basic.xml",
+          "bad-schema-use-raw-vectors-as-stored-non-vector.xml",
+          "\"useRawVectorsAsStored\" is only supported for vector types.");
+    }
+  }
 }

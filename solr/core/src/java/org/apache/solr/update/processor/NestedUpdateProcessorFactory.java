@@ -96,8 +96,17 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
         boolean firstLevelChildren = fullPath == null;
-        if (firstLevelChildren && sfield != null && isMultiValuedVectorField(sfield)) {
-          for (Object vectorValue : field.getValues()) {
+        if (firstLevelChildren
+            && NESTED_VECTORS_PSEUDO_FIELD_NAME.equals(field.getName())
+            && field.getFirstValue() instanceof SolrInputDocument) {
+          isNested = true;
+          continue;
+        }
+        if (firstLevelChildren
+            && sfield != null
+            && isMultiValuedVectorField(sfield)
+            && !(field.getFirstValue() instanceof SolrInputDocument)) {
+          for (Object vectorValue : field) {
             SolrInputDocument singleVectorNestedDoc = new SolrInputDocument();
             singleVectorNestedDoc.setField(field.getName(), vectorValue);
             final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
@@ -154,9 +163,20 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
           }
         }
       }
+      Collection<Object> existingVectors = doc.getFieldValues(NESTED_VECTORS_PSEUDO_FIELD_NAME);
+      if (existingVectors != null) {
+        for (Object value : existingVectors) {
+          SolrInputDocument vector = (SolrInputDocument) value;
+          if (originalVectorFieldsToRemove.stream().noneMatch(vector::containsKey)) {
+            vectors.add(vector);
+          }
+        }
+      }
       this.cleanOriginalVectorFields(doc, originalVectorFieldsToRemove);
-      if (vectors.size() > 0) {
+      if (!vectors.isEmpty()) {
         doc.setField(NESTED_VECTORS_PSEUDO_FIELD_NAME, vectors);
+      } else {
+        doc.removeField(NESTED_VECTORS_PSEUDO_FIELD_NAME);
       }
       return isNested;
     }
