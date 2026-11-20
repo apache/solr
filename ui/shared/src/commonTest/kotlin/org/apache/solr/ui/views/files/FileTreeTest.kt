@@ -31,6 +31,12 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import org.apache.solr.ui.shared.generated.resources.Res
+import org.apache.solr.ui.shared.generated.resources.cd_collapse_folder
+import org.apache.solr.ui.shared.generated.resources.cd_expand_folder
+import org.apache.solr.ui.shared.generated.resources.state_collapsed
+import org.apache.solr.ui.shared.generated.resources.state_expanded
+import org.jetbrains.compose.resources.getString
 
 class FileTreeTest {
 
@@ -64,6 +70,12 @@ class FileTreeTest {
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun testChevronExposesAccessibleFolderState() = runComposeUiTest {
+        // Web string resources load asynchronously. Populate their cache before composing the tree.
+        getString(Res.string.cd_expand_folder, conf.name)
+        getString(Res.string.cd_collapse_folder, conf.name)
+        getString(Res.string.state_collapsed)
+        getString(Res.string.state_expanded)
+
         setContent { FileTree(nodes, selectedPath = null, onItemClick = {}, onItemDoubleClick = {}) }
 
         val chevron = onNodeWithTag("chevron_conf")
