@@ -505,6 +505,41 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=2]");
   }
 
+  public void testGlobRTGUncommittedFields() {
+    assertU(delI("7782"));
+    assertU(
+        adoc(
+            "id", "7782",
+            "title", "keyword",
+            "source_s", "source",
+            "unrelated_s", "unrelated"));
+    try {
+      assertQ(req("q", "id:7782"), "//result[@numFound='0']");
+      for (String fq : new String[] {"", "id:7782"}) {
+        for (String selection : new String[] {"title", "tit*"}) {
+          assertQ(
+              reqWithPath(
+                  "/get",
+                  "id",
+                  "7782",
+                  "fq",
+                  fq,
+                  "wt",
+                  "xml",
+                  "fl",
+                  selection + ",x:[json f=source_s],unrelated_s:[value v=synthetic]"),
+              "//doc/*[@name='title'][normalize-space(.)='keyword']",
+              "//doc/*[@name='x'][normalize-space(.)='source']",
+              "//doc/*[@name='unrelated_s'][normalize-space(.)='synthetic']",
+              "//doc[count(*)=3]");
+        }
+      }
+      assertQ(req("q", "id:7782"), "//result[@numFound='0']");
+    } finally {
+      assertU(delI("7782"));
+    }
+  }
+
   public void testGlobsAndTransformerFieldRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {
