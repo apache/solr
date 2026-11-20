@@ -540,6 +540,48 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     }
   }
 
+  public void testBatchedGlobRTGAcrossCommittedAndUncommittedDocs() throws Exception {
+    assertJQ(
+        reqWithPath("/get", "ids", "42,44,99", "fl", "id,val_*,subj*"),
+        "/response/docs==[{'id':'42','val_i':1,'subject':'aaa'},"
+            + "{'id':'44','val_i':4,'subject':'aaa'},"
+            + "{'id':'99','val_i':1,'subject':'uncommitted'}]");
+  }
+
+  public void testGlobRTGSubqueryUsesUnrequestedStoredField() {
+    assertU(adoc("id", "7783", "val_i", "4", "subject", "aaa"));
+    try {
+      for (boolean committed : new boolean[] {false, true}) {
+        if (committed) {
+          assertU(commit());
+        }
+        assertQ(
+            "committed=" + committed,
+            reqWithPath(
+                "/get",
+                "id",
+                "7783",
+                "wt",
+                "xml",
+                "fl",
+                "val_*,related:[subquery],marker:[value v=ok]",
+                "related.q",
+                "{!terms f=subject v=$row.subject}",
+                "related.fq",
+                "id:44",
+                "related.fl",
+                "id"),
+            "/response/doc/int[@name='val_i'][.=4]",
+            "/response/doc/str[@name='marker'][.='ok']",
+            "/response/doc/result[@name='related'][@numFound='1']/doc/str[@name='id'][.='44']",
+            "count(/response/doc/*[@name='subject'])=0");
+      }
+    } finally {
+      assertU(delI("7783"));
+      assertU(commit());
+    }
+  }
+
   public void testGlobsAndTransformerFieldRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {

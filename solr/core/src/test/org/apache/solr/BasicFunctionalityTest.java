@@ -1133,6 +1133,32 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAllFieldsAndTransformerOnlySkipPrefetch() throws Exception {
+    assertU(adoc("id", "7787", "title", "prefetch fixture", "unrelated_s", "unrelated"));
+    assertU(commit());
+    try {
+      for (String selection : new String[] {"*", "[docid]"}) {
+        try (SolrQueryRequest req = req("q", "id:7787", "fl", selection)) {
+          SolrDocumentFetcher fetcher = req.getSearcher().getDocFetcher();
+          assertTrue(fetcher.isLazyFieldLoadingEnabled());
+          fetcher.getDocumentCache().clear();
+          SolrQueryResponse rsp = new SolrQueryResponse();
+          h.getCore().execute(h.getCore().getRequestHandler("/select"), req, rsp);
+          assertNull(rsp.getException());
+          DocList docs = ((ResultContext) rsp.getResponse()).getDocList();
+          assertEquals(1, docs.size());
+          assertNull(
+              "Unexpected stored-document prefetch for fl=" + selection,
+              fetcher.getDocumentCache().get(docs.iterator().nextDoc()));
+        }
+      }
+    } finally {
+      assertU(delI("7787"));
+      assertU(commit());
+    }
+  }
+
+  @Test
   public void testGlobNonStoredDocValuesPrefetch() throws Exception {
     assertDocValuesOnlyPrefetch("*_s_dvo", "prefetch_s_dvo", "source");
   }

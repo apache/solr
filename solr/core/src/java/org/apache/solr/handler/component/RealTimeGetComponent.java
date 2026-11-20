@@ -228,7 +228,10 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // this is initialized & set on the context *after* any searcher (re-)opening
     ResultContext resultContext = null;
-    final DocTransformer transformer = rsp.getReturnFields().getTransformer();
+    final ReturnFields returnFields = rsp.getReturnFields();
+    final DocTransformer transformer = returnFields.getTransformer();
+    final boolean useLegacyStoredFields =
+        transformer != null && transformer.requiresFullDocumentForRTG();
 
     // true in any situation where we have to use a realtime searcher rather then returning docs
     // directly from the UpdateLog
@@ -242,6 +245,9 @@ public class RealTimeGetComponent extends SearchComponent {
       boolean opennedRealtimeSearcher = false;
       BytesRefBuilder idBytes = new BytesRefBuilder();
       DocValuesIteratorCache reuseDvIters = null;
+      SolrIndexSearcher fieldSelectionSearcher = null;
+      SolrDocumentFetcher docFetcher = null;
+      Set<String> storedFields = null;
       for (String idStr : reqIds.allIds) {
         fieldType.readableToIndexed(idStr, idBytes);
         // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
@@ -346,12 +352,19 @@ public class RealTimeGetComponent extends SearchComponent {
 
         if (docid < 0) continue;
 
-        SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
-        Document luceneDocument =
-            docFetcher.doc(docid, docFetcher.getStoredFieldsToLoad(rsp.getReturnFields()));
+        SolrIndexSearcher searcher = searcherInfo.getSearcher();
+        if (docFetcher == null || searcher != fieldSelectionSearcher) {
+          fieldSelectionSearcher = searcher;
+          docFetcher = searcher.getDocFetcher();
+          storedFields =
+              useLegacyStoredFields
+                  ? returnFields.getLuceneFieldNames()
+                  : docFetcher.getStoredFieldsToLoad(returnFields);
+        }
+        Document luceneDocument = docFetcher.doc(docid, storedFields);
         SolrDocument doc =
             toSolrDoc(
-                luceneDocument, searcherInfo.getSearcher().getSchema(), rsp.getReturnFields());
+                luceneDocument, searcher.getSchema(), useLegacyStoredFields ? null : returnFields);
         if (reuseDvIters == null) {
           reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
         }
@@ -915,6 +928,8 @@ public class RealTimeGetComponent extends SearchComponent {
       Document doc, IndexSchema schema, ReturnFields returnFields) {
     SolrDocument out = new SolrDocument();
     for (IndexableField f : doc.getFields()) {
+      // The eager field set does not restrict an existing cache entry, which can contain lazy
+      // fields. Keep transformer inputs, but don't materialize unrelated fields.
       if (returnFields != null && !returnFields.loadsField(f.name())) {
         continue;
       }

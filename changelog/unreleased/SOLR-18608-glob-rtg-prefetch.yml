@@ -1,5 +1,5 @@
 title: Honor glob field selection in real-time get and lazy document prefetch
-type: fixed
+type: changed
 authors:
   - name: Nick Shanin
 links:
