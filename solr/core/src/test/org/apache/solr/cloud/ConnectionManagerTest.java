@@ -22,10 +22,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.TestableZooKeeper;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -82,18 +85,20 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
+      RecordingConnectionStrategy strategy = new RecordingConnectionStrategy();
       SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(server.getZkAddress())
               .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnStrategy(strategy)
               .build();
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
         assertTrue(cm.isConnectedAndNotClosed());
-        cm.process(new WatchedEvent(EventType.None, KeeperState.Disconnected, ""));
+        strategy.fire(KeeperState.Disconnected);
+        waitFor("disconnect was not applied", () -> !cm.isConnectedAndNotClosed());
         // disconnect shouldn't immediately set likelyExpired
-        assertFalse(cm.isConnectedAndNotClosed());
         assertFalse(cm.isLikelyExpired());
 
         // but it should after the timeout
@@ -102,14 +107,14 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
         assertTrue(cm.isLikelyExpired());
 
         // even if we disconnect immediately again
-        cm.process(new WatchedEvent(EventType.None, KeeperState.Disconnected, ""));
+        strategy.fire(KeeperState.Disconnected);
         assertFalse(cm.isConnectedAndNotClosed());
         assertTrue(cm.isLikelyExpired());
 
         // reconnect -- should no longer be likely expired
-        cm.process(new WatchedEvent(EventType.None, KeeperState.SyncConnected, ""));
+        strategy.fire(KeeperState.SyncConnected);
+        waitFor("reconnect was not applied", cm::isConnectedAndNotClosed);
         assertFalse(cm.isLikelyExpired());
-        assertTrue(cm.isConnectedAndNotClosed());
       } finally {
         cm.close();
         zkClient.close();
@@ -143,9 +148,13 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       try {
         assertFalse(cm.isLikelyExpired());
         assertTrue(cm.isConnectedAndNotClosed());
+        ZooKeeper expiredKeeper = zkClient.getZooKeeper();
 
         // reconnect -- should no longer be likely expired
-        cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
+        strategy.fire(KeeperState.Expired);
+        waitFor(
+            "the expired session was not replaced",
+            () -> zkClient.getZooKeeper() != expiredKeeper && cm.isConnectedAndNotClosed());
         assertFalse(cm.isLikelyExpired());
         assertTrue(cm.isConnectedAndNotClosed());
         assertTrue(strategy.isExceptionThrow());
@@ -159,9 +168,29 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static class MockZkClientConnectionStrategy extends TestConnectionStrategy {
-    int called = 0;
-    boolean exceptionThrown = false;
+  private static void waitFor(String message, Supplier<Boolean> condition) throws Exception {
+    new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME).waitFor(message, condition);
+  }
+
+  /** Records the watcher of the latest ZooKeeper instance, so tests can deliver events to it. */
+  private static class RecordingConnectionStrategy extends TestConnectionStrategy {
+    private volatile Watcher watcher;
+
+    @Override
+    protected ZooKeeper newZooKeeperInstance(
+        String serverAddress, int zkClientTimeout, Watcher watcher) throws IOException {
+      this.watcher = watcher;
+      return super.newZooKeeperInstance(serverAddress, zkClientTimeout, watcher);
+    }
+
+    void fire(KeeperState state) {
+      watcher.process(new WatchedEvent(EventType.None, state, null));
+    }
+  }
+
+  private static class MockZkClientConnectionStrategy extends RecordingConnectionStrategy {
+    volatile int called = 0;
+    volatile boolean exceptionThrown = false;
 
     @Override
     public void reconnect(
