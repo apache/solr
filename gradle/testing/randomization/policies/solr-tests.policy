@@ -192,12 +192,15 @@ grant {
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
 
-  // for java.net.http.HttpClient, which checks the URL rather than the socket. Any loopback path:
+  // for java.net.http.HttpClient, which checks the URL rather than the socket. Any path:
   // HttpJdkSolrClientTest and ConcurrentUpdateJdkSolrClientTest use /solr and /noOneThere, and the
   // stand-in programs the CATS harness tests drive answer wherever they like.
-  permission "java.net.URLPermission" "http://127.0.0.1:*/-", "HEAD,GET,PUT,POST:*";
-  permission "java.net.URLPermission" "https://127.0.0.1:*/-", "HEAD,GET,PUT,POST:*";
-  permission "java.net.URLPermission" "socket://127.0.0.1:*", "CONNECT:*";
+  // JDK-8305346: a URLPermission with a numeric IPv4 host cannot be parsed while the policy is
+  // bootstrapping, so such a grant is dropped with a warning; the SocketPermissions above are what
+  // actually confine these to loopback, so the host is a wildcard here.
+  permission "java.net.URLPermission" "http://*:*/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://*:*/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://*:*", "CONNECT:*";
 
   permission "java.net.URLPermission" "http://localhost:*/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://localhost:*/-", "HEAD,GET,PUT,POST:*";
@@ -301,4 +304,8 @@ grant {
 
 grant {
     permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+    // OtelRuntimeJvmMetrics opens a JFR recording stream for the JVM metrics
+    permission jdk.jfr.FlightRecorderPermission "registerEvent";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
 };
