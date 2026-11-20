@@ -549,6 +549,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   }
 
   public void testGlobRTGSubqueryUsesUnrequestedStoredField() {
+    // Do not hard-commit the shared fixture that other tests expect to stay in the tlog.
+    assertU(delI("99"));
     assertU(adoc("id", "7783", "val_i", "4", "subject", "aaa"));
     try {
       for (boolean committed : new boolean[] {false, true}) {
