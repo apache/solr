@@ -24,3 +24,5 @@
 
 lib/
 test-lib/
+
+/monitoring/dev/.env
