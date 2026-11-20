@@ -564,7 +564,7 @@ public class CollectionHandlingUtils {
         srsp = shardHandler.takeCompletedOrError();
         if (srsp != null) {
           if (srsp.getSolrResponse().getResponse() == null) {
-            NamedList<Object> response = new NamedList<>();
+            NamedList<Object> response = new SimpleOrderedMap<>();
             response.add("STATUS", "failed");
             return response;
           }

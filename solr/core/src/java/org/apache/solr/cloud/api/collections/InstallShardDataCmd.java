@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -168,14 +168,11 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
       NamedList<Object> successes = (NamedList<Object>) results.get("success");
       failures.forEach(
           (replicaKey, value) -> {
-            successes.add(
-                replicaKey,
-                new NamedList<>(
-                    Map.of(
-                        "explanation",
-                        "Core install failed, but is now recovering from the leader",
-                        "failure",
-                        value)));
+            NamedList<Object> recovering = new SimpleOrderedMap<>();
+            recovering.add(
+                "explanation", "Core install failed, but is now recovering from the leader");
+            recovering.add("failure", value);
+            successes.add(replicaKey, recovering);
           });
       results.remove("failure");
     } else {

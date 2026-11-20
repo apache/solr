@@ -942,8 +942,8 @@ curl 'http://localhost:8983/api/cluster/overseer'
   "leader":"127.0.1.1:8983_solr",
   "overseer_queue_size":0,
   "overseer_collection_queue_size":2,
-  "overseer_operations":[
-    "createcollection",{
+  "overseer_operations":{
+    "createcollection":{
       "requests":2,
       "errors":0,
       "avgRequestsPerSecond":0.7467088842794136,
@@ -955,10 +955,10 @@ curl 'http://localhost:8983/api/cluster/overseer'
       "95thPcRequestTime":0.519016,
       "99thPcRequestTime":0.519016,
       "999thPcRequestTime":0.519016},
-    "removeshard",{}
-  ],
-  "collection_operations":[
-    "splitshard",{
+    "removeshard":{}
+  },
+  "collection_operations":{
+    "splitshard":{
       "requests":1,
       "errors":1,
       "recent_failures":[{
@@ -980,8 +980,8 @@ curl 'http://localhost:8983/api/cluster/overseer'
       "95thPcRequestTime":5904.384052,
       "99thPcRequestTime":5904.384052,
       "999thPcRequestTime":5904.384052},
-    "..."
-  ],
+    "...":{}
+  },
   "overseer_queue":[
     "..."
   ]

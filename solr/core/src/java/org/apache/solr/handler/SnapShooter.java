@@ -398,7 +398,7 @@ public class SnapShooter {
   protected void deleteNamedSnapshot(ReplicationHandler replicationHandler) {
     log.info("Deleting snapshot: {}", snapshotName);
 
-    NamedList<Object> details = new NamedList<>();
+    NamedList<Object> details = new SimpleOrderedMap<>();
     details.add("startTime", Instant.now().toString());
     details.add("snapshotName", snapshotName);
 

@@ -23,7 +23,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.UpgradeCoreIndex;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -71,7 +71,7 @@ class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
 
     if (isAsync) {
-      final var opResponse = new NamedList<>();
+      final var opResponse = new SimpleOrderedMap<>();
       V2ApiUtils.squashIntoNamedListWithoutHeader(opResponse, response);
       // REQUESTSTATUS is returning the inner response NamedList as a positional array
       // ([k1,v1,k2,v2...]).

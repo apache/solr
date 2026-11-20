@@ -17,15 +17,20 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
+import org.apache.solr.response.JSONWriter;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,6 +47,22 @@ public class DeleteBackupCmdTest extends SolrTestCase {
         repository.createDirectoryURI(
             createTempDir("backup_" + UUID.randomUUID()).toAbsolutePath().toString());
     new BackupFilePaths(repository, backupUri).createIncrementalBackupFolders();
+  }
+
+  @Test
+  public void testPurgeSummaryJsonFormat() throws Exception {
+    NamedList<Object> results = new SimpleOrderedMap<>();
+    new DeleteBackupCmd(null).purge(repository, backupUri, results);
+    for (String style : new String[] {"flat", "arrarr"}) {
+      StringWriter writer = new StringWriter();
+      JSONWriter.write(writer, false, style, results);
+      Map<?, ?> json = (Map<?, ?>) Utils.fromJSONString(writer.toString());
+      assertTrue(json.get("deleted") instanceof Map);
+      Map<?, ?> deleted = (Map<?, ?>) json.get("deleted");
+      assertEquals(0L, ((Number) deleted.get("numBackupIds")).longValue());
+      assertEquals(0L, ((Number) deleted.get("numShardBackupIds")).longValue());
+      assertEquals(0L, ((Number) deleted.get("numIndexFiles")).longValue());
+    }
   }
 
   @Test

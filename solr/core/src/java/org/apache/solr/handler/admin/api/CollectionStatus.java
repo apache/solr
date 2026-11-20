@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ColStatus;
 import org.apache.solr.jersey.PermissionName;
@@ -71,7 +72,7 @@ public class CollectionStatus extends AdminAPIBase implements CollectionStatusAp
     params.setNonNull(ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP, rawSizeSamplingPercent);
     params.setNonNull(ColStatus.SIZE_INFO_PROP, sizeInfo);
 
-    final var nlResponse = new NamedList<>();
+    final var nlResponse = new SimpleOrderedMap<>();
     populateColStatusData(coreContainer, new ZkNodeProps(params), nlResponse);
 
     final Object rawStatus = nlResponse.get(collectionName);
