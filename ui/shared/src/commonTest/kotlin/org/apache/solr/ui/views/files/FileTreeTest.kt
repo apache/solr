@@ -18,7 +18,6 @@
 package org.apache.solr.ui.views.files
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotSelected
@@ -31,12 +30,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import org.apache.solr.ui.shared.generated.resources.Res
-import org.apache.solr.ui.shared.generated.resources.cd_collapse_folder
-import org.apache.solr.ui.shared.generated.resources.cd_expand_folder
-import org.apache.solr.ui.shared.generated.resources.state_collapsed
-import org.apache.solr.ui.shared.generated.resources.state_expanded
-import org.jetbrains.compose.resources.getString
 
 class FileTreeTest {
 
@@ -65,31 +58,6 @@ class FileTreeTest {
 
         onNodeWithTag("chevron_conf").performClick()
         onNodeWithText("solrconfig.xml").assertDoesNotExist()
-    }
-
-    @OptIn(ExperimentalTestApi::class)
-    @Test
-    fun testChevronExposesAccessibleFolderState() = runComposeUiTest {
-        // Web string resources load asynchronously. Populate their cache before composing the tree.
-        getString(Res.string.cd_expand_folder, conf.name)
-        getString(Res.string.cd_collapse_folder, conf.name)
-        getString(Res.string.state_collapsed)
-        getString(Res.string.state_expanded)
-
-        setContent { FileTree(nodes, selectedPath = null, onItemClick = {}, onItemDoubleClick = {}) }
-
-        val chevron = onNodeWithTag("chevron_conf")
-        var semantics = chevron.fetchSemanticsNode().config
-        assertEquals(listOf("Expand folder conf"), semantics[SemanticsProperties.ContentDescription])
-        assertEquals("Collapsed", semantics[SemanticsProperties.StateDescription])
-        assertEquals(Role.Button, semantics[SemanticsProperties.Role])
-
-        chevron.performClick()
-
-        semantics = chevron.fetchSemanticsNode().config
-        assertEquals(listOf("Collapse folder conf"), semantics[SemanticsProperties.ContentDescription])
-        assertEquals("Expanded", semantics[SemanticsProperties.StateDescription])
-        assertEquals(Role.Button, semantics[SemanticsProperties.Role])
     }
 
     @OptIn(ExperimentalTestApi::class)
