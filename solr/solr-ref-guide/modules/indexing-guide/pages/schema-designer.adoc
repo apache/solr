@@ -50,7 +50,6 @@ image::schema-designer/new-schema.png[image,width=500]
 Choose a short name that reflects the intended use case for your new schema. You'll need to choose a source schema to copy as the starting point for your new schema.
 Solr includes a `_default` schema which provides a good starting place for building a custom schema for your search application.
 Use the *Language(s)* selector in the schema editor to add language-specific text analysis from the built-in `_multilingual` configset.
-With the slim distribution, upload `_multilingual` from the full distribution to ZooKeeper before adding built-in languages.
 Once a schema is published, it can be used to create new schemas and will be listed in the *Copy from* drop-down list in the dialog.
 
 Once you create the new schema, the next step is to upload or paste a sample of the data you intend to index into Solr.
