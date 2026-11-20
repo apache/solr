@@ -672,9 +672,6 @@ So you should query a multivalued vector fields following the same syntax:
 &someParents=color_s:RED
 
 In terms of rendering the results, you need the child transformer if you want to output them flat (you can choose to only return the best vector per result or all vectors):
-
-The same transformer syntax applies when the vector field uses `useRawVectorsAsStored="true"` and `stored="false"`.
-
 All Children
 [source,text]
 fl=id,vector_multivalued,[child fl="vector_multivalued"]

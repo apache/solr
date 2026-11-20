@@ -103,7 +103,7 @@ public class SolrDocumentFetcher {
   private final Set<String> allStored;
 
   private final Set<String> dvsCanSubstituteStored;
-  private final Set<String> derivedStoredVectorFields;
+  private final Set<String> rawVectorsFields;
 
   /** Contains the names/patterns of all docValues=true,stored=false fields in the schema. */
   private final Set<String> allNonStoredDVs;
@@ -142,7 +142,7 @@ public class SolrDocumentFetcher {
     this.largeFields = template.largeFields;
     this.dvsCanSubstituteStored = template.dvsCanSubstituteStored;
     this.allStored = template.allStored;
-    this.derivedStoredVectorFields = template.derivedStoredVectorFields;
+    this.rawVectorsFields = template.rawVectorsFields;
     this.storedHighlightFieldNames = template.indexedFieldNames;
     this.indexedFieldNames = template.indexedFieldNames;
     this.storedFields = storedFields;
@@ -220,8 +220,7 @@ public class SolrDocumentFetcher {
     this.largeFields = Collections.unmodifiableSet(storedLargeFields);
     this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
-    this.derivedStoredVectorFields =
-        Collections.unmodifiableSet(vectorFieldsWithRawVectorsAsStored);
+    this.rawVectorsFields = Collections.unmodifiableSet(vectorFieldsWithRawVectorsAsStored);
     this.storedFields = null; // template docFetcher should throw NPE if used directly
     this.storedHighlightFieldNames = new Collection[1];
     this.indexedFieldNames = new Collection[1];
@@ -788,26 +787,32 @@ public class SolrDocumentFetcher {
     return nonStoredDVsWithoutCopyTargets;
   }
 
-  public Set<String> calcRawVectorFieldsForReturn(ReturnFields returnFields) {
-    if (derivedStoredVectorFields.isEmpty()) {
-      return Set.of();
+  private Set<String> getRawVectorFieldsFrom(ReturnFields returnFields) {
+    if (rawVectorsFields.isEmpty()) {
+      return new HashSet<>();
     }
 
     if (returnFields.returnsAllFields()) {
-      return new HashSet<>(derivedStoredVectorFields);
+      return new HashSet<>(rawVectorsFields);
     }
 
     if (returnFields.hasPatternMatching()) {
-      return derivedStoredVectorFields.stream().filter(returnFields::loadsField).collect(toSet());
+      return rawVectorsFields.stream().filter(returnFields::loadsField).collect(toSet());
     } else {
       return ofNullable(returnFields.getLuceneFieldNames())
-          .map(fields -> fields.stream().filter(derivedStoredVectorFields::contains))
-          .orElseGet(() -> derivedStoredVectorFields.stream().filter(returnFields::loadsField))
+          .map(fields -> fields.stream().filter(rawVectorsFields::contains))
+          .orElseGet(() -> rawVectorsFields.stream().filter(returnFields::loadsField))
           .collect(Collectors.toSet());
     }
   }
 
-  public void decorateWithRawVectorFields(
+  /** Adds raw vector values for the fields requested by {@code returnFields}. */
+  public void decorateRawVectorFields(SolrDocument sdoc, int luceneDocId, ReturnFields returnFields)
+      throws IOException {
+    decorateRawVectorFields(sdoc, luceneDocId, getRawVectorFieldsFrom(returnFields));
+  }
+
+  private void decorateRawVectorFields(
       SolrDocument sdoc, int luceneDocId, Set<String> vectorFieldNames) throws IOException {
     if (vectorFieldNames.isEmpty()) {
       return;
@@ -820,24 +825,22 @@ public class SolrDocumentFetcher {
     final int localId = luceneDocId - leafReaderContext.docBase;
 
     for (String vectorFieldName : vectorFieldNames) {
-      SchemaField schemaField = searcher.getSchema().getFieldOrNull(vectorFieldName);
-      if (schemaField == null || !(schemaField.getType() instanceof DenseVectorField vectorField)) {
-        continue;
-      }
+      DenseVectorField vectorField =
+          (DenseVectorField) searcher.getSchema().getField(vectorFieldName).getType();
 
-      KnnVectorValues vectorValues =
+      KnnVectorValues segmentVectorValues =
           switch (vectorField.getVectorEncoding()) {
             case FLOAT32 -> leafReader.getFloatVectorValues(vectorFieldName);
             case BYTE -> leafReader.getByteVectorValues(vectorFieldName);
           };
 
-      if (vectorValues == null) {
+      if (segmentVectorValues == null) {
         continue;
       }
 
-      KnnVectorValues.DocIndexIterator iterator = vectorValues.iterator();
+      KnnVectorValues.DocIndexIterator iterator = segmentVectorValues.iterator();
       if (iterator.advance(localId) == localId) {
-        sdoc.setField(vectorFieldName, vectorValueAsNumbers(vectorValues, iterator.index()));
+        sdoc.setField(vectorFieldName, getRawVector(segmentVectorValues, iterator.index()));
       }
     }
   }
@@ -864,7 +867,7 @@ public class SolrDocumentFetcher {
     RetrieveFieldsOptimizer(SolrReturnFields solrReturnFields) {
       this.storedFields = calcStoredFieldsForReturn(solrReturnFields);
       this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
-      this.rawVectorFields = calcRawVectorFieldsForReturn(solrReturnFields);
+      this.rawVectorFields = getRawVectorFieldsFrom(solrReturnFields);
       this.solrReturnFields = solrReturnFields;
 
       if (storedFields != null && dvsCanSubstituteStored.containsAll(storedFields)) {
@@ -993,7 +996,7 @@ public class SolrDocumentFetcher {
         if (returnDVFields()) {
           decorateDocValueFields(sdoc, luceneDocId, getDvFields(), reuseDvIters);
         }
-        decorateWithRawVectorFields(sdoc, luceneDocId, rawVectorFields);
+        decorateRawVectorFields(sdoc, luceneDocId, rawVectorFields);
       } catch (IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -1004,9 +1007,9 @@ public class SolrDocumentFetcher {
     }
   }
 
-  private static List<Number> vectorValueAsNumbers(KnnVectorValues vectorValues, int ord)
+  private static List<Number> getRawVector(KnnVectorValues segmentVectorValues, int ord)
       throws IOException {
-    return switch (vectorValues) {
+    return switch (segmentVectorValues) {
       case FloatVectorValues floatValues -> {
         float[] vector = floatValues.vectorValue(ord);
         List<Number> values = new ArrayList<>(vector.length);
@@ -1025,7 +1028,7 @@ public class SolrDocumentFetcher {
       }
       default ->
           throw new IllegalStateException(
-              "Unsupported vector values: " + vectorValues.getClass().getName());
+              "Unsupported vector values: " + segmentVectorValues.getClass().getName());
     };
   }
 }

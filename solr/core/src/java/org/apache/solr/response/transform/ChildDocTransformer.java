@@ -388,6 +388,7 @@ class ChildDocTransformer extends DocTransformer {
   private List<Number> extractFloatVector(Collection<Object> fieldValues) {
     return fieldValues.stream()
         // If field values are Number instances that means they come from the vector values
+        // On the other hand, if they are StoredField instances, they come from the stored field
         .map(
             value ->
                 value instanceof StoredField storedField
@@ -404,10 +405,10 @@ class ChildDocTransformer extends DocTransformer {
         extractedVector.add(byteVector.bytes[i]);
       }
       return extractedVector;
+    } else {
+      // If field values are Number instances that means they come from the vector values
+      return singleVector.stream().map(Number.class::cast).<Number>map(Number::byteValue).toList();
     }
-
-    // If field values are Number instances that means they come from the vector values
-    return singleVector.stream().map(Number.class::cast).<Number>map(Number::byteValue).toList();
   }
 
   private static String getLastPath(String path) {

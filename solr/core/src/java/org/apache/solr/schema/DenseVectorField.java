@@ -320,24 +320,17 @@ public class DenseVectorField extends FloatPointField {
     if (field.stored() && field.useRawVectorsAsStored()) {
       log.warn(
           "You set both \"stored\"=\"true\" and \"useRawVectorsAsStored\"=\"true\" on field '{}', there is no benefit in this. "
-              + "Stored values are not used for retrieval because \"useRawVectorsAsStored\"=true; consider stored=false to save space. "
-              + "To choose the best option for you, please refer to the reference guide",
+              + "Stored values are not used for retrieval because \"useRawVectorsAsStored\"=true; consider stored=false to save space. ",
           field.getName());
     }
 
-    switch (vectorEncoding) {
-      case FLOAT32:
-      case BYTE:
-        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
-          if (log.isWarnEnabled()) {
-            log.warn(
-                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}."
-                    + " It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
-                dimension,
-                field.getName(),
-                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
-          }
-        }
+    if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS && log.isWarnEnabled()) {
+      log.warn(
+          "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}."
+              + " It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+          dimension,
+          field.getName(),
+          KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
     }
   }
 

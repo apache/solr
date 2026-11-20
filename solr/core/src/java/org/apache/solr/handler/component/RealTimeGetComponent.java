@@ -359,8 +359,7 @@ public class RealTimeGetComponent extends SearchComponent {
         docFetcher.decorateDocValueFields(
             doc, docid, docFetcher.getNonStoredDVsUsedAsStored(), reuseDvIters);
 
-        docFetcher.decorateWithRawVectorFields(
-            doc, docid, docFetcher.calcRawVectorFieldsForReturn(rsp.getReturnFields()));
+        docFetcher.decorateRawVectorFields(doc, docid, rsp.getReturnFields());
 
         if (null != transformer) {
           if (null == resultContext) {

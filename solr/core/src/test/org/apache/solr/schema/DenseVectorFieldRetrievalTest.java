@@ -51,6 +51,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
@@ -84,6 +85,11 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
 
   private SolrClient client;
 
+  /**
+   * Tests raw vector retrieval for all four combinations of {@code indexed} and {@code stored}.
+   * Each test runs once per combination. The retrieved vector values must be the same in every
+   * configuration.
+   */
   public DenseVectorFieldRetrievalTest(
       @Name("indexed") boolean indexed, @Name("stored") boolean stored) {
     this.indexed = indexed;
@@ -112,7 +118,7 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
         .withConfigSet(
             ExternalPaths.SOURCE_HOME.resolve("core/src/test-files/solr/collection1/conf"))
         .withConfigFile("solrconfig.xml")
-        .withSchemaFile("schema-densevector-raw-rtg.xml")
+        .withSchemaFile("schema-densevector-raw.xml")
         .create();
 
     client = solrTestRule.getSolrClient();
@@ -185,6 +191,26 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
     assertEquals(1, docs.size());
     assertEquals(Set.of(CommonParams.ID), docs.getFirst().keySet());
     assertEquals("0", docs.getFirst().getFieldValue(CommonParams.ID));
+  }
+
+  @Test
+  public void selectWithExplicitFieldList_shouldReturnVectorFields() throws Exception {
+    var query =
+        new SolrQuery("id:0")
+            .setFields(
+                CommonParams.ID,
+                SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME,
+                SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME);
+
+    var docs = new QueryRequest("/select", query).process(client).getResults();
+
+    assertEquals(1L, docs.getNumFound());
+    assertEquals(1, docs.size());
+    assertEquals("0", docs.getFirst().getFieldValue(CommonParams.ID));
+    assertEquals(
+        A_FLOAT_VECTOR, docs.getFirst().getFieldValue(SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME));
+    assertEquals(
+        A_BYTE_VECTOR, docs.getFirst().getFieldValue(SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME));
   }
 
   @Test
@@ -331,32 +357,13 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
   }
 
   @Test
-  public void selectWithExplicitFieldList_shouldReturnVectorFields() throws Exception {
-    var query =
-        new SolrQuery("id:0")
-            .setFields(
-                CommonParams.ID,
-                SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME,
-                SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME);
-
-    var docs = new QueryRequest("/select", query).process(client).getResults();
-
-    assertEquals(1L, docs.getNumFound());
-    assertEquals(1, docs.size());
-    assertEquals("0", docs.getFirst().getFieldValue(CommonParams.ID));
-    assertEquals(
-        A_FLOAT_VECTOR, docs.getFirst().getFieldValue(SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME));
-    assertEquals(
-        A_BYTE_VECTOR, docs.getFirst().getFieldValue(SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME));
-  }
-
-  @Test
   public void realtimeGetWithFieldPattern_shouldReturnMatchingFloatVectorField() throws Exception {
     var doc = realTimeGet("0", of(Set.of(CommonParams.ID, "vector_single_value_float*")));
 
     assertEquals(Set.of(CommonParams.ID, SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME), doc.keySet());
     assertEquals("0", doc.getFieldValue(CommonParams.ID));
     assertEquals(A_FLOAT_VECTOR, doc.getFieldValue(SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME));
+    assertNull(doc.getFieldValue(SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME));
   }
 
   @Test
@@ -367,6 +374,7 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
     assertEquals(Set.of(CommonParams.ID, SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME), doc.keySet());
     assertEquals("0", doc.getFieldValue(CommonParams.ID));
     assertEquals(A_BYTE_VECTOR, doc.getFieldValue(SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME));
+    assertNull(doc.getFieldValue(SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME));
   }
 
   @Test
@@ -385,10 +393,13 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
 
       searcher
           .getDocFetcher()
-          .decorateWithRawVectorFields(
+          .decorateRawVectorFields(
               prepopulatedDocWithStoredValues,
               docId,
-              Set.of(SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME, SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME));
+              new SolrReturnFields(
+                  Set.of(
+                      SINGLE_VALUE_FLOAT_ENCODED_FIELD_NAME, SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME),
+                  null));
 
       assertEquals(
           A_FLOAT_VECTOR,
