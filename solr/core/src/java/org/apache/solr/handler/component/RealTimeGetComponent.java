@@ -353,7 +353,9 @@ public class RealTimeGetComponent extends SearchComponent {
         if (docid < 0) continue;
 
         SolrIndexSearcher searcher = searcherInfo.getSearcher();
-        if (docFetcher == null || searcher != fieldSelectionSearcher) {
+        @SuppressWarnings("ReferenceEquality") // cache key is the searcher instance
+        final boolean searcherChanged = docFetcher == null || searcher != fieldSelectionSearcher;
+        if (searcherChanged) {
           fieldSelectionSearcher = searcher;
           docFetcher = searcher.getDocFetcher();
           storedFields =
