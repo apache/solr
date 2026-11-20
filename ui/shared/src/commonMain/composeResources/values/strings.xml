@@ -32,6 +32,8 @@
   <!-- Content Descriptions (cd) -->
   <string name="cd_back_navigation">Back Navigation</string>
   <string name="cd_clear_field">Clear field</string>
+  <string name="cd_collapse_folder">Collapse folder %1$s</string>
+  <string name="cd_expand_folder">Expand folder %1$s</string>
   <string name="cd_solr_logo">Solr Logo</string>
 
   <!-- Descriptions (desc) -->
@@ -47,6 +49,10 @@
   <string name="error_solr_host_not_found">Solr host could not be found.</string>
   <string name="error_unknown">An unknown error occurred.</string>
   <string name="error_invalid_credentials">Invalid credentials. Please try again.</string>
+
+  <!-- State Descriptions -->
+  <string name="state_collapsed">Collapsed</string>
+  <string name="state_expanded">Expanded</string>
 
   <!-- Navigation (nav) -->
   <string name="nav_cluster">Cluster</string>
