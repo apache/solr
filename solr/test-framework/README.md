@@ -66,7 +66,7 @@ The ones you actually reach for:
 
 ## See also
 
-- [`dev-docs/cats.adoc`](../../dev-docs/cats.adoc) — the CATS harness: the generic core and the Solr layer on top of it.
+- [`dev-docs/cats.adoc`](../../dev-docs/cats.adoc) — how to write and run a CATS test for Solr.
 - [`solr/packaging/README.md`](../packaging/README.md) — the CLI suites and the distribution they run against.
 - [`dev-docs/writing-tests.adoc`](../../dev-docs/writing-tests.adoc) — which kind of test to write.
 - [`dev-docs/admin-ui-tests.md`](../../dev-docs/admin-ui-tests.md) — the Selenium browser tests.

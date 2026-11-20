@@ -171,7 +171,7 @@ When one fails, start with the artifacts rather than the stack trace: `SolrCatsT
 
 * `solr/test-framework/README.md` — what the framework provides and how to depend on it.
 * `solr/packaging/README.md` — the distribution, CATS and the BATS suites it is replacing.
-* xref:cats.adoc[cats.adoc] — the CATS harness in detail: its vocabulary, portability rails and the Solr layer on top.
+* xref:cats.adoc[cats.adoc] — writing a CATS test for Solr: running, a first test, the DSL and debugging failures.
 * link:admin-ui-tests.md[admin-ui-tests.md] — how the browser suite works and what it skips.
 * `./gradlew helpTests` (`dev-docs/gradle-help/tests.txt`) — the guide to running tests. `./gradlew -p solr/core testOpts` lists every test property with its default and current value.
 * xref:solr-source-code.adoc[solr-source-code.adoc] — building, and what to do about a test that only fails for you.
