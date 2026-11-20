@@ -69,7 +69,7 @@ public class SolrCLIPicocliTest extends SolrTestCase {
 
   /**
    * Running {@code bin/solr} with no command must print usage rather than throwing picocli's
-   * "Parsed command is not a Method, Runnable or Callable", and exit 2 like an unknown command.
+   * "Parsed command is not a Method, Runnable or Callable".
    */
   @Test
   public void testNoArgsPrintsUsageAndExitsNonZero() {
@@ -84,7 +84,6 @@ public class SolrCLIPicocliTest extends SolrTestCase {
     assertTrue("bare invocation should print usage, got: " + out, out.toString().contains("solr"));
   }
 
-  /** Top-level {@code --help} / {@code -h} must succeed (exit 0). */
   @Test
   public void testRootHelpExitsZero() {
     for (String helpOption : new String[] {"-h", "--help"}) {
@@ -95,10 +94,6 @@ public class SolrCLIPicocliTest extends SolrTestCase {
     }
   }
 
-  /**
-   * Parent commands with no sub-command print usage and exit 2 (incomplete command), while their
-   * explicit {@code --help} still exits 0 (covered by {@link #testEveryCommandSupportsHelp}).
-   */
   @Test
   public void testParentCommandsWithoutSubcommandExitTwo() {
     for (String parent : new String[] {"zk", "snapshot", "package"}) {
@@ -108,17 +103,6 @@ public class SolrCLIPicocliTest extends SolrTestCase {
       assertEquals(
           "'bin/solr " + parent + "' with no sub-command should exit 2", 2, cmd.execute(parent));
     }
-  }
-
-  /** Older {@code bin/solr} scripts sent an empty argument for top-level help; still strip it. */
-  @Test
-  public void testEmptyLeadingArgIsStripped() {
-    assertArrayEquals(new String[0], SolrCLI.stripEmptyLeadingArg(new String[] {""}));
-    assertArrayEquals(
-        new String[] {"status"}, SolrCLI.stripEmptyLeadingArg(new String[] {"", "status"}));
-    assertArrayEquals(
-        new String[] {"status"}, SolrCLI.stripEmptyLeadingArg(new String[] {"status"}));
-    assertArrayEquals(new String[0], SolrCLI.stripEmptyLeadingArg(new String[0]));
   }
 
   /**

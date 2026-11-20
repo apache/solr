@@ -119,9 +119,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   @picocli.CommandLine.Spec private picocli.CommandLine.Model.CommandSpec spec;
 
   /**
-   * Invoked by picocli when {@code bin/solr} is run without a subcommand. Prints usage and exits 2,
-   * matching picocli's default for a missing required subcommand and {@code solr nosuchcommand}. An
-   * explicit {@code --help} is handled by {@link HelpMixin} and exits 0.
+   * Invoked by picocli when {@code bin/solr} is run without a subcommand. Prints usage and exits 2.
    */
   @Override
   public Integer call() {
@@ -145,22 +143,10 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
       SSLConfigurationsFactory.current().init();
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
-      exit(commandLine.execute(stripEmptyLeadingArg(args)));
+      exit(commandLine.execute(args));
     } else {
       exit(parseWithCommonsCli(args));
     }
-  }
-
-  /**
-   * Drops a leading empty argument. Kept for back-compat with older {@code bin/solr} scripts that
-   * sent {@code ""} for top-level help; current scripts pass {@code --help} instead.
-   */
-  @VisibleForTesting
-  static String[] stripEmptyLeadingArg(String[] args) {
-    if (args.length > 0 && args[0].isEmpty()) {
-      return java.util.Arrays.copyOfRange(args, 1, args.length);
-    }
-    return args;
   }
 
   /**
