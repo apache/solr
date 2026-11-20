@@ -26,12 +26,6 @@ examples:
       - any-glob-to-any-file:
           - solr/example/**
 
-# Add 'bats-tests' label
-bats-tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/packaging/test/**
-
 # Add 'docker' label for changes to docker
 docker:
   - changed-files:
