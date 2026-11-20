@@ -41,6 +41,9 @@ teardown() {
   assert_output --partial "ERROR: Solr is not running in cloud mode"
 
   run ! solr assert --cloud http://localhost:${SOLR_PORT} --exitcode
+
+  run solr assert --cloud-nodes 1 --solr-url http://localhost:${SOLR_PORT} --timeout 0 --exitcode
+  assert_failure 1
 }
 
 @test "assert for cloud mode" {
@@ -55,4 +58,24 @@ teardown() {
   assert_output --partial "ERROR: Solr is not running in standalone mode"
 
   run ! solr assert --not-cloud http://localhost:${SOLR_PORT} --exitcode
+
+  run solr assert --cloud-nodes 1 --solr-url http://localhost:${SOLR_PORT}
+  assert_success
+  refute_output --partial "ERROR"
+
+  run solr assert --cloud-nodes 2 --solr-url http://localhost:${SOLR_PORT} --timeout 0 --exitcode
+  assert_failure 1
+
+  mkdir -p "${SOLR_HOME}/node2"
+  cp "${SOLR_TIP}/server/solr/solr.xml" "${SOLR_HOME}/node2/solr.xml"
+  run solr start -p "${SOLR2_PORT}" --solr-home "${SOLR_HOME}/node2" -z "localhost:${ZK_PORT}"
+  assert_success
+
+  run solr assert --cloud-nodes 2 --solr-url http://localhost:${SOLR_PORT} --timeout 5000
+  assert_success
+  refute_output --partial "ERROR"
+
+  run solr assert --cloud-nodes 2 --solr-url http://localhost:${SOLR2_PORT} --timeout 5000
+  assert_success
+  refute_output --partial "ERROR"
 }

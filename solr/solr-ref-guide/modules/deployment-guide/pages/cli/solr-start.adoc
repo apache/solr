@@ -22,7 +22,6 @@
 = bin/solr start
 :page-toclevels: 2
 
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 

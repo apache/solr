@@ -113,6 +113,18 @@ public class NodeRoles {
       public Set<String> supportedModes() {
         return Set.of(MODE_ON, MODE_OFF);
       }
+    },
+
+    ZOOKEEPER_QUORUM("zookeeper_quorum") {
+      @Override
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ON, MODE_OFF);
+      }
+
+      @Override
+      public String modeWhenRoleIsAbsent() {
+        return MODE_OFF;
+      }
     };
 
     public final String roleName;

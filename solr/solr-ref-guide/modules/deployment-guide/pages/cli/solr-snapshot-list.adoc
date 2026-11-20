@@ -22,7 +22,6 @@
 = bin/solr snapshot list
 :page-toclevels: 2
 
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
