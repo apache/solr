@@ -153,7 +153,6 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.security.SolrNodeKeyPair;
-import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
@@ -432,10 +431,6 @@ public class CoreContainer {
     allowPathBuilder.addPath(cfg.getSolrHome());
     allowPathBuilder.addPath(cfg.getCoreRootDirectory());
     allowPathBuilder.addPath(cfg.getConfigSetBaseDirectory());
-    String installDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
-    if (installDir != null) {
-      allowPathBuilder.addPath(Path.of(installDir).resolve("server/solr/configsets"));
-    }
     if (cfg.getSolrDataHome() != null) {
       allowPathBuilder.addPath(cfg.getSolrDataHome());
     }

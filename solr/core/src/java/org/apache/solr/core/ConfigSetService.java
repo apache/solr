@@ -118,7 +118,7 @@ public abstract class ConfigSetService {
     try {
       // _default conf
       bootstrapDefaultConf();
-      bootstrapMultilingualConf(coreContainer);
+      bootstrapMultilingualConf();
 
       // bootstrap_confdir
       String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
@@ -157,7 +157,7 @@ public abstract class ConfigSetService {
     this.uploadConfig(confName, configPath);
   }
 
-  private void bootstrapMultilingualConf(CoreContainer coreContainer) throws IOException {
+  private void bootstrapMultilingualConf() throws IOException {
     if (checkConfigExists(ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME)) {
       return;
     }
@@ -166,7 +166,6 @@ public abstract class ConfigSetService {
       return;
     }
     Path configDir = Path.of(installDir).resolve("server/solr/configsets/_multilingual/conf");
-    coreContainer.assertPathAllowed(configDir);
     if (Files.isDirectory(configDir)) {
       uploadConfig(ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME, configDir);
     }

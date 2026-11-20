@@ -29,9 +29,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -106,6 +108,33 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
         cc.getConfigSetService()
             .getAllConfigFiles("_multilingual")
             .contains("lang/protwords_en.txt"));
+  }
+
+  @Test
+  public void testBootstrapMultilingualOutsideAllowedPaths() throws Exception {
+    var service = cc.getConfigSetService();
+    var allowedPaths = cc.getAllowPaths();
+    var originalAllowedPaths = Set.copyOf(allowedPaths);
+    String saved = "savedMultilingualForBootstrap";
+    service.copyConfig("_multilingual", saved);
+    try {
+      // TODO: Harden startup configset uploads with a shared allowPaths policy for both
+      // _default and _multilingual.
+      allowedPaths.clear();
+      expectThrows(
+          SolrException.class, () -> cc.assertPathAllowed(ExternalPaths.MULTILINGUAL_CONFIGSET));
+      service.deleteConfig("_multilingual");
+
+      ConfigSetService.createConfigSetService(cc);
+
+      assertNotNull(helper.loadLatestSchema("_multilingual").getFieldTypeByName("text_fr"));
+      assertTrue(allowedPaths.isEmpty());
+    } finally {
+      allowedPaths.addAll(originalAllowedPaths);
+      service.deleteConfig("_multilingual");
+      service.copyConfig(saved, "_multilingual");
+      service.deleteConfig(saved);
+    }
   }
 
   @Test
