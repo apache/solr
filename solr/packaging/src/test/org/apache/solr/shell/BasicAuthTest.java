@@ -123,6 +123,12 @@ public class BasicAuthTest extends SolrCatsTestCase {
   }
 
   @Test
+  public void startSucceedsWhenTheNodeRejectsUnauthenticatedRequests() {
+    run("solr stop --all");
+    run("solr start").assertContains("Happy searching!");
+  }
+
+  @Test
   public void adminUiStaticContentIsExceptedFromBasicAuth() {
     http("/solr/").assertStatus(200).assertHeaderContains("content-type: text/html");
   }

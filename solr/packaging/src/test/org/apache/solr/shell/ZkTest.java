@@ -77,6 +77,13 @@ public class ZkTest extends SolrCatsTestCase {
   }
 
   @Test
+  public void unreachableZooKeeperReportsAConnectionTimeout() {
+    runFail("solr zk ls / -z 127.0.0.1:1")
+        .assertContains("ZooKeeper did not respond within the connection timeout")
+        .assertNotContains("Could not complete ls operation");
+  }
+
+  @Test
   public void connectingViaVariousSolrUrlsAndZkHosts() {
     run("solr zk ls / --solr-url http://localhost:${SOLR_PORT}").assertContains("aliases.json");
     run("solr zk ls / --solr-connection http://localhost:${SOLR_PORT}")
