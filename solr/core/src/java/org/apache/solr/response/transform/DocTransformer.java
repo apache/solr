@@ -118,8 +118,8 @@ public abstract class DocTransformer {
 
   /**
    * Whether index-backed RealTime Get should retain its legacy document loading and conversion for
-   * this transformer, because its stored-field dependencies cannot be determined in advance.
-   * Prefer declaring dependencies with {@link #getExtraRequestFields()} where possible.
+   * this transformer, because its stored-field dependencies cannot be determined in advance. Prefer
+   * declaring dependencies with {@link #getExtraRequestFields()} where possible.
    */
   public boolean requiresFullDocumentForRTG() {
     return false;
