@@ -38,7 +38,7 @@
     catchall "text" field, and use that for searching.
 -->
 
-<schema name="default-config" version="1.7">
+<schema name="multilingual-config" version="1.7">
     <!-- attribute "name" is the name of this schema and is only used for display purposes.
        version="x.y" is Solr's version number for the schema syntax and
        semantics.  It should not normally be changed by applications.
