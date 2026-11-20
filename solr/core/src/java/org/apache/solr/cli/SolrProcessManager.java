@@ -72,7 +72,10 @@ public class SolrProcessManager {
                     ProcessHandle::pid,
                     ph ->
                         new SolrProcess(
-                            ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
+                            ph.pid(),
+                            parsePortFromProcess(ph).orElseThrow(),
+                            isProcessSsl(ph),
+                            parseAdvertisedHostFromProcess(ph))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
     String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR);
@@ -154,6 +157,15 @@ public class SolrProcessManager {
     return portStr.isPresent() ? portStr.map(Integer::parseInt) : Optional.empty();
   }
 
+  private String parseAdvertisedHostFromProcess(ProcessHandle ph) {
+    return arguments(ph).stream()
+        .filter(a -> a.startsWith("-Dsolr.host.advertise="))
+        .map(a -> a.substring(a.indexOf('=') + 1))
+        .filter(h -> !h.isBlank())
+        .findFirst()
+        .orElse("localhost");
+  }
+
   private boolean isProcessSsl(ProcessHandle ph) {
     return arguments(ph).stream()
         .anyMatch(
@@ -229,11 +241,20 @@ public class SolrProcessManager {
     }
   }
 
-  /** Represents a running Solr process */
-  public record SolrProcess(long pid, int port, boolean isHttps) {
+  /**
+   * Represents a running Solr process. {@code host} is the node's {@code solr.host.advertise}, or
+   * {@code localhost}: with TLS, the advertised name is the one its certificate is issued for.
+   */
+  public record SolrProcess(long pid, int port, boolean isHttps, String host) {
+
+    public SolrProcess(long pid, int port, boolean isHttps) {
+      this(pid, port, isHttps, "localhost");
+    }
 
     public String getLocalUrl() {
-      return String.format(Locale.ROOT, "%s://localhost:%s/solr", isHttps ? "https" : "http", port);
+      String urlHost = host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
+      return String.format(
+          Locale.ROOT, "%s://%s:%s/solr", isHttps ? "https" : "http", urlHost, port);
     }
   }
 }

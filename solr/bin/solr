@@ -518,6 +518,7 @@ function run_tool() {
 function wait_for_solr_ready() {
   local status_output
   if status_output=$(run_tool status -p "$SOLR_PORT_LISTEN" --max-wait-secs "$SOLR_START_WAIT" 2>&1); then
+    grep "^WARNING:" <<< "$status_output" || true
     return 0
   fi
   echo -e "Still not seeing Solr running on port $SOLR_PORT_LISTEN after $SOLR_START_WAIT seconds!"
