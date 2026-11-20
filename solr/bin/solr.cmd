@@ -828,11 +828,27 @@ IF "%SOLR_STOP_WAIT%"=="" (
 )
 IF "%SOLR_PORT_LISTEN%"=="" (
   IF "%STOP_ALL%"=="1" (
-    REM Stop all running Solr instances
+    REM Stop all running Solr instances. Nodes hosting an embedded ZooKeeper go last, so the
+    REM other local nodes can still reach ZooKeeper while they shut down. A node with embedded
+    REM ZooKeeper is the one also listening on its ZooKeeper client port (Solr port + 1000).
     set found_it=0
+    set "OTHER_PORTS="
+    set "ZK_PORTS="
     for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
       set SOME_SOLR_PORT=
       For /F "delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
+      if NOT "!SOME_SOLR_PORT!"=="" (
+        set /A ZK_CLIENT_PORT=!SOME_SOLR_PORT! + 1000
+        netstat -aon | find "TCP " | find ":0 " | find ":!ZK_CLIENT_PORT! " >nul 2>nul
+        IF !ERRORLEVEL! EQU 0 (
+          set "ZK_PORTS=!ZK_PORTS! !SOME_SOLR_PORT!"
+        ) ELSE (
+          set "OTHER_PORTS=!OTHER_PORTS! !SOME_SOLR_PORT!"
+        )
+      )
+    )
+    for %%p in (!OTHER_PORTS! !ZK_PORTS!) do (
+      set SOME_SOLR_PORT=%%p
       if NOT "!SOME_SOLR_PORT!"=="" (
         for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
           @REM j is the ip:port and k is the pid
