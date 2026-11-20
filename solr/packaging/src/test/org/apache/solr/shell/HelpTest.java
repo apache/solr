@@ -23,19 +23,41 @@ import org.junit.Test;
 public class HelpTest extends SolrCatsTestCase {
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18649")
   public void solrHelpFlagPrintsHelp() {
-    run("solr --help")
-        .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
-        .assertNotContains("ERROR");
+    for (String flag : new String[] {"--help", "-h"}) {
+      run("solr " + flag)
+          .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
+          .assertNotContains("ERROR");
+    }
   }
 
   @Test
   public void solrWithNoFlagsPrintsHelp() {
     runFail("solr")
-        .assertExitCode(1)
+        .assertExitCode(2)
         .assertContains(forCli("Usage: solr COMMAND OPTIONS", "usage: bin/solr"))
         .assertNotContains("ERROR");
+  }
+
+  @Test
+  public void zkRequiresASubcommand() {
+    checkParentHelp("zk", "bin/solr zk ls", "usage: bin/solr zk");
+  }
+
+  @Test
+  public void snapshotRequiresASubcommand() {
+    checkParentHelp("snapshot", "snapshot-create", "usage: bin/solr snapshot");
+  }
+
+  @Test
+  public void packageRequiresASubcommand() {
+    checkParentHelp("package", "Package Manager", "usage: bin/solr package");
+  }
+
+  @Test
+  public void helpPropagatesAJvmStartupFailure() {
+    env("SOLR_TOOL_OPTS", "-XX:SolrInvalidOptionForTest");
+    runFail("solr --help").assertExitCode(1).assertContains("Unrecognized VM option");
   }
 
   @Test
@@ -111,5 +133,17 @@ public class HelpTest extends SolrCatsTestCase {
   @Test
   public void postHelpFlagPrintsHelp() {
     run("solr post --help").assertContains("usage: bin/solr post").assertNotContains("ERROR");
+  }
+
+  private void checkParentHelp(String parent, String commonsMarker, String picocliMarker) {
+    runFail("solr " + parent)
+        .assertExitCode(2)
+        .assertContains(forCli(commonsMarker, picocliMarker))
+        .assertNotContains("ERROR");
+    for (String flag : new String[] {"--help", "-h"}) {
+      run("solr " + parent + " " + flag)
+          .assertContains(forCli(commonsMarker, picocliMarker))
+          .assertNotContains("ERROR");
+    }
   }
 }

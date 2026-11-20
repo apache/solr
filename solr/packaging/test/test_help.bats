@@ -22,45 +22,14 @@ setup() {
 }
 
 @test "solr help flag prints help" {
-  for flag in --help -h; do
-    run -0 solr "$flag"
-    assert_output_for_cli 'Usage: solr COMMAND OPTIONS' 'usage: bin/solr'
-    refute_output --partial 'ERROR'
-  done
-}
-@test "solr with no flags prints help" {
-  run -2 solr
+  run -1 solr --help
   assert_output_for_cli 'Usage: solr COMMAND OPTIONS' 'usage: bin/solr'
   refute_output --partial 'ERROR'
 }
-
-check_parent_help() {
-  local parent=$1 commons_marker=$2 picocli_marker=$3
-  run -2 solr "$parent"
-  assert_output_for_cli "$commons_marker" "$picocli_marker"
+@test "solr with no flags prints help" {
+  run -1 solr
+  assert_output_for_cli 'Usage: solr COMMAND OPTIONS' 'usage: bin/solr'
   refute_output --partial 'ERROR'
-  for flag in --help -h; do
-    run -0 solr "$parent" "$flag"
-    assert_output_for_cli "$commons_marker" "$picocli_marker"
-    refute_output --partial 'ERROR'
-  done
-}
-
-@test "zk requires a subcommand" {
-  check_parent_help zk 'bin/solr zk ls' 'usage: bin/solr zk'
-}
-
-@test "snapshot requires a subcommand" {
-  check_parent_help snapshot 'snapshot-create' 'usage: bin/solr snapshot'
-}
-
-@test "package requires a subcommand" {
-  check_parent_help package 'Package Manager' 'usage: bin/solr package'
-}
-
-@test "help propagates a JVM startup failure" {
-  run -1 env SOLR_TOOL_OPTS=-XX:SolrInvalidOptionForTest solr --help
-  assert_output --partial 'Unrecognized VM option'
 }
 
 @test "start help flag prints help" {
