@@ -221,6 +221,7 @@ private fun getMenuIcon(
 private fun isSectionAvailable(item: MainMenu): Boolean = when (item) {
     MainMenu.Cluster -> true
     MainMenu.Configsets -> true
+    MainMenu.IndexAndQuery -> true
     MainMenu.Environment -> true
     MainMenu.Logging -> true
     else -> false

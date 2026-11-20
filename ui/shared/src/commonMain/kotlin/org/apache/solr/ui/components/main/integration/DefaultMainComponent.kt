@@ -24,6 +24,8 @@ import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.di.DefaultConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
+import org.apache.solr.ui.components.indexquery.data.HttpIndexQueryRepository
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.logging.integration.DefaultLoggingComponent
 import org.apache.solr.ui.components.main.MainComponent
@@ -51,6 +53,8 @@ class DefaultMainComponent(
     }
 
     override val loggingComponent: LoggingComponent by lazy { DefaultLoggingComponent() }
+
+    override fun createIndexQueryViewModel(): IndexQueryViewModel = IndexQueryViewModel(HttpIndexQueryRepository(httpClient))
 
     override fun createMainViewModel(): MainViewModel = MainViewModel(destination = destination)
 }
