@@ -97,12 +97,12 @@ public class MoreLikeThisComponent extends SearchComponent {
         if (params.get(MoreLikeThisComponent.DIST_DOC_ID) == null) {
           if (rb.getResults().docList.size() == 0) {
             // return empty response
-            rb.rsp.add("moreLikeThis", new NamedList<DocList>());
+            rb.rsp.add("moreLikeThis", new SimpleOrderedMap<DocList>());
             return;
           }
           MoreLikeThisHandler.MoreLikeThisHelper mlt =
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
-          NamedList<NamedList<?>> mltQueryByDocKey = new NamedList<>();
+          NamedList<NamedList<?>> mltQueryByDocKey = new SimpleOrderedMap<>();
           QueryLimits queryLimits = QueryLimits.getCurrentLimits();
           SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
           for (DocIterator results = rb.getResults().docList.iterator(); results.hasNext(); ) {
@@ -142,7 +142,7 @@ public class MoreLikeThisComponent extends SearchComponent {
       List<MoreLikeThisHandler.InterestingTerm> terms,
       String uniqueField,
       String uniqueVal) {
-    final NamedList<String> mltQ = new NamedList<>();
+    final NamedList<String> mltQ = new SimpleOrderedMap<>();
     StringBuilder q = new StringBuilder("{!bool");
     q.append(" must_not=$");
     int cnt = 0;
@@ -291,7 +291,7 @@ public class MoreLikeThisComponent extends SearchComponent {
   /** Returns NamedList based on the order of resultIds.shardDoc.positionInResponse */
   NamedList<SolrDocumentList> buildMoreLikeThisNamed(
       Map<Object, SolrDocumentList> allMlt, Map<Object, ShardDoc> resultIds) {
-    NamedList<SolrDocumentList> result = new NamedList<>();
+    NamedList<SolrDocumentList> result = new SimpleOrderedMap<>();
     TreeMap<Integer, Object> sortingMap = new TreeMap<>();
     for (Entry<Object, ShardDoc> next : resultIds.entrySet()) {
       sortingMap.put(next.getValue().positionInResponse, next.getKey());

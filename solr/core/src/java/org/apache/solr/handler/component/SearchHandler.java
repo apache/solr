@@ -787,8 +787,8 @@ public class SearchHandler extends RequestHandlerBase
       }
     }
     if (rb.isDebug()) {
-      NamedList<Object> debug = new NamedList<>();
-      debug.add("explain", new NamedList<>());
+      NamedList<Object> debug = new SimpleOrderedMap<>();
+      debug.add("explain", new SimpleOrderedMap<>());
       rb.rsp.add("debug", debug);
     }
     rb.rsp.setPartialResults(rb.req);

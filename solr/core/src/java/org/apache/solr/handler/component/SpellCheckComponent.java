@@ -700,11 +700,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           if (cfg instanceof NamedList) {
             addSpellChecker(core, hasDefault, (NamedList<?>) cfg);
           } else if (cfg instanceof Map) {
-            addSpellChecker(core, hasDefault, new NamedList<>((Map<String, ?>) cfg));
+            addSpellChecker(core, hasDefault, toNamedList((Map<String, ?>) cfg));
           } else if (cfg instanceof List) {
             for (Object o : (List<?>) cfg) {
               if (o instanceof Map) {
-                addSpellChecker(core, hasDefault, new NamedList<>((Map<String, ?>) o));
+                addSpellChecker(core, hasDefault, toNamedList((Map<String, ?>) o));
               }
             }
           }
@@ -732,6 +732,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         queryConverter.setAnalyzer(analyzer);
       }
     }
+  }
+
+  private static NamedList<?> toNamedList(Map<String, ?> config) {
+    NamedList<Object> nl = new SimpleOrderedMap<>();
+    config.forEach(nl::add);
+    return nl;
   }
 
   private boolean addSpellChecker(SolrCore core, boolean hasDefault, NamedList<?> spellchecker) {

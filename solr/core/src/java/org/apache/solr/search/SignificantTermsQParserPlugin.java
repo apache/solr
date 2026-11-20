@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -180,8 +181,8 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       List<Integer> outQueryFreq = new ArrayList<>();
       List<Double> scores = new ArrayList<>();
 
-      NamedList<Integer> allFreq = new NamedList<>();
-      NamedList<Integer> allQueryFreq = new NamedList<>();
+      NamedList<Integer> allFreq = new SimpleOrderedMap<>();
+      NamedList<Integer> allQueryFreq = new SimpleOrderedMap<>();
 
       LinkedHashMap<String, Object> response = new LinkedHashMap<>();
 

@@ -707,28 +707,50 @@ var getTermInfo = function(data) {
     if (data && data.topTerms) {
         termInfo.topTerms = [];
 
-        var currentGroup = {count: 0}
-        for (var i = 0; i < data.topTerms.length; i += 2) {
-            var count = data.topTerms[i + 1];
+        var currentGroup = {count: 0};
+        var topTerms = namedListEntries(data.topTerms)
+            .map(function(entry, index) { return {key: entry.key, value: entry.value, index: index}; })
+            .sort(function(a, b) { return b.value - a.value || a.index - b.index; });
+        for (var i = 0; i < topTerms.length; i++) {
+            var count = topTerms[i].value;
             if (currentGroup.count != count) {
                 currentGroup = {count: count, terms: []};
                 termInfo.topTerms.push(currentGroup);
             }
-            currentGroup.terms.push(data.topTerms[i]);
+            currentGroup.terms.push(topTerms[i].key);
         }
-        termInfo.termCount = data.topTerms.length / 2;
+        termInfo.termCount = topTerms.length;
         termInfo.maxTerms = data.distinct;
     }
 
-    if(data && data.histogram) {
-        termInfo.histogram = [];
+    if (data && data.histogram) {
+        termInfo.histogram = namedListEntries(data.histogram);
         termInfo.histogramMax = 0;
-        for (var i = 0; i < data.histogram.length; i += 2) {
-            termInfo.histogram.push({key: data.histogram[i], value: data.histogram[i + 1]});
-            termInfo.histogramMax = Math.max(termInfo.histogramMax, data.histogram[i + 1]);
+        for (var j = 0; j < termInfo.histogram.length; j++) {
+            termInfo.histogramMax = Math.max(termInfo.histogramMax, termInfo.histogram[j].value);
         }
     }
     return termInfo;
+};
+
+/**
+  * Luke renders topTerms and histogram as JSON objects since Solr 11; older servers rendered them
+  * as a flat [name, value, name, value, ...] array under the default json.nl. Accept both.
+  */
+var namedListEntries = function(namedList) {
+    var entries = [];
+    if (Array.isArray(namedList)) {
+        for (var i = 0; i < namedList.length; i += 2) {
+            entries.push({key: namedList[i], value: namedList[i + 1]});
+        }
+    } else if (namedList) {
+        for (var key in namedList) {
+            if (Object.prototype.hasOwnProperty.call(namedList, key)) {
+                entries.push({key: key, value: namedList[key]});
+            }
+        }
+    }
+    return entries;
 };
 
 var getFieldTypeManipulationOptions = function() {
