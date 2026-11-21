@@ -177,6 +177,8 @@ limitations under the License.
                   <span ng-show="n.dead">{{key.replace(n.host+':', '')}}</span>
                 </div>
                 <div ng-show="n.dead" class="node-down">(DEAD)</div>
+                <div ng-if="n.systemError" class="node-error">System info unavailable ({{n.systemError}})</div>
+                <div ng-if="n.metricsError" class="node-error">Metrics unavailable ({{n.metricsError}})</div>
                 <div ng-show="!n.dead">
                   Uptime: {{n.jvmUptime}}<br/>
                   <div class="node-spec" ng-show="showDetails[key]">
