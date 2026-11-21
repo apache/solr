@@ -398,6 +398,43 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  public void testEchoDocsWithMapUniqueKeyOnly() throws Exception {
+    String doc = "[{'id':'1','a':'b','c':['d','e']},{'id':'2','f':'g'}]".replace('\'', '"');
+    boolean src = random().nextBoolean();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("echo", "true");
+    params.set("mapUniqueKeyOnly", "true");
+    params.set("df", "_catch_all");
+    if (src) {
+      params.set("srcField", "_src_");
+    }
+    SolrQueryRequest req = req(params);
+    req.getContext().put("path", "/update/json/docs");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    new JsonLoader().load(req, rsp, new ContentStreamBase.StringStream(doc), p);
+    assertEquals(0, p.addCommands.size());
+
+    final List<Map<String, Object>> docs = (List<Map<String, Object>>) rsp.getValues().get("docs");
+    assertNotNull(docs);
+    assertEquals(2, docs.size());
+
+    Map<String, Object> doc1 = docs.get(0);
+    assertEquals("1", doc1.get("id"));
+    assertEquals(
+        Arrays.asList("1", "b", Arrays.asList("d", "e")),
+        new ArrayList<>((List<Object>) doc1.get("_catch_all")));
+    assertFalse(doc1.containsKey("a"));
+    assertEquals(src, doc1.containsKey("_src_"));
+
+    Map<String, Object> doc2 = docs.get(1);
+    assertEquals("2", doc2.get("id"));
+    assertEquals(Arrays.asList("2", "g"), new ArrayList<>((List<Object>) doc2.get("_catch_all")));
+    assertFalse(doc2.containsKey("f"));
+    assertEquals(src, doc2.containsKey("_src_"));
+  }
+
   public void testEchoDocs() throws Exception {
     BufferingRequestProcessor p;
     JsonLoader loader;
