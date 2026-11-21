@@ -29,10 +29,9 @@ import org.apache.solr.cli.SolrProcessManager;
  * Solr as the program the harness drives: how its nodes are discovered, stopped, and what they
  * leave behind.
  *
- * <p>Discovery is deliberately not done by reading pid files: {@code bin/solr} writes {@code
- * solr-<port>.pid} holding a PID while {@code bin\solr.cmd} writes {@code solr-<port>.port} holding
- * a port. Going through {@link SolrProcessManager}, which resolves either, means one code path for
- * both platforms and finds a node started in the <em>foreground</em>, which writes no file at all.
+ * <p>Discovery is deliberately not done by reading pid files: going through {@link
+ * SolrProcessManager} also finds a node started in the <em>foreground</em>, which writes no PID
+ * file.
  *
  * <p>It is scoped by the command-line marker the harness starts its nodes with, so what comes back
  * is the harness' own nodes and never a developer's Solr or another suite's.
@@ -115,10 +114,10 @@ public final class SolrProgram implements ProgramUnderTest {
   }
 
   /**
-   * Both spellings: {@code bin/solr} writes {@code solr-<port>.pid}, {@code bin\solr.cmd} writes
-   * {@code solr-<port>.port}, and {@link SolrProcessManager} reads either. Only a graceful stop
-   * removes its own file, so a stale one left by a force-kill is what {@code solr stop --all} and
-   * {@code solr status} would later walk.
+   * The {@code solr-<port>.pid} file, plus the deprecated {@code solr-<port>.port} that {@code
+   * bin\solr.cmd} still writes next to it. Only a graceful stop removes its own files, so a stale
+   * one left by a force-kill is what {@code solr stop --all} and {@code solr status} would later
+   * walk.
    */
   @Override
   public List<Path> staleStateFiles(Path stateDir, RunningProcess process) {
