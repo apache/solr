@@ -138,8 +138,11 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for (int i = 0; i < success.size(); i++) {
+        NamedList<?> result = (NamedList<?>) success.getVal(i);
         @SuppressWarnings("unchecked")
-        NamedList<Object> resp = (NamedList<Object>) success.getVal(i);
+        NamedList<Object> resp =
+            (NamedList<Object>)
+                (adminCmdContext.getAsyncId() == null ? result : result.get("response"));
 
         // Check if this core is the leader for the shard. The idea here is that during the backup
         // operation we preferably use the snapshot of the "leader" replica since it is most likely

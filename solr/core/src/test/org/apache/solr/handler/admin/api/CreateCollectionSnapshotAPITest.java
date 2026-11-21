@@ -17,12 +17,14 @@
 package org.apache.solr.handler.admin.api;
 
 import java.io.ByteArrayInputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,6 +40,7 @@ import org.junit.Test;
 public class CreateCollectionSnapshotAPITest extends SolrCloudTestCase {
   private static final String COLLECTION = "snapshot_api_collection";
   private static final String ALIAS = "snapshot_api_alias";
+  private static final Duration ASYNC_SNAPSHOT_TIMEOUT = Duration.ofSeconds(30);
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -222,6 +225,36 @@ public class CreateCollectionSnapshotAPITest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .snapshots
             .isEmpty());
+  }
+
+  @Test
+  public void testCreateSnapshotAsync() throws Exception {
+    String snapshot = "snapshot_api_async";
+    String asyncId = "create_snapshot_async";
+    var client = cluster.getSolrClient();
+    var request = new CollectionSnapshotsApi.CreateCollectionSnapshot(ALIAS, snapshot);
+    request.setFollowAliases(true);
+    request.setAsync(asyncId);
+    var response = request.process(client);
+    assertEquals(asyncId, response.requestId);
+    assertEquals(ALIAS, response.collection);
+    assertEquals(snapshot, response.snapshotName);
+    assertTrue(response.followAliases);
+
+    var status = waitForAsyncClusterRequest(asyncId, ASYNC_SNAPSHOT_TIMEOUT);
+    assertEquals(status.toString(), RequestStatusState.COMPLETED, status.getRequestStatus());
+    var metadata =
+        new CollectionSnapshotsApi.ListSnapshots(COLLECTION)
+            .process(client)
+            .snapshots
+            .get(snapshot);
+    assertNotNull(metadata);
+    assertEquals(snapshot, metadata.name);
+    assertEquals("Successful", metadata.status);
+    assertEquals(List.of("shard1"), metadata.shards);
+    assertEquals(1, metadata.replicaSnapshots.size());
+    assertFalse(metadata.replicaSnapshots.getFirst().files.isEmpty());
+    CollectionAdminRequest.deleteAsyncId(asyncId).process(client);
   }
 
   @Test

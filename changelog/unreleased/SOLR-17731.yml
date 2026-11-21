@@ -5,6 +5,7 @@ title: >-
   Align snapshot responses and error handling with v2 conventions, and migrate
   the snapshot CLI to these APIs. The CLI explains when a snapshot is already absent
   and returns a nonzero exit status for other deletion errors.
+  Fix asynchronous collection snapshot creation when reading replica results.
 type: fixed
 authors:
   - name: Eric Pugh
