@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SecurityJson;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -58,12 +59,49 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
 
   @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
+  private static Path solrHome;
+
   @BeforeClass
   public static void setupSolr() throws Exception {
-    Path solrHome = createTempDir();
+    solrHome = createTempDir();
     Files.writeString(
         solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
     solrTestRule.startSolr(solrHome);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testIndexlessPermissionsAreAddressable() throws Exception {
+    Map<String, Object> conf = (Map<String, Object>) Utils.fromJSONString(SecurityJson.SIMPLE);
+    Map<String, Object> authz = (Map<String, Object>) conf.get("authorization");
+    List<Object> permissions = new ArrayList<>((List<Object>) authz.get("permissions"));
+    permissions.add(Map.of("name", "read", "role", "guest"));
+    authz.put("permissions", permissions);
+    Files.writeString(
+        solrHome.resolve("security.json"), Utils.toJSONString(conf), StandardCharsets.UTF_8);
+
+    ListPermissionsResponse listed =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    assertEquals(List.of(1, 2), listed.permissions.stream().map(p -> p.index).toList());
+
+    var update = authed(new AuthorizationApi.UpdatePermission(2));
+    update.setRole(List.of("guest", "dev"));
+    update.process(solrTestRule.getAdminClient());
+    PermissionDetails updated =
+        authed(new AuthorizationApi.ListPermissions())
+            .process(solrTestRule.getAdminClient())
+            .permissions
+            .get(1);
+    assertEquals("read", updated.name);
+    assertThat(updated.role, containsInAnyOrder("guest", "dev"));
+
+    authed(new AuthorizationApi.DeletePermission(2)).process(solrTestRule.getAdminClient());
+    ListPermissionsResponse afterDelete =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    assertEquals(List.of("all"), afterDelete.permissions.stream().map(p -> p.name).toList());
+
+    Files.writeString(
+        solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
   }
 
   private static <T extends SolrRequest<?>> T authed(T request) {

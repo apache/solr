@@ -58,8 +58,10 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
   public ListPermissionsResponse listPermissions() {
     final var response = instantiateJerseyResponse(ListPermissionsResponse.class);
     List<PermissionDetails> permissions = new ArrayList<>();
-    for (Map<String, Object> raw : fetchPermissions()) {
-      permissions.add(toPermissionDetails(raw));
+    List<Map<String, Object>> stored = fetchPermissions();
+    List<Integer> indexes = indexes(stored);
+    for (int i = 0; i < stored.size(); i++) {
+      permissions.add(toPermissionDetails(stored.get(i), indexes.get(i)));
     }
     response.permissions = permissions;
     return response;
@@ -125,10 +127,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
   }
 
   private void ensurePermissionExists(int index) {
-    boolean found =
-        fetchPermissions().stream()
-            .anyMatch(p -> p.get("index") instanceof Number n && n.intValue() == index);
-    if (!found) {
+    if (!indexes(fetchPermissions()).contains(index)) {
       throw new SolrException(
           SolrException.ErrorCode.NOT_FOUND, "No permission exists with index [" + index + "]");
     }
@@ -147,11 +146,24 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     return permissions == null ? List.of() : (List<Map<String, Object>>) permissions;
   }
 
-  private static PermissionDetails toPermissionDetails(Map<String, Object> raw) {
+  /**
+   * Numbers permissions the way v1 edit commands do: by position from 1 when none stores an {@code
+   * index}, otherwise by the stored value.
+   */
+  private static List<Integer> indexes(List<Map<String, Object>> permissions) {
+    boolean positional = permissions.stream().noneMatch(p -> p.containsKey("index"));
+    List<Integer> indexes = new ArrayList<>();
+    for (int i = 0; i < permissions.size(); i++) {
+      Object index = permissions.get(i).get("index");
+      indexes.add(positional ? i + 1 : index instanceof Number n ? n.intValue() : null);
+    }
+    return indexes;
+  }
+
+  private static PermissionDetails toPermissionDetails(Map<String, Object> raw, Integer index) {
     PermissionDetails details = new PermissionDetails();
     populateDefinitionFields(details, raw);
-    Object index = raw.get("index");
-    details.index = index instanceof Number ? ((Number) index).intValue() : null;
+    details.index = index;
     return details;
   }
 
