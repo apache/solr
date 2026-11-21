@@ -130,7 +130,9 @@ public class ConfigSetUploadTool extends ToolBase {
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       doUpconfig(zkClient, zkHost, confName, confDir);
     } catch (Exception e) {
-      log.error("Could not complete upconfig operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete upconfig operation for reason: ", e);
+      }
       throw (e);
     }
   }
@@ -170,7 +172,9 @@ public class ConfigSetUploadTool extends ToolBase {
       doUpconfig(zkClient, zkHost, configSetOpts.confName, confDir);
       return 0;
     } catch (Exception e) {
-      log.error("Could not complete upconfig operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete upconfig operation for reason: ", e);
+      }
       throw (e);
     }
   }

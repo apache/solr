@@ -22,6 +22,11 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | seconds to minutes
 | Current, but not a default.
 
+| `SolrCatsTestCase`
+| CATS — Cross-platform Automated Testing System: a real, unpacked Solr distribution driven through `bin/solr` and `bin\solr.cmd` as subprocesses under the platform's own shell. The only harness that runs an installation the way a user gets one, so a classpath, Jetty configuration or file layout problem reproduces here and nowhere else. Harness in `solr/test-framework/src/java/org/apache/solr/cats/`, a generic, Solr-free core, with the Solr layer on top in `solr/test-framework/src/java/org/apache/solr/shell/`; suites in `solr/packaging/src/test/`.
+| seconds to minutes
+| Current. New CLI coverage goes here.
+
 | `AdminUiTestBase`
 | AngularJS Admin UI in headless Chrome via Selenium, against a 2-node cluster whose Jetty nodes also serve the UI. In `solr/webapp/src/test/org/apache/solr/webapp/`.
 | cluster + a browser
@@ -33,9 +38,9 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | Deprecated. Not in new tests.
 
 | BATS, `solr/packaging/test/*.bats`
-| Bash tests that drive `bin/solr` against a real, unpacked Solr distribution. The only harness that runs an installation the way a user gets one, so a classpath, Jetty configuration or file layout problem reproduces here and nowhere else. `./gradlew integrationTests`.
+| The original bash `bin/solr` tests. `./gradlew integrationTests`.
 | seconds to minutes, sequential
-| Current, and bash-only: `bin\solr.cmd` has no automated coverage.
+| Deprecated in favour of CATS, which runs the same coverage on both shells. Bash-only; never ran on Windows.
 
 | `solr/docker/tests/cases/*`
 | Bash cases that `docker run` the Solr image built from this tree: entrypoint, `docker-entrypoint-initdb.d` scripts, `/var/solr` volume handling and permissions, core precreation, non-root and random UIDs, log4j config. `./gradlew -p solr/docker testDocker`, helpers in `tests/shared.sh`.
@@ -52,10 +57,11 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 * Plain class, parser, config object, response writer, utility — `SolrTestCase`, no server.
 * Needs a live Solr, one node — `SolrTestCase` + `SolrJettyTestRule`, or `EmbeddedSolrServerTestRule` if the HTTP layer is not part of the test.
 * Only reproduces across nodes, or involves ZooKeeper, routing, replication, recovery or the Collections API — `SolrCloudTestCase`, with the lowest node count that still shows the bug.
-* In `bin/solr`, `solr.in.sh`, CLI parsing, output or exit codes — a `.bats` file in `solr/packaging/test/`. Also the only place a packaging problem reproduces: a jar missing from the classpath, a Jetty setting, or a file in the wrong place. The `SolrTestCase` hierarchy builds no installation, so none of those are visible to it.
+* In `bin/solr`, `bin/solr.cmd`, `solr.in.sh`/`solr.in.cmd`, CLI parsing, output or exit codes — `SolrCatsTestCase`. Also the only place a packaging problem reproduces: a jar missing from the classpath, a Jetty setting, a file in the wrong place, or a Windows-only script bug. The `SolrTestCase` hierarchy builds no installation, so none of those are visible to it.
 * Needs a real external service, not a mock — pick from the above as usual, then add a Testcontainers `@ClassRule`; see below.
 * In the Admin UI's JavaScript or templates — `AdminUiTestBase`. Test the APIs it calls separately; keep the browser test to what the browser renders.
-* In the Docker image — its entrypoint, init scripts, volume or permission handling, the `SOLR_*` variables it honours — a case under `solr/docker/tests/cases/`, not a BATS suite.
+* Tempted to add a `.bats` file — don't. Write it as a `SolrCatsTestCase`. Touch the `.bats` files only to keep them working until they are ported.
+* In the Docker image — its entrypoint, init scripts, volume or permission handling, the `SOLR_*` variables it honours — a case under `solr/docker/tests/cases/`, not a CATS suite.
 
 == Randomized testing
 
@@ -120,7 +126,7 @@ When a test needs a real instance of something Solr talks to, start it with Test
 A fixed `Thread.sleep` is paid on every run and still flakes under load, because the thing you are waiting for is slower on a busy machine, not faster. Wait for the condition instead:
 
 * Best: have the other side signal. Complete a `CompletableFuture` when it reaches the point you care about and `get(timeout)` it from the test thread.
-* If you must poll, use the wait your harness already has — `TimeOut#waitFor` (solr-core), `cluster.waitForState(..)` in `SolrCloudTestCase` — rather than a hand-rolled loop.
+* If you must poll, use the wait your harness already has — `TimeOut#waitFor` (solr-core), `cluster.waitForState(..)` in `SolrCloudTestCase`, `awaitOrFail(..)` in `SolrCatsTestCase` — rather than a hand-rolled loop.
 * Derive a timeout from whatever it bounds, and name it: `ABORT_DEADLINE_MS = SlowServlet.DELAY_MS / 2`, not a bare `2, SECONDS`.
 
 A sleep you cannot replace is worth a comment saying what it is waiting for, because it usually marks a missing signal in the code under test rather than in the test.
@@ -137,6 +143,13 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 +
 `solr/core/src/test/org/apache/solr/cloud/CollectionStateZnodeTest.java` — the real minimal shape, with `@After deleteAllCollections()` and both `waitForState` forms.
 
+`SolrCatsTestCase`::
+`solr/packaging/src/test/org/apache/solr/shell/ZkTest.java` — canonical BATS port: `classCli.run(...)` for a class-lifetime node, fluent `run(...).assertContains(...)`, `${SOLR_PORT}` expansion, portable stand-ins for `touch` and `curl`.
++
+`solr/packaging/src/test/org/apache/solr/shell/PostTest.java` — same, plus `assertContainsForCli(commonsCliText, picocliText)` for wording that differs between the two CLI implementations.
++
+The generic core is `org.apache.solr.cats` in `solr/test-framework`, with the Solr layer the suites extend alongside it in `org.apache.solr.shell`; xref:cats.adoc[cats.adoc] documents both.
+
 `AdminUiTestBase`::
 `solr/webapp/src/test/org/apache/solr/webapp/AdminUiDashboardTest.java` — one screen; the version and JVM values are compared against live `/admin/info/system` JSON rather than against constants.
 +
@@ -146,16 +159,19 @@ A sleep you cannot replace is worth a comment saying what it is waiting for, bec
 
 `./gradlew helpTests` is the reference for running tests — seeds, filtering, beasting, verbose mode, profiling, coverage. Only the module-specific test tasks are here:
 
-* `./gradlew integrationTests` builds the distribution first, then runs the BATS suites against it; `integrationTestsPicocli` pins the picocli CLI. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`.
+* `./gradlew -p solr/packaging catsTests` builds the distribution first, then runs CATS — on Windows, the same suites under `cmd.exe`. See `solr/packaging/README.md` for the task variants.
+* `./gradlew integrationTests` runs the BATS suites, `integrationTestsPicocli` the picocli variant. `downloadBats` fetches bats-core and its helpers for you; `--tests <file>.bats` selects one file; tests get a random port, pinnable with `-Pbats.port`; `# bats test_tags=nightly` tests need `-Psolr.bats.nightly=true`.
 * `./gradlew -p solr/docker testDocker` builds the image from your tree and runs the bash cases against it; `-Psolr.docker.tests.include`/`-Psolr.docker.tests.exclude` select them.
 * `./gradlew :solr:webapp:test -Ptests.selenium=true` runs the Admin UI browser tests; needs a local Chrome.
-* Neither `solr/packaging` nor `solr/docker` test tasks are part of `check` — they need an unpacked distribution or a built image. The browser tests are in `check` but stay skipped until their test group is enabled.
+* Neither `solr/packaging` nor `solr/docker` test tasks are part of `check` — they need an unpacked distribution or a built image. The harness' own unit tests are — run them with `./gradlew -p solr/test-framework test --tests "org.apache.solr.cats.*"`. The browser tests are in `check` but stay skipped until their test group is enabled.
 
-When one fails, start with the artifacts rather than the stack trace: a failing BATS test copies its `SOLR_HOME` to `build/test-output/failure-snapshots/` and prints the path; `AdminUiTestBase` saves `screenshot.png`, `page.html` and `console.log`.
+When one fails, start with the artifacts rather than the stack trace: `SolrCatsTestCase` prints the path to a `SOLR_HOME` snapshot holding `transcript.log`, every command it ran with its output; `AdminUiTestBase` saves `screenshot.png`, `page.html` and `console.log`.
 
 == See also
 
 * `solr/test-framework/README.md` — what the framework provides and how to depend on it.
+* `solr/packaging/README.md` — the distribution, CATS and the BATS suites it is replacing.
+* xref:cats.adoc[cats.adoc] — writing a CATS test for Solr: running, a first test, the DSL and debugging failures.
 * link:admin-ui-tests.md[admin-ui-tests.md] — how the browser suite works and what it skips.
 * `./gradlew helpTests` (`dev-docs/gradle-help/tests.txt`) — the guide to running tests. `./gradlew -p solr/core testOpts` lists every test property with its default and current value.
 * xref:solr-source-code.adoc[solr-source-code.adoc] — building, and what to do about a test that only fails for you.
