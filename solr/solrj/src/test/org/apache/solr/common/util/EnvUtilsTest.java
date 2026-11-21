@@ -119,6 +119,14 @@ public class EnvUtilsTest extends SolrTestCase {
   }
 
   @Test
+  public void deprecatedZkClientTimeoutIsMigratedToCurrentName() {
+    Properties sysprops = new Properties();
+    sysprops.setProperty("zkClientTimeout", "45000");
+    EnvUtils.init(false, Map.of(), sysprops);
+    assertEquals("45000", EnvUtils.getProperty("solr.zookeeper.client.timeout"));
+  }
+
+  @Test
   public void deprecatedCamelCaseSystemPropertyIsMigratedToCurrentName() {
     Properties sysprops = new Properties();
     sysprops.setProperty("solr.auth.jwt.allowOutboundHttp", "true");

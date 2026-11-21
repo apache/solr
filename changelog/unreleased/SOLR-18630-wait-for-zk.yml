@@ -1,0 +1,10 @@
+title: >-
+  Fix the default ZooKeeper startup timeout to use milliseconds and make the
+  shipped solr.xml honor solr.zookeeper.client.timeout.
+type: fixed
+authors:
+  - name: Julian Chandra Sutadi
+    nick: julianchandras
+links:
+  - name: SOLR-18630
+    url: https://issues.apache.org/jira/browse/SOLR-18630
