@@ -528,7 +528,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
 
       public void setOperationRspObject(SolrQueryResponse rspObject) {
-        this.operationRspInfo = rspObject.getResponse();
+        Object response = rspObject.getResponse();
+        this.operationRspInfo = response != null ? response : rspObject.getValues();
       }
 
       public String getStatus() {

@@ -2537,6 +2537,8 @@ This is particularly useful prior to reindexing or making config changes to a co
 Unlike backups, which copy collection data off-disk, snapshots themselves don't provide disaster recovery in case of disk or hardware failure.
 They provide less protection than backups, at a much cheaper cost.
 
+The v2 API requires a JSON request body (use `{}` for the defaults) and returns HTTP 404 if the collection does not exist.
+
 === CREATESNAPSHOT Example
 
 *Input*
@@ -2627,6 +2629,7 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 == LISTSNAPSHOTS: List all snapshots for a collection
 
 Lists all the snapshots taken of a collection.
+The v2 API returns HTTP 404 if the collection does not exist.
 
 === LISTSNAPSHOTS Example
 
@@ -2758,6 +2761,8 @@ The name of the collection to create a snapshot for.
 == DELETESNAPSHOT: Delete a snapshot taken of a collection
 
 Deletes a snapshot taken of a specified collection.
+
+The v2 API returns HTTP 404 if the collection or snapshot does not exist.
 
 === DELETESNAPSHOT Example
 
