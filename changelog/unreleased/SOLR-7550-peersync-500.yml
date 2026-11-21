@@ -1,0 +1,7 @@
+title: PeerSync counts a core initialization failure on the versions request as success when cantReachIsSuccess is set, so a core that will not load no longer blocks leader election or a sync request
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-7550
+    url: https://issues.apache.org/jira/browse/SOLR-7550
