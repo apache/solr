@@ -615,6 +615,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  @SuppressWarnings("deprecation") // covers the deprecated ping()
   public void testPing() throws Exception {
     try (HttpJdkSolrClient client = builder(solrTestRule.getBaseUrl()).build()) {
       SolrPingResponse spr = client.ping("collection1");
