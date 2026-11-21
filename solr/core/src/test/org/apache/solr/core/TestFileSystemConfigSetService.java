@@ -132,6 +132,26 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     assertFalse(fileSystemConfigSetService.checkConfigExists("copytestconfig"));
   }
 
+  @Test
+  public void testGetAllConfigFilesUsesForwardSlashesForDirectories() throws IOException {
+    String configName = "nestedconfig";
+    fileSystemConfigSetService.uploadFileToConfig(
+        configName, "lang/stopwords_en.txt", "a\nthe".getBytes(StandardCharsets.UTF_8), true);
+
+    assertEquals(
+        List.of("lang/", "lang/stopwords_en.txt"),
+        fileSystemConfigSetService.getAllConfigFiles(configName));
+
+    // A single directory name contains no separator, so the case above cannot show the
+    // conversion; a nested directory is what produces a separator inside the returned name.
+    fileSystemConfigSetService.uploadFileToConfig(
+        configName, "lang/nested/deep.txt", "deep".getBytes(StandardCharsets.UTF_8), true);
+
+    assertEquals(
+        List.of("lang/", "lang/nested/", "lang/nested/deep.txt", "lang/stopwords_en.txt"),
+        fileSystemConfigSetService.getAllConfigFiles(configName));
+  }
+
   private static List<String> getFileList(Path confDir) throws IOException {
     try (Stream<Path> configs = Files.list(confDir)) {
       return configs

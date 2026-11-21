@@ -97,24 +97,54 @@ public class UploadConfigSet extends ConfigSetAPIBase
     try {
       Files.copy(requestBody, tempZip, StandardCopyOption.REPLACE_EXISTING);
       try (ZipFile zipFile = new ZipFile(tempZip.toFile())) {
+        // First pass: validate every entry path before any of them is read or written,
+        // so an archive containing an unsafe path fails as a whole instead of leaving a
+        // partially uploaded configset behind. This pass retains no entry bytes, so heap
+        // use stays proportional to the largest single file rather than the total
+        // uncompressed size of the archive.
         boolean hasEntry = false;
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         while (entries.hasMoreElements()) {
           ZipEntry zipEntry = entries.nextElement();
           hasEntry = true;
-          String filePath = zipEntry.getName();
-          filesToDelete.remove(filePath);
-          if (!zipEntry.isDirectory()) {
-            try (InputStream entryStream = zipFile.getInputStream(zipEntry)) {
-              configSetService.uploadFileToConfig(
-                  configSetName, filePath, entryStream.readAllBytes(), true);
-            }
+          // Backslashes are invalid as ZIP separators, but older Windows-produced archives may
+          // contain them. Normalize before handing the path to either config-set implementation.
+          String filePath = normalizeZipEntryName(zipEntry.getName());
+          if (zipEntry.isDirectory() && filePath.equals("/")) {
+            // Archives exported by older Solr versions can contain a directory entry
+            // for the archive root itself, named "/". It carries no file, so ignore it
+            // instead of rejecting the whole archive; any other absolute path fails
+            // the check below.
+          } else if (!isSafeZipEntryPath(filePath)) {
+            // Neither backend may ever see an unsafe entry path: the filesystem backend
+            // would resolve it outside of the configset directory, and the ZooKeeper
+            // backend cannot use it as a znode path segment at all.
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "The zip entry path '"
+                    + filePath
+                    + "' is not valid: entry paths must not be empty, absolute,"
+                    + " drive-qualified, or contain '.' or '..' segments.");
           }
+          filesToDelete.remove(filePath);
         }
         if (!hasEntry) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
+        }
+        // Second pass: every path is known to be safe now, so read and dispatch one
+        // entry at a time.
+        entries = zipFile.entries();
+        while (entries.hasMoreElements()) {
+          ZipEntry zipEntry = entries.nextElement();
+          String filePath = normalizeZipEntryName(zipEntry.getName());
+          if (!zipEntry.isDirectory() && !filePath.endsWith("/")) {
+            try (InputStream entryStream = zipFile.getInputStream(zipEntry)) {
+              configSetService.uploadFileToConfig(
+                  configSetName, filePath, entryStream.readAllBytes(), true);
+            }
+          }
         }
       } catch (ZipException e) {
         throw new SolrException(
@@ -128,6 +158,37 @@ public class UploadConfigSet extends ConfigSetAPIBase
     deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 
     return response;
+  }
+
+  static String normalizeZipEntryName(String entryName) {
+    return entryName.replace('\\', '/');
+  }
+
+  /**
+   * Whether a normalized zip entry path stays inside the configset it is uploaded to. Absolute
+   * paths, drive-qualified Windows paths, empty names, and paths with "." or ".." segments are
+   * unsafe: the filesystem backend would resolve them outside of the configset directory, and the
+   * ZooKeeper backend cannot use them as znode path segments at all.
+   */
+  static boolean isSafeZipEntryPath(String normalizedPath) {
+    if (normalizedPath.isEmpty() || normalizedPath.startsWith("/")) {
+      return false;
+    }
+    // A drive-qualified name such as "C:/..." does not start with "/" but is still
+    // absolute on Windows. The check must not depend on the host platform, and a colon
+    // cannot appear in a Windows file name at all, so reject any leading drive
+    // designator here.
+    if (normalizedPath.length() >= 2
+        && Character.isLetter(normalizedPath.charAt(0))
+        && normalizedPath.charAt(1) == ':') {
+      return false;
+    }
+    for (String segment : normalizedPath.split("/")) {
+      if (segment.equals(".") || segment.equals("..")) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -148,24 +209,29 @@ public class UploadConfigSet extends ConfigSetAPIBase
     if (!fixedSingleFilePath.isEmpty() && fixedSingleFilePath.charAt(0) == '/') {
       fixedSingleFilePath = fixedSingleFilePath.substring(1);
     }
-    byte[] data = requestBody.readAllBytes();
-    if (fixedSingleFilePath.isEmpty()) {
+    // Apply the same normalization and safety check as for zip entry paths, so a single
+    // file upload cannot use backslash separators or "." and ".." segments to reach
+    // outside of the configset on either backend. The path is validated before the
+    // body is read, so an invalid path fails without allocating the payload.
+    fixedSingleFilePath = normalizeZipEntryName(fixedSingleFilePath);
+    if (fixedSingleFilePath.isEmpty() || !isSafeZipEntryPath(fixedSingleFilePath)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file path provided for upload, '" + singleFilePath + "', is not valid.");
-    } else if (ConfigSetService.isFileForbiddenInConfigSets(fixedSingleFilePath)
+    }
+    byte[] data = requestBody.readAllBytes();
+    if (ConfigSetService.isFileForbiddenInConfigSets(fixedSingleFilePath)
         || FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file type provided for upload, '"
               + singleFilePath
               + "', is forbidden for use in configSets.");
-    } else {
-      // Create a node for the configuration in config
-      // For creating the baseNode, the cleanup parameter is only allowed to be true when
-      // singleFilePath is not passed.
-      configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, data, overwrite);
     }
+    // Create a node for the configuration in config
+    // For creating the baseNode, the cleanup parameter is only allowed to be true when
+    // singleFilePath is not passed.
+    configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, data, overwrite);
     return response;
   }
 
