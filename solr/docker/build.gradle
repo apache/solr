@@ -23,6 +23,8 @@ import org.apache.commons.codec.digest.DigestUtils
 description = 'Solr Docker image'
 
 apply plugin: 'base'
+// Only for RollingUpgradeTest under src/test; this project ships no Java of its own.
+apply plugin: 'java'
 def javaVersion = libs.versions.dockerfile.baseimage.java.get()
 // Solr Docker inputs
 def dockerImageSolrDist = "${-> propertyOrEnvOrDefault("solr.docker.dist", "SOLR_DOCKER_DIST", 'full')}"
@@ -120,6 +122,13 @@ dependencies {
   packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official-slim") {
     builtBy 'createDockerfileOfficialSlim'
   }
+
+  // RollingUpgradeTest drives containers through Testcontainers rather than Solr itself, so this
+  // is SolrTestCase, JUnit and a Docker client - no SolrJ and no running node in this JVM.
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
+  testImplementation libs.testcontainers
+  testImplementation libs.slf4j.api
 
   solrFullTgz project(path: ":solr:packaging", configuration: "solrFullTgz")
   solrSlimTgz project(path: ":solr:packaging", configuration: "solrSlimTgz")
@@ -287,6 +296,39 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
       .asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",")
           .split(",")))
   testCasesExclude.value(excludeCases)
+}
+
+// The stock 'test' task would pick RollingUpgradeTest up and run it in every build; it needs
+// Docker and an image built from this tree, so it is asked for by name instead.
+tasks.named('test') {
+  enabled = false
+}
+
+task dockerRollingUpgradeTest(type: Test, dependsOn: tasks.dockerBuild) {
+  group = 'Docker'
+  description = 'Rolling-upgrades a three-node cluster onto the image built from this working tree.'
+
+  testClassesDirs = sourceSets.test.output.classesDirs
+  classpath = sourceSets.test.runtimeClasspath
+  timeout.set(java.time.Duration.ofMinutes(30))
+
+  // dockerBuild rather than dockerTag, which would move apache/solr:<version> - a name a developer
+  // may be deliberately keeping on the official image. The test takes the id instead, so nothing
+  // needs tagging at all.
+  def builtImageIdFile = file(imageIdFile)
+  def artifactDir = file("$buildDir/rolling-upgrade")
+
+  doFirst {
+    delete artifactDir
+    artifactDir.mkdirs()
+    systemProperty 'solr.docker.imageId', builtImageIdFile.text.trim()
+    systemProperty 'solr.docker.artifactDir', artifactDir.toString()
+    // The previous major, which the test upgrades from, is derived from this.
+    systemProperty 'solr.version', project.version.toString()
+    // Testcontainers spawns processes and writes outside the test sandbox, neither of which the
+    // test security policy allows.
+    systemProperties.remove('java.security.manager')
+  }
 }
 
 task dockerPush(dependsOn: tasks.dockerTag) {

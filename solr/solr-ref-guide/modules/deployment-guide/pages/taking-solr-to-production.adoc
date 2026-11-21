@@ -72,7 +72,6 @@ tar xzf solr-{solr-full-version}.tgz solr-{solr-full-version}/bin/install_solr_s
 ----
 
 The previous command extracts the `install_solr_service.sh` script from the archive into the current directory.
-If installing on Red Hat, please make sure *lsof* is installed before running the Solr installation script (`sudo yum install lsof`).
 The installation script must be run as root:
 
 [source,bash,subs="attributes"]

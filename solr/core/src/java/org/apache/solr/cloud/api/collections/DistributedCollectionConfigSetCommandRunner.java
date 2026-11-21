@@ -393,6 +393,9 @@ public class DistributedCollectionConfigSetCommandRunner {
 
       NamedList<Object> results = new NamedList<>();
       try {
+        String lockCollName =
+            CollectionHandlingUtils.lockCollectionName(
+                message, collName, ccc.getZkStateReader().getAliases());
         // Create API lock for executing the command. This call is non blocking (not blocked on
         // waiting for a lock to be acquired anyway, might be blocked on access to ZK etc) We create
         // a new CollectionApiLockFactory using a new ZkDistributedCollectionLockFactory because
@@ -407,7 +410,7 @@ public class DistributedCollectionConfigSetCommandRunner {
                 ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS);
         DistributedMultiLock lock =
             new CollectionApiLockFactory(lockFactory)
-                .createCollectionApiLock(adminCmdContext, collName, shardId, replicaName);
+                .createCollectionApiLock(adminCmdContext, lockCollName, shardId, replicaName);
 
         try {
           if (log.isDebugEnabled()) {
@@ -461,7 +464,7 @@ public class DistributedCollectionConfigSetCommandRunner {
             }
           }
           if (adminCmdContext.getAction() == CollectionAction.DELETE) {
-            deleteEmptyLockDirs(lockFactory, collName);
+            deleteEmptyLockDirs(lockFactory, lockCollName);
           }
         }
       } catch (Exception e) {
