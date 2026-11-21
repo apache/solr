@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -824,6 +825,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       String strValue;
       if (value instanceof IndexableField) {
         strValue = fieldType.toExternal((IndexableField) value);
+      } else if (value instanceof Date) {
+        strValue = ((Date) value).toInstant().toString();
       } else {
         // TODO FieldType needs an API for this, e.g. toExternalFromDv()
         strValue = value.toString();
