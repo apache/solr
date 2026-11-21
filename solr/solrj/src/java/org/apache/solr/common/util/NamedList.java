@@ -315,8 +315,12 @@ public sealed class NamedList<T>
   }
 
   public NamedList<T> getImmutableCopy() {
-    NamedList<T> copy = clone();
-    return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
+    return new NamedList<>(immutablePairs());
+  }
+
+  /** A read-only copy of the pairs; nulls are allowed, so this cannot use {@link List#copyOf}. */
+  List<Object> immutablePairs() {
+    return Collections.unmodifiableList(Arrays.asList(nvPairs.toArray()));
   }
 
   @SuppressWarnings("rawtypes")

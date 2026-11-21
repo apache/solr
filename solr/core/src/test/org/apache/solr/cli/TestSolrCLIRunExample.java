@@ -327,10 +327,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     for (int pass = 0; pass < 2; pass++) {
       // need a port to start the example server on
-      int bindPort;
-      try (ServerSocket socket = new ServerSocket(0)) {
-        bindPort = socket.getLocalPort();
-      }
+      int bindPort = pickFreePort();
 
       log.info("Selected port {} to start {} example Solr instance on ...", bindPort, exampleName);
 
@@ -359,9 +356,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
         if (status == -1) {
           // maybe it's the port, try again
-          try (ServerSocket socket = new ServerSocket(0)) {
-            bindPort = socket.getLocalPort();
-          }
+          bindPort = pickFreePort();
           Thread.sleep(100);
           status = runTool(tool, toolArgs);
         }
@@ -435,10 +430,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--example-dir", solrExampleDir.toString()
         };
 
-    int bindPort;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     String collectionName = "testCloudExamplePrompt";
 
@@ -539,10 +531,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrExampleDir = createTempDir();
     Path solrServerDir = solrHomeDir.getParent();
 
-    int bindPort = -1;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     String collectionName = "testCloudExampleWithScriptInputs";
 
@@ -645,10 +634,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrServerDir = solrHomeDir.getParent();
 
     // need a port to start the example server on
-    int bindPort;
-    try (ServerSocket socket = new ServerSocket(0)) {
-      bindPort = socket.getLocalPort();
-    }
+    int bindPort = pickFreePort();
 
     Path toExecute = Path.of(solrExampleDir.toString(), "failExecuteScript");
     try {
@@ -762,7 +748,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     assertEquals(
         "Unsupported example "
             + unsupportedExample
-            + "! Please choose one of: cloud, schemaless, techproducts, or films",
+            + "! Please choose one of: cloud, secure, schemaless, techproducts, or films",
         exception.getMessage());
   }
 
@@ -773,5 +759,16 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Files.createDirectories(solrScript.getParent());
     Files.createFile(solrScript);
     return serverDir;
+  }
+
+  /** Picks a free port, staying under 64536 so port + 1000 (embedded ZooKeeper) stays valid. */
+  private static int pickFreePort() throws IOException {
+    int port;
+    do {
+      try (ServerSocket socket = new ServerSocket(0)) {
+        port = socket.getLocalPort();
+      }
+    } while (port > 64535);
+    return port;
   }
 }
