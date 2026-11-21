@@ -118,6 +118,7 @@ public abstract class ConfigSetService {
     try {
       // _default conf
       bootstrapDefaultConf();
+      bootstrapMultilingualConf();
 
       // bootstrap_confdir
       String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
@@ -154,6 +155,20 @@ public abstract class ConfigSetService {
     String confName =
         EnvUtils.getProperty("solr.configset.bootstrap.config.name", "configuration1");
     this.uploadConfig(confName, configPath);
+  }
+
+  private void bootstrapMultilingualConf() throws IOException {
+    if (checkConfigExists(ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME)) {
+      return;
+    }
+    String installDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+    if (installDir == null) {
+      return;
+    }
+    Path configDir = Path.of(installDir).resolve("server/solr/configsets/_multilingual/conf");
+    if (Files.isDirectory(configDir)) {
+      uploadConfig(ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME, configDir);
+    }
   }
 
   /**

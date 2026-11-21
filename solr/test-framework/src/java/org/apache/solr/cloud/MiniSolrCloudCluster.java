@@ -581,10 +581,11 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
   }
 
+  /** Deletes all configsets except the built-in _default and _multilingual configsets. */
   public void deleteAllConfigSets() throws Exception {
     ZkConfigSetService service = new ZkConfigSetService(getZkClient());
     for (String configSet : service.listConfigs()) {
-      if (configSet.equals("_default")) {
+      if (configSet.equals("_default") || configSet.equals("_multilingual")) {
         continue;
       }
       service.deleteConfig(configSet);

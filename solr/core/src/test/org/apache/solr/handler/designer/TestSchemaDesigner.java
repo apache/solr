@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,6 +151,108 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
     assertFalse(zkClient.exists("/configs/" + mutableId));
+  }
+
+  @Test
+  public void testDesignerWithoutMultilingualConfigSet() throws Exception {
+    var service = cc.getConfigSetService();
+    String saved = "savedMultilingualForSlimDistribution";
+    service.copyConfig("_multilingual", saved);
+    service.deleteConfig("_multilingual");
+    try {
+      assertTrue(availableLanguages().isEmpty());
+      String configSet = "slimDistributionDesign";
+      SchemaDesignerResponse response = schemaDesigner.prepNewSchema(configSet, null);
+      assertNotNull(response.schemaVersion);
+      var helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesigner.newSchemaSuggester());
+      String mutableId = getMutableId(configSet);
+      var schema =
+          helper.syncLanguageSpecificObjectsAndFiles(
+              mutableId,
+              helper.loadLatestSchema(mutableId),
+              List.of(),
+              true,
+              DEFAULT_CONFIGSET_NAME);
+      schema = helper.removeDynamicFields(schema);
+      schema = helper.restoreDynamicFields(mutableId, schema, List.of(), DEFAULT_CONFIGSET_NAME);
+      assertNotNull(schema.getFieldTypeByName("text_general"));
+      assertNotNull(schema.getFieldOrNull("*_txt"));
+      assertNull(schema.getFieldTypeByName("text_fr"));
+    } finally {
+      service.copyConfig(saved, "_multilingual");
+      service.deleteConfig(saved);
+    }
+  }
+
+  @Test
+  public void testAvailableLanguagesFollowMultilingualSchema() throws Exception {
+    Map<String, String> languages = availableLanguages();
+    assertEquals("English", languages.get("en"));
+    assertEquals("Czech", languages.get("cs"));
+    assertFalse(languages.containsKey("cz"));
+    assertEquals("Persian", languages.get("fa"));
+    assertEquals("CJK bigram", languages.get("cjk"));
+    assertTrue(languages.containsKey("fr"));
+    assertFalse(languages.containsKey("general"));
+    assertFalse(languages.containsKey("ws"));
+    assertFalse(languages.containsKey("en_splitting"));
+    var names = List.copyOf(languages.values());
+    assertEquals(names.stream().sorted().toList(), names);
+
+    var service = cc.getConfigSetService();
+    byte[] original = service.downloadFileFromConfig("_multilingual", "managed-schema.xml");
+    try {
+      var helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesigner.newSchemaSuggester());
+      var schema = helper.loadLatestSchema("_multilingual");
+      schema = schema.deleteDynamicFields(List.of("*_txt_fr"));
+      schema = schema.deleteFieldTypes(List.of("text_fr"));
+      var ukrainian =
+          schema.newFieldType(
+              "text_uk",
+              "solr.TextField",
+              Map.of(
+                  "name", "text_uk",
+                  "class", "solr.TextField",
+                  "analyzer", Map.of("tokenizer", Map.of("name", "standard"))));
+      schema = schema.addFieldTypes(List.of(ukrainian), false);
+      schema.persistManagedSchema(false);
+
+      languages = availableLanguages();
+      assertEquals("Ukrainian", languages.get("uk"));
+      assertFalse(languages.containsKey("fr"));
+      assertEquals("English", languages.get("en"));
+    } finally {
+      service.uploadFileToConfig("_multilingual", "managed-schema.xml", original, true);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, String> availableLanguages() throws Exception {
+    var response =
+        SolrJacksonMapper.getObjectMapper()
+            .convertValue(schemaDesigner.listDesignerConfigs(), Map.class);
+    var languages = (List<Map<String, String>>) response.get("availableLanguages");
+    assertNotNull("Language choices must be included in the configs response", languages);
+    Map<String, String> result = new LinkedHashMap<>();
+    for (var language : languages) {
+      result.put(language.get("code"), language.get("name"));
+    }
+    assertEquals("Language codes must be unique", languages.size(), result.size());
+    return result;
+  }
+
+  @Test
+  public void testBuiltInConfigSetsAreNotEditable() throws Exception {
+    Map<String, Integer> configs = schemaDesigner.listEnabledConfigs();
+    assertFalse(configs.containsKey("_default"));
+    assertFalse(configs.containsKey("_multilingual"));
+    for (String config : List.of("_default", "_multilingual")) {
+      SolrException error =
+          expectThrows(
+              SolrException.class,
+              () -> schemaDesigner.analyze(config, null, null, null, null, null, null, null));
+      assertEquals(400, error.code());
+    }
   }
 
   @Test
@@ -402,7 +505,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertDesignerSettings(expSettings, response);
 
     List<String> filesInResp = response.files;
-    assertEquals(5, filesInResp.size());
+    assertEquals(6, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
 
     schemaVersion = response.schemaVersion;
@@ -422,7 +525,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertDesignerSettings(expSettings, response);
 
     filesInResp = response.files;
-    assertEquals(7, filesInResp.size());
+    assertEquals(8, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
 
     schemaVersion = response.schemaVersion;
@@ -442,7 +545,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertDesignerSettings(expSettings, response);
 
     filesInResp = response.files;
-    assertEquals(43, filesInResp.size());
+    assertEquals(44, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_it.txt"));

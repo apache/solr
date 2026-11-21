@@ -79,6 +79,12 @@ Javadocs published for earlier releases are unaffected, so existing links to tho
 
 Searching from any Javadoc page now covers the whole API rather than the one module.
 
+=== Czech Field Type Naming
+
+The `sample_techproducts_configs` configset now uses `text_cs` instead of `text_cz` for Czech, matching the language code `cs`.
+Its stopword file is now `lang/stopwords_cs.txt` instead of `lang/stopwords_cz.txt`.
+Update references when adopting the new configset; existing schemas are not modified automatically.
+
 === V2 API
 
 In Solr 10.2 `GET /api/collections?detailed=true` returns the collections, shards, and replicas tree under `collectionsDetail`.
