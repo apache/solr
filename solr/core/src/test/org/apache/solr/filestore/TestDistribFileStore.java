@@ -182,9 +182,10 @@ public class TestDistribFileStore extends SolrCloudTestCase {
         assertThat(expectedExc.getMessage(), containsString("does not appear in live-nodes"));
       }
 
-      // Delete Jars
-      DistribFileStore.deleteZKFileEntry(
-          cluster.getZkClient(), "/package/mypkg/v1.0/runtimelibs.jar");
+      // Delete a file whose ZooKeeper entry has already been removed.
+      cluster
+          .getZkClient()
+          .delete(DistribFileStore.ZK_PACKAGESTORE + "/package/mypkg/v1.0/runtimelibs.jar", -1);
       JettySolrRunner j = cluster.getRandomJetty(random());
       String path =
           j.getBaseURLV2() + "/cluster/filestore/files" + "/package/mypkg/v1.0/runtimelibs.jar";
@@ -193,6 +194,25 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
       expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
       checkAllNodesForFile(cluster, "/package/mypkg/v1.0/runtimelibs.jar", expected, false);
+
+      final String filePath = "/package/mypkg/v1.0/runtimelibs_v2.jar";
+      final String fileUrl = j.getBaseURLV2() + "/cluster/filestore/files" + filePath;
+      assertTrue(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + filePath));
+
+      resp =
+          j.getSolrClient()
+              .getHttpClient()
+              .newRequest(fileUrl + "?localDelete=true")
+              .method("DELETE")
+              .send();
+      assertEquals(400, resp.getStatus());
+      assertTrue(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + filePath));
+
+      resp = j.getSolrClient().getHttpClient().newRequest(fileUrl).method("DELETE").send();
+      assertEquals(200, resp.getStatus());
+      assertFalse(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + filePath));
+      expected = Collections.singletonMap(":files:" + filePath, null);
+      checkAllNodesForFile(cluster, filePath, expected, false);
     } finally {
       cluster.shutdown();
     }
