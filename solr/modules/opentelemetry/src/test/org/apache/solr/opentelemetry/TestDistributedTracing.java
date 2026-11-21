@@ -176,6 +176,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   public void testInternalCollectionApiCommands() throws Exception {
     String collecton = "testInternalCollectionApiCommands";
     verifyCollectionCreation(collecton);
+    verifyCollectionModification(collecton);
     verifyCollectionDeletion(collecton);
   }
 
@@ -186,10 +187,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     // Expecting 8 spans:
     // 1. api call "name=post:/admin/collections". db.instance=testInternalCollectionApiCommands
-    // - unique traceId unrelated to the internal trace id generated for the operation
+    // - root span, all following spans will have the same traceId
     // 2. internal CollectionApiCommand "name=CreateCollectionCmd"
     // db.instance=testInternalCollectionApiCommands
-    // - this will be the parent span, all following spans will have the same traceId
+    // - child of the api call span, parent of the core admin spans
     //
     // 3..6 (4 times) name=create:/admin/cores
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
@@ -216,20 +217,26 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(11, finishedSpans.size());
-    var parentTraceId = TracingTestUtil.getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
-      if (TracingTestUtil.isRootSpan(span)) {
+      if (span.getName().equals("CreateCollectionCmd")) {
+        assertEquals(s0.getSpanId(), span.getParentSpanId());
         assertCollectionName(span, collection);
       } else {
-        assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
         assertCoreName(span, collection);
       }
-      assertEquals(span.getTraceId(), parentTraceId);
+      assertEquals(s0.getTraceId(), span.getTraceId());
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
     var expectedOps =
         Map.of("CreateCollectionCmd", 1, "create:/admin/cores", 4, "post:/{core}/get", 6);
     assertEquals(expectedOps, ops);
+  }
+
+  private void verifyCollectionModification(String collection) throws Exception {
+    var request =
+        CollectionAdminRequest.modifyCollection(collection, Map.of("replicationFactor", 3));
+    assertEquals(0, request.process(cluster.getSolrClient()).getStatus());
+    getAndClearSpans(1);
   }
 
   private void verifyCollectionDeletion(String collection) throws Exception {
@@ -239,10 +246,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     // Expecting 6 spans:
     // 1. api call "name=delete:/admin/collections". db.instance=testInternalCollectionApiCommands
-    // - unique traceId unrelated to the internal trace id generated for the operation
+    // - root span, all following spans will have the same traceId
     // 2. internal CollectionApiCommand "name=DeleteCollectionCmd"
     // db.instance=testInternalCollectionApiCommands
-    // - this will be the parent span, all following spans will have the same traceId
+    // - child of the api call span, parent of the core admin spans
     //
     // 3..6 (4 times) name=unload:/admin/cores
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
@@ -257,15 +264,14 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(5, finishedSpans.size());
-    var parentTraceId = TracingTestUtil.getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
-      if (TracingTestUtil.isRootSpan(span)) {
+      if (span.getName().equals("DeleteCollectionCmd")) {
+        assertEquals(s0.getSpanId(), span.getParentSpanId());
         assertCollectionName(span, collection);
       } else {
-        assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
         assertCoreName(span, collection);
       }
-      assertEquals(span.getTraceId(), parentTraceId);
+      assertEquals(s0.getTraceId(), span.getTraceId());
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
     var expectedOps = Map.of("DeleteCollectionCmd", 1, "unload:/admin/cores", 4);
