@@ -17,14 +17,19 @@
 package org.apache.solr.cats.exec;
 
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /** File helpers for the harness, so the core needs no third-party IO library. */
 public final class CatsFiles {
+
+  private static final Duration DELETE_RETRY_TIMEOUT = Duration.ofSeconds(5);
 
   private CatsFiles() {}
 
@@ -39,7 +44,7 @@ public final class CatsFiles {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
-            Files.deleteIfExists(file);
+            deleteRetrying(file);
             return FileVisitResult.CONTINUE;
           }
 
@@ -49,9 +54,33 @@ public final class CatsFiles {
             if (failure != null) {
               throw failure;
             }
-            Files.deleteIfExists(dir);
+            deleteRetrying(dir);
             return FileVisitResult.CONTINUE;
           }
         });
+  }
+
+  /**
+   * Windows can keep a killed process's file handles open for a moment after the process is
+   * reported dead, so a delete that fails is retried for a few seconds before giving up.
+   */
+  private static void deleteRetrying(Path path) throws IOException {
+    long deadline = System.nanoTime() + DELETE_RETRY_TIMEOUT.toNanos();
+    while (true) {
+      try {
+        Files.deleteIfExists(path);
+        return;
+      } catch (FileSystemException e) {
+        if (System.nanoTime() >= deadline) {
+          throw e;
+        }
+        try {
+          TimeUnit.MILLISECONDS.sleep(100);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw e;
+        }
+      }
+    }
   }
 }
