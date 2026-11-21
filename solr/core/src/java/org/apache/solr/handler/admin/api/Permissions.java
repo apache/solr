@@ -129,7 +129,8 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
   }
 
   private void ensurePermissionExists(int index) {
-    if (!indexes(fetchPermissions()).contains(index)) {
+    // v1 addresses every entry without a numeric index as -1, so only positive indexes are safe.
+    if (index < 1 || !indexes(fetchPermissions()).contains(index)) {
       throw new SolrException(
           SolrException.ErrorCode.NOT_FOUND, "No permission exists with index [" + index + "]");
     }

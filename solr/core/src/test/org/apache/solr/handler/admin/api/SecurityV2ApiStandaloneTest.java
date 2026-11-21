@@ -105,6 +105,49 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
         solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
   }
 
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testNonPositiveIndexIsNotAddressable() throws Exception {
+    Map<String, Object> conf = (Map<String, Object>) Utils.fromJSONString(SecurityJson.SIMPLE);
+    Map<String, Object> authz = (Map<String, Object>) conf.get("authorization");
+    authz.put(
+        "permissions",
+        List.of(
+            Map.of("name", "all", "role", "admin", "index", 1),
+            Map.of("name", "read", "role", "guest", "index", "x"),
+            Map.of("name", "update", "role", "guest", "index", -1)));
+    Files.writeString(
+        solrHome.resolve("security.json"), Utils.toJSONString(conf), StandardCharsets.UTF_8);
+    List<Map<String, Object>> before = storedPermissions();
+
+    var update = authed(new AuthorizationApi.UpdatePermission(-1));
+    update.setRole(List.of("dev"));
+    assertEquals(
+        404,
+        expectThrows(RemoteSolrException.class, () -> update.process(solrTestRule.getAdminClient()))
+            .code());
+    var delete = authed(new AuthorizationApi.DeletePermission(-1));
+    assertEquals(
+        404,
+        expectThrows(RemoteSolrException.class, () -> delete.process(solrTestRule.getAdminClient()))
+            .code());
+    assertEquals(before, storedPermissions());
+
+    Files.writeString(
+        solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> storedPermissions() throws Exception {
+    Map<String, Object> authz =
+        (Map<String, Object>)
+            authed(new GenericSolrRequest(METHOD.GET, "/admin/authorization"))
+                .process(solrTestRule.getAdminClient())
+                .getResponse()
+                .get("authorization");
+    return (List<Map<String, Object>>) authz.get("permissions");
+  }
+
   private static <T extends SolrRequest<?>> T authed(T request) {
     request.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return request;
@@ -390,18 +433,11 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
     assertNull(stored.get("collection"));
   }
 
-  @SuppressWarnings("unchecked")
   private static Map<String, Object> storedPermission(String path) throws Exception {
-    var authz =
-        (Map<String, Object>)
-            authed(new GenericSolrRequest(METHOD.GET, "/admin/authorization"))
-                .process(solrTestRule.getAdminClient())
-                .getResponse()
-                .get("authorization");
-    Map<String, Object> stored =
-        ((List<Map<String, Object>>) authz.get("permissions"))
-            .stream().filter(p -> List.of(path).equals(p.get("path"))).findFirst().orElseThrow();
-    return stored;
+    return storedPermissions().stream()
+        .filter(p -> List.of(path).equals(p.get("path")))
+        .findFirst()
+        .orElseThrow();
   }
 
   @Test
