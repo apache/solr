@@ -1,6 +1,6 @@
 title: >
-  The graph query parser has a new `lookupFilter` param. Documents matching the traversal are still
-  returned, but only those matching `lookupFilter` have their edges followed. This can make traversals
+  The graph query parser has a new `expandFilter` param. Documents matching the traversal are still
+  returned, but only those matching `expandFilter` have their edges followed. This can make traversals
   much faster when many nodes are known to have no children, e.g. files in a file/folder hierarchy.
 type: added
 authors:

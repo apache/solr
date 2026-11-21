@@ -47,8 +47,8 @@ public class GraphPointsCollector extends GraphEdgeCollector {
   }
 
   public GraphPointsCollector(
-      SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet lookupNodes) {
-    super(collectField, skipSet, leafNodes, lookupNodes);
+      SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet expandNodes) {
+    super(collectField, skipSet, leafNodes, expandNodes);
   }
 
   @Override

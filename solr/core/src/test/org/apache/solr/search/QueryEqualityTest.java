@@ -851,7 +851,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "edge_s",
             "traversalFilter",
             "foo",
-            "lookupFilter",
+            "expandFilter",
             "bar",
             "returnOnlyLeaf",
             "true",
@@ -898,12 +898,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertQueryEquals(
         "graph",
         req,
-        "{!graph from=node_s to=edge_s traversalFilter=foo lookupFilter=bar}*:*",
-        "{!graph from=$from to=$to traversalFilter=$traversalFilter lookupFilter=$lookupFilter}*:*");
+        "{!graph from=node_s to=edge_s traversalFilter=foo expandFilter=bar}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter expandFilter=$expandFilter}*:*");
 
     QueryUtils.checkUnequal(
         QParser.getParser("{!graph from=node_s to=edge_s}*:*", req).getQuery(),
-        QParser.getParser("{!graph from=node_s to=edge_s lookupFilter=bar}*:*", req).getQuery());
+        QParser.getParser("{!graph from=node_s to=edge_s expandFilter=bar}*:*", req).getQuery());
   }
 
   public void testQuerySurround() throws Exception {

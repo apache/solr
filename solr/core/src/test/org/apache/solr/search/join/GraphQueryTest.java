@@ -141,7 +141,7 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
         req(p, "q", "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=1}id:doc_1"),
         "/response/numFound==1");
 
-    // lookupFilter: nodes not matching it are collected, but their edges are not followed
+    // expandFilter: nodes not matching it are collected, but their edges are not followed
     // 10 -> 11 -> (12 | 13): doc_11 is collected but not expanded
     assertJQ(
         req(p, "q", "{!graph from=${node_id} to=${edge_id}}id:doc_10"), "/response/numFound==4");
@@ -149,18 +149,18 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
         req(
             p,
             "q",
-            "{!graph from=${node_id} to=${edge_id} lookupFilter='id:doc_10'}id:doc_10",
+            "{!graph from=${node_id} to=${edge_id} expandFilter='id:doc_10'}id:doc_10",
             "sort",
             "id asc"),
         "/response/numFound==2",
         "/response/docs/[0]/id=='doc_10'",
         "/response/docs/[1]/id=='doc_11'");
-    // a pure negative lookupFilter excludes doc_11 from expansion
+    // a pure negative expandFilter excludes doc_11 from expansion
     assertJQ(
         req(
             p,
             "q",
-            "{!graph from=${node_id} to=${edge_id} lookupFilter='-id:doc_11'}id:doc_10",
+            "{!graph from=${node_id} to=${edge_id} expandFilter='-id:doc_11'}id:doc_10",
             "sort",
             "id asc"),
         "/response/numFound==2",
@@ -171,7 +171,7 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
         req(
             p,
             "q",
-            "{!graph from=${node_id} to=${edge_id} lookupFilter='id:(doc_8 doc_2)'}id:doc_8",
+            "{!graph from=${node_id} to=${edge_id} expandFilter='id:(doc_8 doc_2)'}id:doc_8",
             "sort",
             "id asc"),
         "/response/numFound==5",
@@ -180,16 +180,16 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
         "/response/docs/[2]/id=='doc_3'",
         "/response/docs/[3]/id=='doc_8'",
         "/response/docs/[4]/id=='doc_9'");
-    // root not matching lookupFilter is returned but not expanded
+    // root not matching expandFilter is returned but not expanded
     assertJQ(
-        req(p, "q", "{!graph from=${node_id} to=${edge_id} lookupFilter='id:doc_1'}id:doc_8"),
+        req(p, "q", "{!graph from=${node_id} to=${edge_id} expandFilter='id:doc_1'}id:doc_8"),
         "/response/numFound==1");
     // combined with traversalFilter: doc_9 is not traversed, doc_3 is collected but not expanded
     assertJQ(
         req(
             p,
             "q",
-            "{!graph from=${node_id} to=${edge_id} traversalFilter='id:(doc_1 doc_2 doc_3 doc_4 doc_5)' lookupFilter='id:(doc_8 doc_2)'}id:doc_8"),
+            "{!graph from=${node_id} to=${edge_id} traversalFilter='id:(doc_1 doc_2 doc_3 doc_4 doc_5)' expandFilter='id:(doc_8 doc_2)'}id:doc_8"),
         "/response/numFound==4");
     assertJQ(
         req(
@@ -202,13 +202,13 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
         req(
             p,
             "q",
-            "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=2 lookupFilter='id:(doc_8 doc_2)'}id:doc_8"),
+            "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=2 expandFilter='id:(doc_8 doc_2)'}id:doc_8"),
         "/response/numFound==4");
     assertJQ(
         req(
             p,
             "q",
-            "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=2 lookupFilter='id:doc_8'}id:doc_8"),
+            "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=2 expandFilter='id:doc_8'}id:doc_8"),
         "/response/numFound==2");
   }
 

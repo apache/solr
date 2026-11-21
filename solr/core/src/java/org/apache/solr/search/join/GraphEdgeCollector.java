@@ -53,7 +53,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
   // known leaf nodes
   DocSet leafNodes;
   // nodes whose edges may be followed (null means all nodes)
-  DocSet lookupNodes;
+  DocSet expandNodes;
 
   int numHits = 0; // number of documents visited
   BitSet bits; // if not null, used to collect documents visited
@@ -62,13 +62,13 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
 
   SchemaField collectField;
 
-  // skipSet, leafNodes and lookupNodes may be null
+  // skipSet, leafNodes and expandNodes may be null
   GraphEdgeCollector(
-      SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet lookupNodes) {
+      SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet expandNodes) {
     this.collectField = collectField;
     this.skipSet = skipSet;
     this.leafNodes = leafNodes;
-    this.lookupNodes = lookupNodes;
+    this.expandNodes = expandNodes;
   }
 
   // Set to use to collect docs being visited
@@ -96,9 +96,9 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     numHits++;
 
     // Optimization to not look up edges for a document that is a leaf node (i.e. has no outgoing
-    // edges), or that doesn't match the lookup filter (collected, but not expanded)
+    // edges), or that doesn't match the expand filter (collected, but not expanded)
     if ((leafNodes == null || !leafNodes.exists(doc))
-        && (lookupNodes == null || lookupNodes.exists(doc))) {
+        && (expandNodes == null || expandNodes.exists(doc))) {
       addEdgeIdsToResult(segDoc);
     }
     // Note: tracking links in for each result would be a huge memory hog... so not implementing at
@@ -132,8 +132,8 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     private SortedSetDocValues docTermOrds;
 
     GraphTermsCollector(
-        SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet lookupNodes) {
-      super(collectField, skipSet, leafNodes, lookupNodes);
+        SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet expandNodes) {
+      super(collectField, skipSet, leafNodes, expandNodes);
       this.collectorTerms = new BytesRefHash();
     }
 
