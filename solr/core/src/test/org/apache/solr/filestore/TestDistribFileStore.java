@@ -348,7 +348,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   public static UploadToFileStoreResponse postFile(
       SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
-    final var uploadReq = new FileStoreApi.UploadFile(name, new ByteBufferInputStream(buffer));
+    final var uploadReq =
+        new FileStoreApi.UploadFile(
+            name, new ByteBufferInputStream(buffer), "application/octet-stream");
     if (sig != null) {
       uploadReq.setSig(List.of(sig));
     }
