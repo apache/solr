@@ -1069,16 +1069,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='7']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      assertQ(
-          "",
-          reqWithPath("/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elev]"),
-          "//*[@numFound='1']",
-          "//result/doc[1]/str[@name='id'][.='7']",
-          "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
-          "not(//result/doc[1]/bool[@name='[elev]'][.='false'])"
-          // even though we asked for elev, there is no Transformer registered w/ that, so we
-          // shouldn't get a result
-          );
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  h.query(
+                      reqWithPath(
+                          "/elevate", CommonParams.Q, "AAAA", CommonParams.FL, "id, score, [elev]")));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(e.getMessage(), e.getMessage().contains("Unknown DocTransformer: elev"));
     } finally {
       delete();
     }
