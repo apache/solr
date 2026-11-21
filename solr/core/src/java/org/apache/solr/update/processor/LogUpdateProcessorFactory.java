@@ -198,22 +198,30 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory
 
       // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
 
-      if (log.isInfoEnabled()) {
-        log.info(getLogStringAndClearRspToLog());
-      }
+      final boolean logInfo = log.isInfoEnabled();
+      final boolean logSlow =
+          log.isWarnEnabled()
+              && slowUpdateThresholdMillis >= 0
+              && (long) req.getRequestTimer().getTime() >= slowUpdateThresholdMillis;
 
-      if (log.isWarnEnabled() && slowUpdateThresholdMillis >= 0) {
-        final long elapsed = (long) req.getRequestTimer().getTime();
-        if (elapsed >= slowUpdateThresholdMillis) {
-          log.warn("slow: {}", getLogStringAndClearRspToLog());
+      if (logInfo || logSlow) {
+        // Build the message once: both the INFO and the "slow" WARN message need the full
+        // rsp.toLog content, and the toLog must only be cleared after every use of it
+        // (SOLR-16910).
+        final String logString = getLogString();
+        rsp.getToLog().clear(); // make it so SolrCore.exec won't log this again
+
+        if (logInfo) {
+          log.info(logString);
+        }
+        if (logSlow) {
+          log.warn("slow: {}", logString);
         }
       }
     }
 
-    private String getLogStringAndClearRspToLog() {
+    private String getLogString() {
       StringBuilder sb = new StringBuilder(rsp.getToLogAsString());
-
-      rsp.getToLog().clear(); // make it so SolrCore.exec won't log this again
 
       // if id lists were truncated, show how many more there were
       if (adds != null && numAdds > maxNumToLog) {
