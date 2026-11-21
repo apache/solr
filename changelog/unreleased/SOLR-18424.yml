@@ -1,0 +1,11 @@
+title: >
+  Added `rerankOversample` parameter to the `{!knn}` query parser. The approximate vector search
+  collects `topK * rerankOversample` candidates, which are then rescored against the raw
+  full-precision vectors and reranked down to `topK` results. Recommended for quantized dense
+  vector fields, particularly binary quantized ones, where it recovers recall lost to quantization.
+type: added
+authors:
+  - name: Kevin Liang
+links:
+  - name: SOLR-18424
+    url: https://issues.apache.org/jira/browse/SOLR-18424
