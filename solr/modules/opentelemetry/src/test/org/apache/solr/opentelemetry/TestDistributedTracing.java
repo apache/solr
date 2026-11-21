@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -173,6 +174,29 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   @Test
+  public void testV2RetryOnMissingCore() throws Exception {
+    String collection = getTestName();
+    CollectionAdminRequest.createCollection(collection, "config", 1, 1)
+        .setCreateNodeSet("EMPTY")
+        .process(cluster.getSolrClient());
+    var client = cluster.getJettySolrRunner(0).getSolrClient();
+    getAndClearSpans(1);
+
+    expectThrows(RemoteSolrException.class, () -> client.query(collection, new SolrQuery("*:*")));
+    assertRetryEvent();
+
+    expectThrows(
+        RemoteSolrException.class,
+        () ->
+            new V2Request.Builder("/c/" + collection + "/select")
+                .withMethod(SolrRequest.METHOD.GET)
+                .withParams(params("q", "*:*"))
+                .build()
+                .process(client));
+    assertRetryEvent();
+  }
+
+  @Test
   public void testInternalCollectionApiCommands() throws Exception {
     String collecton = "testInternalCollectionApiCommands";
     verifyCollectionCreation(collecton);
@@ -286,5 +310,12 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static List<SpanData> getAndClearSpans(int minExpected) {
     return TracingTestUtil.getAndClearSpans(otelRule, minExpected);
+  }
+
+  private static void assertRetryEvent() {
+    assertTrue(
+        getAndClearSpans(1).stream()
+            .flatMap(span -> span.getEvents().stream())
+            .anyMatch(event -> "Action RETRY".equals(event.getName())));
   }
 }
