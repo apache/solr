@@ -382,6 +382,65 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
                             + "ranges:[{range:\"(200,12)\"}]}}")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("'start' is higher than 'end' in range for key: (200,12)", ex.getMessage());
+
+    // terms-facet parameters that range facets used to silently ignore (SOLR-18482)
+    String[][] unsupportedParams = {
+      {"limit", "1"},
+      {"offset", "1"},
+      {"sort", "'count desc'"},
+      {"prelim_sort", "'count desc'"},
+      {"overrequest", "1"},
+      {"overrefine", "1"},
+      {"refine", "true"}
+    };
+    for (String[] unsupported : unsupportedParams) {
+      ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  h.query(
+                      req(
+                          params,
+                          "json.facet",
+                          "{price:{type:range, field:num_i, start:0, end:10, gap:5, "
+                              + unsupported[0]
+                              + ":"
+                              + unsupported[1]
+                              + "}}")));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage().contains(unsupported[0] + " is not supported on range facets"));
+    }
+
+    // the {range:{...}} form is rejected the same way
+    ex =
+        expectThrows(
+            SolrException.class,
+            () ->
+                h.query(
+                    req(
+                        params,
+                        "json.facet",
+                        "{price:{range:{field:num_i, start:0, end:10, gap:5,"
+                            + " sort:'count desc'}}}")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("sort is not supported on range facets"));
+
+    // with several unsupported parameters present, the first one in a fixed order is named
+    ex =
+        expectThrows(
+            SolrException.class,
+            () ->
+                h.query(
+                    req(
+                        params,
+                        "json.facet",
+                        "{price:{type:range, field:num_i, start:0, end:10, gap:5,"
+                            + " sort:'count desc', limit:1}}")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("limit is not supported on range facets"));
+
+    // the same range facet without unsupported parameters still works
+    h.query(req(params, "json.facet", "{price:{type:range, field:num_i, start:0, end:10, gap:5}}"));
   }
 
   @Test
