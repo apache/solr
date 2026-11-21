@@ -125,6 +125,54 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals("date desc", q.getSortField());
   }
 
+  public void testGetCopyKeepsSortClauses() {
+    SolrQuery q = new SolrQuery("dog");
+    q.addSort("price", SolrQuery.ORDER.asc);
+    q.addSort("id", SolrQuery.ORDER.desc);
+
+    SolrQuery copy = q.getCopy();
+    assertEquals(q.getSorts(), copy.getSorts());
+    assertEquals("price asc,id desc", copy.getSortField());
+
+    // changing the copy must not change the original, and must keep the copied clauses
+    copy.addSort("score", SolrQuery.ORDER.desc);
+    assertEquals("price asc,id desc,score desc", copy.getSortField());
+    assertEquals(2, q.getSorts().size());
+    assertEquals("price asc,id desc", q.getSortField());
+  }
+
+  public void testGetCopyWithoutSortClauses() {
+    SolrQuery q = new SolrQuery("dog");
+
+    SolrQuery copy = q.getCopy();
+    assertTrue(copy.getSorts().isEmpty());
+    assertNull(copy.getSortField());
+
+    copy.addSort("price", SolrQuery.ORDER.asc);
+    assertEquals("price asc", copy.getSortField());
+    assertTrue(q.getSorts().isEmpty());
+    assertNull(q.getSortField());
+  }
+
+  public void testGetCopyRemoveReplaceAndClearSortClauses() {
+    SolrQuery q = new SolrQuery("dog");
+    q.addSort("price", SolrQuery.ORDER.asc);
+    q.addSort("id", SolrQuery.ORDER.desc);
+
+    SolrQuery copy = q.getCopy();
+    copy.removeSort("price");
+    assertEquals("id desc", copy.getSortField());
+    copy.addOrUpdateSort("id", SolrQuery.ORDER.asc);
+    assertEquals("id asc", copy.getSortField());
+    copy.clearSorts();
+    assertTrue(copy.getSorts().isEmpty());
+    assertNull(copy.getSortField());
+
+    // the original keeps its clauses through all of the copy's changes
+    assertEquals(2, q.getSorts().size());
+    assertEquals("price asc,id desc", q.getSortField());
+  }
+
   /*
    * Verifies that getSort() returns an immutable map,
    * for both empty and non-empty situations
