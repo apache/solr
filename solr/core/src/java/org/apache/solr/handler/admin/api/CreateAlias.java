@@ -20,6 +20,8 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.COLLECTIONS;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CATEGORY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.DIMENSIONAL;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_FIELD;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.TIME;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_MAX_FUTURE;
@@ -35,6 +37,7 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CreateAliasApi;
@@ -123,10 +126,19 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
     remoteMessage.put(NAME, requestBody.name);
 
     if (requestBody.routers.size() > 1) { // Multi-dimensional alias
+      final List<String> dimensionTypes = new ArrayList<>();
+      final List<String> dimensionFields = new ArrayList<>();
       for (int i = 0; i < requestBody.routers.size(); i++) {
-        createValidationHelper(requestBody.routers.get(i))
-            .addRemoteMessageProperties(remoteMessage, "router." + i + ".");
+        final RoutedAliasProperties router = requestBody.routers.get(i);
+        final RoutedAliasValidationHelper helper = createValidationHelper(router);
+        helper.addRemoteMessageProperties(remoteMessage, "router." + i + ".");
+        dimensionTypes.add(helper.getRouterType().name());
+        dimensionFields.add(router.field);
       }
+      // The overseer also requires the top level router name and field, in the same shape
+      // that SolrJ sends for a dimensional alias.
+      remoteMessage.put(ROUTER_TYPE_NAME, DIMENSIONAL + String.join(",", dimensionTypes) + "]");
+      remoteMessage.put(ROUTER_FIELD, String.join(",", dimensionFields));
     } else if (requestBody.routers.size() == 1) { // Single dimensional alias
       createValidationHelper(requestBody.routers.get(0))
           .addRemoteMessageProperties(remoteMessage, "router.");
@@ -238,6 +250,8 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
 
     void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix);
 
+    RoutedAliasTypes getRouterType();
+
     default void ensureRequiredFieldPresent(Object val, String name) {
       if (val == null) {
         throw new SolrException(
@@ -283,6 +297,11 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
     }
 
     @Override
+    public RoutedAliasTypes getRouterType() {
+      return RoutedAliasTypes.TIME;
+    }
+
+    @Override
     public void addRemoteMessageProperties(Map<String, Object> remoteMessage, String prefix) {
       remoteMessage.put(prefix + CoreAdminParams.NAME, TIME);
       remoteMessage.put(prefix + "field", aliasProperties.field);
@@ -325,6 +344,11 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
     @Override
     public void validate() {
       ensureRequiredFieldPresent(aliasProperties.field, "'field' on category routed alias");
+    }
+
+    @Override
+    public RoutedAliasTypes getRouterType() {
+      return RoutedAliasTypes.CATEGORY;
     }
 
     @Override
