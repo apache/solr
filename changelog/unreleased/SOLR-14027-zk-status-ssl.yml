@@ -1,0 +1,11 @@
+title: >
+  The Admin UI's ZooKeeper status page (and its underlying /admin/zookeeper/status
+  endpoint) now works against an SSL/TLS-enabled ZooKeeper. ZookeeperStatusHandler
+  previously always used a plaintext socket for its four-letter-word commands, which
+  failed against a ZooKeeper requiring TLS.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-14027
+    url: https://issues.apache.org/jira/browse/SOLR-14027

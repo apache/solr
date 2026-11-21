@@ -143,6 +143,10 @@ grant {
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
 
+  // Read by ZookeeperSSLContextSupplier when ZooKeeper TLS revocation checking is enabled
+  // (zookeeper.ssl.crl or zookeeper.ssl.ocsp)
+  permission java.security.SecurityPermission "getProperty.com.sun.security.onlyCheckRevocationOfEECert";
+
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
   // SSL related properties for Solr tests
@@ -167,6 +171,8 @@ grant {
 
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
+  // Netty uses network interface information to generate channel identifiers.
+  permission java.net.NetPermission "getNetworkInformation";
   permission java.net.NetPermission "requestPasswordAuthentication";
 };
 
@@ -180,6 +186,12 @@ grant {
   permission java.io.FilePermission "${javax.net.ssl.keyStore}", "read,readlink";
 
   permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,readlink";
+
+  // Optional ZooKeeper overrides supplied as JVM properties.
+  permission java.io.FilePermission "${zookeeper.ssl.keyStore.location}", "read,readlink";
+  permission java.io.FilePermission "${zookeeper.ssl.keyStore.passwordPath}", "read,readlink";
+  permission java.io.FilePermission "${zookeeper.ssl.trustStore.location}", "read,readlink";
+  permission java.io.FilePermission "${zookeeper.ssl.trustStore.passwordPath}", "read,readlink";
 
   permission java.io.FilePermission "${solr.jetty.keystoreParentPath}", "read,readlink";
   permission java.io.FilePermission "${javax.net.ssl.keyStoreParentPath}", "read,readlink";
@@ -230,4 +242,15 @@ grant {
 // Permissions for OTEL Runtime Java 17 telemetry and metrics
 grant {
   permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+};
+
+// Netty's buffer allocator declares its own JFR event and registers it with the Flight Recorder
+// the first time it allocates a chunk. ZooKeeper uses the Netty transport whenever its client
+// connection is TLS-secured (e.g. embedded ZooKeeper with Solr's HTTPS enabled), so the first TLS
+// handshake triggers that registration. Granted to all code, since without a privileged block
+// every frame on the stack (Solr and ZooKeeper as well as Netty) needs the permission.
+grant {
+  permission jdk.jfr.FlightRecorderPermission "registerEvent";
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
 };

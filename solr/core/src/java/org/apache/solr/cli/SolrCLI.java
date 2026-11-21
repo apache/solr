@@ -141,7 +141,9 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
     if (EnvUtils.getPropertyAsBool("solr.picocli", true)) {
+      SSLConfigurationsFactory.current().initZooKeeper();
       SSLConfigurationsFactory.current().init();
+
       picocli.CommandLine commandLine = new picocli.CommandLine(new SolrCLI());
       propagateCommandSettings(commandLine);
       exit(commandLine.execute(stripEmptyLeadingArg(args)));
@@ -270,7 +272,7 @@ public class SolrCLI implements CLIO, java.util.concurrent.Callable<Integer> {
         args = trimmedArgs;
       }
     }
-    SSLConfigurationsFactory.current().init();
+    SSLConfigurationsFactory.current().initZooKeeper();
 
     Tool tool = null;
     try {

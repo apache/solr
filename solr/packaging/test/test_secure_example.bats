@@ -107,27 +107,88 @@ teardown() {
     assert_failure
   done
 
-  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT"
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT/solr"
   assert_success
   assert_output --partial 'collections'
 
-  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= solr zk ls / --zk-host "localhost:$ZK_PORT"
+  # The example uses a /solr chroot: ZooKeeper's root holds the chroot, not Solr's own znodes.
+  run env SOLR_INCLUDE="$SOLR_HOME/tls/solr.in.sh" solr zk ls / --zk-host "localhost:$ZK_PORT"
+  assert_success
+  assert_output --partial 'solr'
+  refute_output --partial 'collections'
+
+  # The Admin UI's ZK status page (ZookeeperStatusHandler) talks to ZooKeeper over a raw
+  # socket with four-letter-word commands, separately from the SolrZkClient used above;
+  # confirm it also works against the now TLS-only embedded ZooKeeper.
+  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    --user "admin:$password" "https://localhost:$SOLR_PORT/solr/admin/zookeeper/status?wt=json"
+  assert_success
+  assert_output --partial '"ok":true'
+  assert_output --partial '"status":"green"'
+
+  run cat "$SOLR_HOME/node1/solr/zoo.cfg"
+  assert_success
+  refute_output --partial 'secureClientPort='
+  refute_output --partial 'ssl.keyStore.password'
+
+  local -a tls_env=(
+    SOLR_INCLUDE=/dev/null
+    SOLR_SSL_ENABLED=true
+    SOLR_SSL_CLIENT_TRUST_STORE="$SOLR_HOME/tls/solr-ssl.truststore.p12"
+    SOLR_SSL_CLIENT_TRUST_STORE_TYPE=PKCS12
+    SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD="$password"
+    SOLR_TOOL_OPTS=-Dzookeeper.client.secure=true
+  )
+
+  # Embedded ZooKeeper's clientPort is TLS-only; a client that doesn't speak TLS at all can't
+  # even reach the ACL check, so it times out instead of getting a clean rejection.
+  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS= SOLR_TOOL_OPTS= \
+    solr zk ls / --zk-host "localhost:$ZK_PORT"
+  assert_failure
+  assert_output --partial 'Timeout while waiting for Zookeeper Client to connect'
+
+  run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS= \
+    solr zk ls / --zk-host "localhost:$ZK_PORT/solr"
   assert_failure
   assert_output --partial 'NoAuth'
 
   local readonly_opts="-DzkCredentialsInjector=org.apache.solr.common.cloud.VMParamsZkCredentialsInjector -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider -DzkDigestUsername=zk-readonly -DzkDigestPassword=$password"
-  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk ls /collections --zk-host "localhost:$ZK_PORT"
+  run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
+    solr zk ls /collections --zk-host "localhost:$ZK_PORT/solr"
   assert_success
   assert_output --partial 'techproducts'
-  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" --zk-host "localhost:$ZK_PORT"
+  run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
+    solr zk cp zk:/security.json "$BATS_TEST_TMPDIR/security.json" --zk-host "localhost:$ZK_PORT/solr"
   assert_failure
   assert_output --partial 'NoAuth'
-  run env SOLR_INCLUDE=/dev/null SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
-    solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT"
+  run env "${tls_env[@]}" SOLR_ZK_CREDS_AND_ACLS="$readonly_opts" \
+    solr zk mkroot /forbidden --zk-host "localhost:$ZK_PORT/solr"
   assert_failure
   assert_output --partial 'NoAuth'
+
+  # A normal HTTPS start also secures its embedded ZooKeeper without an explicit client switch.
+  local automatic_home="$SOLR_HOME/automatic-tls"
+  local automatic_include="$BATS_TEST_TMPDIR/automatic-tls.in.sh"
+  mkdir -p "$automatic_home"
+  cp "$SOLR_TIP/server/solr/solr.xml" "$automatic_home/solr.xml"
+  sed -n '/^SOLR_SSL_/p' "$SOLR_HOME/tls/solr.in.sh" > "$automatic_include"
+  printf 'SOLR_SSL_TRUST_STORE="%s"\nSOLR_SSL_CLIENT_TRUST_STORE="%s"\n' \
+    "$SOLR_HOME/tls/solr-ssl.keystore.p12" "$SOLR_HOME/tls/solr-ssl.keystore.p12" >> "$automatic_include"
+  chmod 600 "$automatic_include"
+  cp "$automatic_include" "$automatic_include.original"
+  run env SOLR_INCLUDE="$automatic_include" SOLR_OPTS= SOLR_TOOL_OPTS= SOLR_ZK_CREDS_AND_ACLS= \
+    solr start -c -p "$SOLR3_PORT" --solr-home "$automatic_home"
+  assert_success
+  run curl --noproxy '*' --silent --show-error --fail --cacert "$SOLR_HOME/tls/cert.pem" \
+    "https://localhost:$SOLR3_PORT/solr/admin/zookeeper/status?wt=json"
+  assert_success
+  assert_output --partial '"ok":true'
+  assert_output --partial '"status":"green"'
+  run cmp "$automatic_include.original" "$automatic_include"
+  assert_success
+  run ls -a "$automatic_home"
+  assert_success
+  refute_output --partial 'zoo.cfg'
 }
 
 @test "secure example rejects unsupported options" {

@@ -174,6 +174,9 @@ grant {
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.asn1.max_cons_depth";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.ec.max_f2m_field_size";
 
+  // Read by ZookeeperSSLContextSupplier when ZooKeeper TLS revocation checking is enabled
+  permission java.security.SecurityPermission "getProperty.com.sun.security.onlyCheckRevocationOfEECert";
+
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
   permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
@@ -190,6 +193,9 @@ grant {
 
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
+  // Netty uses network interface information to generate channel identifiers (ZooKeeper's TLS
+  // transport). Mirrors solr/server/etc/security.policy.
+  permission java.net.NetPermission "getNetworkInformation";
   permission java.net.NetPermission "requestPasswordAuthentication";
 
   // for java.net.http.HttpClient, which checks the URL rather than the socket. Any path:
@@ -305,6 +311,15 @@ grant {
 grant {
     permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
     // OtelRuntimeJvmMetrics opens a JFR recording stream for the JVM metrics
+    permission jdk.jfr.FlightRecorderPermission "registerEvent";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
+};
+
+// Netty's buffer allocator registers its own JFR event on first use, which happens during the
+// first TLS handshake of a TLS-secured ZooKeeper connection (ZooKeeper's Netty transport).
+// Mirrors solr/server/etc/security.policy.
+grant {
     permission jdk.jfr.FlightRecorderPermission "registerEvent";
     permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
     permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";

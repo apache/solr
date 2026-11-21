@@ -1,0 +1,12 @@
+title: >
+  Embedded ZooKeeper now configures its client listener for TLS at runtime when
+  Solr HTTPS is enabled, reusing Solr's SSL settings and credential providers.
+  Joining Solr nodes and CLI clients must explicitly enable zookeeper.client.secure
+  and supply matching client SSL settings. External ensembles remain independently
+  configured; ZooKeeper quorum and election traffic is unchanged.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18659
+    url: https://issues.apache.org/jira/browse/SOLR-18659

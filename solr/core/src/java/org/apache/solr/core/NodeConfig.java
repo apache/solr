@@ -46,6 +46,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.ModuleUtils;
+import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,7 +244,10 @@ public class NodeConfig {
     //  delay starting a solr core to satisfy
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (StrUtils.isNotNullOrEmpty(zkHost)) {
+    // An embedded ZooKeeper isn't running yet: this node starts it later, in ZkContainer.
+    boolean embeddedZk = EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
+    if (StrUtils.isNotNullOrEmpty(zkHost) && !embeddedZk) {
+      SSLConfigurationsFactory.current().initZooKeeper();
       int startUpZkTimeOut =
           1000
               * Integer.getInteger(

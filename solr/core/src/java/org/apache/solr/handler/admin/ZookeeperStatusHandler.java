@@ -16,13 +16,14 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.google.common.net.InetAddresses;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -31,9 +32,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SSLSocket;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkDynamicConfig;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -41,6 +46,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.client.ZKClientConfig;
+import org.apache.zookeeper.common.ClientX509Util;
+import org.apache.zookeeper.common.X509Exception;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +67,21 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final String STATUS_NA = "N/A";
   private CoreContainer cores;
 
+  // Reused across requests: it caches the SSLContext it builds, so the truststore is read and
+  // parsed once rather than for every four-letter-word command.
+  // TODO: that cached context is never rebuilt, so after a keystore or truststore is replaced on
+  // disk this page keeps using the old one until Solr restarts, while ZooKeeper's own client
+  // builds a fresh context for each connection and picks up the new files.
+  private final ClientX509Util x509Util = new ClientX509Util();
+
   public ZookeeperStatusHandler(CoreContainer cc) {
     this.cores = cc;
+  }
+
+  @Override
+  public void close() throws IOException {
+    x509Util.close();
+    super.close();
   }
 
   @Override
@@ -333,20 +354,57 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       port = Integer.parseInt(hostPort[1]);
     }
 
-    try (Socket socket = new Socket(host, port);
-        Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
-        PrintWriter out = new PrintWriter(writer, true);
-        BufferedReader in =
-            new BufferedReader(
-                new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-      out.print(fourLetterWordCommand);
-      out.flush();
-      List<String> response = in.lines().collect(Collectors.toList());
-      log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
-      return response;
+    boolean zkClientSecure = EnvUtils.getPropertyAsBool(ZKClientConfig.SECURE_CLIENT, false);
+    try (Socket socket = zkClientSecure ? createSecureSocket() : new Socket()) {
+      socket.setSoTimeout(
+          EnvUtils.getPropertyAsInteger(
+              "solr.zookeeper.client.timeout", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT));
+      // TODO: SNIHostName rejects names the JDK doesn't consider valid DNS names, such as ones
+      // with "_" (e.g. "zoo_1"); that IllegalArgumentException isn't caught below, so such hosts
+      // fail this request instead of connecting without SNI.
+      if (socket instanceof SSLSocket sslSocket && !InetAddresses.isInetAddress(host)) {
+        var parameters = sslSocket.getSSLParameters();
+        parameters.setServerNames(List.of(new SNIHostName(host)));
+        sslSocket.setSSLParameters(parameters);
+      }
+      socket.connect(
+          new InetSocketAddress(host, port),
+          EnvUtils.getPropertyAsInteger(
+              "solr.zookeeper.client.connect.timeout",
+              SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT));
+      if (socket instanceof SSLSocket sslSocket) {
+        sslSocket.startHandshake();
+      }
+      try (Writer out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
+          BufferedReader in =
+              new BufferedReader(
+                  new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+        out.write(fourLetterWordCommand);
+        out.flush();
+        List<String> response = new ArrayList<>();
+        String line;
+        while ((line = in.readLine()) != null) {
+          response.add(line);
+        }
+        log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
+        return response;
+      }
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed talking to Zookeeper " + zkHostPort, e);
+    }
+  }
+
+  /**
+   * Creates a TLS socket using the same {@code zookeeper.ssl.*} trust material {@code
+   * -Dzookeeper.client.secure=true} already configures for the regular ZooKeeper client (see {@link
+   * ClientX509Util}), rather than Solr's own HTTPS keystore/truststore system properties.
+   */
+  private SSLSocket createSecureSocket() throws IOException {
+    try {
+      return x509Util.getDefaultSSLContextAndOptions().createSSLSocket();
+    } catch (X509Exception e) {
+      throw new IOException("Failed to create a secure ZooKeeper socket", e);
     }
   }
 
