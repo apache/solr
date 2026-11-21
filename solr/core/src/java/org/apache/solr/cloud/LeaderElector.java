@@ -54,6 +54,8 @@ public class LeaderElector {
 
   static final String ELECTION_NODE = "/election";
 
+  static final int MAX_WATCH_FAILURES = 3;
+
   public static final Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private static final Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
   private static final Pattern NODE_NAME = Pattern.compile(".*?/?(.*?-)(.*?)-n_\\d+");
@@ -90,6 +92,12 @@ public class LeaderElector {
    * @param replacement has someone else been the leader already?
    */
   private void checkIfIamLeader(final ElectionContext context, boolean replacement)
+      throws KeeperException, InterruptedException {
+    checkIfIamLeader(context, replacement, 0);
+  }
+
+  private void checkIfIamLeader(
+      final ElectionContext context, boolean replacement, int watchFailures)
       throws KeeperException, InterruptedException {
     context.checkIfIamLeaderFired();
     // get all other numbers...
@@ -154,11 +162,14 @@ public class LeaderElector {
         throw e;
       } catch (KeeperException.NoNodeException e) {
         // the previous node disappeared, check if we are the leader again
-        checkIfIamLeader(context, true);
+        checkIfIamLeader(context, true, watchFailures);
       } catch (KeeperException e) {
-        // we couldn't set our watch for some other reason, retry
+        // we couldn't set our watch for some other reason, retry a few times
         log.warn("Failed setting watch", e);
-        checkIfIamLeader(context, true);
+        if (watchFailures + 1 >= MAX_WATCH_FAILURES) {
+          throw e;
+        }
+        checkIfIamLeader(context, true, watchFailures + 1);
       }
     }
   }
