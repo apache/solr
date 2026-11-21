@@ -38,6 +38,19 @@ public class OrEvaluator extends RecursiveBooleanEvaluator implements ManyValueW
   }
 
   @Override
+  public Object doWork(Object... values) throws IOException {
+    // Disjunctive reduction: the base class's pairwise loop short-circuits on the first
+    // failing pair, which is only correct for conjunctive (AND-style) checkers.
+    validateValues(values); // all values are Boolean after validation
+    for (Object value : values) {
+      if ((Boolean) value) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   protected Checker constructChecker(Object fromValue) throws IOException {
     if (null == fromValue) {
       throw new IOException(
@@ -49,7 +62,9 @@ public class OrEvaluator extends RecursiveBooleanEvaluator implements ManyValueW
       return new BooleanChecker() {
         @Override
         public boolean test(Object left, Object right) {
-          return (Boolean) left || (Boolean) right;
+          // Never invoked: doWork reduces the values itself, so this checker only
+          // provides the type validation performed by validateValues.
+          return false;
         }
       };
     }
