@@ -21,9 +21,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.channels.FileChannel;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
@@ -36,6 +50,8 @@ import org.slf4j.LoggerFactory;
 /** Security Configuration Handler which works on standalone local files */
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Set<PosixFilePermission> OWNER_READ_WRITE =
+      EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
   protected Path securityJsonPath;
   private final Object securityJsonLock = new Object();
 
@@ -96,8 +112,8 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to SOLR_HOME. Object was empty.");
     }
-    try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
-      securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
+    try {
+      replaceSecurityJson(Utils.toJSON(securityConfig.getData()));
       log.debug("Persisted security.json to {}", securityJsonPath);
       return true;
     } catch (Exception e) {
@@ -105,6 +121,136 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
           SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to " + securityJsonPath,
           e);
+    }
+  }
+
+  private void replaceSecurityJson(byte[] json) throws IOException {
+    if (!atomicReplaceSupported()) {
+      writeInPlace(json);
+      return;
+    }
+    Path tmpPath =
+        securityJsonPath.resolveSibling(
+            securityJsonPath.getFileName() + "." + UUID.randomUUID() + ".tmp");
+    boolean replacing = Files.exists(securityJsonPath);
+    try {
+      Files.createFile(tmpPath, temporaryFileAttributes(replacing));
+    } catch (AccessDeniedException e) {
+      log.warn(
+          "Could not create a temporary file next to {}, writing it in place", securityJsonPath, e);
+      writeInPlace(json);
+      return;
+    }
+    try {
+      Files.write(tmpPath, json);
+      syncFile(tmpPath);
+      if (Files.exists(securityJsonPath)) {
+        if (!hasSameOwner(tmpPath)) {
+          log.warn("{} is owned by another user, writing it in place", securityJsonPath);
+          writeInPlace(json);
+          return;
+        }
+        try {
+          copyGroup(tmpPath);
+        } catch (IOException e) {
+          log.warn("Could not keep the group of {}, writing it in place", securityJsonPath, e);
+          writeInPlace(json);
+          return;
+        }
+        copyPermissions(tmpPath);
+      }
+      try {
+        moveTemporaryFile(tmpPath);
+      } catch (IOException e) {
+        log.warn(
+            "Could not move a temporary file over {}, writing it in place", securityJsonPath, e);
+        writeInPlace(json);
+        return;
+      }
+      syncParentDirectory();
+    } finally {
+      try {
+        Files.deleteIfExists(tmpPath);
+      } catch (IOException e) {
+        log.warn("Could not remove temporary file {}", tmpPath, e);
+      }
+    }
+  }
+
+  private static FileAttribute<?>[] temporaryFileAttributes(boolean replacing) {
+    return replacing
+        ? new FileAttribute<?>[] {PosixFilePermissions.asFileAttribute(OWNER_READ_WRITE)}
+        : new FileAttribute<?>[0];
+  }
+
+  private void writeInPlace(byte[] json) throws IOException {
+    try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
+      securityJsonOs.write(json);
+    }
+  }
+
+  private boolean atomicReplaceSupported() throws IOException {
+    return supportsAtomicReplace(
+            securityJsonPath.getFileSystem().supportedFileAttributeViews(),
+            Files.isSymbolicLink(securityJsonPath))
+        && !hasHardLinks();
+  }
+
+  private boolean hasHardLinks() throws IOException {
+    return Files.exists(securityJsonPath)
+        && (int) Files.getAttribute(securityJsonPath, "unix:nlink") > 1;
+  }
+
+  static boolean supportsAtomicReplace(Set<String> fileAttributeViews, boolean symbolicLink) {
+    return !symbolicLink && fileAttributeViews.contains("posix");
+  }
+
+  private void syncParentDirectory() {
+    try {
+      syncDirectory(securityJsonPath.getParent());
+    } catch (IOException e) {
+      log.warn(
+          "Could not sync directory {} after replacing security.json",
+          securityJsonPath.getParent(),
+          e);
+    }
+  }
+
+  private void syncFile(Path path) throws IOException {
+    try (FileChannel channel = FileChannel.open(path, StandardOpenOption.WRITE)) {
+      channel.force(true);
+    }
+  }
+
+  private void copyPermissions(Path tmpPath) throws IOException {
+    Files.setPosixFilePermissions(tmpPath, Files.getPosixFilePermissions(securityJsonPath));
+  }
+
+  private void copyGroup(Path tmpPath) throws IOException {
+    GroupPrincipal group =
+        Files.readAttributes(securityJsonPath, PosixFileAttributes.class).group();
+    Files.getFileAttributeView(tmpPath, PosixFileAttributeView.class).setGroup(group);
+  }
+
+  private boolean hasSameOwner(Path tmpPath) throws IOException {
+    return Files.getOwner(tmpPath).equals(Files.getOwner(securityJsonPath));
+  }
+
+  private void moveTemporaryFile(Path tmpPath) throws IOException {
+    try {
+      Files.move(
+          tmpPath,
+          securityJsonPath,
+          StandardCopyOption.ATOMIC_MOVE,
+          StandardCopyOption.REPLACE_EXISTING);
+    } catch (AtomicMoveNotSupportedException e) {
+      Files.move(tmpPath, securityJsonPath, StandardCopyOption.REPLACE_EXISTING);
+    }
+  }
+
+  private void syncDirectory(Path dir) throws IOException {
+    try (FileChannel channel = FileChannel.open(dir, StandardOpenOption.READ)) {
+      channel.force(true);
     }
   }
 
