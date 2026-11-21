@@ -106,6 +106,9 @@ xref:cli/solr-package-uninstall.adoc[*uninstall*]::
 *1*::
   Operation failed; check output for details.
 
+*2*::
+  Invalid or incomplete command.
+
 // end::picocli-generated-man-section-exit-status[]
 
 // tag::picocli-generated-man-section-footer[]

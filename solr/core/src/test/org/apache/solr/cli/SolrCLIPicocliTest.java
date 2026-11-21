@@ -80,19 +80,29 @@ public class SolrCLIPicocliTest extends SolrTestCase {
 
     int exitCode = cmd.execute();
 
-    assertEquals("bare invocation should exit non-zero, as the commons-cli path does", 1, exitCode);
+    assertEquals("bare invocation should exit 2, matching an unknown command", 2, exitCode);
     assertTrue("bare invocation should print usage, got: " + out, out.toString().contains("solr"));
   }
 
-  /** {@code bin/solr --help} reaches the tool as a single empty argument via the shell script. */
   @Test
-  public void testEmptyLeadingArgIsStripped() {
-    assertArrayEquals(new String[0], SolrCLI.stripEmptyLeadingArg(new String[] {""}));
-    assertArrayEquals(
-        new String[] {"status"}, SolrCLI.stripEmptyLeadingArg(new String[] {"", "status"}));
-    assertArrayEquals(
-        new String[] {"status"}, SolrCLI.stripEmptyLeadingArg(new String[] {"status"}));
-    assertArrayEquals(new String[0], SolrCLI.stripEmptyLeadingArg(new String[0]));
+  public void testRootHelpExitsZero() {
+    for (String helpOption : new String[] {"-h", "--help"}) {
+      CommandLine cmd = rootCommand();
+      cmd.setOut(new PrintWriter(new StringWriter()));
+      cmd.setErr(new PrintWriter(new StringWriter()));
+      assertEquals("'bin/solr " + helpOption + "' should exit 0", 0, cmd.execute(helpOption));
+    }
+  }
+
+  @Test
+  public void testParentCommandsWithoutSubcommandExitTwo() {
+    for (String parent : new String[] {"zk", "snapshot", "package"}) {
+      CommandLine cmd = rootCommand();
+      cmd.setOut(new PrintWriter(new StringWriter()));
+      cmd.setErr(new PrintWriter(new StringWriter()));
+      assertEquals(
+          "'bin/solr " + parent + "' with no sub-command should exit 2", 2, cmd.execute(parent));
+    }
   }
 
   /**
