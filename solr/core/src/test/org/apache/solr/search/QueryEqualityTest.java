@@ -851,6 +851,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "edge_s",
             "traversalFilter",
             "foo",
+            "expandFilter",
+            "bar",
             "returnOnlyLeaf",
             "true",
             "returnRoot",
@@ -892,6 +894,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         req,
         "{!graph from=node_s to=edge_s traversalFilter=foo returnOnlyLeaf=true returnRoot=false maxDepth=2 useAutn=false}*:*",
         "{!graph from=$from to=$to traversalFilter=$traversalFilter returnOnlyLeaf=$returnOnlyLeaf returnRoot=$returnRoot maxDepth=$maxDepth useAutn=$useAutn}*:*");
+
+    assertQueryEquals(
+        "graph",
+        req,
+        "{!graph from=node_s to=edge_s traversalFilter=foo expandFilter=bar}*:*",
+        "{!graph from=$from to=$to traversalFilter=$traversalFilter expandFilter=$expandFilter}*:*");
+
+    QueryUtils.checkUnequal(
+        QParser.getParser("{!graph from=node_s to=edge_s}*:*", req).getQuery(),
+        QParser.getParser("{!graph from=node_s to=edge_s expandFilter=bar}*:*", req).getQuery());
   }
 
   public void testQuerySurround() throws Exception {

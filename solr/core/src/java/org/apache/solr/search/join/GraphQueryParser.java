@@ -41,6 +41,9 @@ public class GraphQueryParser extends QParser {
     String traversalFilterS = localParams.get("traversalFilter");
     Query traversalFilter =
         traversalFilterS == null ? null : subQuery(traversalFilterS, null).getQuery();
+    // only nodes matching the expand filter have their edges followed; others are still collected
+    String expandFilterS = localParams.get("expandFilter");
+    Query expandFilter = expandFilterS == null ? null : subQuery(expandFilterS, null).getQuery();
 
     // NOTE: the from/to are reversed from {!join}
     String fromField = localParams.get("from", "node_id");
@@ -62,6 +65,7 @@ public class GraphQueryParser extends QParser {
     // Construct a graph query object based on parameters passed in.
     GraphQuery gq = new GraphQuery(rootNodeQuery, fromField, toField, traversalFilter);
     // set additional parameters that are not in the constructor.
+    gq.setExpandFilter(expandFilter);
     gq.setMaxDepth(maxDepth);
     gq.setOnlyLeafNodes(onlyLeafNodes);
     gq.setReturnRoot(returnRootNodes);
