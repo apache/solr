@@ -36,7 +36,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,11 +107,91 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
     assertTrue("should have document ID", ex.getMessage().indexOf("doc=123") > 0);
-    assertTrue("cause is number format", ex.getCause() instanceof NumberFormatException);
+    assertNull("value-bearing parse errors must not escape through causes", ex.getCause());
 
     // now make sure it is OK
     doc.setField("weight", "1.34");
     DocumentBuilder.toDocument(doc, core.getLatestSchema());
+  }
+
+  @Test
+  public void testExceptionMessagesDoNotLeakFieldValues() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "123");
+    doc.addField("weight", "not-a-number-secret");
+    SolrException ex =
+        expectThrows(
+            SolrException.class, () -> DocumentBuilder.toDocument(doc, core.getLatestSchema()));
+    assertTrue(ex.getMessage().contains("Error adding field 'weight'"));
+    assertFalse(ex.getMessage().contains("not-a-number-secret"));
+    assertEquals(400, ex.code());
+    assertNull(ex.getCause());
+
+    SolrInputDocument multiValueDoc = new SolrInputDocument();
+    multiValueDoc.addField("id", "456");
+    multiValueDoc.addField("weight", "secret-one");
+    multiValueDoc.addField("weight", "secret-two");
+    SolrException multiValueEx =
+        expectThrows(
+            SolrException.class,
+            () -> DocumentBuilder.toDocument(multiValueDoc, core.getLatestSchema()));
+    assertTrue(
+        multiValueEx
+            .getMessage()
+            .contains("multiple values encountered for non multiValued field weight"));
+    assertFalse(multiValueEx.getMessage().contains("secret-one"));
+    assertFalse(multiValueEx.getMessage().contains("secret-two"));
+  }
+
+  @Test
+  @LogLevel("org.apache.solr.update.DocumentBuilder=INFO")
+  public void testFailedUpdateDoesNotLogFieldValue() {
+    try (LogListener errors =
+            LogListener.error(RequestHandlerBase.class).substring("Error adding field 'weight'");
+        LogListener leakedValues =
+            LogListener.error(RequestHandlerBase.class).substring("not-a-number-secret");
+        LogListener documentIds =
+            LogListener.error(RequestHandlerBase.class).substring("[doc=123]")) {
+      assertFailedU(adoc("id", "123", "weight", "not-a-number-secret"));
+      assertEquals(1, errors.getCount());
+      assertEquals(1, documentIds.getCount());
+      String message = errors.pollMessage();
+      assertNotNull(message);
+      assertFalse(message.contains("not-a-number-secret"));
+      assertNotNull(documentIds.pollMessage());
+      int leakedValueCount = leakedValues.getCount();
+      while (leakedValues.pollMessage() != null) {
+        // Drain matches before asserting to avoid close-time secondary failures.
+      }
+      assertEquals("Sensitive value present in ERROR log", 0, leakedValueCount);
+    }
+  }
+
+  @Test
+  @LogLevel("org.apache.solr.update.DocumentBuilder=TRACE")
+  public void testFieldErrorDetailsAreAvailableAtTrace() {
+    try (LogListener valueTraces =
+            LogListener.trace(DocumentBuilder.class).substring("not-a-number-secret");
+        LogListener exceptionTraces =
+            LogListener.trace(DocumentBuilder.class)
+                .substring(NumberFormatException.class.getName())) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "123");
+      doc.addField("weight", "not-a-number-secret");
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> DocumentBuilder.toDocument(doc, h.getCore().getLatestSchema()));
+      assertNull(ex.getCause());
+      assertEquals(1, valueTraces.getCount());
+      assertEquals(1, exceptionTraces.getCount());
+      String traceMessage = valueTraces.pollMessage();
+      assertNotNull(traceMessage);
+      assertTrue(traceMessage.contains("not-a-number-secret"));
+      assertNotNull(exceptionTraces.pollMessage());
+    }
   }
 
   @Test
@@ -417,10 +500,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=0] Error adding field 'vector3'='[1.1, 2.1, 3.1, 4.1]' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
+    assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector3'"));
   }
 
   @Test
@@ -438,13 +518,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    assertThat(
-        thrown.getMessage(),
-        is(
-            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
-    assertThat(
-        thrown.getCause().getCause().getMessage(),
-        is(
-            "incorrect vector dimension. The vector value has size 4 while it is expected a vector with size 5"));
+    assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector4'"));
+    assertNull(thrown.getCause());
   }
 }

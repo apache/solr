@@ -161,6 +161,11 @@ public final class LogListener implements Closeable, AutoCloseable {
     return create(Level.DEBUG, logger);
   }
 
+  /** Listens for TRACE log messages for the specified logger */
+  public static LogListener trace(final Class<?> logger) {
+    return create(Level.TRACE, logger.getName());
+  }
+
   // TODO: more factories for other levels?
 
   private static LogListener create(final Level level, final String logger) {
