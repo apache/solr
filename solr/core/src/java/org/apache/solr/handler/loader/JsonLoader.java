@@ -246,10 +246,16 @@ public class JsonLoader extends ContentStreamLoader {
     private void handleSplitMode(String split, String[] fields, final Reader reader)
         throws IOException {
       if (split == null) split = "/";
+      final boolean mapUniqueKeyOnly = req.getParams().getBool("mapUniqueKeyOnly", false);
+      if (mapUniqueKeyOnly && fields != null && fields.length > 0) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Field mappings (f) are ignored when mapUniqueKeyOnly=true; set mapUniqueKeyOnly=false"
+                + " to map fields");
+      }
       if (fields == null || fields.length == 0) fields = new String[] {"$FQN:/**"};
       final boolean echo = "true".equals(req.getParams().get("echo"));
       final String srcField = req.getParams().get("srcField");
-      final boolean mapUniqueKeyOnly = req.getParams().getBool("mapUniqueKeyOnly", false);
       if (srcField != null) {
         if (!"/".equals(split))
           throw new SolrException(
