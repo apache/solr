@@ -54,7 +54,7 @@ The default command line interface is not changed.
 
 Editing permissions of the Rule-Based Authorization Plugin now stores an `id` on each permission in `security.json`.
 Finish a rolling upgrade before editing permissions.
-Nodes running an older version reject commands that name an `id`, and drop the `id` of any permission they replace.
+Nodes running an older version reject commands that name an `id` and any `update-permission` on a permission that has one, and drop the `id` of any permission they replace.
 
 == Solr 10.1
 
