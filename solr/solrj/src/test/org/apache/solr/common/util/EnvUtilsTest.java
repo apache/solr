@@ -20,6 +20,7 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -207,9 +208,12 @@ public class EnvUtilsTest extends SolrTestCase {
   public void envToSyspropMappingsDoNotMapToDeprecatedSystemProperties() throws IOException {
     Properties envMappings = loadProperties("EnvToSyspropMappings.properties");
     Properties deprecatedMappings = loadProperties("DeprecatedSystemPropertyMappings.properties");
-    Map<String, String> reverseDeprecatedMappings =
-        deprecatedMappings.entrySet().stream()
-            .collect(Collectors.toMap(e -> (String) e.getValue(), e -> (String) e.getKey()));
+    Map<String, String> reverseDeprecatedMappings = new HashMap<>();
+    for (String newSysProp : deprecatedMappings.stringPropertyNames()) {
+      for (String legacyName : deprecatedMappings.getProperty(newSysProp).split(",")) {
+        reverseDeprecatedMappings.put(legacyName.trim(), newSysProp);
+      }
+    }
 
     for (String envVar : envMappings.stringPropertyNames()) {
       String sysProp = envMappings.getProperty(envVar);
