@@ -64,6 +64,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
@@ -1058,11 +1059,20 @@ public class RealTimeGetComponent extends SearchComponent {
       DocCollection coll = clusterState.getCollection(collection);
 
       Map<String, List<String>> sliceToId = new HashMap<>();
+      List<String> idsForAllShards = new ArrayList<>();
       for (String id : reqIds.allIds) {
         Slice slice =
             coll.getRouter()
                 .getTargetSlice(id, null, params.get(ShardParams._ROUTE_), params, coll);
         if (slice == null) {
+          // The implicit router without a _route_: the document can be on any shard, so
+          // search all shards below. Other routers return null deliberately (e.g. a
+          // compositeId router with a router field but no _route_ cannot name a slice,
+          // and returning no documents for such requests is the established behavior).
+          if (coll.getRouter() instanceof ImplicitDocRouter
+              && params.get(ShardParams._ROUTE_) == null) {
+            idsForAllShards.add(id);
+          }
           continue;
         }
 
@@ -1080,6 +1090,14 @@ public class RealTimeGetComponent extends SearchComponent {
         ShardRequest sreq = createShardRequest(rb, entry.getValue());
         // sreq.shards = new String[]{shard};    // TODO: would be nice if this would work...
         sreq.shards = sliceToShards(rb, collection, shard);
+        sreq.actualShards = sreq.shards;
+
+        rb.addRequest(this, sreq);
+      }
+
+      if (!idsForAllShards.isEmpty()) {
+        ShardRequest sreq = createShardRequest(rb, idsForAllShards);
+        sreq.shards = null; // ALL
         sreq.actualShards = sreq.shards;
 
         rb.addRequest(this, sreq);
