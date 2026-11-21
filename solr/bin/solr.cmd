@@ -830,7 +830,7 @@ IF "%SOLR_PORT_LISTEN%"=="" (
   IF "%STOP_ALL%"=="1" (
     REM Stop all running Solr instances
     set found_it=0
-    for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-[0-9][0-9]*\.pid$"`) do (
+    for /f "usebackq" %%i in (`dir /b /a-d "%SOLR_PID_DIR%" ^| findstr /i "^solr-[0-9][0-9]*\.pid$"`) do (
       set "SOME_SOLR_PORT=%%~ni"
       set "SOME_SOLR_PORT=!SOME_SOLR_PORT:solr-=!"
       set SOME_SOLR_PID=
@@ -839,7 +839,7 @@ IF "%SOLR_PORT_LISTEN%"=="" (
       set PID_OWNS_PORT=0
       for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
         @REM j is the ip:port and k is the pid
-        IF "%%j"=="%SOLR_HOST_BIND%:!SOME_SOLR_PORT!" IF "%%k"=="!SOME_SOLR_PID!" set PID_OWNS_PORT=1
+        IF "%%k"=="!SOME_SOLR_PID!" set PID_OWNS_PORT=1
       )
       if "!PID_OWNS_PORT!"=="1" (
         set found_it=1
@@ -876,7 +876,6 @@ IF "%SOLR_PORT_LISTEN%"=="" (
         @echo Stopping Solr process %%N running on port %SOLR_PORT_LISTEN%
         IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT_LISTEN% - 1000
         "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-        CALL :delete_node_files %SOLR_PORT_LISTEN%
         REM wait for the process to terminate
         CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
         REM Kill it if it is still running after the graceful shutdown
@@ -885,6 +884,7 @@ IF "%SOLR_PORT_LISTEN%"=="" (
         ) else (
           qprocess "%%N" >nul 2>nul && taskkill /f /PID %%N
         )
+        CALL :delete_node_files %SOLR_PORT_LISTEN%
       )
     )
   )
@@ -1173,6 +1173,8 @@ IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT_LISTEN%"
+  REM Deprecated since 10.2 and removed in 11.0: nothing in Solr reads this file
+  >"%SOLR_PID_DIR%\solr-%SOLR_PORT_LISTEN%.port" echo %SOLR_PORT_LISTEN%
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
@@ -1196,21 +1198,22 @@ IF "%FG%"=="1" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
-  IF NOT "!ERRORLEVEL!"=="0" (
-      set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
-      goto err
-  )
+    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT! -p %SOLR_PORT_LISTEN%
+  set START_WAIT_RESULT=!ERRORLEVEL!
 
-  REM START /B leaves us without a PID, so ask netstat who owns the port now that Solr is up
+  REM START /B leaves us without a PID, so ask netstat who owns the port
   set SOLR_NODE_PID=
-  For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT_LISTEN% "') do (
-    IF "%%j"=="%SOLR_HOST_BIND%:%SOLR_PORT_LISTEN%" set SOLR_NODE_PID=%%k
+  For /f "tokens=5" %%k in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT_LISTEN% "') do (
+    IF NOT "%%k"=="0" set SOLR_NODE_PID=%%k
   )
   IF "!SOLR_NODE_PID!"=="" (
     echo WARNING: Could not resolve the PID of the Solr node on port %SOLR_PORT_LISTEN%, no PID file written.
   ) ELSE (
     >"%SOLR_PID_DIR%\solr-%SOLR_PORT_LISTEN%.pid" echo !SOLR_NODE_PID!
+  )
+  IF NOT "!START_WAIT_RESULT!"=="0" (
+      set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
+      goto err
   )
 )
 
