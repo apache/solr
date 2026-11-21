@@ -799,11 +799,11 @@
     </fieldType>
 
     <!-- Czech -->
-    <fieldType name="text_cz" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text_cs" class="solr.TextField" positionIncrementGap="100">
       <analyzer>
         <tokenizer name="standard"/>
         <filter name="lowercase"/>
-        <filter name="stop" ignoreCase="true" words="lang/stopwords_cz.txt" />
+        <filter name="stop" ignoreCase="true" words="lang/stopwords_cs.txt" />
         <filter name="czechStem"/>
       </analyzer>
     </fieldType>
