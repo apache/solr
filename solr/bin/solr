@@ -391,6 +391,7 @@ function print_usage() {
     echo "  -z/--zk-host <zkHost> Zookeeper connection string; ignored when running in User Managed (--user-managed) mode."
     echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                          an embedded ZooKeeper instance will be launched."
+    echo "                          It listens on SOLR_ZOOKEEPER_EMBEDDED_PORT if set, else the Solr port + 1000."
     echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
     echo "  -m/--memory <memory>  Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
@@ -1140,8 +1141,8 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
-    if [ $SOLR_PORT_LISTEN -gt 64535 ]; then
-      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT_LISTEN, which would result in an invalid embedded Zookeeper port!\n"
+    if [ $SOLR_PORT_LISTEN -gt 64000 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT_LISTEN; use 64000 or less, so that the embedded Zookeeper port (Solr port + 1000) stays a valid port!\n"
       exit 1
     fi
     if $verbose ; then

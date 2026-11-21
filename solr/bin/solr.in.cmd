@@ -132,6 +132,8 @@ REM Solr to accept connections on all network interfaces.
 REM set SOLR_HOST_BIND=127.0.0.1
 REM Sets the network interface the Embedded ZK binds to.
 REM set SOLR_ZOOKEEPER_EMBEDDED_HOST=127.0.0.1
+REM Sets the client port the Embedded ZK listens on. Defaults to the Solr port + 1000.
+REM set SOLR_ZOOKEEPER_EMBEDDED_PORT=9983
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:

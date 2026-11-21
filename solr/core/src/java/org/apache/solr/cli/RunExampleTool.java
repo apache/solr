@@ -51,6 +51,7 @@ import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.TimeSource;
@@ -557,12 +558,13 @@ public class RunExampleTool extends ToolBase {
   }
 
   /**
-   * Rejects ports outside the range bin/solr's embedded ZooKeeper (port + 1000) can support, for
-   * every example type.
+   * Rejects ports outside the range the examples can support, for every example type. The upper
+   * bound leaves room both for the embedded ZooKeeper port derived as port + 1000 and for the
+   * further ports a multi-node example uses.
    */
   private static void validatePort(int port) {
-    if (port < 1024 || port > 64535) {
-      throw new IllegalArgumentException("Choose a port between 1024 and 64535.");
+    if (port < 1024 || port > 64000) {
+      throw new IllegalArgumentException("Choose a port between 1024 and 64000.");
     }
   }
 
@@ -668,9 +670,11 @@ public class RunExampleTool extends ToolBase {
             + serverDir.getParent().toAbsolutePath().normalize());
     Path tls = home.resolve("tls");
     Path include = tls.resolve("solr.in.sh");
-    String zkHost = "localhost:" + (port + 1000);
+    int zkPort = SolrZkServer.resolveClientPort(port);
+    String zkHost = "localhost:" + zkPort;
     Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
     environment.put("SOLR_INCLUDE", include.toString());
+    environment.put("SOLR_ZOOKEEPER_EMBEDDED_PORT", Integer.toString(zkPort));
     environment.put("SOLR_ULIMIT_CHECKS", "false");
     environment.put("SOLR_PID_DIR", home.toString());
     environment.put("SOLR_HOME", tls.toString());
@@ -1581,6 +1585,12 @@ public class RunExampleTool extends ToolBase {
     if (zkHost != null) {
       command.add("-z");
       command.add(zkHost);
+    } else if (cloudMode) {
+      // this node starts the embedded ZooKeeper, so pass on an explicitly configured port
+      Integer embeddedZkPort = SolrZkServer.getConfiguredClientPort();
+      if (embeddedZkPort != null) {
+        command.add("-D" + SolrZkServer.EMBEDDED_ZK_PORT_PROPERTY + "=" + embeddedZkPort);
+      }
     }
     if (memory != null) {
       command.add("-m");

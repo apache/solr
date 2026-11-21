@@ -153,6 +153,8 @@
 #SOLR_HOST_BIND="127.0.0.1"
 # Sets the network interface the Embedded ZK binds to.
 #SOLR_ZOOKEEPER_EMBEDDED_HOST="127.0.0.1"
+# Sets the client port the Embedded ZK listens on. Defaults to the Solr port + 1000.
+#SOLR_ZOOKEEPER_EMBEDDED_PORT=9983
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.

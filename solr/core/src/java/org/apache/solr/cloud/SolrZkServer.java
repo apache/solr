@@ -40,6 +40,12 @@ import org.slf4j.LoggerFactory;
 public class SolrZkServer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * System property (env var {@code SOLR_ZOOKEEPER_EMBEDDED_PORT}) setting the client port of the
+   * embedded ZooKeeper. Overridden by a {@code clientPort} in {@code zoo.cfg}.
+   */
+  public static final String EMBEDDED_ZK_PORT_PROPERTY = "solr.zookeeper.embedded.port";
+
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
   public static final String ZK_MAX_CNXNS_PROPERTY = "zookeeper.maxCnxns";
   // Per ZooKeeper, "0" means no limit for max client connections.
@@ -122,7 +128,7 @@ public class SolrZkServer {
       props.setProperty(
           "clientPortAddress", EnvUtils.getProperty("solr.zookeeper.embedded.host", "127.0.0.1"));
       if (props.getProperty("clientPort") == null) {
-        props.setProperty("clientPort", Integer.toString(solrPort + 1000));
+        props.setProperty("clientPort", Integer.toString(resolveClientPort(solrPort)));
       }
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
@@ -130,6 +136,40 @@ public class SolrZkServer {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
+  }
+
+  /**
+   * The configured embedded ZooKeeper client port, or null if {@link #EMBEDDED_ZK_PORT_PROPERTY} is
+   * not set.
+   *
+   * @throws SolrException if the configured value is not a valid port
+   */
+  public static Integer getConfiguredClientPort() {
+    String value = EnvUtils.getProperty(EMBEDDED_ZK_PORT_PROPERTY);
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    int port;
+    try {
+      port = Integer.parseInt(value.trim());
+    } catch (NumberFormatException e) {
+      port = -1;
+    }
+    if (port < 1 || port > 65535) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          EMBEDDED_ZK_PORT_PROPERTY
+              + " must be a port number between 1 and 65535, but was '"
+              + value
+              + "'");
+    }
+    return port;
+  }
+
+  /** The embedded ZooKeeper client port to use for a Solr node listening on {@code solrPort}. */
+  public static int resolveClientPort(int solrPort) {
+    Integer configured = getConfiguredClientPort();
+    return configured != null ? configured : solrPort + 1000;
   }
 
   public Map<Long, QuorumPeer.QuorumServer> getServers() {
