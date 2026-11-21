@@ -593,13 +593,57 @@ The v1 `LISTALIASES` response retains its alias-to-comma-separated-collections m
 
 *Input*
 
+[tabs#listaliases-example-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
+----
+====
+
+V2 API::
++
+====
 [source,bash]
 ----
 curl 'http://localhost:8983/api/aliases'
 ----
+====
+======
 
 *Output*
 
+[tabs#listaliases-example-response]
+======
+V1 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "aliases": {
+    "testalias1": "collection1",
+    "testalias2": "collection2,collection1"
+  },
+  "properties": {
+    "testalias2": {
+      "someKey": "someValue"
+    }
+  }
+}
+----
+====
+
+V2 API::
++
+====
 [source,json]
 ----
 {
@@ -623,6 +667,8 @@ curl 'http://localhost:8983/api/aliases'
   }
 }
 ----
+====
+======
 
 ==== Getting details for a single alias
 
