@@ -807,6 +807,7 @@ curl --user solr:SolrRocks -X DELETE http://localhost:8983/api/cluster/security/
 * v2: `\http://localhost:8983/api/cluster/security/authorization/permissions`
 
 A permission's `index` - its position in the evaluated-top-down list - is addressed as a path parameter (`/permissions/\{index}`) rather than a body field.
+Create and update requests reject unknown fields with a 400 error, and ignore an `index` in the body.
 
 ==== List Permissions
 
