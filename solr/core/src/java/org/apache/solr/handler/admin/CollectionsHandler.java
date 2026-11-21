@@ -950,6 +950,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                           extCollectionName, commitName, requestBody));
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createSnapshotResponse);
+          rsp.getValues().remove("collection");
+          rsp.getValues().remove("followAliases");
 
           return null;
         }),

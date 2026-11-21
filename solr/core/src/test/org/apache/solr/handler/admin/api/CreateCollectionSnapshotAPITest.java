@@ -20,17 +20,25 @@ import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -225,6 +233,110 @@ public class CreateCollectionSnapshotAPITest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .snapshots
             .isEmpty());
+  }
+
+  @Test
+  public void testV1SnapshotResponseFormats() throws Exception {
+    var client = cluster.getSolrClient();
+    for (var parser :
+        List.of(
+            new JsonMapResponseParser(), new XMLResponseParser(), new JavaBinResponseParser())) {
+      String snapshot = "snapshot_v1_" + parser.getWriterType();
+      var create = new CollectionAdminRequest.CreateSnapshot(ALIAS, snapshot);
+      create.setFollowAliases(true);
+      create.setResponseParser(parser);
+      var created = create.process(client).getResponse();
+      assertEquals(Set.of("responseHeader", "snapshot"), created.asMap(0).keySet());
+      assertEquals(snapshot, created.get("snapshot"));
+
+      var list = new CollectionAdminRequest.ListSnapshots(COLLECTION);
+      list.setResponseParser(parser);
+      var listed = list.process(client).getResponse();
+      assertEquals(Set.of("responseHeader", "snapshots"), listed.asMap(0).keySet());
+      if (parser instanceof JsonMapResponseParser) {
+        var snapshots = (List<?>) listed.get("snapshots");
+        assertEquals(2, snapshots.size());
+        assertEquals(snapshot, snapshots.getFirst());
+        var metadata = (List<?>) snapshots.get(1);
+        assertEquals(snapshot, metadata.get(metadata.indexOf("name") + 1));
+        assertEquals("Successful", metadata.get(metadata.indexOf("status") + 1));
+      } else {
+        assertEquals(snapshot, listed._get("snapshots/" + snapshot + "/name"));
+        assertEquals("Successful", listed._get("snapshots/" + snapshot + "/status"));
+      }
+
+      var delete = new CollectionAdminRequest.DeleteSnapshot(COLLECTION, snapshot);
+      delete.setResponseParser(parser);
+      var deleted = delete.process(client).getResponse();
+      assertEquals(
+          Set.of("responseHeader", "collection", "snapshot", "followAliases"),
+          deleted.asMap(0).keySet());
+      assertEquals(COLLECTION, deleted.get("collection"));
+      assertEquals(snapshot, deleted.get("snapshot"));
+      assertEquals(false, deleted.get("followAliases"));
+    }
+  }
+
+  @Test
+  public void testV1CoreSnapshotAsyncStatusResponse() throws Exception {
+    var client = cluster.getJettySolrRunner(0).getSolrClient();
+    String core =
+        cluster
+            .getSolrClient()
+            .getClusterState()
+            .getCollection(COLLECTION)
+            .getLeader("shard1")
+            .getCoreName();
+    String snapshot = "snapshot_v1_core_async";
+    String asyncId = "snapshot_v1_core_request";
+    var create =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.POST,
+            "/admin/cores",
+            SolrRequest.SolrRequestType.ADMIN,
+            params(
+                "action",
+                "CREATESNAPSHOT",
+                "core",
+                core,
+                "commitName",
+                snapshot,
+                "async",
+                asyncId));
+    create.process(client);
+    var requestStatus =
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            "/admin/cores",
+            SolrRequest.SolrRequestType.ADMIN,
+            params("action", "REQUESTSTATUS", "requestid", asyncId));
+    var status = new AtomicReference<NamedList<Object>>();
+    new TimeOut(ASYNC_SNAPSHOT_TIMEOUT, TimeSource.NANO_TIME)
+        .waitFor(
+            "Core snapshot task did not complete",
+            () -> {
+              try {
+                status.set(requestStatus.process(client).getResponse());
+                assertNotEquals(status.get().toString(), "failed", status.get().get("STATUS"));
+                return "completed".equals(status.get().get("STATUS"));
+              } catch (Exception e) {
+                throw new AssertionError(e);
+              }
+            });
+    try {
+      for (var parser :
+          List.of(
+              new JsonMapResponseParser(), new XMLResponseParser(), new JavaBinResponseParser())) {
+        requestStatus.setResponseParser(parser);
+        var response = requestStatus.process(client).getResponse();
+        assertEquals(Set.of("responseHeader", "STATUS"), response.asMap(0).keySet());
+        assertEquals("completed", response.get("STATUS"));
+      }
+    } finally {
+      var delete = new CoreAdminRequest.DeleteSnapshot(snapshot);
+      delete.setCoreName(core);
+      delete.process(client);
+    }
   }
 
   @Test
