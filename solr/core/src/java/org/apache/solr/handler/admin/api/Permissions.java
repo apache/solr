@@ -78,6 +78,8 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
     int existingCount = fetchPermissions().size();
 
     Map<String, Object> dataMap = toDataMap(requestBody);
+    // set-permission treats "index" as "overwrite that permission"; creating never overwrites.
+    dataMap.remove("index");
     securityConfHandler.editSecurityConfig(
         solrQueryRequest,
         AUTHORIZATION_KEY,
@@ -198,7 +200,7 @@ public class Permissions extends AdminAPIBase implements AuthorizationPermission
    * Map} shape the legacy {@code set-permission}/{@code update-permission} commands expect.
    */
   private static Map<String, Object> toDataMap(PermissionDefinition def) {
-    Map<String, Object> dataMap = new LinkedHashMap<>();
+    Map<String, Object> dataMap = new LinkedHashMap<>(def.unknownProperties());
     if (def.name != null) {
       dataMap.put("name", def.name);
     }

@@ -17,11 +17,13 @@
 
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,4 +65,16 @@ public class PermissionDefinition {
               + "currently at this index, instead of appending it at the end.")
   @JsonProperty("before")
   public Integer before;
+
+  private final Map<String, Object> unknownFields = new LinkedHashMap<>();
+
+  /** Request fields that match none of the above, kept so the server can reject them. */
+  public Map<String, Object> unknownProperties() {
+    return unknownFields;
+  }
+
+  @JsonAnySetter
+  public void setUnknownProperty(String field, Object value) {
+    unknownFields.put(field, value);
+  }
 }

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 
 import java.nio.charset.StandardCharsets;
@@ -300,6 +301,87 @@ public class SecurityV2ApiStandaloneTest extends SolrTestCase {
 
     authed(new AuthorizationApi.DeletePermission(((Number) stored.get("index")).intValue()))
         .process(solrTestRule.getAdminClient());
+  }
+
+  @Test
+  public void testCreateRejectsUnknownKey() throws Exception {
+    int countBefore = listPermissions().size();
+    RemoteSolrException e =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                sendPermission(
+                    METHOD.POST,
+                    "",
+                    "{\"name\": \"read\", \"role\": [\"dev\"], \"collections\": [\"c1\"]}"));
+    assertEquals(400, e.code());
+    assertThat(e.getMessage(), containsString("Unknown key, collections"));
+    assertEquals(countBefore, listPermissions().size());
+  }
+
+  @Test
+  public void testCreateIgnoresIndex() throws Exception {
+    String path = "/create-with-index/*";
+    List<PermissionDetails> before = listPermissions();
+    sendPermission(
+        METHOD.POST, "", "{\"path\": [\"" + path + "\"], \"role\": [\"admin\"], \"index\": 1}");
+    List<PermissionDetails> after = listPermissions();
+    assertEquals(before.size() + 1, after.size());
+    assertEquals(before.get(0).name, after.get(0).name);
+    assertEquals(before.get(0).path, after.get(0).path);
+
+    int index = ((Number) storedPermission(path).get("index")).intValue();
+    assertEquals(after.size(), index);
+    authed(new AuthorizationApi.DeletePermission(index)).process(solrTestRule.getAdminClient());
+  }
+
+  @Test
+  public void testUpdateRejectsUnknownKey() throws Exception {
+    String path = "/update-unknown-key/*";
+    int index = createPermission(path);
+    Map<String, Object> before = storedPermission(path);
+    RemoteSolrException e =
+        expectThrows(
+            RemoteSolrException.class,
+            () -> sendPermission(METHOD.PUT, "/" + index, "{\"methods\": [\"GET\"]}"));
+    assertEquals(400, e.code());
+    assertThat(e.getMessage(), containsString("Unknown key, methods"));
+    assertEquals(before, storedPermission(path));
+
+    authed(new AuthorizationApi.DeletePermission(index)).process(solrTestRule.getAdminClient());
+  }
+
+  @Test
+  public void testUpdateUsesPathIndexOverBodyIndex() throws Exception {
+    String pathA = "/path-index-a/*";
+    String pathB = "/path-index-b/*";
+    int indexA = createPermission(pathA);
+    int indexB = createPermission(pathB);
+    sendPermission(METHOD.PUT, "/" + indexA, "{\"role\": [\"dev\"], \"index\": " + indexB + "}");
+    assertEquals(List.of("dev"), storedPermission(pathA).get("role"));
+    assertEquals(List.of("admin"), storedPermission(pathB).get("role"));
+
+    authed(new AuthorizationApi.DeletePermission(indexB)).process(solrTestRule.getAdminClient());
+    authed(new AuthorizationApi.DeletePermission(indexA)).process(solrTestRule.getAdminClient());
+  }
+
+  private static void sendPermission(METHOD method, String suffix, String json) throws Exception {
+    authed(new GenericV2SolrRequest(method, "/cluster/security/authorization/permissions" + suffix))
+        .withContent(json.getBytes(StandardCharsets.UTF_8), "application/json")
+        .process(solrTestRule.getAdminClient());
+  }
+
+  private static int createPermission(String path) throws Exception {
+    var create = authed(new AuthorizationApi.CreatePermission());
+    create.setPath(List.of(path));
+    create.setRole(List.of("admin"));
+    return create.process(solrTestRule.getAdminClient()).index;
+  }
+
+  private static List<PermissionDetails> listPermissions() throws Exception {
+    return authed(new AuthorizationApi.ListPermissions())
+        .process(solrTestRule.getAdminClient())
+        .permissions;
   }
 
   private static void assertStoredCollectionIsNull(String path) throws Exception {
