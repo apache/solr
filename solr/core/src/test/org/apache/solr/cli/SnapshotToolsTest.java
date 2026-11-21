@@ -83,9 +83,31 @@ public class SnapshotToolsTest extends SolrCloudTestCase {
   @Test
   public void testDeleteMissingSnapshot() throws Exception {
     String output = run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "missing");
-    assertTrue(output, output.contains("Failed to delete a snapshot with name missing"));
+    assertTrue(output, output.contains("Snapshot with name missing"));
     assertTrue(output, output.contains("does not exist"));
+    assertTrue(output, output.contains("nothing to delete"));
+    assertFalse(output, output.contains("Failed to delete"));
     assertFalse(output, output.contains("Successfully deleted"));
+  }
+
+  @Test
+  public void testDeleteSnapshotFromMissingCollectionFails() throws Exception {
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    assertEquals(
+        1,
+        runTool(
+            new String[] {
+              "snapshot-delete",
+              "-c",
+              "missing_collection",
+              "--snapshot-name",
+              "missing",
+              "--solr-url",
+              cluster.getJettySolrRunner(0).getBaseUrl().toString()
+            },
+            runtime,
+            SnapshotDeleteTool.class));
+    assertFalse(runtime.getOutput(), runtime.getOutput().contains("nothing to delete"));
   }
 
   // snapshot-list reports a failed request in its output and still exits 0, so check the output.
