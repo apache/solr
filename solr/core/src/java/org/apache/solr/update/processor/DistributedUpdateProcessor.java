@@ -1240,6 +1240,34 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
+    /** The error message plus, when known, the replica the request was being sent to. */
+    private static String describe(SolrError error) {
+      String msg = error.e.getMessage();
+      if (error.req == null || error.req.node == null) {
+        return msg;
+      }
+      SolrCmdDistributor.Node node = error.req.node;
+      StringBuilder sb = new StringBuilder(String.valueOf(msg));
+      sb.append(" (while sending to ");
+      // A remote error already names the server ("Error from server at <baseUrl>"), so
+      // there the core name is enough; the full URL would name the host a second time.
+      if (msg != null
+          && node.getBaseUrl() != null
+          && node.getCoreName() != null
+          && msg.contains(node.getBaseUrl())) {
+        sb.append(node.getCoreName());
+      } else {
+        sb.append(node.getUrl());
+      }
+      if (node.getCollection() != null) {
+        sb.append(", collection=").append(node.getCollection());
+      }
+      if (node.getShardId() != null) {
+        sb.append(", shard=").append(node.getShardId());
+      }
+      return sb.append(')').toString();
+    }
+
     /** Helper method for constructor */
     private static int buildCode(List<SolrError> errors) {
       assert null != errors;
@@ -1269,13 +1297,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       assert 0 < errors.size();
 
       if (1 == errors.size()) {
-        return "Async exception during distributed update: " + errors.get(0).e.getMessage();
+        return "Async exception during distributed update: " + describe(errors.get(0));
       } else {
         StringBuilder buf =
             new StringBuilder(errors.size() + " Async exceptions during distributed update: ");
         for (SolrError error : errors) {
           buf.append("\n");
-          buf.append(error.e.getMessage());
+          buf.append(describe(error));
         }
         return buf.toString();
       }
