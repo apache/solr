@@ -1,0 +1,9 @@
+title: >
+  The extracting request handler no longer indexes the text "null" as stream_size when the size of
+  the uploaded content stream is unknown, which failed on numeric stream_size fields.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-7498
+    url: https://issues.apache.org/jira/browse/SOLR-7498
