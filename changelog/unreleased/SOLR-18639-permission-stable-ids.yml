@@ -1,0 +1,8 @@
+title: Give each Rule-Based Authorization permission a stable id that can be used in place of its index
+type: changed
+authors:
+  - name: Amrit Sarkar
+    nick: sarkaramrit1993
+links:
+  - name: SOLR-18639
+    url: https://issues.apache.org/jira/browse/SOLR-18639

@@ -21,13 +21,20 @@ import static org.apache.solr.common.util.Utils.getDeepCopy;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Utils;
 
 // TODO is this a typo - should be Authorization?
 enum AutorizationEditOperation {
@@ -66,6 +73,11 @@ enum AutorizationEditOperation {
         op.addError("Cannot use 'index' and 'before together ");
         return null;
       }
+      Object clientId = dataMap.remove(ID);
+      if (clientId != null && index == null) {
+        op.addError("'id' is assigned by Solr");
+        return null;
+      }
 
       for (String key : dataMap.keySet()) {
         if (!Permission.knownKeys.contains(key)) op.addError("Unknown key, " + key);
@@ -91,7 +103,12 @@ enum AutorizationEditOperation {
           permissionsCopy.add(perm);
         } else if (thisIdx.equals(index)) {
           // overwriting an existing one
+          if (clientId != null && !clientId.equals(perm.get(ID))) {
+            op.addError(ID_INDEX_MISMATCH);
+            return null;
+          }
           indexSatisfied = true;
+          dataMap.put(ID, perm.get(ID));
           permissionsCopy.add(dataMap);
         } else {
           permissionsCopy.add(perm);
@@ -111,6 +128,7 @@ enum AutorizationEditOperation {
       if (!permissionsCopy.contains(dataMap)) {
         permissionsCopy.add(dataMap);
       }
+      dataMap.putIfAbsent(ID, UUID.randomUUID().toString());
 
       setIndex(permissionsCopy);
 
@@ -121,41 +139,54 @@ enum AutorizationEditOperation {
   UPDATE_PERMISSION("update-permission") {
     @Override
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-      Integer index = op.getInt(INDEX);
+      Integer index = op.getInt(INDEX, null);
+      String id = op.getStr(ID, null);
       if (op.hasError()) return null;
+      if (index == null && id == null) {
+        op.addError("Use 'index' or 'id'");
+        return null;
+      }
 
       List<Map<String, Object>> permissions =
           AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
       for (Map<String, Object> permission : permissions) {
-        if (index.equals(getIndex(permission))) {
+        if (id == null ? index.equals(getIndex(permission)) : id.equals(permission.get(ID))) {
+          if (index != null && !index.equals(getIndex(permission))) {
+            op.addError(ID_INDEX_MISMATCH);
+            return null;
+          }
           LinkedHashMap<String, Object> copy = new LinkedHashMap<>(permission);
           copy.putAll(op.getDataMap());
+          copy.remove(ID);
           op.setCommandData(copy);
           latestConf.put(PERMISSIONS, permissions);
           return SET_PERMISSION.edit(latestConf, op);
         }
       }
-      op.addError("No such permission " + name);
+      op.addError(id == null ? "No such permission " + name : "No such permission id: " + id);
       return null;
     }
   },
   DELETE_PERMISSION("delete-permission") {
     @Override
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
-      Integer id = op.getInt("");
+      boolean byId = op.getCommandData() instanceof Map;
+      Object key = byId ? op.getStr(ID) : op.getInt("");
       if (op.hasError()) return null;
 
       // find the permission to delete using the "index"
       List<Map<String, Object>> p = AutorizationEditOperation.ensureIndexOnPermissions(latestConf);
-      if (p.stream().anyMatch(map -> id.equals(getIndex(map)))) {
+      Predicate<Map<String, Object>> match =
+          byId ? map -> key.equals(map.get(ID)) : map -> key.equals(getIndex(map));
+      if (p.stream().anyMatch(match)) {
         // filter out the deleted index, then re-order the remaining indexes
         List<Map<String, Object>> c =
-            p.stream().filter(map -> !id.equals(getIndex(map))).collect(Collectors.toList());
+            p.stream().filter(match.negate()).collect(Collectors.toList());
         setIndex(c);
         latestConf.put(PERMISSIONS, c);
         return latestConf;
       } else {
-        op.addError("No such index: " + id);
+        op.addError(byId ? "No such permission id: " + key : "No such index: " + key);
         return null;
       }
     }
@@ -163,7 +194,9 @@ enum AutorizationEditOperation {
 
   private static final String PERMISSIONS = "permissions";
   private static final String INDEX = "index";
+  private static final String ID = "id";
   private static final String BEFORE = "before";
+  private static final String ID_INDEX_MISMATCH = "'id' and 'index' name different permissions";
 
   public final String name;
 
@@ -191,12 +224,30 @@ enum AutorizationEditOperation {
       Map<String, Object> latestConf) {
     List<Map<String, Object>> permissions =
         (List<Map<String, Object>>) getListValue(latestConf, PERMISSIONS);
-    // see if any permissions have "index" set ...
-    if (permissions.stream().noneMatch(map -> map.containsKey(INDEX))) {
-      // "index" not set on the list of permissions, add it now ...
+    Set<Integer> indexes = new HashSet<>();
+    if (!permissions.stream()
+        .allMatch(map -> map.get(INDEX) instanceof Number && indexes.add(getIndex(map)))) {
       setIndex(permissions);
     }
+    ensureIds(permissions);
     return permissions;
+  }
+
+  // Derived from position and content, so every node backfills the same ids for one config.
+  private static void ensureIds(List<Map<String, Object>> permissions) {
+    Set<Object> seen = new HashSet<>();
+    for (int i = 0; i < permissions.size(); i++) {
+      Map<String, Object> perm = permissions.get(i);
+      Object id = perm.get(ID);
+      if (id instanceof String && seen.add(id)) continue;
+      Map<String, Object> content = new TreeMap<>(perm);
+      content.remove(ID);
+      content.remove(INDEX);
+      String seed = i + ":" + Utils.toJSONString(content);
+      String newId = UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8)).toString();
+      perm.put(ID, newId);
+      seen.add(newId);
+    }
   }
 
   public abstract Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op);

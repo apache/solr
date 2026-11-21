@@ -22,6 +22,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 import java.io.IOException;
 import java.io.StringReader;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -809,8 +810,130 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals(0, permList.size());
   }
 
+  public void testDeleteByIdTwiceRemovesOnlyThatPermission() throws IOException {
+    Perms perms = new Perms();
+    perms.runCmd("{set-permission : {name: all, role: admin}}", true);
+    perms.runCmd("{set-permission : {name: read, role: dev}}", true);
+    perms.runCmd("{set-permission : {name: update, role: dev}}", true);
+    Object readId = perms.getVal("permissions[1]/id");
+    assertNotNull(readId);
+
+    perms.runCmd("{delete-permission : {id : '" + readId + "'}}", true);
+    perms.runCmd("{delete-permission : {id : '" + readId + "'}}", false);
+    assertEquals(
+        List.of("No such permission id: " + readId), perms.parsedCommands.get(0).getErrors());
+    assertEquals(List.of("all", "update"), perms.names());
+  }
+
+  public void testIdsSurviveRenumbering() throws IOException {
+    Perms perms = new Perms();
+    perms.runCmd("{set-permission : {name: read, role: a}}", true);
+    perms.runCmd("{set-permission : {name: update, role: a}}", true);
+    perms.runCmd("{set-permission : {name: config-edit, role: a}}", true);
+    Object updateId = perms.getVal("permissions[1]/id");
+    Object configId = perms.getVal("permissions[2]/id");
+
+    perms.runCmd("{delete-permission : 1}", true);
+    perms.runCmd("{set-permission : {name: schema-edit, role: a, before: 1}}", true);
+    assertEquals(List.of("schema-edit", "update", "config-edit"), perms.names());
+    Object schemaId = perms.getVal("permissions[0]/id");
+    assertNotNull(schemaId);
+    assertNotEquals(updateId, schemaId);
+    assertNotEquals(configId, schemaId);
+
+    perms.runCmd("{update-permission : {id: '" + configId + "', role: c}}", true);
+    perms.runCmd("{set-permission : {name: update, role: d, index: 2}}", true);
+    assertEquals(updateId, perms.getVal("permissions[1]/id"));
+    assertEquals("d", perms.getVal("permissions[1]/role"));
+    assertEquals(configId, perms.getVal("permissions[2]/id"));
+    assertEquals("c", perms.getVal("permissions[2]/role"));
+    assertEquals(3, perms.getVal("permissions[2]/index"));
+
+    perms.runCmd("{update-permission : {id: '" + configId + "', index: 2, role: e}}", false);
+    perms.runCmd("{update-permission : {id: nope, role: e}}", false);
+    assertEquals(List.of("No such permission id: nope"), perms.parsedCommands.get(0).getErrors());
+  }
+
+  public void testBackfilledIdsAreDeterministicAndUnique() throws IOException {
+    List<List<Object>> runs = new ArrayList<>();
+    for (int run = 0; run < 2; run++) {
+      Perms perms = new Perms();
+      List<Map<String, Object>> stored = new ArrayList<>();
+      stored.add(new HashMap<>(Map.of("name", "read", "role", "a")));
+      stored.add(new HashMap<>(Map.of("name", "update", "role", "a", "id", "dup")));
+      stored.add(new HashMap<>(Map.of("name", "read", "role", "a", "id", "dup")));
+      perms.conf.put("permissions", stored);
+      perms.runCmd("{update-permission : {index: 2, role: a}}", true);
+      runs.add(perms.permissions().stream().map(p -> p.get("id")).toList());
+    }
+    assertEquals(runs.get(0), runs.get(1));
+    assertEquals("dup", runs.get(0).get(1));
+    assertEquals(3, Set.copyOf(runs.get(0)).size());
+  }
+
+  public void testUpdateByIdWithPartialIndexes() throws IOException {
+    Perms perms = new Perms();
+    List<Map<String, Object>> stored = new ArrayList<>();
+    stored.add(new HashMap<>(Map.of("name", "read", "role", "a", "index", 1)));
+    stored.add(new HashMap<>(Map.of("name", "update", "role", "a", "id", "u1")));
+    stored.add(new HashMap<>(Map.of("name", "config-edit", "role", "a")));
+    perms.conf.put("permissions", stored);
+
+    perms.runCmd("{update-permission : {id: u1, role: b}}", true);
+    assertEquals(List.of("read", "update", "config-edit"), perms.names());
+    assertEquals("a", perms.getVal("permissions[0]/role"));
+    assertEquals("b", perms.getVal("permissions[1]/role"));
+    assertEquals("a", perms.getVal("permissions[2]/role"));
+  }
+
+  public void testZeroBasedIndexesStillWork() throws IOException {
+    Perms perms = new Perms();
+    List<Map<String, Object>> stored = new ArrayList<>();
+    stored.add(new HashMap<>(Map.of("name", "read", "role", "a", "index", 0)));
+    stored.add(new HashMap<>(Map.of("name", "update", "role", "a", "index", 1)));
+    perms.conf.put("permissions", stored);
+    perms.runCmd("{delete-permission : 0}", true);
+    assertEquals(List.of("update"), perms.names());
+  }
+
+  public void testReadModifyWriteKeepsId() throws IOException {
+    Perms perms = new Perms();
+    perms.runCmd("{set-permission : {name: read, role: a}}", true);
+    perms.runCmd("{set-permission : {name: update, role: a}}", true);
+    Object readId = perms.getVal("permissions[0]/id");
+
+    Map<String, Object> read = new HashMap<>(perms.permissions().get(0));
+    read.put("role", "b");
+    perms.runCmd(Utils.toJSONString(Map.of("update-permission", read)), true);
+    read.put("role", "c");
+    perms.runCmd(Utils.toJSONString(Map.of("set-permission", read)), true);
+    assertEquals(readId, perms.getVal("permissions[0]/id"));
+    assertEquals("c", perms.getVal("permissions[0]/role"));
+
+    read.put("index", 2);
+    perms.runCmd(Utils.toJSONString(Map.of("set-permission", read)), false);
+    read.remove("index");
+    perms.runCmd(Utils.toJSONString(Map.of("set-permission", read)), false);
+  }
+
+  public void testClientCannotSetId() throws IOException {
+    Perms perms = new Perms();
+    perms.runCmd("{set-permission : {name: read, role: a, id: mine}}", false);
+    assertEquals(List.of("'id' is assigned by Solr"), perms.parsedCommands.get(0).getErrors());
+  }
+
   static class Perms {
     Map<String, Object> conf = new HashMap<>();
+
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> permissions() {
+      return (List<Map<String, Object>>) getVal("permissions");
+    }
+
+    List<Object> names() {
+      return permissions().stream().map(p -> p.get("name")).toList();
+    }
+
     ConfigEditablePlugin plugin = new RuleBasedAuthorizationPlugin();
     List<CommandOperation> parsedCommands;
 

@@ -530,8 +530,13 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
 
 === Update or Delete Permissions
 
-Permissions can be accessed using their index in the list.
-Use the `/admin/authorization` API to see the existing permissions and their indices.
+Permissions can be accessed using their `id` or their index in the list.
+Use the `/admin/authorization` API to see the existing permissions, their ids and their indices.
+
+Solr assigns each permission an `id` the first time permissions are edited, and keeps it until the permission is deleted.
+A permission read from the API can be sent back as is: an `id` is accepted when it matches the permission at the given `index`.
+Moving a permission in the Admin UI deletes and re-creates it, so it gets a new id.
+The index is the permission's current position, so it changes when a permission before it is added or deleted.
 
 The following example updates the `'role'` attribute of permission at index `3`:
 
@@ -546,6 +551,13 @@ The following example deletes permission at index `3`:
 [source,bash]
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "delete-permission": 3
+}' http://localhost:8983/solr/admin/authorization
+
+To address a permission by id, send `id` instead of `index`. `delete-permission` takes `{"id": "..."}` the same way:
+
+[source,bash]
+curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
+  "update-permission": {"id": "0b1c...", "role": ["admin", "dev"]}
 }' http://localhost:8983/solr/admin/authorization
 
 
