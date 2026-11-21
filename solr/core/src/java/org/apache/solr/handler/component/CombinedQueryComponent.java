@@ -22,18 +22,22 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -56,7 +60,10 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -68,7 +75,9 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * Extends QueryComponent with support for executing multiple queries and combining their results,
  * like hybrid search with RFF. Does nothing special if not activated.
  *
- * <p>When activated, this component only works in distributed search / coordinator mode.
+ * <p>When activated, a distributed search fuses the sub-queries' lists on the coordinator, from
+ * every shard's lists; a request served by one core alone (standalone Solr, embedded Solr, {@code
+ * distrib=false}) fuses them on that core, with the same combiner and the same result.
  *
  * @see CombinedQuerySearchHandler
  * @see CombinerParams
@@ -173,6 +182,10 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb) throws IOException {
     if (rb instanceof CombinedQueryResponseBuilder crb) { // see CombinedQuerySearchHandler
+      // A shard of a distributed search returns its per-query lists for the coordinator to fuse
+      // (mergeIds). Any other request that reaches process() is served by this core alone, which
+      // fuses the lists itself, the way the coordinator would fuse them from one shard.
+      final boolean isShard = crb.req.getParams().getBool(ShardParams.IS_SHARD, false);
       boolean partialResults = false;
       boolean segmentTerminatedEarly = false;
       Boolean setMaxHitsTerminatedEarly = null;
@@ -183,6 +196,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       for (ResponseBuilder thisRb : crb.responseBuilders) {
         // Just a placeholder for future implementation for Cursors
         thisRb.setCursorMark(crb.getCursorMark());
+        if (!isShard) {
+          setFusionWindow(crb, thisRb);
+        }
         super.process(thisRb);
         int purpose =
             thisRb
@@ -207,10 +223,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           }
           setMaxHitsTerminatedEarly |= queryResult.getMaxHitsTerminatedEarly();
         }
-        doFieldSortValues(thisRb, crb.req.getSearcher());
-        NamedList<Object[]> sortValues =
-            (NamedList<Object[]>) thisRb.rsp.getValues().get("sort_values");
-        crb.rsp.add(String.format(Locale.ROOT, "sort_values_%s", rbIndex), sortValues);
+        if (!isShard) {
+          continue;
+        }
+        crb.rsp.add(
+            String.format(Locale.ROOT, "sort_values_%s", rbIndex),
+            crb.req.getParams().getBool(ResponseBuilder.FIELD_SORT_VALUES, false)
+                ? combinedSortValues(crb, thisRb, crb.req.getSearcher())
+                : null);
         ResultContext ctx = new BasicResultContext(thisRb);
         if (crb.rsp.getValues().get(RESPONSE_PER_QUERY_KEY) == null) {
           crb.rsp.add(RESPONSE_PER_QUERY_KEY, new ArrayList<>(List.of(ctx)));
@@ -222,8 +242,14 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       if (shouldReturn) {
         return;
       }
+      QueryResult combinedQueryResult =
+          isShard ? unionOfQueryResults(crb, queryResults) : fuseQueryResults(crb, queryResults);
       prepareCombinedResponseBuilder(
-          crb, queryResults, partialResults, segmentTerminatedEarly, setMaxHitsTerminatedEarly);
+          crb,
+          combinedQueryResult,
+          partialResults,
+          segmentTerminatedEarly,
+          setMaxHitsTerminatedEarly);
       if (crb.mergeFieldHandler != null) {
         crb.mergeFieldHandler.handleMergeFields(crb, crb.req.getSearcher());
       } else {
@@ -235,16 +261,145 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
+  /**
+   * Sets each sub-query's page to what a shard of a distributed search is asked for: from the first
+   * document, {@code shards.rows} documents when given, else {@code start + rows} (see {@link
+   * QueryComponent#createMainQuery}).
+   */
+  private static void setFusionWindow(ResponseBuilder crb, ResponseBuilder subRb) {
+    SortSpec requested = crb.getSortSpec();
+    int window = crb.req.getParams().getInt(ShardParams.SHARDS_ROWS, -1);
+    if (window < 0) {
+      window = requested.getCount();
+      if (window > 0) {
+        window += requested.getOffset();
+      }
+    }
+    subRb.getSortSpec().setOffset(0);
+    subRb.getSortSpec().setCount(window);
+  }
+
+  /** What a shard answers: the union of the sub-queries' documents, collapsed across them. */
+  private static QueryResult unionOfQueryResults(
+      ResponseBuilder crb, List<QueryResult> queryResults) {
+    return QueryAndResponseCombiner.simpleCombine(
+        queryResults, getCollapseFilters(crb.getFilters()), crb.req.getSearcher());
+  }
+
+  /**
+   * Fuses the sub-queries' lists on this core alone. It is {@link #mergeIds} over the lists of a
+   * single shard: the same union and collapse, the same combiner, the same sort, numFound and
+   * exactness, so a single core answers what a one-shard distributed search answers. The fused
+   * page's scores are the combiner's; its DocSet, for facets, is the union of the sub-queries'.
+   */
+  private QueryResult fuseQueryResults(
+      CombinedQueryResponseBuilder crb, List<QueryResult> queryResults) throws IOException {
+    SolrIndexSearcher searcher = crb.req.getSearcher();
+    QueryResult union = unionOfQueryResults(crb, queryResults);
+    Set<Integer> kept = HashSet.newHashSet(union.getDocList().size());
+    for (DocIterator it = union.getDocList().iterator(); it.hasNext(); ) {
+      kept.add(it.nextDoc());
+    }
+
+    SortSpec ss = crb.getSortSpec();
+    SortField[] sortFields =
+        ss.getSort() == null ? new SortField[] {SortField.FIELD_SCORE} : ss.getSort().getSort();
+    boolean needsSortValues = ss.includesNonScoreOrDocField();
+    IndexSchema schema = crb.req.getSchema();
+    SchemaField uniqueKeyField = schema.getUniqueKeyField();
+    String uniqueKeyName = uniqueKeyField.getName();
+    SolrReturnFields uniqueKeyOnly = new SolrReturnFields(uniqueKeyName, crb.req);
+    String[] queryKeys = crb.req.getParams().getParams(CombinerParams.COMBINER_QUERY);
+
+    Map<String, List<ShardDoc>> docsPerQuery = new HashMap<>();
+    Map<String, Integer> luceneIdByKey = new HashMap<>();
+    boolean hitCountIsExact = true;
+    boolean someQueryListTruncated = false;
+    long maxQueryNumFound = 0;
+    for (int queryIndex = 0; queryIndex < queryKeys.length; queryIndex++) {
+      ResponseBuilder thisRb = crb.responseBuilders.get(queryIndex);
+      DocList docList = thisRb.getResults().docList;
+      NamedList<List<Object>> sortValues =
+          needsSortValues
+              ? unmarshalSortValues(ss, asLists(combinedSortValues(crb, thisRb, searcher)), schema)
+              : new NamedList<>();
+      List<ShardDoc> docs = new ArrayList<>(docList.size());
+      DocIterator it = docList.iterator();
+      for (int i = 0; it.hasNext(); i++) {
+        int luceneId = it.nextDoc();
+        float score = docList.hasScores() ? it.score() : Float.NaN;
+        if (!kept.contains(luceneId)) {
+          continue;
+        }
+        Object key =
+            searcher.getDocFetcher().solrDoc(luceneId, uniqueKeyOnly).getFirstValue(uniqueKeyName);
+        if (key instanceof IndexableField field) {
+          key = uniqueKeyField.getType().toObject(field);
+        }
+        ShardDoc shardDoc = new ShardDoc();
+        shardDoc.id = key;
+        shardDoc.orderInShard = i;
+        shardDoc.score = score;
+        shardDoc.sortFieldValues = sortValues;
+        docs.add(shardDoc);
+        luceneIdByKey.put(key.toString(), luceneId);
+      }
+      docsPerQuery.put(queryKeys[queryIndex], docs);
+      hitCountIsExact &= docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO;
+      someQueryListTruncated |= docList.matches() != docs.size();
+      maxQueryNumFound = max(maxQueryNumFound, docList.matches());
+    }
+
+    SolrDocumentList responseDocs = new SolrDocumentList();
+    List<ShardDoc> fusedTop =
+        combineAndSort(crb, docsPerQuery, responseDocs, sortFields, maxQueryNumFound);
+    int[] luceneIds = new int[fusedTop.size()];
+    float[] scores = new float[fusedTop.size()];
+    for (int i = 0; i < luceneIds.length; i++) {
+      luceneIds[i] = luceneIdByKey.get(fusedTop.get(i).id.toString());
+      scores[i] = fusedTop.get(i).score;
+    }
+    int offset = ss.getOffset();
+    QueryResult fused = new QueryResult();
+    fused.setDocList(
+        new DocSlice(
+            offset,
+            max(0, luceneIds.length - offset),
+            luceneIds,
+            scores,
+            responseDocs.getNumFound(),
+            responseDocs.getMaxScore(),
+            hitCountIsExact && !someQueryListTruncated
+                ? TotalHits.Relation.EQUAL_TO
+                : TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO));
+    fused.setDocSet(union.getDocSet());
+    return fused;
+  }
+
+  /**
+   * The sort values of a sub-query's documents, for the request's sort: the fused documents are
+   * sorted by it, and a sub-query's own sort can lack a field of it (elevation by a sub-query's
+   * text applies to that sub-query alone, while the request sorts by the first one's).
+   */
+  private NamedList<Object[]> combinedSortValues(
+      ResponseBuilder crb, ResponseBuilder subRb, SolrIndexSearcher searcher) throws IOException {
+    return computeFieldSortValues(subRb.getResults().docList, crb.getSortSpec(), searcher);
+  }
+
+  private static NamedList<List<Object>> asLists(NamedList<Object[]> values) {
+    NamedList<List<Object>> lists = new NamedList<>(values.size());
+    for (Map.Entry<String, Object[]> entry : values) {
+      lists.add(entry.getKey(), Arrays.asList(entry.getValue()));
+    }
+    return lists;
+  }
+
   private void prepareCombinedResponseBuilder(
       CombinedQueryResponseBuilder crb,
-      List<QueryResult> queryResults,
+      QueryResult combinedQueryResult,
       boolean partialResults,
       boolean segmentTerminatedEarly,
       Boolean setMaxHitsTerminatedEarly) {
-    SolrIndexSearcher searcher = crb.req.getSearcher();
-    List<Query> collapseFilters = getCollapseFilters(crb.getFilters());
-    QueryResult combinedQueryResult =
-        QueryAndResponseCombiner.simpleCombine(queryResults, collapseFilters, searcher);
     combinedQueryResult.setPartialResults(partialResults);
     combinedQueryResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
     combinedQueryResult.setMaxHitsTerminatedEarly(setMaxHitsTerminatedEarly);
@@ -274,6 +429,31 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           .toList();
     }
     return List.of();
+  }
+
+  /**
+   * A single-pass distributed search takes the documents, scores included, from the shards'
+   * combined responses, where a document's score is one sub-query's. The score a fused document is
+   * returned with is its fused score, as on a two-pass search or a single core.
+   */
+  @Override
+  protected void returnFields(ResponseBuilder rb, ShardRequest sreq) {
+    super.returnFields(rb, sreq);
+    if (!(rb instanceof CombinedQueryResponseBuilder)
+        || !rb.onePassDistributedQuery
+        || (sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0
+        || rb.resultIds == null
+        || rb.getResponseDocs() == null) {
+      return;
+    }
+    SolrDocumentList responseDocs = rb.getResponseDocs();
+    for (ShardDoc shardDoc : rb.resultIds.values()) {
+      if (shardDoc.positionInResponse < responseDocs.size()
+          && responseDocs.get(shardDoc.positionInResponse) instanceof SolrDocument doc
+          && doc.containsKey(SolrReturnFields.SCORE)) {
+        doc.setField(SolrReturnFields.SCORE, shardDoc.score);
+      }
+    }
   }
 
   /**
@@ -594,6 +774,35 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
       SolrDocumentList responseDocs,
       SortField[] sortFields,
       long maxQueryNumFound) {
+    List<ShardDoc> fusedTop =
+        combineAndSort(rb, shardDocMap, responseDocs, sortFields, maxQueryNumFound);
+    int offset = rb.getSortSpec().getOffset();
+    int resultSize = max(0, fusedTop.size() - offset);
+    Map<Object, ShardDoc> resultIds = new HashMap<>();
+    for (int i = 0; i < resultSize; i++) {
+      ShardDoc shardDoc = fusedTop.get(offset + i);
+      shardDoc.positionInResponse = i;
+      resultIds.put(shardDoc.id.toString(), shardDoc);
+    }
+    for (int i = 0; i < resultSize; i++) responseDocs.add(null);
+    return resultIds;
+  }
+
+  /**
+   * Fuses the per-query lists with the requested combiner and sorts the fused documents by the
+   * request's sort, the fused score standing in for the score. Sets {@code numFound} and {@code
+   * maxScore} (over the requested page) on {@code responseDocs}, and adds the combiner's
+   * explanations as debug info when results are debugged.
+   *
+   * @return the first {@code offset + rows} fused documents, in order; the requested page starts at
+   *     the request's offset
+   */
+  protected List<ShardDoc> combineAndSort(
+      ResponseBuilder rb,
+      Map<String, List<ShardDoc>> shardDocMap,
+      SolrDocumentList responseDocs,
+      SortField[] sortFields,
+      long maxQueryNumFound) {
     String algorithm =
         rb.req.getParams().get(CombinerParams.COMBINER_ALGORITHM, CombinerParams.DEFAULT_COMBINER);
     QueryAndResponseCombiner combinerStrategy =
@@ -618,7 +827,6 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
             shardDocs.forEach(shardDoc -> shardDocIdMap.put(shardDoc.id.toString(), shardDoc)));
 
     // creating a queue to sort basis on all the comparator and tie-break on docId
-    Map<Object, ShardDoc> resultIds = new HashMap<>();
     float maxScore = 0.0f;
     final ShardFieldSortedHitQueue queue =
         new ShardFieldSortedHitQueue(
@@ -643,20 +851,21 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         };
     combinedShardDocs.forEach(queue::insertWithOverflow);
 
-    // get the resultSize as expected and fetch that shardDoc from the queue, putting it in a map
-    int resultSize = max(0, queue.size() - rb.getSortSpec().getOffset());
-    for (int i = resultSize - 1; i >= 0; i--) {
+    // the queue pops the last document first; only the requested page counts for maxScore
+    int offset = rb.getSortSpec().getOffset();
+    ShardDoc[] fusedTop = new ShardDoc[queue.size()];
+    for (int i = fusedTop.length - 1; i >= 0; i--) {
       ShardDoc shardDoc = queue.pop();
-      shardDoc.positionInResponse = i;
-      maxScore = max(maxScore, shardDoc.score);
-      if (Float.isNaN(shardDocIdMap.get(shardDoc.id.toString()).score)) {
-        shardDoc.score = Float.NaN;
+      if (i >= offset) {
+        maxScore = max(maxScore, shardDoc.score);
+        if (Float.isNaN(shardDocIdMap.get(shardDoc.id.toString()).score)) {
+          shardDoc.score = Float.NaN;
+        }
       }
-      resultIds.put(shardDoc.id.toString(), shardDoc);
+      fusedTop[i] = shardDoc;
     }
     responseDocs.setMaxScore(maxScore);
-    for (int i = 0; i < resultSize; i++) responseDocs.add(null);
-    return resultIds;
+    return List.of(fusedTop);
   }
 
   /**
