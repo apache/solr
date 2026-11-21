@@ -362,6 +362,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (StrUtils.isNotBlank(adminCmdContext.getCallingLockId())) {
         additionalProps.put(CALLING_LOCK_ID_HEADER, adminCmdContext.getCallingLockId());
       }
+      TraceUtils.injectTraceContext(additionalProps);
       m = m.plus(additionalProps);
       if (adminCmdContext.getAsyncId() != null) {
         String asyncId = adminCmdContext.getAsyncId();

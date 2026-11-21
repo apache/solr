@@ -19,6 +19,7 @@ package org.apache.solr.opentelemetry;
 
 import com.carrotsearch.randomizedtesting.annotations.Seed;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -37,6 +38,7 @@ import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -178,6 +180,13 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     verifyCollectionCreation(collecton);
     verifyCollectionModification(collecton);
     verifyCollectionDeletion(collecton);
+  }
+
+  @Test
+  public void testMessageWithoutTraceContext() {
+    var message = new ZkNodeProps(Map.of("operation", "reload", "name", "collection1"));
+    var context = TraceUtils.extractTraceContext(message);
+    assertFalse(Span.fromContext(context).getSpanContext().isValid());
   }
 
   private void verifyCollectionCreation(String collection) throws Exception {
