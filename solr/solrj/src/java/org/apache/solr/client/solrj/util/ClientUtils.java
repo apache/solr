@@ -79,13 +79,19 @@ public class ClientUtils {
   }
 
   private static String buildReplacementV2Path(String existingPath) {
-    if (existingPath.contains("/solr")) {
-      return existingPath.replaceFirst("/solr", "/api");
-    } else if (existingPath.endsWith("/api")) {
+    if (existingPath.endsWith("/api")) {
       return existingPath;
-    } else {
-      return existingPath + "/api";
     }
+    int contextRoot =
+        existingPath.endsWith("/solr")
+            ? existingPath.length() - "/solr".length()
+            : existingPath.lastIndexOf("/solr/");
+    if (contextRoot >= 0) {
+      return existingPath.substring(0, contextRoot)
+          + "/api"
+          + existingPath.substring(contextRoot + "/solr".length());
+    }
+    return existingPath + "/api";
   }
 
   // ------------------------------------------------------------------------
