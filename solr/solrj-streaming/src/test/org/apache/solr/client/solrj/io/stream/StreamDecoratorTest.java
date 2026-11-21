@@ -29,6 +29,7 @@ import java.util.Objects;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -60,6 +61,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -88,6 +90,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     configureCluster(4)
         .addConfig(
             "conf",
+            getFile("solrj")
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
+        .addConfig(
+            "conf-edismax",
             getFile("solrj")
                 .resolve("solr")
                 .resolve("configsets")
@@ -939,6 +948,251 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     assertEquals(10.0D, t.getDouble("a_f"), 0.0);
 
     solrClientCache.close();
+  }
+
+  /**
+   * SOLR-12505: fetch() sends its batch query as "{! df=.. q.op=OR}.." and must not depend on the
+   * target handler's default defType.
+   */
+  @Test
+  public void testFetchStreamWithNonLuceneDefaultDefType() throws Exception {
+    final String edismaxCollection = "fetchEdismax";
+    // The Config API overlay is stored with the configset, not the collection, so the /select
+    // overlay set below would outlive this collection and leak into every other test in this
+    // class that uses the shared "conf" configset. This collection uses its own copy instead.
+    CollectionAdminRequest.createCollection(edismaxCollection, "conf-edismax", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(edismaxCollection, 1, 1);
+    SolrClientCache solrClientCache = new SolrClientCache();
+    try {
+      // make the target handler default to a parser that ignores the {! df=.. q.op=OR} local params
+      cluster
+          .getSolrClient()
+          .request(
+              new V2Request.Builder("/c/" + edismaxCollection + "/config")
+                  .withMethod(SolrRequest.METHOD.POST)
+                  .withPayload(
+                      "{'update-requesthandler': {'name': '/select',"
+                          + " 'class': 'solr.SearchHandler', 'defaults': {'defType': 'edismax'}}}")
+                  .build());
+
+      // The subject values deliberately share no token with the join keys (0, 1, 2): the schema
+      // copyFields subject into text, the handler default field, so a token in common would let
+      // the default edismax parser find the documents by accident and hide the defType bug.
+      new UpdateRequest()
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "subject", "alpha")
+          .add(id, "1", "a_s", "hello1", "a_i", "1", "subject", "bravo")
+          .add(id, "2", "a_s", "hello2", "a_i", "2", "subject", "charlie")
+          .commit(cluster.getSolrClient(), edismaxCollection);
+
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(edismaxCollection, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      TupleStream stream =
+          factory.constructStream(
+              "fetch("
+                  + edismaxCollection
+                  + ", search("
+                  + edismaxCollection
+                  + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a_i\","
+                  + " batchSize=\"2\", fl=\"subject\")");
+      StreamContext context = new StreamContext();
+      context.setSolrClientCache(solrClientCache);
+      stream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(stream);
+
+      assertEquals(3, tuples.size());
+      final String[] expectedSubjects = {"alpha", "bravo", "charlie"};
+      for (int i = 0; i < 3; i++) {
+        assertEquals(expectedSubjects[i], tuples.get(i).getString("subject"));
+      }
+    } finally {
+      solrClientCache.close();
+      CollectionAdminRequest.deleteCollection(edismaxCollection).process(cluster.getSolrClient());
+    }
+  }
+
+  @Test
+  public void testFetchStreamRejectsJoinFieldNameThatBreaksLocalParams() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      String expression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException e =
+          assertThrows(
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, expression));
+      assertTrue(e.getMessage(), causeChainContains(e, "invalid join field name [a i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testFetchStreamRejectsJoinFieldNameWithUnicodeSpace() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      // The join field name carries an em space (U+2003). The local-params reader splits on
+      // Character.isWhitespace, so this name breaks the batch query the same way "a i" does,
+      // even though it has no ASCII whitespace.
+      String expression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a\u2003i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException e =
+          assertThrows(
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, expression));
+      assertTrue(e.getMessage(), causeChainContains(e, "invalid join field name [a\u2003i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testFetchStreamRejectsJoinFieldNameStartingWithDollarSign() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      // A leading $ in the df value is read as a request parameter dereference, so the batch
+      // would look up the field named by that parameter instead of the join field itself.
+      String expression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=$a_i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException e =
+          assertThrows(
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, expression));
+      assertTrue(e.getMessage(), causeChainContains(e, "invalid join field name [$a_i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testFetchStreamRejectsJoinFieldNameWithClosingBraceOrLeadingQuote() throws Exception {
+    SolrClientCache solrClientCache = new SolrClientCache();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0")
+        .add(id, "1", "a_s", "hello1", "a_i", "1")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    try {
+      StreamFactory factory =
+          new StreamFactory()
+              .withCollectionUseThisConnection(COLLECTIONORALIAS, getSolrConnection())
+              .withFunctionName("search", CloudSolrStream.class)
+              .withFunctionName("fetch", FetchStream.class);
+
+      // A } in the name ends the unquoted local-params value early, so the rest of the name
+      // lands outside the local params and changes the batch query.
+      String braceExpression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=a}i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException braceFailure =
+          assertThrows(
+              IOException.class, () -> drainFetchStream(factory, solrClientCache, braceExpression));
+      assertTrue(
+          braceFailure.getMessage(),
+          causeChainContains(braceFailure, "invalid join field name [a}i]"));
+
+      // A leading quote makes the local-params reader treat the rest of the name as a quoted
+      // string instead of the field name itself.
+      String singleQuoteExpression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id='a_i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException singleQuoteFailure =
+          assertThrows(
+              IOException.class,
+              () -> drainFetchStream(factory, solrClientCache, singleQuoteExpression));
+      assertTrue(
+          singleQuoteFailure.getMessage(),
+          causeChainContains(singleQuoteFailure, "invalid join field name ['a_i]"));
+
+      String doubleQuoteExpression =
+          "fetch("
+              + COLLECTIONORALIAS
+              + ", search("
+              + COLLECTIONORALIAS
+              + ", q=*:*, fl=\"id,a_s,a_i\", sort=\"a_i asc\"), on=\"id=\\\"a_i\","
+              + " batchSize=\"2\", fl=\"subject\")";
+      IOException doubleQuoteFailure =
+          assertThrows(
+              IOException.class,
+              () -> drainFetchStream(factory, solrClientCache, doubleQuoteExpression));
+      assertTrue(
+          doubleQuoteFailure.getMessage(),
+          causeChainContains(doubleQuoteFailure, "invalid join field name [\"a_i]"));
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  private List<Tuple> drainFetchStream(
+      StreamFactory factory, SolrClientCache solrClientCache, String expression)
+      throws IOException {
+    TupleStream stream = factory.constructStream(expression);
+    StreamContext context = new StreamContext();
+    context.setSolrClientCache(solrClientCache);
+    stream.setStreamContext(context);
+    return getTuples(stream);
+  }
+
+  private static boolean causeChainContains(Throwable t, String text) {
+    for (; t != null; t = t.getCause()) {
+      if (t.getMessage() != null && t.getMessage().contains(text)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Test
