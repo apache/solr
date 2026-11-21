@@ -62,10 +62,13 @@ import software.amazon.awssdk.services.s3.model.S3Object;
         "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
-  private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
+  static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
   @ClassRule
   public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
+
+  /** System property substituted into the repository's AES key file; empty for no encryption. */
+  static final String AES_KEY_FILE_PROPERTY = "solr.test.s3.aesKeyFile";
 
   public static final String SOLR_XML =
       "<solr>\n"
@@ -103,6 +106,9 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "      <str name=\"s3.bucket.name\">BUCKET</str>\n"
           + "      <str name=\"s3.region\">REGION</str>\n"
           + "      <str name=\"s3.endpoint\">ENDPOINT</str>\n"
+          + "      <str name=\"s3.encryption.aes.keyFile\">${"
+          + AES_KEY_FILE_PROPERTY
+          + ":}</str>\n"
           + "    </repository>\n"
           + "  </backup>\n"
           + "  \n"
