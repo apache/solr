@@ -28,7 +28,6 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -170,9 +169,9 @@ public class TraceUtils {
         }
       };
 
-  /** Adds the current trace context, if sampled, to a Collection API message for the Overseer. */
+  /** Adds the current trace context to a Collection API message for the Overseer. */
   public static void injectTraceContext(Map<String, Object> message) {
-    if (Span.current().getSpanContext().isSampled()) {
+    if (Span.current().getSpanContext().isValid()) {
       getTextMapPropagator()
           .inject(Context.current(), message, (m, k, v) -> m.put(MESSAGE_TRACE_PREFIX + k, v));
     }
@@ -181,16 +180,6 @@ public class TraceUtils {
   /** Reads the trace context added by {@link #injectTraceContext(Map)}, if any. */
   public static Context extractTraceContext(ZkNodeProps message) {
     return getTextMapPropagator().extract(Context.current(), message, MESSAGE_GETTER);
-  }
-
-  /** Returns the message without the keys added by {@link #injectTraceContext(Map)}. */
-  public static ZkNodeProps withoutTraceContext(ZkNodeProps message) {
-    if (message.keySet().stream().noneMatch(k -> k.startsWith(MESSAGE_TRACE_PREFIX))) {
-      return message;
-    }
-    Map<String, Object> props = new HashMap<>(message.getProperties());
-    props.keySet().removeIf(k -> k.startsWith(MESSAGE_TRACE_PREFIX));
-    return new ZkNodeProps(props);
   }
 
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {

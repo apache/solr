@@ -183,6 +183,14 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   @Test
+  public void testUnsampledCallerSkipsOverseerCommand() throws Exception {
+    var reload = CollectionAdminRequest.reloadCollection(COLLECTION);
+    reload.addHeader("traceparent", "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00");
+    assertEquals(0, reload.process(cluster.getSolrClient()).getStatus());
+    assertEquals(List.of(), getAndClearSpans());
+  }
+
+  @Test
   public void testMessageWithoutTraceContext() {
     var message = new ZkNodeProps(Map.of("operation", "reload", "name", "collection1"));
     var context = TraceUtils.extractTraceContext(message);
