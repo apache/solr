@@ -16,13 +16,18 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.TreeSet;
+import java.util.function.Function;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 
@@ -800,6 +805,61 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals(0, d.getFieldValue("category_count"));
     assertEquals(List.of("Anonymous"), List.copyOf(d.getFieldValues("editors")));
     assertEquals(1000, d.getFieldValue("list_price"));
+  }
+
+  public void testAtomicOperandsOptOut() throws Exception {
+
+    // A processor that considers the values of a field as a whole (the way
+    // CountFieldValuesUpdateProcessorFactory does) opts out of the
+    // atomic-operand path: mutate is called on the field as it stands, so an
+    // operation map is seen as one plain value and its operands are never
+    // mutated on their own. What a counted field itself makes of an atomic
+    // update is CountFieldValuesUpdateProcessorFactory's own behavior, and
+    // is not asserted here.
+    Function<SolrInputField, SolrInputField> upperCaseValues =
+        src -> {
+          SolrInputField result = new SolrInputField(src.getName());
+          List<Object> values = new ArrayList<>();
+          for (Object value : src.getValues()) {
+            values.add(value instanceof String ? ((String) value).toUpperCase(Locale.ROOT) : value);
+          }
+          result.setValue(values.size() == 1 ? values.get(0) : values);
+          return result;
+        };
+
+    UpdateRequestProcessor optOut =
+        FieldMutatingUpdateProcessor.mutator(fieldName -> true, null, upperCaseValues, false);
+
+    // the operation maps pass through untouched: their operands are not
+    // values of the field, so the upper-casing never reaches them
+    SolrInputDocument d = null;
+
+    d = runProcessor(optOut, doc(f("id", "1111"), f("ops", Map.of("add", "aaa"))));
+    assertEquals(Map.of("add", "aaa"), d.getFieldValue("ops"));
+
+    d = runProcessor(optOut, doc(f("id", "1111"), f("ops", Map.of("remove", "aaa"))));
+    assertEquals(Map.of("remove", "aaa"), d.getFieldValue("ops"));
+
+    d = runProcessor(optOut, doc(f("id", "1111"), f("ops", Map.of("set", List.of("aaa", "bbb")))));
+    assertEquals(Map.of("set", List.of("aaa", "bbb")), d.getFieldValue("ops"));
+
+    // plain values are still mutated as a whole field
+    d = runProcessor(optOut, doc(f("id", "1111"), f("name", "aaa", "bbb")));
+    assertEquals(List.of("AAA", "BBB"), List.copyOf(d.getFieldValues("name")));
+
+    // without the opt-out, the same function mutates the operands instead
+    UpdateRequestProcessor optIn =
+        FieldMutatingUpdateProcessor.mutator(fieldName -> true, null, upperCaseValues);
+    d = runProcessor(optIn, doc(f("id", "1111"), f("ops", Map.of("add", "aaa"))));
+    assertEquals(Map.of("add", "AAA"), d.getFieldValue("ops"));
+  }
+
+  private static SolrInputDocument runProcessor(
+      UpdateRequestProcessor processor, SolrInputDocument doc) throws Exception {
+    AddUpdateCommand cmd = new AddUpdateCommand(null);
+    cmd.solrDoc = doc;
+    processor.processAdd(cmd);
+    return doc;
   }
 
   public void testConcatDefaults() throws Exception {

@@ -65,6 +65,39 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertQ(req("id:9"), "//date[@name='date_dt'][.='" + dateString + "']");
   }
 
+  public void testParseDateInAtomicUpdateOperations() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
+    String dateString = "2010-11-12T13:14:15.168Z";
+    SolrInputDocument d =
+        processAdd(
+            "parse-date-no-run-processor",
+            doc(
+                f("id", "9100"),
+                f("date_dt", Map.of("set", dateString)),
+                f("dates_dt", Map.of("add", dateString)),
+                f("count_i", Map.of("inc", 1)),
+                f("name_s", Map.of("set", dateString))));
+    assertNotNull(d);
+
+    Object set = d.getFieldValue("date_dt");
+    assertTrue(set instanceof Map);
+    Object parsed = ((Map<?, ?>) set).get("set");
+    assertTrue("set operand should be parsed: " + parsed, parsed instanceof Date);
+    assertEquals(Instant.parse(dateString), ((Date) parsed).toInstant());
+
+    Object add = d.getFieldValue("dates_dt");
+    assertTrue(add instanceof Map);
+    assertTrue(((Map<?, ?>) add).get("add") instanceof Date);
+
+    // other operations are untouched
+    assertEquals(Map.of("inc", 1), d.getFieldValue("count_i"));
+
+    // the processor only mutates fields it selects: a string field keeps the string
+    // (selected by the default selector only when it does not exist in the schema or is a date)
+    assertEquals(Map.of("set", dateString), d.getFieldValue("name_s"));
+  }
+
   public void testParseTrieDateRoundTrip() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("date_tdt")); // should match "*_tdt" dynamic field
