@@ -11,5 +11,7 @@ details, see the information in `/solr/licenses/README.committers.txt`.
 3. The Solr Reference Guide, which provides primarily end user oriented documentation.
 However, the Ref Guide hosts its own documentation on how to write Ref Guide content.
 
+4. `writing-tests.adoc`, which covers the kinds of test Solr has, how to pick one, and the lifecycle conventions they share.
+
 There are a number of tools related to doing development on Solr available in the `/dev-tools`
 directory.

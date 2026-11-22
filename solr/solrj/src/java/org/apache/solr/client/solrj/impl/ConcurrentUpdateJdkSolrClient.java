@@ -37,6 +37,7 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
 
   @Override
   protected SentStream doSendUpdateStream(Update update) {
+    recordStreamedUpdate(update);
     UpdateRequest req = update.request();
     String collection = update.collection();
     CompletableFuture<HttpResponse<InputStream>> resp =

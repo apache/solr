@@ -46,8 +46,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
 
-|solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
-
 |solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr. Often ends in `/conf`.
 
 |solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset. Use with "solr.configset.bootstrap.confdir".
@@ -124,7 +122,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.zookeeper.client.connect.timeout|zkConnectTimeout|15 seconds.|How long before timing out opening connection to ZooKeeper.
 
-|solr.zookeeper.client.timeout|zkClientTimeout|30 seconds.|How long before timing out connection to ZooKeeper.
+|solr.zookeeper.client.timeout|zkClientTimeout|30000 milliseconds.|Default ZooKeeper client session timeout. Also sets the connection and session timeouts for the ZooKeeper check during node startup.
 
 |solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
 
