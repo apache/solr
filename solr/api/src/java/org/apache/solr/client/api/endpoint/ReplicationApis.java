@@ -66,7 +66,9 @@ public interface ReplicationApis {
       summary = "Restore the index of the specified core from a backup.",
       description = "Restore runs asynchronously; use the restore status API to track progress",
       tags = {"replication"})
-  SolrJerseyResponse restoreIndex(@RequestBody ReplicationRestoreRequestBody requestBody)
+  SolrJerseyResponse restoreIndex(
+      @RequestBody(description = "Identifies the backup to restore")
+          ReplicationRestoreRequestBody requestBody)
       throws IOException;
 
   @GET

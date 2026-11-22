@@ -47,13 +47,11 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
   private static final int INITIAL_DOCS = 5;
   private static final int EXTRA_DOCS = 3;
 
-  @ClassRule
-  public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolr() throws Exception {
-    System.setProperty(ALLOW_PATHS_SYSPROP,
-  ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    System.setProperty(ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir());
     solrTestRule.newCollection(CORE_NAME).withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
@@ -72,35 +70,35 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
 
     waitForRestoreSuccess();
     assertEquals(INITIAL_DOCS, countDocs());
-}
+  }
 
-//  @Test
-//  public void testRestoreByNameFromExplicitLocation() throws Exception {
-//    final String backupName = "explicitLocation";
-//    final Path location = allowedTempDir();
-//    resetIndex(INITIAL_DOCS);
-//    createBackup(backupName, location);
-//    addDocs(INITIAL_DOCS, EXTRA_DOCS);
-//
-//    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
-//    request.setName(backupName);
-//    request.setLocation(location.toString());
-//    assertNull(request.process(client()).error);
-//
-//    waitForRestoreSuccess();
-//    assertEquals(INITIAL_DOCS, countDocs());
-//  }
+  //  @Test
+  //  public void testRestoreByNameFromExplicitLocation() throws Exception {
+  //    final String backupName = "explicitLocation";
+  //    final Path location = allowedTempDir();
+  //    resetIndex(INITIAL_DOCS);
+  //    createBackup(backupName, location);
+  //    addDocs(INITIAL_DOCS, EXTRA_DOCS);
+  //
+  //    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
+  //    request.setName(backupName);
+  //    request.setLocation(location.toString());
+  //    assertNull(request.process(client()).error);
+  //
+  //    waitForRestoreSuccess();
+  //    assertEquals(INITIAL_DOCS, countDocs());
+  //  }
 
-//  @Test
-//  public void testRestoreOfUnknownLocationIsRejected() {
-//    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
-//    request.setName("doesNotExist");
-//    request.setLocation(createTempDir().toString());
-//    final RemoteSolrException ex =
-//        expectThrows(RemoteSolrException.class, () -> request.process(client()));
-//    // Not under the allowed paths
-//    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-//  }
+  //  @Test
+  //  public void testRestoreOfUnknownLocationIsRejected() {
+  //    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
+  //    request.setName("doesNotExist");
+  //    request.setLocation(createTempDir().toString());
+  //    final RemoteSolrException ex =
+  //        expectThrows(RemoteSolrException.class, () -> request.process(client()));
+  //    // Not under the allowed paths
+  //    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  //  }
 
   @Test
   public void testDeleteBackupFromDefaultLocation() throws Exception {
@@ -112,7 +110,7 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
     assertNull(request.process(client()).error);
 
     new BackupStatusChecker(client()).waitForBackupDeletionSuccess(backupName, WAIT_SECONDS);
-}
+  }
 
   @Test
   public void testDeleteBackupFromExplicitLocation() throws Exception {
@@ -161,7 +159,7 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
       params.set("location", location.toString());
     }
     new GenericSolrRequest(
-        SolrRequest.METHOD.GET, "/replication", SolrRequest.SolrRequestType.ADMIN, params)
+            SolrRequest.METHOD.GET, "/replication", SolrRequest.SolrRequestType.ADMIN, params)
         .setRequiresCollection(true)
         .process(client());
     new BackupStatusChecker(client()).waitForBackupSuccess(name, WAIT_SECONDS);
