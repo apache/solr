@@ -22,6 +22,7 @@ import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
+import org.apache.solr.client.api.model.CollectionSnapshotMetadata;
 import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CollectionUtil;
@@ -59,9 +60,9 @@ public class ListCollectionSnapshots extends AdminAPIBase implements CollectionS
     Collection<CollectionSnapshotMetaData> m =
         SolrSnapshotManager.listSnapshots(client, collectionName);
 
-    final Map<String, Object> snapshots = CollectionUtil.newHashMap(m.size());
+    final Map<String, CollectionSnapshotMetadata> snapshots = CollectionUtil.newHashMap(m.size());
     for (CollectionSnapshotMetaData metaData : m) {
-      snapshots.put(metaData.getName(), metaData);
+      snapshots.put(metaData.getName(), metaData.toApiModel());
     }
     response.snapshots = snapshots;
 

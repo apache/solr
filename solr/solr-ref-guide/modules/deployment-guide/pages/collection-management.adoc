@@ -51,7 +51,7 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections' -H 'Content-Type: application/json' -d '
   {
     "name": "techproducts_v2",
     "config": "techproducts",
@@ -335,7 +335,7 @@ With the v2 API, the `reload` command is provided as a part of URL path. The req
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts_v2/reload' -H 'Content-Type: application/json' -d '
   {
     "async": "someAsyncId"
   }
@@ -401,7 +401,7 @@ With the v2 API, the `modify` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts_v2' -H 'Content-Type: application/json' -d '
   {
     "modify": {
       "replicationFactor": 2
@@ -492,7 +492,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections
+curl 'http://localhost:8983/api/collections'
 ----
 ====
 ======
@@ -538,7 +538,7 @@ The collection health state is reported as the worst state of any shard, e.g., f
 
 [source,bash]
 ----
-curl -X GET "http://localhost:8983/api/collections?detailed=true"
+curl 'http://localhost:8983/api/collections?detailed=true'
 ----
 
 ==== Detailed Collections Tree Parameters
@@ -741,7 +741,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/rename' -H 'Content-Type: application/json' -d '
   {
     "to": "newName"
   }
@@ -818,14 +818,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts_v2'
 ----
 
 To run a DELETE asynchronously then append the `async` parameter:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?async=aaaa
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts_v2?async=aaaa'
 ----
 ====
 ======
@@ -905,7 +905,7 @@ To create or update a collection property:
 
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/propertyName -H 'Content-Type: application/json' -d '
+curl -X PUT 'http://localhost:8983/api/collections/techproducts_v2/properties/propertyName' -H 'Content-Type: application/json' -d '
   {
     "value": "propertyValue"
   }
@@ -916,14 +916,14 @@ To list all properties for a collection:
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/properties
+curl 'http://localhost:8983/api/collections/techproducts/properties'
 ----
 
 To get a specific collection property by name:
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/properties/propertyName
+curl 'http://localhost:8983/api/collections/techproducts/properties/propertyName'
 ----
 
 
@@ -931,7 +931,7 @@ To delete an existing collection property:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts/properties/propertyName
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts/properties/propertyName'
 ----
 ====
 ======
@@ -1027,7 +1027,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts_v2' -H 'Content-Type: application/json' -d '
   {
     "migrate-docs": {
       "target": "postMigrationCollection",
@@ -1312,7 +1312,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true"
+curl 'http://localhost:8983/api/collections/techproducts_v2?coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true'
 ----
 ====
 ======
@@ -1801,7 +1801,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/backups/techproducts_backup/versions' -H 'Content-Type: application/json' -d '
   {
     "location": "file:///path/to/my/shared/drive"
   }
@@ -2038,7 +2038,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
+curl 'http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive'
 ----
 ====
 ======
@@ -2088,7 +2088,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
+curl 'http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar'
 
 ----
 ====
@@ -2098,7 +2098,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/backups/techproducts_backup/restore' -H 'Content-Type: application/json' -d '
   {
       "collection": "techproducts_v3",
       "location": "file:///path/to/my/shared/drive",
@@ -2244,7 +2244,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive"
+curl -X DELETE 'http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive'
 ----
 ====
 ======
@@ -2284,7 +2284,7 @@ V2 API::
 [source,bash]
 ----
 
-curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive"
+curl -X DELETE 'http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive'
 ----
 ====
 ======
@@ -2308,7 +2308,7 @@ V2 API::
 [source,bash]
 ----
 
-curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/backups/myBackupName/purgeUnused" '
+curl -X PUT -H "Content-type: application/json" 'http://localhost:8983/api/backups/myBackupName/purgeUnused' '
   {
     "location": "/path/to/my/shared/drive"
   }
@@ -2421,7 +2421,7 @@ With the v2 API, the `rebalance-leaders` command is provided as part of the JSON
 
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts' -H 'Content-Type: application/json' -d '
   {
     "rebalance-leaders": {
       "maxAtOnce": 3
@@ -2537,6 +2537,9 @@ This is particularly useful prior to reindexing or making config changes to a co
 Unlike backups, which copy collection data off-disk, snapshots themselves don't provide disaster recovery in case of disk or hardware failure.
 They provide less protection than backups, at a much cheaper cost.
 
+The v2 API requires a JSON request body (use `{}` for the defaults) and returns HTTP 404 if the collection does not exist.
+The v1 API returns HTTP 400 for a missing collection.
+
 === CREATESNAPSHOT Example
 
 *Input*
@@ -2559,7 +2562,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/collections/techproducts/snapshots/snapshot0' -H 'Content-Type: application/json' -d '
   {
     "followAliases": true,
     "async": "someAsyncId"
@@ -2571,6 +2574,27 @@ curl http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H '
 
 *Output*
 
+[tabs#createsnapshot-response]
+======
+V1 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 214
+  },
+  "requestid": "someAsyncId",
+  "snapshot": "snapshot0"
+}
+----
+====
+
+V2 API::
++
+====
 [source,json]
 ----
 {
@@ -2584,6 +2608,8 @@ curl http://localhost:8983/api/collections/techproducts/snapshots/snapshot0 -H '
   "followAliases": true
 }
 ----
+====
+======
 
 === CREATESNAPSHOT Parameters
 
@@ -2627,6 +2653,7 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 == LISTSNAPSHOTS: List all snapshots for a collection
 
 Lists all the snapshots taken of a collection.
+The v2 API returns HTTP 404 if the collection does not exist; the v1 API returns HTTP 400.
 
 === LISTSNAPSHOTS Example
 
@@ -2641,7 +2668,7 @@ V1 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts
+http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts&json.nl=map
 ----
 ====
 
@@ -2650,13 +2677,66 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/collections/techproducts/snapshots
+curl 'http://localhost:8983/api/collections/techproducts/snapshots'
 ----
 ====
 ======
 
 *Output*
 
+The responses below show a snapshot containing one shard with one replica.
+The v1 request uses `json.nl=map` to render named lists as JSON objects.
+The v1 metadata contains a `replicas` map keyed by core name; v2 uses a `replicaSnapshots` array and a `shards` list.
+
+[tabs#listsnapshots-response]
+======
+V1 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "snapshots": {
+    "snapshot0": {
+      "name": "snapshot0",
+      "status": "Successful",
+      "creationDate": 1677985318116,
+      "replicas": {
+        "techproducts_shard1_replica_n6": {
+          "core": "techproducts_shard1_replica_n6",
+          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard1_replica_n6/data/index/",
+          "generation": 2,
+          "shard_id": "shard1",
+          "leader": true,
+          "files": [
+            "_0.si",
+            "_0.fdm",
+            "_0_Lucene90_0.dvd",
+            "segments_2",
+            "_0_Lucene90_0.doc",
+            "_0_Lucene90_0.tim",
+            "_0.fdx",
+            "_0.fdt",
+            "_0_Lucene90_0.dvm",
+            "_0_Lucene90_0.tip",
+            "_0_Lucene90_0.tmd",
+            "_0.fnm"
+          ]
+        }
+      }
+    }
+  }
+}
+----
+====
+
+V2 API::
++
+====
 [source,json]
 ----
 {
@@ -2690,58 +2770,17 @@ curl http://localhost:8983/api/collections/techproducts/snapshots
             "_0_Lucene90_0.tmd",
             "_0.fnm"
           ]
-        },
-        {
-          "coreName": "techproducts_shard1_replica_n2",
-          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard1_replica_n2/data/index/",
-          "generationNumber": 2,
-          "leader": false,
-          "shardId": "shard1",
-          "files": [
-            "_0.si",
-            "_0.fdm",
-            "_0_Lucene90_0.dvd",
-            "segments_2",
-            "_0_Lucene90_0.doc",
-            "_0_Lucene90_0.tim",
-            "_0.fdx",
-            "_0.fdt",
-            "_0_Lucene90_0.dvm",
-            "_0_Lucene90_0.tip",
-            "_0_Lucene90_0.tmd",
-            "_0.fnm"
-          ]
-        },
-        {
-          "coreName": "techproducts_shard2_replica_n4",
-          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard2_replica_n4/data/index/",
-          "generationNumber": 6,
-          "leader": true,
-          "shardId": "shard2",
-          "files": [
-            "segments_6"
-          ]
-        },
-        {
-          "coreName": "techproducts_shard2_replica_n1",
-          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard2_replica_n1/data/index/",
-          "generationNumber": 6,
-          "leader": false,
-          "shardId": "shard2",
-          "files": [
-            "segments_6"
-          ]
         }
       ],
       "shards": [
-        "shard2",
         "shard1"
       ]
     }
   }
 }
-
 ----
+====
+======
 
 === LISTSNAPSHOTS Parameters
 
@@ -2758,6 +2797,9 @@ The name of the collection to create a snapshot for.
 == DELETESNAPSHOT: Delete a snapshot taken of a collection
 
 Deletes a snapshot taken of a specified collection.
+
+The v2 API returns HTTP 404 if the collection or snapshot does not exist.
+The v1 API returns HTTP 400 for a missing collection and treats deletion of a missing snapshot as a successful no-op.
 
 === DELETESNAPSHOT Example
 
@@ -2781,12 +2823,14 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts/snapshots/snapshot0?followAliases=true&async=someAsyncId
+curl -X DELETE 'http://localhost:8983/api/collections/techproducts/snapshots/snapshot0?followAliases=true&async=someAsyncId'
 ----
 ====
 ======
 
 *Output*
+
+The response fields are the same for v1 and v2.
 
 [source,json]
 ----

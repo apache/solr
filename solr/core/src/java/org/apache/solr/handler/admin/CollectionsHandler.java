@@ -30,7 +30,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
@@ -83,13 +82,8 @@ import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
-import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -106,6 +100,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.api.AnnotatedApi;
@@ -203,7 +198,7 @@ import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollection;
-import org.apache.solr.handler.admin.api.SplitShardAPI;
+import org.apache.solr.handler.admin.api.SplitShard;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -460,11 +455,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   public static ModifiableSolrParams params(String... params) {
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-    for (int i = 0; i < params.length; i += 2) {
-      msp.add(params[i], params[i + 1]);
-    }
-    return msp;
+    return ModifiableSolrParams.of(params);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -477,6 +468,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  private static <T> T callSnapshotApi(Callable<T> operation) throws Exception {
+    try {
+      return operation.call();
+    } catch (SolrException e) {
+      if (e.code() == SolrException.ErrorCode.NOT_FOUND.code) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+      }
+      throw e;
+    }
   }
 
   @SuppressWarnings("ImmutableEnumChecker")
@@ -633,66 +635,29 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LISTALIASES,
         (req, rsp, h) -> {
           final ListAliases getAliasesAPI = new ListAliases(h.coreContainer, req, rsp);
-          final SolrJerseyResponse getAliasesResponse = getAliasesAPI.getAliases();
-          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
+          final var getAliasesResponse = getAliasesAPI.getAliases();
+          Map<String, String> aliases = new LinkedHashMap<>();
+          Map<String, Map<String, String>> properties = new LinkedHashMap<>();
+          for (var alias : getAliasesResponse.aliases.values()) {
+            aliases.put(alias.alias, String.join(",", alias.collections));
+            if (!alias.properties.isEmpty()) {
+              properties.put(alias.alias, alias.properties);
+            }
+          }
+          rsp.add("aliases", aliases);
+          rsp.add("properties", properties);
           return null;
         }),
     /**
-     * V2 equivalent: {@link SplitShardAPI} ({@code POST /collections/{collection}/shards} with the
-     * {@code split} command).
+     * V2 equivalent: {@link org.apache.solr.handler.admin.api.SplitShard} ({@code POST
+     * /collections/{collection}/shards/{shard}/split}).
      */
     SPLITSHARD_OP(
         SPLITSHARD,
         DEFAULT_COLLECTION_OP_TIMEOUT * 5,
         (req, rsp, h) -> {
-          String name = req.getParams().required().get(COLLECTION_PROP);
-          // TODO : add support for multiple shards
-          String shard = req.getParams().get(SHARD_ID_PROP);
-          String rangesStr = req.getParams().get(CoreAdminParams.RANGES);
-          String splitKey = req.getParams().get("split.key");
-          String numSubShards = req.getParams().get(NUM_SUB_SHARDS);
-          String fuzz = req.getParams().get(SPLIT_FUZZ);
-
-          if (splitKey == null && shard == null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "At least one of shard, or split.key should be specified.");
-          }
-          if (splitKey != null && shard != null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Only one of 'shard' or 'split.key' should be specified");
-          }
-          if (splitKey != null && rangesStr != null) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Only one of 'ranges' or 'split.key' should be specified");
-          }
-          if (numSubShards != null && (splitKey != null || rangesStr != null)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "numSubShards can not be specified with split.key or ranges parameters");
-          }
-          if (fuzz != null && (splitKey != null || rangesStr != null)) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "fuzz can not be specified with split.key or ranges parameters");
-          }
-
-          Map<String, Object> map =
-              copy(
-                  req.getParams(),
-                  null,
-                  COLLECTION_PROP,
-                  SHARD_ID_PROP,
-                  "split.key",
-                  CoreAdminParams.RANGES,
-                  WAIT_FOR_FINAL_STATE,
-                  TIMING,
-                  SPLIT_METHOD,
-                  NUM_SUB_SHARDS,
-                  SPLIT_FUZZ,
-                  SPLIT_BY_PREFIX,
-                  FOLLOW_ALIASES,
-                  CREATE_NODE_SET_PARAM);
-          return copyPropertiesWithPrefix(req.getParams(), map, PROPERTY_PREFIX);
+          SplitShard.invokeWithV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     DELETESHARD_OP(
         DELETESHARD,
@@ -979,10 +944,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           requestBody.async = asyncId;
 
           final CreateCollectionSnapshotResponse createSnapshotResponse =
-              createCollectionSnapshotAPI.createCollectionSnapshot(
-                  extCollectionName, commitName, requestBody);
+              callSnapshotApi(
+                  () ->
+                      createCollectionSnapshotAPI.createCollectionSnapshot(
+                          extCollectionName, commitName, requestBody));
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createSnapshotResponse);
+          rsp.getValues().remove("collection");
+          rsp.getValues().remove("followAliases");
 
           return null;
         }),
@@ -1000,8 +969,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               new DeleteCollectionSnapshot(h.coreContainer, req, rsp);
 
           final var deleteSnapshotResponse =
-              deleteCollectionSnapshotAPI.deleteCollectionSnapshot(
-                  extCollectionName, commitName, followAliases, asyncId);
+              callSnapshotApi(
+                  () ->
+                      deleteCollectionSnapshotAPI.deleteCollectionSnapshot(
+                          extCollectionName, commitName, followAliases, asyncId, false));
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteSnapshotResponse);
           return null;
@@ -1015,11 +986,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               new ListCollectionSnapshots(h.coreContainer, req, rsp);
 
           final ListCollectionSnapshotsResponse response =
-              listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
+              callSnapshotApi(
+                  () ->
+                      listCollectionSnapshotsAPI.listSnapshots(
+                          req.getParams().get(COLLECTION_PROP)));
 
           NamedList<Object> snapshots = new NamedList<>();
-          for (Object meta : response.snapshots.values()) {
-            final var metaTyped = (CollectionSnapshotMetaData) meta;
+          for (var meta : response.snapshots.values()) {
+            final var metaTyped = new CollectionSnapshotMetaData(meta);
             snapshots.add(metaTyped.getName(), metaTyped.toNamedList());
           }
 
@@ -1245,6 +1219,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         MigrateReplicas.class,
         BalanceReplicas.class,
         RestoreCollection.class,
+        SplitShard.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
@@ -1260,7 +1235,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));

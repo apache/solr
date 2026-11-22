@@ -34,12 +34,14 @@ import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.Ignore;
 
@@ -179,6 +181,22 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertFalse("schema cache", cfg.hasSchemaCache());
+  }
+
+  public void testShippedSolrXmlUsesZkClientTimeoutProperty() {
+    EnvUtils.setProperty("solr.zookeeper.client.timeout", "45000");
+    NodeConfig cfg =
+        SolrXmlConfig.fromFile(
+            solrHome, ExternalPaths.SERVER_HOME.resolve("solr.xml"), new Properties());
+    assertEquals(45000, cfg.getCloudConfig().getZkClientTimeout());
+  }
+
+  public void testShippedSolrXmlZkClientTimeoutDefault() {
+    System.clearProperty("solr.zookeeper.client.timeout");
+    NodeConfig cfg =
+        SolrXmlConfig.fromFile(
+            solrHome, ExternalPaths.SERVER_HOME.resolve("solr.xml"), new Properties());
+    assertEquals(30000, cfg.getCloudConfig().getZkClientTimeout());
   }
 
   public void testNodeLevelCache() {

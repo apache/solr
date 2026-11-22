@@ -41,9 +41,12 @@ import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -173,6 +176,51 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
     assertEquals(200, response.getStatus());
     assertEquals("application/json", response.getHeaders().get("Content-type"));
+  }
+
+  @Test
+  public void testReloadHonorsWtOnNonHostingNode() throws Exception {
+    final String collection = "reload_one_replica";
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
+        .process(cluster.getSolrClient());
+    try {
+      cluster.waitForActiveCollection(collection, 1, 1);
+      final Replica replica =
+          getCollectionState(collection).getSlice("shard1").getReplicas().iterator().next();
+      final JettySolrRunner hostingNode =
+          cluster.getJettySolrRunners().stream()
+              .filter(jetty -> jetty.getNodeName().equals(replica.getNodeName()))
+              .findFirst()
+              .orElseThrow();
+      final JettySolrRunner nonHostingNode =
+          cluster.getJettySolrRunners().stream()
+              .filter(jetty -> !jetty.getNodeName().equals(replica.getNodeName()))
+              .findFirst()
+              .orElseThrow();
+
+      for (JettySolrRunner target : List.of(hostingNode, nonHostingNode)) {
+        try (SolrCore before = hostingNode.getCoreContainer().getCore(replica.getCoreName());
+            var client = new HttpJettySolrClient.Builder(target.getBaseUrl().toString()).build()) {
+          assertNotNull(before);
+          final V2Request request =
+              new V2Request.Builder("/collections/" + collection + "/reload")
+                  .withMethod(SolrRequest.METHOD.POST)
+                  .withParams(params("wt", "javabin"))
+                  .withPayload("{}")
+                  .build();
+          request.setResponseParser(new JavaBinResponseParser());
+
+          final V2Response response = request.process(client);
+          assertEquals("Reload through " + target.getNodeName(), 0, response.getStatus());
+          try (SolrCore after = hostingNode.getCoreContainer().getCore(replica.getCoreName())) {
+            assertNotNull(after);
+            assertNotSame("Reload must replace the hosted core", before, after);
+          }
+        }
+      }
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+    }
   }
 
   private HttpClient getRawClient() {

@@ -343,7 +343,7 @@ V2 API::
 
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/aliases' -H 'Content-Type: application/json' -d '
   {
     "name":"testalias",
     "collections":["foo","bar"]
@@ -414,7 +414,7 @@ V2 API::
 
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/aliases' -H 'Content-Type: application/json' -d '
   {
       "name": "somethingTemporalThisWayComes",
       "routers" : [
@@ -504,7 +504,7 @@ V2 API::
 
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+curl 'http://localhost:8983/api/aliases' -H 'Content-Type: application/json' -d '
   {
     "name":"dra_test1",
     "routers": [
@@ -562,7 +562,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases
+curl 'http://localhost:8983/api/aliases'
 ----
 ====
 ======
@@ -576,14 +576,16 @@ V2 API only::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases/testalias2
+curl 'http://localhost:8983/api/aliases/testalias2'
 ----
 ====
 ======
 
 === LISTALIASES Response
 
-The output will contain a list of aliases with the corresponding collection names.
+The v2 output maps each alias name to an object containing its `name`, a `collections` array, and a `properties` map.
+Each object has the same fields as the detail response for a single alias, without a nested `responseHeader`.
+The v1 `LISTALIASES` response retains its alias-to-comma-separated-collections map and separate `properties` map.
 
 === Examples using LISTALIASES
 
@@ -591,13 +593,34 @@ The output will contain a list of aliases with the corresponding collection name
 
 *Input*
 
+[tabs#listaliases-example-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases
+curl 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
 ----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl 'http://localhost:8983/api/aliases'
+----
+====
+======
 
 *Output*
 
+[tabs#listaliases-example-response]
+======
+V1 API::
++
+====
 [source,json]
 ----
 {
@@ -616,6 +639,36 @@ curl http://localhost:8983/api/aliases
   }
 }
 ----
+====
+
+V2 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "aliases": {
+    "testalias1": {
+      "name": "testalias1",
+      "collections": ["collection1"],
+      "properties": {}
+    },
+    "testalias2": {
+      "name": "testalias2",
+      "collections": ["collection2", "collection1"],
+      "properties": {
+        "someKey": "someValue"
+      }
+    }
+  }
+}
+----
+====
+======
 
 ==== Getting details for a single alias
 
@@ -623,7 +676,7 @@ curl http://localhost:8983/api/aliases
 
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases/testalias2
+curl 'http://localhost:8983/api/aliases/testalias2'
 ----
 
 *Output*
@@ -668,7 +721,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H 'Content-Type: application/json' -d '
+curl -X PUT 'http://localhost:8983/api/aliases/techproducts_alias/properties' -H 'Content-Type: application/json' -d '
 {
   "properties": {"foo":"bar"}
 }'
@@ -681,7 +734,7 @@ V2 API Update via property level api::
 ====
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json' -d '
+curl -X PUT 'http://localhost:8983/api/aliases/techproducts_alias/properties/foo' -H 'Content-Type: application/json' -d '
 {
   "value": "baz"
 }'
@@ -693,7 +746,7 @@ V2 API Delete via property level api::
 ====
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json'
+curl -X DELETE 'http://localhost:8983/api/aliases/techproducts_alias/properties/foo' -H 'Content-Type: application/json'
 ----
 ====
 ======
@@ -759,7 +812,7 @@ V2 API Get all properties on an alias::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases/techproducts_alias/properties
+curl 'http://localhost:8983/api/aliases/techproducts_alias/properties'
 ----
 
 *Output*
@@ -783,7 +836,7 @@ V2 API Get single property value on an alias::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/api/aliases/techproducts_alias/properties/foo
+curl 'http://localhost:8983/api/aliases/techproducts_alias/properties/foo'
 ----
 
 *Output*
@@ -821,7 +874,7 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/aliases/testalias
+curl -X DELETE 'http://localhost:8983/api/aliases/testalias'
 ----
 ====
 ======
