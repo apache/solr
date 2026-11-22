@@ -73,10 +73,12 @@ solrAdminApp.controller('SchemaController',
                         leftbar.types = [field.type];
                         if (field.dynamicBase) leftbar.dynamicFields = [field.dynamicBase];
                         if (field.copySources && field.copySources.length>0) {
-                            leftbar.copyFieldSources = sortedObjectArray(field.copySources.sort());
+                            leftbar.copyFieldSources = copyFieldReferences(
+                                field.copySources, schema.schema.fields, $scope.name, true);
                         }
                         if (field.copyDests && field.copyDests.length>0) {
-                            leftbar.copyFieldDests = sortedObjectArray(field.copyDests.sort());
+                            leftbar.copyFieldDests = copyFieldReferences(
+                                field.copyDests, schema.schema.fields, $scope.name, false);
                         }
                         $scope.fieldOrType = "field=" + $scope.name;
                     } else if (search["dynamic-field"]) {
@@ -782,12 +784,18 @@ var getFieldTypeManipulationOptions = function() {
     ];
 };
 
-var sortedObjectArray = function(list) {
-    var objarr = [];
-    for (var i in list) {
-      objarr.push({"name": list[i]});
-    }
-    return objarr;
+var copyFieldReferences = function(list, schemaFields, selectedField, incoming) {
+    return list.filter(function(name, index) {
+        return list.indexOf(name) === index;
+    }).sort().map(function(name) {
+        var source = incoming ? name : selectedField;
+        var destination = incoming ? selectedField : name;
+        var field = schemaFields[destination];
+        return {
+            name: name,
+            deletable: !field || (field.copySources || []).indexOf(source) !== -1
+        };
+    });
 };
 
 var shortenPackages = function(className) {

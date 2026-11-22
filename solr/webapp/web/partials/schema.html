@@ -409,12 +409,13 @@ limitations under the License.
             </div>
             <div class="clearfix updatable" ng-show="isSchemaUpdatable">
               <a style="float:left;width:80%" href="#/{{core}}/schema?field={{field.name}}">{{field.name}}</a>
-              <span ng-click="toggleDeleteCopyField(field)" class="rem">&nbsp;</span>
+              <span ng-if="field.deletable" ng-click="toggleDeleteCopyField(field)" class="rem">&nbsp;</span>
             </div>
-            <div class="action delete" ng-show="field.show">
+            <div ng-if="!field.deletable">Wildcard match</div>
+            <div class="action delete" ng-show="field.show && field.deletable">
                 <form class="delete">
 
-                  <p class="clearfix"><em>Are you sure you want to delete this CopyField?</em></p>
+                  <p class="clearfix"><em>Delete copy-field rule {{field.name}} → {{name}}?</em></p>
                   <div ng-repeat="error in field.errors" ng-show="field.errors" class="clearfix note error">
                     <span>{{error}}</span></div>
 
@@ -433,12 +434,13 @@ limitations under the License.
             </div>
             <div class="clearfix updatable" ng-show="isSchemaUpdatable">
               <a href="#/{{core}}/schema?field={{field.name}}">{{field.name}}</a>
-              <span ng-click="toggleDeleteCopyField(field)" class="rem">&nbsp;</span>
+              <span ng-if="field.deletable" ng-click="toggleDeleteCopyField(field)" class="rem">&nbsp;</span>
             </div>
-            <div class="action delete" ng-show="field.show">
+            <div ng-if="!field.deletable">Wildcard match</div>
+            <div class="action delete" ng-show="field.show && field.deletable">
                 <form class="delete">
 
-                  <p class="clearfix"><em>Are you sure you want to delete this CopyField?</em></p>
+                  <p class="clearfix"><em>Delete copy-field rule {{name}} → {{field.name}}?</em></p>
                   <div ng-repeat="error in field.errors" ng-show="field.errors" class="clearfix note error">
                     <span>{{error}}</span></div>
 

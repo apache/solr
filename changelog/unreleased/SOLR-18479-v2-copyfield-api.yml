@@ -8,6 +8,7 @@ title: >
   and `DELETE` removes them -- either all of them, or the ones named in a trailing
   comma-separated path segment.
   The Admin UI uses these endpoints to add and delete copy-field rules.
+  The Admin UI suppresses invalid delete controls for resolved wildcard-source matches.
 type: added
 authors:
   - name: Jan Høydahl
