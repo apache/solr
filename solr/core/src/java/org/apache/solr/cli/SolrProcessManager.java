@@ -51,9 +51,25 @@ public class SolrProcessManager {
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
   private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
-  // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
-  // processes
-  public static boolean enableTestingMode = false;
+
+  /**
+   * System property ({@code solr.process.scan.marker}, or the {@code SOLR_PROCESS_SCAN_MARKER}
+   * environment variable) restricting process discovery to Solr nodes whose command line contains
+   * the given string. Unset by default, in which case every Solr node on the host is discovered.
+   *
+   * <p>For automated tests: discovery is host-wide by nature, so without this a test asserting on
+   * the set of running nodes also sees a developer's own Solr or another suite sharing a CI
+   * machine. A harness sets this to a value unique to itself and starts its nodes carrying the same
+   * marker, via {@code SOLR_OPTS_INTERNAL}.
+   *
+   * <p>While it is set, a PID file belonging to a node without the marker counts as stale and is
+   * removed by {@link #scanSolrPidFiles()}. A marker therefore scopes a PID directory, not just a
+   * scan: whoever sets one must also point its nodes at a PID directory of their own, as the CATS
+   * harness does with {@code SOLR_PID_DIR}. Nodes that share a PID directory must share the marker,
+   * or run with none, or a live node outside the marker loses its PID file.
+   */
+  public static final String PROCESS_SCAN_MARKER = "solr.process.scan.marker";
+
   private static final Map<Long, String> pidToWindowsCommandLineMap = new HashMap<>();
 
   public SolrProcessManager() {
@@ -61,12 +77,12 @@ public class SolrProcessManager {
       pidToWindowsCommandLineMap.putAll(commandLinesWindows());
     }
 
+    String scanMarker = EnvUtils.getProperty(PROCESS_SCAN_MARKER);
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
             .filter(p -> commandLine(p).orElse("").contains("-Dsolr.port.listen="))
-            .filter(
-                p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
+            .filter(p -> scanMarker == null || commandLine(p).orElse("").contains(scanMarker))
             .collect(
                 Collectors.toUnmodifiableMap(
                     ProcessHandle::pid,
