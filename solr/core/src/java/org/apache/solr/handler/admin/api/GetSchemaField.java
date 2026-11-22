@@ -18,8 +18,10 @@
 package org.apache.solr.handler.admin.api;
 
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaGetDynamicFieldInfoResponse;
@@ -32,6 +34,7 @@ import org.apache.solr.client.api.model.SchemaListFieldsResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -48,6 +51,7 @@ import org.apache.solr.security.PermissionNameProvider;
  *   <li>/fields
  *   <li>/fields/{fieldName}
  *   <li>/copyfields
+ *   <li>/copyfields/{sourceField}
  *   <li>/dynamicfields
  *   <li>/dynamicfields/{dynamicFieldName}
  *   <li>/fieldtypes
@@ -99,11 +103,39 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaListCopyFieldsResponse listCopyFields() {
+    SolrParams copyFieldParams = params;
+    if (params.getParams("destination.fl") != null || params.getParams("dest.fl") != null) {
+      final var translated = new ModifiableSolrParams(params);
+      translated.remove("dest.fl");
+      if (params.getParams("destination.fl") != null) {
+        translated.set("dest.fl", params.getParams("destination.fl"));
+      }
+      copyFieldParams = translated;
+    }
+    final var response = instantiateJerseyResponse(SchemaListCopyFieldsResponse.class);
+    response.copyFields = copyFieldsForV2(listAllFieldsOfType("copyfields", copyFieldParams));
+    return response;
+  }
+
+  /** Lists copy fields using the v1 response format. */
+  public SchemaListCopyFieldsResponse listCopyFieldsForV1() {
     SchemaListCopyFieldsResponse response =
         instantiateJerseyResponse(SchemaListCopyFieldsResponse.class);
     final String realName = "copyfields";
 
     response.copyFields = listAllFieldsOfType(realName, params);
+
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaListCopyFieldsResponse listCopyFieldsBySource(String sourceField) {
+    SchemaListCopyFieldsResponse response =
+        instantiateJerseyResponse(SchemaListCopyFieldsResponse.class);
+
+    response.copyFields =
+        copyFieldsForV2(indexSchema.getCopyFieldProperties(false, Set.of(sourceField), null));
 
     return response;
   }
@@ -173,6 +205,25 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
     }
     throw new SolrException(
         SolrException.ErrorCode.NOT_FOUND, "No such field type [" + fieldTypeName + "]");
+  }
+
+  static List<Object> copyFieldsForV2(List<?> rules) {
+    final List<Object> result = new ArrayList<>(rules.size());
+    for (Object rule : rules) {
+      final var renamed = new SimpleOrderedMap<Object>();
+      ((Map<?, ?>) rule)
+          .forEach(
+              (key, value) ->
+                  renamed.add(
+                      switch (key.toString()) {
+                        case "dest" -> "destination";
+                        case "destDynamicBase" -> "destinationDynamicBase";
+                        default -> key.toString();
+                      },
+                      value));
+      result.add(renamed);
+    }
+    return result;
   }
 
   private List<Object> listAllFieldsOfType(String realName, SolrParams params) {

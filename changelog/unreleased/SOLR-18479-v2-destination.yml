@@ -1,0 +1,10 @@
+title: >
+  The v2 Schema API uses `destination` for copy-field request and response properties,
+  and `destination.fl` for destination filtering. Each bulk copy-field operation addresses
+  one destination. The v1 Schema API retains its existing `dest` names and behavior.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18479
+    url: https://issues.apache.org/jira/browse/SOLR-18479

@@ -19,8 +19,10 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
 public class DeleteCopyFieldOperation extends SchemaChange {
   @JsonProperty public String source;
 

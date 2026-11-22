@@ -25,6 +25,14 @@ This page highlights the most important changes including new features and chang
 Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
 For example, if you are currently using Solr 10.1, you should review changes made in all subsequent 10.x releases in addition to the 11.0-specific changes on this page.
 
+== Schema API
+
+V2 copy-field rules use `destination` instead of `dest` in reads and bulk operations, and `destination.fl` instead of `dest.fl` for filtering.
+Per-source `PUT` and `POST` requests take an array of objects containing `destination` and an optional `maxChars`, allowing a different character limit for each destination.
+V2 bulk copy-field operations each address one destination.
+The v1 Schema API retains its existing request and response formats.
+See xref:indexing-guide:schema-api.adoc[] for examples.
+
 == Removed Features
 
 === Overseer Roles API

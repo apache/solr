@@ -40,8 +40,8 @@ import com.fasterxml.jackson.annotation.OptBoolean;
   @JsonSubTypes.Type(value = DeleteFieldTypeOperation.class, name = "delete-field-type"),
   @JsonSubTypes.Type(value = DeleteFieldOperation.class, name = "delete-field"),
   @JsonSubTypes.Type(value = DeleteDynamicFieldOperation.class, name = "delete-dynamic-field"),
-  @JsonSubTypes.Type(value = AddCopyFieldOperation.class, name = "add-copy-field"),
-  @JsonSubTypes.Type(value = DeleteCopyFieldOperation.class, name = "delete-copy-field"),
+  @JsonSubTypes.Type(value = AddCopyFieldRequest.class, name = "add-copy-field"),
+  @JsonSubTypes.Type(value = DeleteCopyFieldRequest.class, name = "delete-copy-field"),
 })
 public class SchemaChange {
 
