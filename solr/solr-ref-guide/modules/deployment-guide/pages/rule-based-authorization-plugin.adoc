@@ -395,7 +395,7 @@ If edit permissions should only be applied to specific collections, a custom per
 Note that this allows configuration read permissions for _all_ collections.
 If read permissions should only be applied to specific collections, a custom permission would need to be created.
 * *metrics-read*: this permission allows access to Solr's xref:metrics-reporting.adoc#metrics-api[Metrics API], some xref:configuration-guide:implicit-requesthandlers.adoc#admin-handlers[implicit admin handlers] such as `solr/<collection>/admin/mbeans` and `solr/<collection>/admin/segments`, as well as other admin APIs exposing metrics.
-* *health*: this permission allows access to Solr's xref:configuration-guide:implicit-requesthandlers.adoc#admin-handlers[Health Check and Ping] endpoints, typically used to monitor whether a node or core is healthy.
+* *health*: this permission allows access to Solr's xref:healthcheck.adoc[Health Check] endpoint, typically used to monitor whether a node is healthy.
 * *core-admin-edit*: Core admin commands that can mutate the system state.
 * *core-admin-read*: Read operations on the core admin API
 * *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the xref:configuration-guide:collections-api.adoc[].

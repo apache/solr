@@ -57,7 +57,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressWarnings("deprecation") // covers the deprecated ping()
   public void testPerReplicaStateCollection() throws Exception {
 
     String testCollection = "perReplicaState_test";

@@ -123,24 +123,6 @@ limitations under the License.
   margin-top: 10px;
 }
 
-#content #dashboard #healthcheck
-{
-  float: right;
-}
-
-#content #dashboard #healthcheck .ico
-{
-  background-image: url( ../../img/ico/slash.png );
-  height: 20px;
-  padding-left: 20px;
-  width: 60%;
-}
-
-#content #dashboard #healthcheck .ico.ico-1
-{
-  background-image: url( ../../img/ico/tick.png );
-}
-
 #content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }
 #content #dashboard #statistics h2 { background-image: url( ../../img/ico/chart.png ); }
 #content #dashboard #replication h2 { background-image: url( ../../img/ico/node.png ); }

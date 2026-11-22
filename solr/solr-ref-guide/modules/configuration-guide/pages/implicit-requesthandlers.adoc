@@ -21,7 +21,7 @@
 Solr ships with many out-of-the-box request handlers, which are called implicit because they do not need to be configured in `solrconfig.xml` before you are able to use them.
 
 Each implicit handler ships with a named bundle of default, invariant, and appended parameters - a _paramset_ - equivalent to the `<defaults>`, `<invariants>`, and `<appends>` blocks you'd normally write into a `<requestHandler>` definition in `solrconfig.xml`.
-Because implicit handlers have no entry in `solrconfig.xml` to edit directly, their paramset (shown for each handler below, e.g. `_ADMIN_PING` for the Ping handler) is the only way to override their parameters - see <<How to View Implicit Handler Paramsets>> and <<How to Edit Implicit Handler Paramsets>> below.
+Because implicit handlers have no entry in `solrconfig.xml` to edit directly, their paramset (shown for each handler below, e.g. `_ADMIN_LUKE` for the Luke handler) is the only way to override their parameters - see <<How to View Implicit Handler Paramsets>> and <<How to Edit Implicit Handler Paramsets>> below.
 
 == Available Implicit Endpoints
 

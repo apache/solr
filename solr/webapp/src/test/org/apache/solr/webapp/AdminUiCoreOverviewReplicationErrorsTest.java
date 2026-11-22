@@ -78,7 +78,7 @@ public class AdminUiCoreOverviewReplicationErrorsTest extends AdminUiStandaloneT
   public void testReplicationForbiddenDoesNotShowConfigurationMessage() throws Exception {
     // Not asserting #authz-failures itself: app.js's httpInterceptor clears
     // $rootScope.showAuthzFailures on every successful v1 call, and core-overview fires several
-    // of those (Luke, CoreInfo, Ping) alongside this one, so the banner isn't reliably still up
+    // of those (Luke, CoreInfo) alongside this one, so the banner isn't reliably still up
     // by the time we'd check it. This test only guards the message text below.
     forcedReplicationStatus = HttpServletResponse.SC_FORBIDDEN;
     openPage(CORE + "/core-overview", By.id("dashboard"));
