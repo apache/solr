@@ -1,32 +1,47 @@
- package org.apache.solr.handler.admin.api;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.handler.admin.api;
 
- import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
- import java.nio.file.Path;
- import java.util.concurrent.TimeUnit;
- import org.apache.solr.SolrTestCase;
- import org.apache.solr.client.api.model.RestoreStatusResponse;
- import org.apache.solr.client.solrj.RemoteSolrException;
- import org.apache.solr.client.solrj.SolrClient;
- import org.apache.solr.client.solrj.SolrRequest;
- import org.apache.solr.client.solrj.request.GenericSolrRequest;
- import org.apache.solr.client.solrj.request.ReplicationApi;
- import org.apache.solr.client.solrj.request.ReplicationBackupsApi;
- import org.apache.solr.client.solrj.request.SolrQuery;
- import org.apache.solr.common.SolrException;
- import org.apache.solr.common.SolrInputDocument;
- import org.apache.solr.common.params.ModifiableSolrParams;
- import org.apache.solr.common.util.TimeSource;
- import org.apache.solr.handler.BackupStatusChecker;
- import org.apache.solr.util.ExternalPaths;
- import org.apache.solr.util.SolrJettyTestRule;
- import org.apache.solr.util.TimeOut;
- import org.junit.BeforeClass;
- import org.junit.ClassRule;
- import org.junit.Test;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.api.model.RestoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.ReplicationApi;
+import org.apache.solr.client.solrj.request.ReplicationBackupsApi;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.handler.BackupStatusChecker;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
+import org.apache.solr.util.TimeOut;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
- public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
-
+public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
   private static final String CORE_NAME = "restoreAndDeleteBackupApiTestCore";
   private static final int WAIT_SECONDS = 30;
   private static final int INITIAL_DOCS = 5;
@@ -38,7 +53,7 @@
   @BeforeClass
   public static void setupSolr() throws Exception {
     System.setProperty(ALLOW_PATHS_SYSPROP,
- ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+  ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir());
     solrTestRule.newCollection(CORE_NAME).withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
@@ -57,7 +72,7 @@
 
     waitForRestoreSuccess();
     assertEquals(INITIAL_DOCS, countDocs());
-  }
+}
 
   @Test
   public void testRestoreByNameFromExplicitLocation() throws Exception {
@@ -97,7 +112,7 @@
     assertNull(request.process(client()).error);
 
     new BackupStatusChecker(client()).waitForBackupDeletionSuccess(backupName, WAIT_SECONDS);
-  }
+}
 
   @Test
   public void testDeleteBackupFromExplicitLocation() throws Exception {
@@ -183,4 +198,4 @@
   private static long countDocs() throws Exception {
     return client().query(new SolrQuery("*:*")).getResults().getNumFound();
   }
- }
+}
