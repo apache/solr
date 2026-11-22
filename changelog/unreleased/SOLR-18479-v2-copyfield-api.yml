@@ -3,7 +3,8 @@ title: >
   `/api/collections/<collection>/schema/copyfields/<sourceField>`.
   Previously copy-fields were the one schema resource reachable only through the bulk endpoint.
   Rules are addressed by their source field: `GET` lists that source's rules, `PUT` sets its
-  complete `destinations` list, `POST` appends destinations without disturbing existing rules,
+  complete list of destination objects, each with its own optional `maxChars`,
+  `POST` appends destinations without disturbing existing rules,
   and `DELETE` removes them -- either all of them, or the ones named in a trailing
   comma-separated path segment.
   The Admin UI uses these endpoints to add and delete copy-field rules.

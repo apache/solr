@@ -29,7 +29,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.util.List;
-import org.apache.solr.client.api.model.AddCopyFieldOperation;
+import org.apache.solr.client.api.model.CopyFieldDestination;
 import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
@@ -121,12 +121,12 @@ public interface UpdateSchemaApi {
   @StoreApiParameters
   @Operation(
       summary =
-          "Set the copy-field rules for the specified source field.  The given destinations "
+          "Set the copy-field rules for the specified source field, with a character limit per destination. The given destinations "
               + "replace any rules that source already has.",
       tags = {"schema"})
   SolrJerseyResponse upsertCopyFields(
       @PathParam("sourceField") String sourceField,
-      @RequestBody(required = true) AddCopyFieldOperation requestBody)
+      @RequestBody(required = true) List<CopyFieldDestination> requestBody)
       throws Exception;
 
   @POST
@@ -139,7 +139,7 @@ public interface UpdateSchemaApi {
       tags = {"schema"})
   SolrJerseyResponse appendCopyFields(
       @PathParam("sourceField") String sourceField,
-      @RequestBody(required = true) AddCopyFieldOperation requestBody)
+      @RequestBody(required = true) List<CopyFieldDestination> requestBody)
       throws Exception;
 
   @DELETE

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 
 import java.util.List;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.api.model.AddCopyFieldOperation;
+import org.apache.solr.client.api.model.CopyFieldDestination;
 import org.apache.solr.client.api.model.UpsertDynamicFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldOperation;
 import org.apache.solr.client.api.model.UpsertFieldTypeOperation;
@@ -160,26 +160,26 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
 
   @Test
   public void testUpsertCopyFieldsOperationRequiresSourceAndDestinations() {
-    final var noSourceOp = new AddCopyFieldOperation();
-    noSourceOp.destinations = List.of("someDestination");
+    final var noSourceOp = new CopyFieldDestination();
+    noSourceOp.dest = "someDestination";
     var thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              schemaApi.upsertCopyFields(null, noSourceOp);
+              schemaApi.upsertCopyFields(null, List.of(noSourceOp));
             });
     assertEquals(BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: sourceField"));
 
-    final var noDestinationsOp = new AddCopyFieldOperation();
+    final var noDestinationsOp = new CopyFieldDestination();
     thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              schemaApi.upsertCopyFields("someSourceField", noDestinationsOp);
+              schemaApi.upsertCopyFields("someSourceField", List.of(noDestinationsOp));
             });
     assertEquals(BAD_REQUEST.code, thrown.code());
-    assertThat(thrown.getMessage(), containsString("Missing required parameter: destinations"));
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: dest"));
   }
 
   @Test

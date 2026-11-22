@@ -112,13 +112,14 @@ public class AdminUiSchemaScreenTest extends AdminUiTestBase {
 
   @Test
   public void testCopyFieldsUseDedicatedEndpoints() throws Exception {
-    new SchemaRequest.AddCopyField(COPY_SOURCE, List.of(COPY_DEST_ONE))
+    new SchemaRequest.AddCopyField(COPY_SOURCE, List.of(COPY_DEST_ONE), 100)
         .process(cluster.getSolrClient(), COLLECTION);
     try {
       openPage(COLLECTION + "/schema", By.id("schema"));
       openAddCopyFieldDialog();
       waitFor(By.id("add_source")).sendKeys(COPY_SOURCE);
       waitFor(By.id("add_dest")).sendKeys(COPY_DEST_TWO);
+      waitFor(By.id("add_max_chars")).sendKeys("20");
       ((JavascriptExecutor) driver).executeScript("performance.clearResourceTimings();");
       click(By.xpath("//button[@ng-click='addCopyField()']"));
 
@@ -127,6 +128,15 @@ public class AdminUiSchemaScreenTest extends AdminUiTestBase {
           () -> copyFieldDestinations().equals(List.of(COPY_DEST_ONE, COPY_DEST_TWO)));
       String copyFieldPath = "/api/collections/" + COLLECTION + "/schema/copyfields/" + COPY_SOURCE;
       assertBrowserRequested(copyFieldPath);
+      var copyFields =
+          new SchemaRequest.CopyFields(params("source.fl", COPY_SOURCE))
+              .process(cluster.getSolrClient(), COLLECTION)
+              .getCopyFields();
+      assertEquals(
+          List.of(
+              Map.of("source", COPY_SOURCE, "dest", COPY_DEST_ONE, "maxChars", 100),
+              Map.of("source", COPY_SOURCE, "dest", COPY_DEST_TWO, "maxChars", 20)),
+          copyFields);
 
       openPage(COLLECTION + "/schema?field=" + COPY_SOURCE, By.id("schema"));
       waitForTextContains(By.cssSelector("#schema span.name"), COPY_SOURCE);

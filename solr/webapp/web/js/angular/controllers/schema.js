@@ -291,8 +291,12 @@ solrAdminApp.controller('SchemaController',
                 return;
             }
             var indexType = $scope.isCloudEnabled ? "collections" : "cores";
+            var rule = {dest: $scope.copyField.dest};
+            if ($scope.copyField.maxChars != null) {
+                rule.maxChars = $scope.copyField.maxChars;
+            }
             SchemaV2.appendCopyFields(indexType, $routeParams.core, $scope.copyField.source,
-                {destinations: [$scope.copyField.dest]}, function(error, data, response) {
+                [rule], function(error, data, response) {
                 $timeout(function() {
                     if (error || (data && data.error)) {
                         if (response && (response.status === 401 || response.status === 403)) {

@@ -186,7 +186,7 @@ limitations under the License.
 
       <div class="action add" data-rel="add" ng-show="showAddCopyField" escape-pressed="hideAll()">
 
-        <form>
+        <form name="addCopyFieldForm">
 
           <p class="clearfix"><label for="add_source">source:</label>
           <input type="text" id="add_source" ng-model="copyField.source" focus-when="showAddCopyField" placeholder="specify your source field or pattern"></p>
@@ -194,11 +194,14 @@ limitations under the License.
           <p class="clearfix"><label for="add_dest">destination:</label>
           <input type="text" id="add_dest" ng-model="copyField.dest" placeholder="specify your destination field or pattern"></p>
 
+          <p class="clearfix"><label for="add_max_chars">max chars:</label>
+          <input type="number" id="add_max_chars" ng-model="copyField.maxChars" min="0" step="1" placeholder="optional; 0 means unlimited"></p>
+
           <div ng-repeat="error in addCopyFieldErrors" ng-show="addCopyFieldErrors" class="clearfix note error">
             <span>{{error}}</span></div>
 
           <p class="clearfix buttons">
-            <button type="submit" class="submit" ng-class="{success: added}" ng-click="addCopyField()"><span>Add CopyField</span></button>
+            <button type="submit" class="submit" ng-class="{success: added}" ng-disabled="addCopyFieldForm.$invalid" ng-click="addCopyField()"><span>Add CopyField</span></button>
             <button type="reset" class="reset" ng-click="hideAll()"><span>Cancel</span></button>
           </p>
 
