@@ -24,6 +24,7 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ResourceContext;
@@ -72,6 +73,12 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       final SolrException solrException =
           new SolrException(getErrorCode(wae.getResponse().getStatus()), wae.getMessage());
       solrQueryResponse.setException(solrException);
+    } else if (exception instanceof JsonProcessingException) {
+      // JSON deserialization failures are invalid client input, not server errors.
+      exception =
+          new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Invalid JSON in request body", exception);
+      solrQueryResponse.setException(exception);
     } else {
       solrQueryResponse.setException(exception);
     }
