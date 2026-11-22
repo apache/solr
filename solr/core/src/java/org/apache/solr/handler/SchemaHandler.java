@@ -151,7 +151,7 @@ public class SchemaHandler extends RequestHandlerBase
         case "/schema":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchema(req.getCore(), req.getSchema()).getSchemaInfo());
+                rsp, new GetSchema(req.getCore(), req.getSchema()).getSchemaInfoForV1());
             break;
           }
         case "/schema/version":
@@ -216,7 +216,8 @@ public class SchemaHandler extends RequestHandlerBase
                 case "copyfields":
                   {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                        rsp, new GetSchemaField(req.getSchema(), req.getParams()).listCopyFields());
+                        rsp,
+                        new GetSchemaField(req.getSchema(), req.getParams()).listCopyFieldsForV1());
                     return;
                   }
                 case "dynamicfields":

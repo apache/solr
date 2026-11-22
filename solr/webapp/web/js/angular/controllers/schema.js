@@ -291,7 +291,7 @@ solrAdminApp.controller('SchemaController',
                 return;
             }
             var indexType = $scope.isCloudEnabled ? "collections" : "cores";
-            var rule = {dest: $scope.copyField.dest};
+            var rule = {destination: $scope.copyField.dest};
             if ($scope.copyField.maxChars != null) {
                 rule.maxChars = $scope.copyField.maxChars;
             }

@@ -22,7 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.model.AddCopyFieldRequest;
 import org.apache.solr.client.api.model.CopyFieldDestination;
+import org.apache.solr.client.api.model.DeleteCopyFieldRequest;
 import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -75,12 +77,14 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
   }
 
   private static List<Map<String, String>> rules(String... destinations) {
-    return Arrays.stream(destinations).map(destination -> Map.of("dest", destination)).toList();
+    return Arrays.stream(destinations)
+        .map(destination -> Map.of("destination", destination))
+        .toList();
   }
 
   private static CopyFieldDestination destination(String field, Integer maxChars) {
     final var destination = new CopyFieldDestination();
-    destination.dest = field;
+    destination.destination = field;
     destination.maxChars = maxChars;
     return destination;
   }
@@ -118,7 +122,7 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
             .build()
             .process(cluster.getSolrClient());
     final var copyFields = (List<Map<String, Object>>) response.getResponse().get("copyFields");
-    return copyFields.stream().map(rule -> (String) rule.get("dest")).sorted().toList();
+    return copyFields.stream().map(rule -> (String) rule.get("destination")).sorted().toList();
   }
 
   /** Destinations of every copy-field rule currently declared with the given source. */
@@ -133,7 +137,7 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
     final var copyFields = (List<Map<String, Object>>) response.getResponse().get("copyFields");
     return copyFields.stream()
         .filter(rule -> source.equals(rule.get("source")))
-        .map(rule -> (String) rule.get("dest"))
+        .map(rule -> (String) rule.get("destination"))
         .sorted()
         .collect(Collectors.toList());
   }
@@ -143,7 +147,8 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
     putCopyFields(
         SOURCE,
         List.of(
-            Map.of("dest", DEST_ONE, "maxChars", 100), Map.of("dest", DEST_TWO, "maxChars", 20)));
+            Map.of("destination", DEST_ONE, "maxChars", 100),
+            Map.of("destination", DEST_TWO, "maxChars", 20)));
 
     var response =
         new V2Request.Builder(schemaPath("/copyfields/" + SOURCE))
@@ -152,8 +157,8 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
     assertEquals(
         List.of(
-            Map.of("source", SOURCE, "dest", DEST_ONE, "maxChars", 100),
-            Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 20)),
+            Map.of("source", SOURCE, "destination", DEST_ONE, "maxChars", 100),
+            Map.of("source", SOURCE, "destination", DEST_TWO, "maxChars", 20)),
         response.getResponse().get("copyFields"));
 
     var legacy = new SchemaRequest.CopyFields().process(cluster.getSolrClient(), COLLECTION);
@@ -167,48 +172,53 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
 
   @Test
   public void testPostPreservesExistingLimitsAndAddsIndividualLimits() throws Exception {
-    putCopyFields(SOURCE, List.of(Map.of("dest", DEST_ONE, "maxChars", 100)));
+    putCopyFields(SOURCE, List.of(Map.of("destination", DEST_ONE, "maxChars", 100)));
     postCopyFields(
         SOURCE,
-        List.of(Map.of("dest", DEST_ONE, "maxChars", 1), Map.of("dest", DEST_TWO, "maxChars", 20)));
+        List.of(
+            Map.of("destination", DEST_ONE, "maxChars", 1),
+            Map.of("destination", DEST_TWO, "maxChars", 20)));
     var response =
         new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
             .process(cluster.getSolrClient());
     assertEquals(
         List.of(
-            Map.of("source", SOURCE, "dest", DEST_ONE, "maxChars", 100),
-            Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 20)),
+            Map.of("source", SOURCE, "destination", DEST_ONE, "maxChars", 100),
+            Map.of("source", SOURCE, "destination", DEST_TWO, "maxChars", 20)),
         response.copyFields);
   }
 
   @Test
   public void testPutChangesLimitsAndSupportsUnlimitedDestination() throws Exception {
-    putCopyFields(SOURCE, List.of(Map.of("dest", DEST_ONE, "maxChars", 100)));
+    putCopyFields(SOURCE, List.of(Map.of("destination", DEST_ONE, "maxChars", 100)));
     putCopyFields(
-        SOURCE, List.of(Map.of("dest", DEST_ONE, "maxChars", 20), Map.of("dest", DEST_TWO)));
+        SOURCE,
+        List.of(Map.of("destination", DEST_ONE, "maxChars", 20), Map.of("destination", DEST_TWO)));
     var response =
         new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
             .process(cluster.getSolrClient());
     assertEquals(
         List.of(
-            Map.of("source", SOURCE, "dest", DEST_ONE, "maxChars", 20),
-            Map.of("source", SOURCE, "dest", DEST_TWO)),
+            Map.of("source", SOURCE, "destination", DEST_ONE, "maxChars", 20),
+            Map.of("source", SOURCE, "destination", DEST_TWO)),
         response.copyFields);
   }
 
   @Test
   public void testFailedMultiDestinationPutAndPostAreAtomic() throws Exception {
-    putCopyFields(SOURCE, List.of(Map.of("dest", DEST_ONE, "maxChars", 100)));
+    putCopyFields(SOURCE, List.of(Map.of("destination", DEST_ONE, "maxChars", 100)));
     var invalidRules =
         List.of(
-            Map.of("dest", DEST_TWO, "maxChars", 20), Map.of("dest", "no_such_destination_field"));
+            Map.of("destination", DEST_TWO, "maxChars", 20),
+            Map.of("destination", "no_such_destination_field"));
     expectThrows(RemoteSolrException.class, () -> putCopyFields(SOURCE, invalidRules));
     expectThrows(RemoteSolrException.class, () -> postCopyFields(SOURCE, invalidRules));
     var response =
         new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
             .process(cluster.getSolrClient());
     assertEquals(
-        List.of(Map.of("source", SOURCE, "dest", DEST_ONE, "maxChars", 100)), response.copyFields);
+        List.of(Map.of("source", SOURCE, "destination", DEST_ONE, "maxChars", 100)),
+        response.copyFields);
   }
 
   @Test
@@ -218,9 +228,9 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
     nullRule.add(null);
     for (Object invalid :
         List.of(
-            List.of(Map.of("dest", DEST_TWO, "maxChars", -1)),
-            List.of(Map.of("dest", "")),
-            List.of(Map.of("dest", " ")),
+            List.of(Map.of("destination", DEST_TWO, "maxChars", -1)),
+            List.of(Map.of("destination", "")),
+            List.of(Map.of("destination", " ")),
             rules(DEST_TWO, DEST_TWO),
             nullRule,
             List.of(Map.of("maxChars", 10)),
@@ -233,6 +243,45 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
           expectThrows(RemoteSolrException.class, () -> postCopyFields(SOURCE, invalid)).code());
       assertEquals(List.of(DEST_ONE), destinationsOf(SOURCE));
     }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testV2SchemaReadsUseDestinationAndV1RetainsDest() throws Exception {
+    new SchemaRequest.AddCopyField(SOURCE, List.of(DEST_ONE, DEST_TWO), 100)
+        .process(cluster.getSolrClient(), COLLECTION);
+    var v2Schema =
+        new SchemaApi.GetSchemaInfo(IndexType.COLLECTION, COLLECTION)
+            .process(cluster.getSolrClient());
+    var v2Rules = (List<Map<String, Object>>) v2Schema.schema.get("copyFields");
+    assertTrue(
+        v2Rules.stream()
+            .allMatch(rule -> rule.containsKey("destination") && !rule.containsKey("dest")));
+    var v1Schema = new SchemaRequest().process(cluster.getSolrClient(), COLLECTION);
+    var v1Rules =
+        (List<Map<String, Object>>)
+            ((Map<?, ?>) v1Schema.getResponse().get("schema")).get("copyFields");
+    assertTrue(
+        v1Rules.stream()
+            .allMatch(rule -> rule.containsKey("dest") && !rule.containsKey("destination")));
+    var v2Filtered =
+        new V2Request.Builder(schemaPath("/copyfields"))
+            .GET()
+            .withParams(params("source.fl", SOURCE, "destination.fl", DEST_TWO))
+            .build()
+            .process(cluster.getSolrClient());
+    assertEquals(
+        List.of(Map.of("source", SOURCE, "destination", DEST_TWO, "maxChars", 100)),
+        v2Filtered.getResponse().get("copyFields"));
+    var v1Filtered =
+        new SchemaRequest.CopyFields(params("source.fl", SOURCE, "dest.fl", DEST_TWO))
+            .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(
+        List.of(Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 100)),
+        v1Filtered.getCopyFields());
+    new SchemaRequest.DeleteCopyField(SOURCE, List.of(DEST_ONE, DEST_TWO))
+        .process(cluster.getSolrClient(), COLLECTION);
+    assertEquals(List.of(), destinationsOf(SOURCE));
   }
 
   @Test
@@ -257,27 +306,80 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testV2BulkUsesOneDestinationPerOperation() throws Exception {
+    var bulk = new SchemaApi.BulkSchemaModification(IndexType.COLLECTION, COLLECTION);
+    for (var rule : List.of(destination(DEST_ONE, 100), destination(DEST_TWO, 20))) {
+      var add = new AddCopyFieldRequest();
+      add.operationType = "add-copy-field";
+      add.source = SOURCE;
+      add.destination = rule.destination;
+      add.maxChars = rule.maxChars;
+      bulk.addSchemaChange(add);
+    }
+    bulk.process(cluster.getSolrClient());
+    var response =
+        new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
+            .process(cluster.getSolrClient());
+    assertEquals(
+        List.of(
+            Map.of("source", SOURCE, "destination", DEST_ONE, "maxChars", 100),
+            Map.of("source", SOURCE, "destination", DEST_TWO, "maxChars", 20)),
+        response.copyFields);
+    var delete = new DeleteCopyFieldRequest();
+    delete.operationType = "delete-copy-field";
+    delete.source = SOURCE;
+    delete.destination = DEST_ONE;
+    var deleteBulk = new SchemaApi.BulkSchemaModification(IndexType.COLLECTION, COLLECTION);
+    deleteBulk.addSchemaChange(delete);
+    deleteBulk.process(cluster.getSolrClient());
+    assertEquals(List.of(DEST_TWO), destinationsOf(SOURCE));
+    for (String legacyName : List.of("dest", "destinations")) {
+      assertEquals(
+          400,
+          expectThrows(
+                  RemoteSolrException.class,
+                  () ->
+                      new V2Request.Builder(schemaPath("/bulk"))
+                          .POST()
+                          .withPayload(
+                              List.of(
+                                  Map.of(
+                                      "operationType",
+                                      "add-copy-field",
+                                      "source",
+                                      SOURCE,
+                                      legacyName,
+                                      DEST_ONE)))
+                          .build()
+                          .process(cluster.getSolrClient()))
+              .code());
+    }
+    assertEquals(List.of(DEST_TWO), destinationsOf(SOURCE));
+  }
+
+  @Test
   public void testDynamicSourceSupportsIndividualLimits() throws Exception {
     String source = "*_s";
     try {
       putCopyFields(
           source,
           List.of(
-              Map.of("dest", DEST_ONE, "maxChars", 100), Map.of("dest", DEST_TWO, "maxChars", 20)));
+              Map.of("destination", DEST_ONE, "maxChars", 100),
+              Map.of("destination", DEST_TWO, "maxChars", 20)));
       var response =
           new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, source)
               .process(cluster.getSolrClient());
       assertEquals(
           List.of(
-              Map.of("source", source, "dest", DEST_ONE, "maxChars", 100),
-              Map.of("source", source, "dest", DEST_TWO, "maxChars", 20)),
+              Map.of("source", source, "destination", DEST_ONE, "maxChars", 100),
+              Map.of("source", source, "destination", DEST_TWO, "maxChars", 20)),
           response.copyFields);
-      putCopyFields(source, List.of(Map.of("dest", DEST_TWO, "maxChars", 0)));
+      putCopyFields(source, List.of(Map.of("destination", DEST_TWO, "maxChars", 0)));
       postCopyFields(source, List.of());
       response =
           new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, source)
               .process(cluster.getSolrClient());
-      assertEquals(List.of(Map.of("source", source, "dest", DEST_TWO)), response.copyFields);
+      assertEquals(List.of(Map.of("source", source, "destination", DEST_TWO)), response.copyFields);
     } finally {
       putCopyFields(source, List.of());
     }
@@ -302,7 +404,8 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
         new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
             .process(cluster.getSolrClient());
     assertEquals(
-        List.of(Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 100)), response.copyFields);
+        List.of(Map.of("source", SOURCE, "destination", DEST_TWO, "maxChars", 100)),
+        response.copyFields);
   }
 
   @Test
@@ -318,8 +421,8 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
     assertEquals(
         List.of(
-            Map.of("source", SOURCE, "dest", DEST_ONE),
-            Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 100)),
+            Map.of("source", SOURCE, "destination", DEST_ONE),
+            Map.of("source", SOURCE, "destination", DEST_TWO, "maxChars", 100)),
         response.copyFields);
   }
 
@@ -369,7 +472,7 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
 
   @Test
   public void testAddAcceptsSingleDestinationAndMaxChars() throws Exception {
-    putCopyFields(SOURCE, List.of(Map.of("dest", DEST_ONE, "maxChars", 100)));
+    putCopyFields(SOURCE, List.of(Map.of("destination", DEST_ONE, "maxChars", 100)));
 
     assertEquals(List.of(DEST_ONE), destinationsOf(SOURCE));
   }
@@ -515,8 +618,8 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
                                 "delete-copy-field",
                                 "source",
                                 SOURCE,
-                                "destinations",
-                                List.of(DEST_TWO))))
+                                "destination",
+                                DEST_TWO)))
                     .build()
                     .process(cluster.getSolrClient()));
 
@@ -563,6 +666,16 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testV2RejectsLegacyDestinationName() {
+    final var thrown =
+        expectThrows(
+            RemoteSolrException.class,
+            () -> putCopyFields(SOURCE, List.of(Map.of("dest", DEST_ONE))));
+
+    assertEquals(400, thrown.code());
+  }
+
+  @Test
   public void testAddRequiresDestinations() throws Exception {
     final var thrown =
         expectThrows(
@@ -570,6 +683,7 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
             () -> putCopyFields(SOURCE, List.of(Map.of("maxChars", 100))));
 
     assertEquals(400, thrown.code());
-    assertTrue("unexpected message: " + thrown.getMessage(), thrown.getMessage().contains("dest"));
+    assertTrue(
+        "unexpected message: " + thrown.getMessage(), thrown.getMessage().contains("destination"));
   }
 }

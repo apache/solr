@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** A destination and its optional character limit for a v2 copy-field rule. */
 public class CopyFieldDestination {
   @JsonProperty(required = true)
-  public String dest;
+  public String destination;
 
   @JsonProperty public Integer maxChars;
 }

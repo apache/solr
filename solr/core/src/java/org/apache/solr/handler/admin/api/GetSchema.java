@@ -19,6 +19,8 @@ package org.apache.solr.handler.admin.api;
 
 import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaInfoResponse;
@@ -54,6 +56,16 @@ public class GetSchema extends JerseyResource implements GetSchemaApi {
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaInfoResponse getSchemaInfo() {
+    final var response = getSchemaInfoForV1();
+    response.schema = new LinkedHashMap<>(response.schema);
+    if (response.schema.get("copyFields") instanceof List<?> rules) {
+      response.schema.put("copyFields", GetSchemaField.copyFieldsForV2(rules));
+    }
+    return response;
+  }
+
+  /** Returns the schema using the v1 copy-field names. */
+  public SchemaInfoResponse getSchemaInfoForV1() {
     final var response = instantiateJerseyResponse(SchemaInfoResponse.class);
 
     response.schema = indexSchema.getNamedPropertyValues();

@@ -20,6 +20,8 @@ import static org.apache.solr.client.api.model.SchemaChange.OPERATION_TYPE_PROP;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Map;
+import org.apache.solr.client.api.model.AddCopyFieldOperation;
+import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
 import org.apache.solr.client.api.model.SchemaChange;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
@@ -35,7 +37,13 @@ public class SchemaManagerUtils {
     final var operationData = toConvert.getDataMap();
     operationData.put(OPERATION_TYPE_PROP, opName);
 
-    return SolrJacksonMapper.getObjectMapper().convertValue(operationData, SchemaChange.class);
+    Class<? extends SchemaChange> operationClass =
+        switch (opName) {
+          case "add-copy-field" -> AddCopyFieldOperation.class;
+          case "delete-copy-field" -> DeleteCopyFieldOperation.class;
+          default -> SchemaChange.class;
+        };
+    return SolrJacksonMapper.getObjectMapper().convertValue(operationData, operationClass);
   }
 
   // TODO This utility exists because ManagedIndexSchema currently consumes op data in "Map" form.

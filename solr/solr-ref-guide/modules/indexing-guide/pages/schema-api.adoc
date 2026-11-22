@@ -495,7 +495,7 @@ s|Required |Default: none
 |===
 +
 A field or an array of fields to which the source field will be copied.
-V2 per-source writes use one `dest` per rule, as shown below.
+The v2 API uses one `destination` per rule, as shown below.
 
 `maxChars`::
 +
@@ -531,8 +531,8 @@ V2 API::
 ----
 curl -X PUT -H 'Content-type:application/json' --data-binary '
 [
-  { "dest": "location", "maxChars": 100 },
-  { "dest": "catchall", "maxChars": 20 }
+  { "destination": "location", "maxChars": 100 },
+  { "destination": "catchall", "maxChars": 20 }
 ]' http://localhost:8983/api/collections/techproducts/schema/copyfields/shelf
 ----
 ====
@@ -540,9 +540,9 @@ curl -X PUT -H 'Content-type:application/json' --data-binary '
 +
 Copy-field rules have no name of their own, so v2 addresses them by their source field: the source
 is the final path segment, and the body carries the destinations.
-The body is an array of objects, each with a required `dest` and an optional `maxChars`.
+The body is an array of objects, each with a required `destination` and an optional `maxChars`.
 Each destination can have a different limit; omitting `maxChars` or setting it to `0` copies all characters.
-Each destination must appear only once in the array.
+The v2 API does not accept `dest` or `destinations` as aliases, and each destination must appear only once in the array.
 +
 [IMPORTANT]
 ====
@@ -558,7 +558,7 @@ To add destinations while leaving the source's existing rules alone, `POST` to t
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
 [
-  { "dest": "catchall", "maxChars": 20 }
+  { "destination": "catchall", "maxChars": 20 }
 ]' http://localhost:8983/api/collections/techproducts/schema/copyfields/shelf
 ----
 +
@@ -683,7 +683,8 @@ curl 'http://localhost:8983/solr/techproducts/schema' -H 'Content-type:applicati
 
 Bulk schema operations are also supported in Solr's v2 API, using a different endpoint and syntax.
 The v2 bulk endpoint is `POST /api/collections/_collection_/schema/bulk`; the `/schema` path itself only supports `GET` in v2.
-Individual operations are specified as elements within a list, with the operation name (e.g. `add-field`, `delete-field-type`) specified as a `"operationType"` property on each operation object:
+Individual operations are specified as elements within a list, with the operation name (e.g. `add-field`, `delete-field-type`) specified as a `"operationType"` property on each operation object.
+The v2 `add-copy-field` and `delete-copy-field` operations each name one `source` and one `destination`; repeat the operation to address several destinations:
 
 [source,bash]
 ----
@@ -704,7 +705,14 @@ curl 'http://localhost:8983/api/collections/techproducts/schema/bulk' -H 'Conten
     {
       "operationType": "add-copy-field",
       "source": "shelf",
-      "destinations": ["location", "catchall"]
+      "destination": "location",
+      "maxChars": 100
+    },
+    {
+      "operationType": "add-copy-field",
+      "source": "shelf",
+      "destination": "catchall",
+      "maxChars": 20
     }
   ]'
 ----
@@ -1366,7 +1374,7 @@ Comma- or space-separated list of one or more copyField source fields to include
 CopyField directives with all other source fields will be excluded from the response.
 If not specified, all copyField-s will be included in the response.
 
-`dest.fl`::
+`dest.fl` (v1), `destination.fl` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -1379,7 +1387,9 @@ If not specified, all copyField-s will be included in the response.
 
 ==== List Copy Field Response
 
-The output will include the `source` and `dest` (destination) of each copy field rule defined in `schema.xml`.
+The output includes the `source` and destination of each copy field rule defined in `schema.xml`.
+V1 names the destination `dest`; v2 names it `destination`, including in the full schema response.
+For dynamic rules, v2 also uses `destinationDynamicBase` in place of `destDynamicBase`.
 For more information about copy fields, see the section xref:copy-fields.adoc[].
 
 ==== List Copy Field Examples
@@ -1407,7 +1417,8 @@ curl 'http://localhost:8983/api/collections/techproducts/schema/copyfields'
 ====
 ======
 
-The sample output below has been truncated to the first few copy definitions.
+The v1 sample output below has been truncated to the first few copy definitions.
+V2 returns the same structure using `destination` in place of `dest`.
 
 [source,json]
 ----

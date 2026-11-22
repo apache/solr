@@ -31,8 +31,10 @@ import java.util.stream.Stream;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateSchemaApi;
 import org.apache.solr.client.api.model.AddCopyFieldOperation;
+import org.apache.solr.client.api.model.AddCopyFieldRequest;
 import org.apache.solr.client.api.model.CopyFieldDestination;
 import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
+import org.apache.solr.client.api.model.DeleteCopyFieldRequest;
 import org.apache.solr.client.api.model.DeleteDynamicFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldOperation;
 import org.apache.solr.client.api.model.DeleteFieldTypeOperation;
@@ -197,12 +199,12 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     }
     final var destinations = new HashSet<String>();
     for (CopyFieldDestination rule : requestBody) {
-      ensureRequiredParameterProvided("dest", rule == null ? null : rule.dest);
-      if (!destinations.add(rule.dest)) {
+      ensureRequiredParameterProvided("destination", rule == null ? null : rule.destination);
+      if (!destinations.add(rule.destination)) {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Duplicate destination: " + rule.dest);
+            SolrException.ErrorCode.BAD_REQUEST, "Duplicate destination: " + rule.destination);
       }
-      final var add = copyFieldOperation(sourceField, rule.dest, rule.maxChars);
+      final var add = copyFieldOperation(sourceField, rule.destination, rule.maxChars);
       add.operationType =
           operationType.equals("upsert-copy-field") ? "add-copy-field" : operationType;
       operations.add(add);
@@ -266,7 +268,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
   private AddCopyFieldOperation copyFieldOperation(
       String source, String destination, Integer maxChars) {
     ensureRequiredParameterProvided("source", source);
-    ensureRequiredParameterProvided("dest", destination);
+    ensureRequiredParameterProvided("destination", destination);
     if (destination.isBlank()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "destination must not be blank");
     }
@@ -304,7 +306,23 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     ensureSchemaMutable();
     ensureRequiredRequestBodyProvided(requestBody);
 
-    runWithSchemaManager(requestBody);
+    final List<SchemaChange> operations = new ArrayList<>();
+    for (SchemaChange change : requestBody) {
+      if (change instanceof AddCopyFieldRequest add) {
+        operations.add(copyFieldOperation(add.source, add.destination, add.maxChars));
+      } else if (change instanceof DeleteCopyFieldRequest delete) {
+        ensureRequiredParameterProvided("source", delete.source);
+        ensureRequiredParameterProvided("destination", delete.destination);
+        final var operation = new DeleteCopyFieldOperation();
+        operation.source = delete.source;
+        operation.destinations = List.of(delete.destination);
+        operation.operationType = "delete-copy-field";
+        operations.add(operation);
+      } else {
+        operations.add(change);
+      }
+    }
+    runWithSchemaManager(operations);
 
     return response;
   }

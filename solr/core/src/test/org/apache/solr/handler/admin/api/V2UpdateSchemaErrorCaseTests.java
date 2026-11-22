@@ -161,7 +161,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
   @Test
   public void testUpsertCopyFieldsOperationRequiresSourceAndDestinations() {
     final var noSourceOp = new CopyFieldDestination();
-    noSourceOp.dest = "someDestination";
+    noSourceOp.destination = "someDestination";
     var thrown =
         expectThrows(
             SolrException.class,
@@ -179,7 +179,7 @@ public class V2UpdateSchemaErrorCaseTests extends SolrTestCase {
               schemaApi.upsertCopyFields("someSourceField", List.of(noDestinationsOp));
             });
     assertEquals(BAD_REQUEST.code, thrown.code());
-    assertThat(thrown.getMessage(), containsString("Missing required parameter: dest"));
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: destination"));
   }
 
   @Test
