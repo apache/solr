@@ -1,0 +1,9 @@
+title: >
+  The Admin UI's "Files" view (/admin/file) no longer fails with a ClassCastException in SolrCloud
+  when a custom configSetService loads ConfigSets from somewhere other than ZooKeeper.
+type: fixed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#5378
+    url: https://github.com/apache/solr/pull/5378
