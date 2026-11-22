@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="densevector-raw-rtg" version="1.6">
+<schema name="densevector-raw" version="1.6">
   <fieldType name="string" class="solr.StrField"/>
   <fieldType name="plong" class="solr.LongPointField"/>
   <fieldType name="nest_path" class="solr.NestPathField"/>
