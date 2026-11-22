@@ -92,7 +92,9 @@ public class ZkLsTool extends ToolBase {
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       doLs(zkClient, zkHost, znode, recursive);
     } catch (Exception e) {
-      log.error("Could not complete ls operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete ls operation for reason: ", e);
+      }
       throw (e);
     }
   }
@@ -122,7 +124,9 @@ public class ZkLsTool extends ToolBase {
       doLs(zkClient, zkHost, path, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {
-      log.error("Could not complete ls operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete ls operation for reason: ", e);
+      }
       throw (e);
     }
   }

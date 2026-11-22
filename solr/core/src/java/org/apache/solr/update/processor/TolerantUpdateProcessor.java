@@ -19,7 +19,9 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -233,7 +235,12 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       firstErrTracker.caught(duae);
 
       // adjust our stats based on each of the distributed errors
+      // Errors from one failed stream share an exception; count it once.
+      Set<Exception> aggregatedExceptions = Collections.newSetFromMap(new IdentityHashMap<>());
       for (SolrError error : duae.errors) {
+        if (!aggregatedExceptions.add(error.e)) {
+          continue;
+        }
         // we can't trust the req info from the Error, because multiple original requests might have
         // been lumped together
         //

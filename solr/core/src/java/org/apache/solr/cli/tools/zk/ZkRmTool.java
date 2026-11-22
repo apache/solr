@@ -97,7 +97,9 @@ public class ZkRmTool extends ToolBase {
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       doRm(zkClient, zkHost, znode, recursive);
     } catch (Exception e) {
-      log.error("Could not complete rm operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete rm operation for reason: ", e);
+      }
       throw (e);
     }
   }
@@ -146,7 +148,9 @@ public class ZkRmTool extends ToolBase {
       doRm(zkClient, zkHost, znode, recursiveOpt.recursive);
       return 0;
     } catch (Exception e) {
-      log.error("Could not complete rm operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete rm operation for reason: ", e);
+      }
       throw (e);
     }
   }

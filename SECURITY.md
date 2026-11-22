@@ -18,9 +18,9 @@
 ## Reporting a Vulnerability
 
 Apache Solr follows the Apache Software Foundation security process. Report
-suspected vulnerabilities **privately** to the ASF Security Team at
-[security@apache.org](mailto:security@apache.org) (the Solr PMC is reachable via
-`private@solr.apache.org`). Do **not** open public issues or pull requests for
+suspected vulnerabilities **privately** to
+[security@solr.apache.org](mailto:security@solr.apache.org); this list includes
+the ASF Security team. Do **not** open public issues or pull requests for
 security reports. See <https://www.apache.org/security/> and
 <https://solr.apache.org/security.html>.
 

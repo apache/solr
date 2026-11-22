@@ -126,7 +126,9 @@ public class ConfigSetDownloadTool extends ToolBase {
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       doDownconfig(zkClient, zkHost, confName, confDir);
     } catch (Exception e) {
-      log.error("Could not complete downconfig operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete downconfig operation for reason: ", e);
+      }
       throw (e);
     }
   }
@@ -164,7 +166,9 @@ public class ConfigSetDownloadTool extends ToolBase {
       doDownconfig(zkClient, zkHost, configSetOpts.confName, confDir);
       return 0;
     } catch (Exception e) {
-      log.error("Could not complete downconfig operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete downconfig operation for reason: ", e);
+      }
       throw (e);
     }
   }

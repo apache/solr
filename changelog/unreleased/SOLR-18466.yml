@@ -1,0 +1,8 @@
+title: Support _route_ in the streaming expression function to prune shard fan-out
+
+type: added
+authors:
+  - name: Mathew Skaria
+links:
+  - name: SOLR-18466
+    url: https://issues.apache.org/jira/browse/SOLR-18466
