@@ -286,14 +286,13 @@ solrAdminApp.controller('SchemaController',
         }
         $scope.addCopyField = function() {
             delete $scope.addCopyFieldErrors;
+            if (!$scope.copyField.source || !$scope.copyField.dest) {
+                $scope.addCopyFieldErrors = ["Both source and destination fields are required."];
+                return;
+            }
             var indexType = $scope.isCloudEnabled ? "collections" : "cores";
-            var schemaChange = [{
-                operationType: "add-copy-field",
-                source: $scope.copyField.source,
-                destinations: [$scope.copyField.dest]
-            }];
-            SchemaV2.bulkSchemaModification(indexType, $routeParams.core, {schemaChange: schemaChange},
-                function(error, data, response) {
+            SchemaV2.appendCopyFields(indexType, $routeParams.core, $scope.copyField.source,
+                {destinations: [$scope.copyField.dest]}, function(error, data, response) {
                 $timeout(function() {
                     if (error || (data && data.error)) {
                         if (response && (response.status === 401 || response.status === 403)) {
@@ -345,12 +344,7 @@ solrAdminApp.controller('SchemaController',
         }
         $scope.deleteCopyField = function(field, source, dest) {
             var indexType = $scope.isCloudEnabled ? "collections" : "cores";
-            var schemaChange = [{
-                operationType: "delete-copy-field",
-                source: source,
-                destinations: [dest]
-            }];
-            SchemaV2.bulkSchemaModification(indexType, $routeParams.core, {schemaChange: schemaChange},
+            SchemaV2.deleteCopyFieldsByDestination(indexType, $routeParams.core, source, dest,
                 function(error, data, response) {
                 $timeout(function() {
                     if (error || (data && data.error)) {

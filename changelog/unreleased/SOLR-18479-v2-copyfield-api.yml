@@ -6,9 +6,11 @@ title: >
   complete `destinations` list, `POST` appends destinations without disturbing existing rules,
   and `DELETE` removes them -- either all of them, or the ones named in a trailing
   comma-separated path segment.
+  The Admin UI uses these endpoints to add and delete copy-field rules.
 type: added
 authors:
   - name: Jan Høydahl
+  - name: Eric Pugh  
 links:
   - name: SOLR-18479
     url: https://issues.apache.org/jira/browse/SOLR-18479
