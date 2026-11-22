@@ -3,7 +3,7 @@ title: >
   allowing retrieval without duplicate stored-field storage when
   stored=false. Supports FLOAT32 and BYTE encodings, single-valued
   and multivalued fields, SearchHandler, RealTimeGetHandler, and preservation
-  during atomic updates.
+  of single-valued vectors during atomic updates.
 type: added
 authors:
   - name: Andrea Gazzarini
