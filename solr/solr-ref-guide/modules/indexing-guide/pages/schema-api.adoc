@@ -604,7 +604,7 @@ curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/copyfi
 curl -X DELETE "http://localhost:8983/api/collections/techproducts/schema/copyfields/shelf"
 ----
 +
-Deleting a source that has no copy-field rules returns a 404.
+Deleting a source that has no copy-field rules, or naming a rule that does not exist, returns a 404.
 
 === Multiple Commands in a Single POST
 

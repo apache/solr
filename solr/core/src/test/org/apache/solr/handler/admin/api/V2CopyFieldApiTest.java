@@ -19,9 +19,12 @@ package org.apache.solr.handler.admin.api;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SchemaApi;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -124,6 +127,41 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
     putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
 
     assertEquals(List.of(DEST_ONE, DEST_TWO), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testGeneratedPutReplacesCopyFields() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE, DEST_TWO)));
+
+    var request = new SchemaApi.UpsertCopyFields(IndexType.COLLECTION, COLLECTION, SOURCE);
+    request.setDestinations(List.of(DEST_TWO));
+    request.setMaxChars(100);
+    assertEquals(0, request.process(cluster.getSolrClient()).responseHeader.status);
+
+    var response =
+        new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
+            .process(cluster.getSolrClient());
+    assertEquals(
+        List.of(Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 100)), response.copyFields);
+  }
+
+  @Test
+  public void testGeneratedPostAppendsCopyFields() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    var request = new SchemaApi.AppendCopyFields(IndexType.COLLECTION, COLLECTION, SOURCE);
+    request.setDestinations(List.of(DEST_TWO));
+    request.setMaxChars(100);
+    assertEquals(0, request.process(cluster.getSolrClient()).responseHeader.status);
+
+    var response =
+        new SchemaApi.ListCopyFieldsBySource(IndexType.COLLECTION, COLLECTION, SOURCE)
+            .process(cluster.getSolrClient());
+    assertEquals(
+        List.of(
+            Map.of("source", SOURCE, "dest", DEST_ONE),
+            Map.of("source", SOURCE, "dest", DEST_TWO, "maxChars", 100)),
+        response.copyFields);
   }
 
   @Test
@@ -260,6 +298,83 @@ public class V2CopyFieldApiTest extends SolrCloudTestCase {
     deleteCopyFields(SOURCE, DEST_ONE, DEST_TWO);
 
     assertEquals(List.of(), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testDeleteOfMissingNamedRuleIsNotFound() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    var thrown = expectThrows(RemoteSolrException.class, () -> deleteCopyFields(SOURCE, DEST_TWO));
+
+    assertEquals(404, thrown.code());
+    assertTrue(thrown.getMessage(), thrown.getMessage().contains("Copy field directive not found"));
+    assertEquals(List.of(DEST_ONE), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testDeleteOfNamedRuleWithUnknownSourceIsNotFound() throws Exception {
+    var thrown =
+        expectThrows(
+            RemoteSolrException.class, () -> deleteCopyFields("no_such_source_field", DEST_ONE));
+
+    assertEquals(404, thrown.code());
+  }
+
+  @Test
+  public void testDeleteOfMissingNamedRuleLeavesOtherRulesIntact() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    var thrown =
+        expectThrows(RemoteSolrException.class, () -> deleteCopyFields(SOURCE, DEST_ONE, DEST_TWO));
+
+    assertEquals(404, thrown.code());
+    assertEquals(List.of(DEST_ONE), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testDeleteOfInvalidDestinationGlobIsBadRequest() throws Exception {
+    putCopyFields(SOURCE, Map.of("destinations", List.of(DEST_ONE)));
+
+    var thrown =
+        expectThrows(RemoteSolrException.class, () -> deleteCopyFields(SOURCE, "invalid**glob"));
+
+    assertEquals(400, thrown.code());
+    assertEquals(List.of(DEST_ONE), destinationsOf(SOURCE));
+  }
+
+  @Test
+  public void testBulkDeleteOfMissingRuleIsBadRequest() throws Exception {
+    var thrown =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                new V2Request.Builder(schemaPath("/bulk"))
+                    .POST()
+                    .withPayload(
+                        List.of(
+                            Map.of(
+                                "operationType",
+                                "delete-copy-field",
+                                "source",
+                                SOURCE,
+                                "destinations",
+                                List.of(DEST_TWO))))
+                    .build()
+                    .process(cluster.getSolrClient()));
+
+    assertEquals(400, thrown.code());
+  }
+
+  @Test
+  public void testV1DeleteOfMissingRuleIsBadRequest() {
+    var thrown =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                new SchemaRequest.DeleteCopyField(SOURCE, List.of(DEST_TWO))
+                    .process(cluster.getSolrClient(), COLLECTION));
+
+    assertEquals(400, thrown.code());
   }
 
   @Test

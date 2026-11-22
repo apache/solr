@@ -316,6 +316,25 @@ public class SchemaManager {
     return op;
   }
 
+  private boolean deleteCopyFields(
+      DeleteCopyFieldOperation operation, SolrException.ErrorCode missingRuleErrorCode)
+      throws SchemaOperationException {
+    String source = ensureNotNull("source", operation.source);
+    List<String> destinations = ensureNotNull("dest", operation.destinations);
+    try {
+      managedIndexSchema =
+          managedIndexSchema.deleteCopyFields(Map.of(source, destinations), missingRuleErrorCode);
+      return true;
+    } catch (Exception e) {
+      if (e instanceof SolrException exception
+          && exception.code() == SolrException.ErrorCode.NOT_FOUND.code) {
+        throw exception;
+      }
+      log.error("Could not delete copy field", e);
+      throw new SchemaOperationException(getErrorStr(e));
+    }
+  }
+
   private static <T> T ensureNotNull(String name, T value) throws SchemaOperationException {
     if (value == null) {
       throw new SchemaOperationException("'" + name + "' is a required field");
@@ -495,16 +514,15 @@ public class SchemaManager {
     DELETE_COPY_FIELD("delete-copy-field") {
       @Override
       public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
-        final var deleteCopyField = (DeleteCopyFieldOperation) op;
-        String source = ensureNotNull("source", deleteCopyField.source);
-        List<String> dests = ensureNotNull("dest", deleteCopyField.destinations);
-        try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteCopyFields(Map.of(source, dests));
-          return true;
-        } catch (Exception e) {
-          log.error("Could not delete copy field", e);
-          throw new SchemaOperationException(getErrorStr(e));
-        }
+        return mgr.deleteCopyFields(
+            (DeleteCopyFieldOperation) op, SolrException.ErrorCode.BAD_REQUEST);
+      }
+    },
+    DELETE_COPY_FIELD_BY_DESTINATION("delete-copy-field-by-destination") {
+      @Override
+      public boolean perform(SchemaChange op, SchemaManager mgr) throws SchemaOperationException {
+        return mgr.deleteCopyFields(
+            (DeleteCopyFieldOperation) op, SolrException.ErrorCode.NOT_FOUND);
       }
     },
     DELETE_FIELD("delete-field") {

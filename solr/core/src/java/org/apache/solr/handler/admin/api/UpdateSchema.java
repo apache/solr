@@ -239,7 +239,7 @@ public class UpdateSchema extends JerseyResource implements UpdateSchemaApi {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
 
     final var deleteCopyFieldOp = new DeleteCopyFieldOperation();
-    deleteCopyFieldOp.operationType = "delete-copy-field";
+    deleteCopyFieldOp.operationType = "delete-copy-field-by-destination";
     deleteCopyFieldOp.source = sourceField;
     deleteCopyFieldOp.destinations = destinations;
 

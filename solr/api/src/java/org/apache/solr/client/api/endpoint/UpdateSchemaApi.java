@@ -125,7 +125,8 @@ public interface UpdateSchemaApi {
               + "replace any rules that source already has.",
       tags = {"schema"})
   SolrJerseyResponse upsertCopyFields(
-      @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
+      @PathParam("sourceField") String sourceField,
+      @RequestBody(required = true) AddCopyFieldOperation requestBody)
       throws Exception;
 
   @POST
@@ -137,7 +138,8 @@ public interface UpdateSchemaApi {
               + "leaving that source's existing rules in place.",
       tags = {"schema"})
   SolrJerseyResponse appendCopyFields(
-      @PathParam("sourceField") String sourceField, @RequestBody AddCopyFieldOperation requestBody)
+      @PathParam("sourceField") String sourceField,
+      @RequestBody(required = true) AddCopyFieldOperation requestBody)
       throws Exception;
 
   @DELETE

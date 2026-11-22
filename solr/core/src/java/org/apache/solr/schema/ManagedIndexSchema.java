@@ -892,8 +892,14 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public ManagedIndexSchema deleteCopyFields(Map<String, Collection<String>> copyFields) {
+    return deleteCopyFields(copyFields, ErrorCode.BAD_REQUEST);
+  }
+
+  /** Deletes copy-field rules, using the supplied error code when a rule is absent. */
+  @SuppressWarnings({"unchecked"})
+  public ManagedIndexSchema deleteCopyFields(
+      Map<String, Collection<String>> copyFields, ErrorCode missingRuleErrorCode) {
     ManagedIndexSchema newSchema;
     if (isMutable) {
       newSchema = shallowCopy(true);
@@ -909,7 +915,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
         // Key is the source, values are the destinations
         for (String destination : entry.getValue()) {
-          newSchema.deleteCopyField(entry.getKey(), destination);
+          newSchema.deleteCopyField(entry.getKey(), destination, missingRuleErrorCode);
         }
       }
       newSchema.postReadInform();
@@ -922,7 +928,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     return newSchema;
   }
 
-  private void deleteCopyField(String source, String dest) {
+  private void deleteCopyField(String source, String dest, ErrorCode missingRuleErrorCode) {
     // Assumption: a copy field directive will exist only if the source & destination (dynamic)
     // fields exist
     SchemaField destSchemaField = fields.get(dest);
@@ -986,7 +992,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     if (!found) {
       throw new SolrException(
-          ErrorCode.BAD_REQUEST,
+          missingRuleErrorCode,
           "Copy field directive not found: '" + source + "' -> '" + dest + "'");
     }
   }
