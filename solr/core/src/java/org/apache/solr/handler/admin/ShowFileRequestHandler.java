@@ -137,7 +137,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       throws InterruptedException, KeeperException, IOException {
 
     CoreContainer coreContainer = req.getCoreContainer();
-    if (coreContainer.isZooKeeperAware()) {
+    // ConfigSets might not be in ZooKeeper even in SolrCloud
+    if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       showFromZooKeeper(req, rsp, coreContainer);
     } else {
       showFromFileSystem(req, rsp);
