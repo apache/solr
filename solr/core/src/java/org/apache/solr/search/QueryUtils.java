@@ -39,18 +39,16 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 
-/** */
+/**
+ * @lucene.internal
+ */
 public class QueryUtils {
 
   /** return true if this query has no positive components */
+  @Deprecated(since = "10.2") // don't want public
   public static boolean isNegative(Query q) {
     if (!(q instanceof BooleanQuery bq)) return false;
-    Collection<BooleanClause> clauses = bq.clauses();
-    if (clauses.size() == 0) return false;
-    for (BooleanClause clause : clauses) {
-      if (!clause.isProhibited()) return false;
-    }
-    return true;
+    return isNegative(bq);
   }
 
   /**
@@ -181,18 +179,22 @@ public class QueryUtils {
     }
   }
 
-  /** Makes negative queries suitable for querying by lucene. */
+  /**
+   * Unwraps {@link WrappedQuery} and also fixes negative queries. The WrappedQuery's cache/cost
+   * hints are dropped; they only matter at the root of the final query, which {@link
+   * QParser#getQuery()} handles. Suitable for a query parser or right before a query is processed
+   * by {@link SolrIndexSearcher} or other low-level plumbing.
+   */
   public static Query makeQueryable(Query q) {
-    if (q instanceof WrappedQuery) {
-      return makeQueryable(((WrappedQuery) q).getWrappedQuery());
-    }
-    return isNegative(q) ? fixNegativeQuery(q) : q;
+    return switch (q) {
+      case WrappedQuery wq -> makeQueryable(wq.getWrappedQuery()); // recursion
+      case BooleanQuery bq -> fixNegativeQuery(bq);
+      default -> q;
+    };
   }
 
-  /**
-   * Fixes a negative query by adding a MatchAllDocs query clause. The query passed in *must* be a
-   * negative query.
-   */
+  /** Fixes a negative query by adding a MatchAllDocs query clause. */
+  @Deprecated(since = "10.2") // weird
   public static Query fixNegativeQuery(Query q) {
     float boost = 1f;
     if (q instanceof BoostQuery bq) {
@@ -200,14 +202,31 @@ public class QueryUtils {
       q = bq.getQuery();
     }
     BooleanQuery bq = (BooleanQuery) q;
-    BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
-    newBqB.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
-    for (BooleanClause clause : bq) {
-      newBqB.add(clause);
-    }
-    newBqB.add(new MatchAllDocsQuery(), Occur.MUST);
-    BooleanQuery newBq = newBqB.build();
+    BooleanQuery newBq = fixNegativeQuery(bq);
     return new BoostQuery(newBq, boost);
+  }
+
+  /** Fixes a pure negative query (if it is one) by adding a MatchAllDocs query clause. */
+  public static BooleanQuery fixNegativeQuery(BooleanQuery bq) {
+    if (!isNegative(bq)) {
+      return bq;
+    }
+    var builder = new BooleanQuery.Builder();
+    builder.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
+    for (BooleanClause clause : bq) {
+      builder.add(clause);
+    }
+    builder.add(MatchAllDocsQuery.INSTANCE, Occur.MUST);
+    return builder.build();
+  }
+
+  private static boolean isNegative(BooleanQuery bq) {
+    Collection<BooleanClause> clauses = bq.clauses();
+    if (clauses.isEmpty()) return false;
+    for (BooleanClause clause : clauses) {
+      if (!clause.isProhibited()) return false;
+    }
+    return true;
   }
 
   /**
