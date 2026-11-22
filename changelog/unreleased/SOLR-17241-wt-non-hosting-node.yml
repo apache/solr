@@ -1,0 +1,9 @@
+title: >
+  Honor wt on v2 collection responses from nodes without a local replica,
+  avoiding SolrJ response-format errors
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-17241
+    url: https://issues.apache.org/jira/browse/SOLR-17241
