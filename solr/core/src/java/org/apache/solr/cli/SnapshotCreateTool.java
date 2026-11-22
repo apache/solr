@@ -20,8 +20,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-create command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -118,15 +117,10 @@ public class SnapshotCreateTool extends ToolBase {
   }
 
   public void createSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
-    CollectionAdminRequest.CreateSnapshot createSnapshot =
-        new CollectionAdminRequest.CreateSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
+    var createSnapshot =
+        new CollectionSnapshotsApi.CreateCollectionSnapshot(collectionName, snapshotName);
     try {
-      resp = createSnapshot.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
-      }
+      createSnapshot.process(solrClient);
       echo(
           "Successfully created snapshot with name "
               + snapshotName
