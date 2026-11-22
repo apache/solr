@@ -109,7 +109,10 @@ public class ClusterPackage extends JerseyResource implements PackageApis {
     final var response = new SolrJerseyResponse();
     PackageStore packageStore = coreContainer.getPackageLoader().getPackageStore();
 
-    packageStore.deleteVersion(packageName, version);
+    Integer newVersion = packageStore.deleteVersion(packageName, version);
+    if (newVersion != null) {
+      notifyAllNodesToSync(newVersion);
+    }
 
     return response;
   }
