@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.cats.exec.ProgramUnderTest;
 import org.apache.solr.cats.exec.RunningProcess;
-import org.apache.solr.cli.SolrProcessManager;
+import org.apache.solr.cli.process.SolrProcessManager;
 
 /**
  * Solr as the program the harness drives: how its nodes are discovered, stopped, and what they
