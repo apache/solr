@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -408,6 +409,60 @@ public class DenseVectorFieldRetrievalTest extends SolrTestCase {
           A_BYTE_VECTOR,
           prepopulatedDocWithStoredValues.getFieldValue(SINGLE_VALUE_BYTE_ENCODED_FIELD_NAME));
     }
+  }
+
+  @Test
+  public void rawVectorsDisabled_shouldReturnStoredVector() throws Exception {
+    String id = generateRandomStringValue();
+    String testFieldNameWithRawVectorsDisabled = "field_opt_out_stored";
+
+    var doc = new SolrInputDocument();
+    doc.setField(CommonParams.ID, id);
+    doc.setField(testFieldNameWithRawVectorsDisabled, A_FLOAT_VECTOR);
+    assertEquals(0, client.add(doc).getStatus());
+    client.commit();
+
+    var query = new SolrQuery("id:" + id).setFields(testFieldNameWithRawVectorsDisabled);
+    var docs = new QueryRequest("/select", query).process(client).getResults();
+
+    assertEquals(1L, docs.getNumFound());
+    assertEquals(
+        A_FLOAT_VECTOR, docs.getFirst().getFieldValue(testFieldNameWithRawVectorsDisabled));
+  }
+
+  @Test
+  public void rawVectorsDisabled_shouldPreferStoredVectorOverIndexedVector() throws Exception {
+    String id = generateRandomStringValue();
+    String testFieldNameWithRawVectorsDisabled = "field_opt_out_stored";
+
+    try (var core = solrTestRule.getCoreContainer().getCore("collection1")) {
+      var schema = core.getLatestSchema();
+      var vectorField = schema.getField(testFieldNameWithRawVectorsDisabled);
+      List<IndexableField> luceneFields =
+          new ArrayList<>(schema.getField(CommonParams.ID).createFields(id));
+
+      vectorField.createFields(A_FLOAT_VECTOR).stream()
+          .filter(field -> field.fieldType().vectorDimension() > 0)
+          .forEach(luceneFields::add);
+      vectorField.createFields(ANOTHER_FLOAT_VECTOR).stream()
+          .filter(field -> field.fieldType().stored())
+          .forEach(luceneFields::add);
+
+      var writer = core.getSolrCoreState().getIndexWriter(core);
+      try {
+        writer.get().addDocument(luceneFields);
+      } finally {
+        writer.decref();
+      }
+    }
+    client.commit();
+
+    var query = new SolrQuery("id:" + id).setFields(testFieldNameWithRawVectorsDisabled);
+    var docs = new QueryRequest("/select", query).process(client).getResults();
+
+    assertEquals(1L, docs.getNumFound());
+    assertEquals(
+        ANOTHER_FLOAT_VECTOR, docs.getFirst().getFieldValue(testFieldNameWithRawVectorsDisabled));
   }
 
   @Test
