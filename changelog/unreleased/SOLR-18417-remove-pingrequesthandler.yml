@@ -1,7 +1,8 @@
 type: removed
-title: `PingRequestHandler` (the "/admin/ping" endpoint), `SolrPing`, `SolrPingResponse`, and `SolrClient.ping()` have been removed.  Users looking for a healthcheck API can use `/api/node/health` (v2) or `/solr/admin/info/health` (v1) instead.  SolrJ users looking to replace "ping" functionality can either use `QueryRequest` for true query submission, or `HealthCheckRequest` for making a node-level healthcheck request.
+title: Remove the deprecated `/admin/ping` endpoint and SolrJ ping APIs. Use `HealthCheckRequest` for node health or `QueryRequest` to test searches.
 authors:
   - name: Jason Gerlowski
+  - name: Eric Pugh
 links:
   - name: SOLR-18417
     url: https://issues.apache.org/jira/browse/SOLR-18417

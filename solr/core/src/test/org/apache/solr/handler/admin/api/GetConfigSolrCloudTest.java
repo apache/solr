@@ -129,7 +129,6 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     assertNotNull(configSection);
     assertTrue(configSection.containsKey("/select"));
     assertTrue(configSection.containsKey("/admin/luke"));
-    assertFalse(configSection.containsKey("/admin/ping"));
     assertTrue(configSection.containsKey("/graph"));
   }
 
