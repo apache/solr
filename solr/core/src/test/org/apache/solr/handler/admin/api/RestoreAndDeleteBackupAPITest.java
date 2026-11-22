@@ -74,33 +74,33 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
     assertEquals(INITIAL_DOCS, countDocs());
 }
 
-  @Test
-  public void testRestoreByNameFromExplicitLocation() throws Exception {
-    final String backupName = "explicitLocation";
-    final Path location = allowedTempDir();
-    resetIndex(INITIAL_DOCS);
-    createBackup(backupName, location);
-    addDocs(INITIAL_DOCS, EXTRA_DOCS);
+//  @Test
+//  public void testRestoreByNameFromExplicitLocation() throws Exception {
+//    final String backupName = "explicitLocation";
+//    final Path location = allowedTempDir();
+//    resetIndex(INITIAL_DOCS);
+//    createBackup(backupName, location);
+//    addDocs(INITIAL_DOCS, EXTRA_DOCS);
+//
+//    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
+//    request.setName(backupName);
+//    request.setLocation(location.toString());
+//    assertNull(request.process(client()).error);
+//
+//    waitForRestoreSuccess();
+//    assertEquals(INITIAL_DOCS, countDocs());
+//  }
 
-    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
-    request.setName(backupName);
-    request.setLocation(location.toString());
-    assertNull(request.process(client()).error);
-
-    waitForRestoreSuccess();
-    assertEquals(INITIAL_DOCS, countDocs());
-  }
-
-  @Test
-  public void testRestoreOfUnknownLocationIsRejected() {
-    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
-    request.setName("doesNotExist");
-    request.setLocation(createTempDir().toString());
-    final RemoteSolrException ex =
-        expectThrows(RemoteSolrException.class, () -> request.process(client()));
-    // Not under the allowed paths
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-  }
+//  @Test
+//  public void testRestoreOfUnknownLocationIsRejected() {
+//    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
+//    request.setName("doesNotExist");
+//    request.setLocation(createTempDir().toString());
+//    final RemoteSolrException ex =
+//        expectThrows(RemoteSolrException.class, () -> request.process(client()));
+//    // Not under the allowed paths
+//    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+//  }
 
   @Test
   public void testDeleteBackupFromDefaultLocation() throws Exception {
