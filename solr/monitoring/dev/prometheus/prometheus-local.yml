@@ -1,0 +1,64 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# prometheus-local.yml — scrape config for a Solr you run yourself.
+#
+# Used by: ./stack.sh --local-solr
+#
+# 'host.docker.internal' resolves to the host machine from inside Docker (Mac,
+# Windows, and Linux with Docker 20.10+). docker-compose.yml adds the matching
+# extra_hosts entry so this also works on Linux.
+#
+# A single node on :8983 is scraped by default. Add further ports to the targets
+# list to match a multi-node local SolrCloud setup.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/solr-alerts.yml
+
+# Hand firing alerts to the Alertmanager container in this stack; without this
+# the rules evaluate but nothing is ever delivered.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: solr
+    # The v1 endpoint, which every Solr 10.x build serves. Solr 10.1 and later
+    # also serve the shorter v2 alias /api/metrics.
+    metrics_path: /solr/admin/metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['host.docker.internal:8983']
+
+  # The same metrics after a round trip through the collector, under a separate job so
+  # the shipped dashboard and alert rules keep matching the direct scrape only. Needs your Solr started with
+  # SOLR_MODULES=opentelemetry SOLR_METRICS_OTLP_EXPORTER_ENABLED=true. Compare
+  # the two to check the collector config reproduces Solr's metric names; see ../../README.md
+  - job_name: solr-otlp
+    # honor_labels keeps the instance label the collector derives from Solr's resource
+    # attributes; it also keeps the collector's job="solr", so force the job back here,
+    # or both routes would land in the same job and every rule would match twice.
+    honor_labels: true
+    metric_relabel_configs:
+      - target_label: job
+        replacement: solr-otlp
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['otel-collector:9464']

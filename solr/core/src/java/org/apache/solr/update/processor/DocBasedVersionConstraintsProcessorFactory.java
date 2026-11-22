@@ -76,9 +76,19 @@ import org.slf4j.LoggerFactory;
  *       false</code>, but if set to <code>true</code> allows any documents written *before* this
  *       feature is enabled and which are missing the versionField to be overwritten.
  *   <li><code>tombstoneConfig</code> - a list of field names to values to add to the created
- *       tombstone document. In general is not a good idea to populate tombsone documents with
- *       anything other than the minimum required fields so that it doean't match queries
+ *       tombstone document. Only has any effect in combination with <code>deleteVersionParam
+ *       </code>, since tombstones are created solely by the Delete By Id handling that param
+ *       enables; without it this init param is inert. In general, it is not a good idea to populate
+ *       tombstone documents with anything beyond the minimum required fields, so that they don't
+ *       match queries.
  * </ul>
+ *
+ * <p><b>This processor is incompatible with Solr's native optimistic concurrency.</b> It uses the
+ * <code>_version_</code> field for itself, setting it on every update so that its read of the
+ * existing document's version and the subsequent write are atomic, retrying on conflict. A <code>
+ * _version_</code> supplied by the client — on the document or as a request parameter — could
+ * therefore not be honored, so an Add carrying one is rejected with a 400. Express ordering through
+ * the per-document <code>versionField</code> values instead.
  *
  * @since 4.6.0
  */
@@ -205,7 +215,11 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
       }
     }
 
-    canCreateTombstoneDocument(core.getLatestSchema());
+    if (!deleteVersionParamNames.isEmpty()) {
+      // Tombstones are only produced by the Delete-By-Id handling that deleteVersionParam enables,
+      // so without it there is no tombstone shape to validate.
+      canCreateTombstoneDocument(core.getLatestSchema());
+    }
   }
 
   /**

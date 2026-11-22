@@ -15,8 +15,15 @@
  limitations under the License.
 */
 
+// follower.leaderDetails comes from an internal v1 call to the leader, so its booleans are
+// always the stringified "true"/"false" form, even though the rest of this response is v2.
+// TODO: drop this once that internal leader fetch is v2-native too.
+var isTruthy = function(value) {
+    return value === true || value === 'true';
+};
+
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Ping, Constants) {
+function($scope, $rootScope, $routeParams, $timeout, Luke, CoreInfo, Update, ReplicationV2, Ping, Constants, ApiErrorHandler) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
@@ -31,15 +38,24 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
   };
 
   $scope.refreshReplication = function() {
-    Replication.details({core: $routeParams.core},
-      function(data) {
-        $scope.isFollower = data.details.isFollower == "true";
-        $scope.isLeader = data.details.isLeader == "true";
+    ReplicationV2.fetchReplicationDetails($routeParams.core, {}, function(error, data, response) {
+      $timeout(function() {
+        if (error) {
+          // An auth failure isn't about replication being unconfigured, so route it through the
+          // shared login-redirect/permission-banner handling instead of this message.
+          if (response && (response.status === 401 || response.status === 403)) {
+            $scope.replicationMessage = null;
+            ApiErrorHandler.handle(response);
+          } else {
+            $scope.replicationMessage = "Replication is not configured";
+          }
+          return;
+        }
+        $scope.isFollower = isTruthy(data.details.isFollower);
+        $scope.isLeader = isTruthy(data.details.isLeader);
         $scope.replication = data.details;
-      },
-      function(error) {
-        $scope.replicationMessage = "Replication is not configured";
       });
+    });
   };
 
   $scope.refreshInfo = function() {
@@ -56,14 +72,23 @@ function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, 
 
   $scope.refreshPing = function() {
     Ping.status({core: $routeParams.core}, function(data) {
-      if (data.error) {
-        $scope.healthcheckStatus = false;
-        if (data.error.code == 503) {
-          $scope.healthcheckMessage = 'Ping request handler is not configured with a healthcheck file.';
-        }
-      } else {
+      // Three states, and they are not interchangeable. "enabled" and "disabled" both mean a
+      // healthcheck file is configured, so toggleHealthcheck() works and the widget shows the
+      // lit / unlit control. "not_configured" means there is no healthcheck file at all, and
+      // enable/disable would answer 503 - so set a message, which hides the toggle rather than
+      // offering a control that cannot work.
+      delete $scope.healthcheckMessage;
+      if (data.status == "enabled" || data.status == "disabled") {
         $scope.healthcheckStatus = data.status == "enabled";
+      } else {
+        $scope.healthcheckStatus = false;
+        $scope.healthcheckMessage = data.status == "not_configured"
+          ? 'Ping request handler is not configured with a healthcheck file.'
+          : 'Unexpected ping status: ' + data.status;
       }
+    }, function(error) {
+      $scope.healthcheckStatus = false;
+      $scope.healthcheckMessage = error.data && error.data.error ? error.data.error.msg : 'Unable to read ping status.';
     });
   };
 

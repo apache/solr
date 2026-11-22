@@ -1081,12 +1081,12 @@ public abstract class FieldType extends FieldProperties {
   }
 
   private static Query validateFieldExistsQuery(QParser parser, FieldExistsQuery query) {
-    if (parser == null || parser.getReq() == null || parser.getReq().getCore() == null) {
+    if (parser == null || parser.getReq() == null || parser.getReq().getSearcher() == null) {
       return query;
     }
 
     try {
-      parser.getReq().getCore().withSearcher(searcher -> searcher.rewrite(query));
+      parser.getReq().getSearcher().rewrite(query);
     } catch (IllegalStateException e) {
       // FieldExistsQuery.rewrite throws this if the field lacks doc values, norms, and vectors.
       throw new SolrException(ErrorCode.BAD_REQUEST, e);

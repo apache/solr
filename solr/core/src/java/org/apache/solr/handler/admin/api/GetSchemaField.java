@@ -51,7 +51,7 @@ import org.apache.solr.security.PermissionNameProvider;
  *   <li>/copyfields
  *   <li>/copyfields/{sourceField}
  *   <li>/dynamicfields
- *   <li>/dynamicfields/{fieldName}
+ *   <li>/dynamicfields/{dynamicFieldName}
  *   <li>/fieldtypes
  *   <li>/fieldtypes/{fieldTypeName}
  * </ul>
@@ -136,8 +136,8 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
 
   @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(String fieldName) {
-    if (fieldName == null) {
+  public SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(String dynamicFieldName) {
+    if (dynamicFieldName == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Dynamic field name must not be null");
     }
@@ -146,13 +146,13 @@ public class GetSchemaField extends JerseyResource implements GetSchemaApi.Field
     final String realName = "dynamicfields";
 
     SimpleOrderedMap<Object> dynamicFieldInfo =
-        retrieveFieldInfoOfType(realName, fieldName, params);
+        retrieveFieldInfoOfType(realName, dynamicFieldName, params);
     if (dynamicFieldInfo != null) {
       response.dynamicFieldInfo = dynamicFieldInfo;
       return response;
     }
     throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, "No such dynamic field [" + fieldName + "]");
+        SolrException.ErrorCode.NOT_FOUND, "No such dynamic field [" + dynamicFieldName + "]");
   }
 
   @Override

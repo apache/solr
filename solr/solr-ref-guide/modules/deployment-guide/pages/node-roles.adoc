@@ -106,10 +106,9 @@ Dedicated *`coordinator`* nodes can be provisioned with enough memory but very l
 
 Fetches the list of supported roles and their supported modes for this cluster.
 
-*Input*
-[source,text]
+[source,bash]
 ----
-curl http://localhost:8983/api/cluster/node-roles/supported
+curl 'http://localhost:8983/api/cluster/node-roles/supported'
 ----
 
 *Output*
@@ -134,10 +133,9 @@ curl http://localhost:8983/api/cluster/node-roles/supported
 
 Fetches the current node roles assignment for all the nodes in the cluster.
 
-*Input*
-[source,text]
+[source,bash]
 ----
-curl http://localhost:8983/api/cluster/node-roles
+curl 'http://localhost:8983/api/cluster/node-roles'
 ----
 
 *Output*
@@ -162,10 +160,9 @@ curl http://localhost:8983/api/cluster/node-roles
 
 Fetches the current node roles assignment for a specified role.
 
-*Input*
-[source,text]
+[source,bash]
 ----
-http://localhost:8983/api/cluster/node-roles/role/data
+curl 'http://localhost:8983/api/cluster/node-roles/role/data'
 ----
 
 *Output*
@@ -181,10 +178,9 @@ http://localhost:8983/api/cluster/node-roles/role/data
 }
 ----
 
-*Input*
-[source,text]
+[source,bash]
 ----
-http://localhost:8983/api/cluster/node-roles/role/data/off
+curl 'http://localhost:8983/api/cluster/node-roles/role/data/off'
 ----
 
 *Output*
@@ -205,10 +201,9 @@ http://localhost:8983/api/cluster/node-roles/role/data/off
 
 Fetches the current node roles assignment for the specified node.
 
-*Input*
-[source,text]
+[source,bash]
 ----
-curl http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr
+curl 'http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr'
 ----
 
 *Output*
