@@ -26,10 +26,7 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 
-/**
- * Tests the Admin UI with BasicAuth enabled: the login screen flow and the Security screen,
- * including adding a user through the UI dialog.
- */
+/** Tests login, security management, and API Explorer requests with BasicAuth enabled. */
 public class AdminUiSecurityAuthTest extends AdminUiTestBase {
 
   private static final String USER = "solr";
@@ -128,6 +125,87 @@ public class AdminUiSecurityAuthTest extends AdminUiTestBase {
         "permission " + permission + " should be granted to " + newRole,
         () -> permissionRole(permission).contains(newRole));
     waitForPageContains(permission);
+  }
+
+  @Test
+  public void testApiExplorerUsesAdminCredentials() throws Exception {
+    ensureCloudCluster();
+    driver.get(baseUrl + "/index.html#/");
+    ((JavascriptExecutor) driver).executeScript("sessionStorage.clear();");
+    openPage("", By.id("login"));
+    setText(By.id("username"), USER);
+    setText(By.id("password"), PASS);
+    click(By.xpath("//div[@id='login']//button[@type='submit']"));
+    waitFor(By.id("nodes-table"));
+
+    try {
+      driver.get(baseUrl + "/index.html#/~api-explorer");
+      driver.switchTo().frame(waitFor(By.cssSelector("#content #api-explorer iframe")));
+      By collectionsGroup =
+          By.xpath(
+              "//button[@aria-expanded and .//div[contains(@class,'group/button-label')"
+                  + " and normalize-space(.)='collections']]");
+      By listCollections =
+          By.xpath(
+              "//*[self::a or self::button][.//div[contains(@class,'group/button-label')"
+                  + " and contains(., 'List all collections in this Solr cluster')]]");
+      if ("false".equals(waitFor(collectionsGroup).getDomAttribute("aria-expanded"))) {
+        activateExplorerControl(collectionsGroup);
+      }
+      activateExplorerControl(listCollections);
+      waitForPageContains("List all collections in this Solr cluster");
+      // Observe the actual request and response without replacing the Solr endpoint.
+      // Store only whether the credential matches, never the credential itself.
+      ((JavascriptExecutor) driver)
+          .executeScript(
+              "const original = window.fetch;"
+                  + " window.fetch = async function(input, init) {"
+                  + " const request = input instanceof Request ? input : new Request(input, init);"
+                  + " const response = await original.call(this, input, init);"
+                  + " if (new URL(request.url).pathname === '/api/collections'"
+                  + " && request.method === 'GET') {"
+                  + " let collections = false;"
+                  + " try { collections = Array.isArray((await response.clone().json()).collections); }"
+                  + " catch (ignored) {}"
+                  + " const auth = sessionStorage.getItem('auth.header');"
+                  + " window.explorerResult = {status: response.status, collections: collections,"
+                  + " authenticated: !!auth && request.headers.get('Authorization') === auth,"
+                  + " requestedWith: request.headers.get('X-Requested-With')};"
+                  + " } return response; };");
+      activateExplorerControl(
+          By.xpath(
+              "//button[contains(@class,'show-api-client-button') and @method='get'"
+                  + " and contains(., '(get /collections)')]"));
+      activateExplorerControl(
+          By.xpath(
+              "//div[contains(@class,'scalar-address-bar')]//button"
+                  + "[.//span[contains(., 'Send get request')]]"));
+      waitUntil(
+          "the explorer should receive the collections response",
+          () ->
+              Boolean.TRUE.equals(
+                  ((JavascriptExecutor) driver).executeScript("return !!window.explorerResult;")));
+      @SuppressWarnings("unchecked")
+      Map<String, Object> result =
+          (Map<String, Object>)
+              ((JavascriptExecutor) driver).executeScript("return window.explorerResult;");
+      assertEquals(200L, result.get("status"));
+      assertEquals(Boolean.TRUE, result.get("collections"));
+      assertEquals(Boolean.TRUE, result.get("authenticated"));
+      assertEquals("XMLHttpRequest", result.get("requestedWith"));
+      waitForTextContains(By.cssSelector("body"), "200 OK");
+      driver.switchTo().defaultContent();
+      driver.get(baseUrl + "/index.html#/~cloud?view=nodes");
+      waitFor(By.id("nodes-table"));
+    } finally {
+      driver.switchTo().defaultContent();
+      ((JavascriptExecutor) driver).executeScript("sessionStorage.clear();");
+    }
+    driver.get("about:blank");
+  }
+
+  private void activateExplorerControl(By locator) {
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", waitFor(locator));
   }
 
   /** Returns the authorization config as fetched with credentials. */
