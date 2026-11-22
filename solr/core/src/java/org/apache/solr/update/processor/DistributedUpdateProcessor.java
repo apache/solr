@@ -213,7 +213,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return Replica.Type.NRT;
   }
 
-  boolean isLeader() {
+  public boolean isLeader() {
     return isLeader;
   }
 
@@ -995,9 +995,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  // internal helper method to setup request by processors who use this class.
-  // NOTE: not called by this class!
-  void setupRequest(UpdateCommand cmd) {
+  /**
+   * Set up / initialize. Exposed for other processors to determine {@link #isLeader()} afterward.
+   *
+   * @lucene.internal
+   */
+  public void setupRequest(UpdateCommand cmd) {
     isLeader = getNonZkLeaderAssumption(req);
   }
 

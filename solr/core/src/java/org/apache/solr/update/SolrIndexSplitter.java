@@ -41,6 +41,8 @@ import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -679,7 +681,21 @@ public class SolrIndexSplitter {
 
     Terms terms = reader.terms(field.getName());
     TermsEnum termsEnum = terms == null ? null : terms.iterator();
-    if (termsEnum == null) return docSets;
+    if (termsEnum == null) {
+      // No term dictionary for this field (e.g. a PointField, which has no Terms; or a
+      // docValues-only field that isn't indexed). Derive route values from docValues instead.
+      return splitUsingDocValues(
+          readerContext,
+          numPieces,
+          field,
+          rangesArr,
+          splitKey,
+          hashRouter,
+          delete,
+          docSets,
+          liveDocs,
+          currentPartition);
+    }
 
     BytesRef term = null;
     PostingsEnum postingsEnum = null;
@@ -746,36 +762,122 @@ public class SolrIndexSplitter {
     }
 
     if (docsMatchingRanges != null) {
-      for (int ii = 0; ii < docsMatchingRanges.length; ii++) {
-        if (0 == docsMatchingRanges[ii]) continue;
-        switch (ii) {
-          case 0:
-            // document loss
-            log.error(
-                "Splitting {}: {} documents belong to no shards and will be dropped",
-                reader,
-                docsMatchingRanges[ii]);
-            break;
-          case 1:
-            // normal case, each document moves to one of the sub-shards
-            log.info(
-                "Splitting {}: {} documents will move into a sub-shard",
-                reader,
-                docsMatchingRanges[ii]);
-            break;
-          default:
-            // document duplication
-            log.error(
-                "Splitting {}: {} documents will be moved to multiple ({}) sub-shards",
-                reader,
-                docsMatchingRanges[ii],
-                ii);
-            break;
-        }
-      }
+      logDocsMatchingRanges(reader, docsMatchingRanges);
     }
 
     return docSets;
+  }
+
+  private static FixedBitSet[] splitUsingDocValues(
+      LeafReaderContext readerContext,
+      int numPieces,
+      SchemaField field,
+      DocRouter.Range[] rangesArr,
+      String splitKey,
+      HashBasedRouter hashRouter,
+      boolean delete,
+      FixedBitSet[] docSets,
+      Bits liveDocs,
+      AtomicInteger currentPartition)
+      throws IOException {
+    if (!field.hasDocValues()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Route field '"
+              + field.getName()
+              + "' has no term index to split by and lacks docValues; unable to split shard.");
+    }
+    LeafReader reader = readerContext.reader();
+    ValueSource valueSource = field.getType().getValueSource(field, null);
+    FunctionValues routeFieldValues = valueSource.getValues(Map.of(), readerContext);
+
+    int[] docsMatchingRanges = null;
+    if (rangesArr != null) {
+      docsMatchingRanges = new int[rangesArr.length + 1];
+    }
+
+    for (int doc = 0; doc < reader.maxDoc(); doc++) {
+      if (liveDocs != null && !liveDocs.get(doc)) {
+        continue;
+      }
+
+      String routeValue = getRouteFieldValue(routeFieldValues, doc, field);
+      if (splitKey != null) {
+        String part1 = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(routeValue);
+        if (!splitKey.equals(part1)) {
+          continue;
+        }
+      }
+
+      if (rangesArr == null) {
+        if (delete) {
+          docSets[currentPartition.get()].clear(doc);
+        } else {
+          docSets[currentPartition.get()].set(doc);
+        }
+        currentPartition.set((currentPartition.get() + 1) % numPieces);
+      } else {
+        int hash = hashRouter.sliceHash(routeValue, null, null, null);
+        int matchingRangesCount = 0;
+        for (int i = 0; i < rangesArr.length; i++) {
+          if (rangesArr[i].includes(hash)) {
+            if (delete) {
+              docSets[i].clear(doc);
+            } else {
+              docSets[i].set(doc);
+            }
+            ++matchingRangesCount;
+          }
+        }
+        docsMatchingRanges[matchingRangesCount]++;
+      }
+    }
+
+    if (docsMatchingRanges != null) {
+      logDocsMatchingRanges(reader, docsMatchingRanges);
+    }
+    return docSets;
+  }
+
+  private static String getRouteFieldValue(
+      FunctionValues routeFieldValues, int doc, SchemaField field) throws IOException {
+    if (routeFieldValues.exists(doc)) {
+      return routeFieldValues.strVal(doc);
+    }
+
+    throw new SolrException(
+        SolrException.ErrorCode.SERVER_ERROR,
+        "Unable to read route field '" + field.getName() + "' for shard splitting.");
+  }
+
+  private static void logDocsMatchingRanges(LeafReader reader, int[] docsMatchingRanges) {
+    for (int ii = 0; ii < docsMatchingRanges.length; ii++) {
+      if (0 == docsMatchingRanges[ii]) continue;
+      switch (ii) {
+        case 0:
+          // document loss
+          log.error(
+              "Splitting {}: {} documents belong to no shards and will be dropped",
+              reader,
+              docsMatchingRanges[ii]);
+          break;
+        case 1:
+          // normal case, each document moves to one of the sub-shards
+          log.info(
+              "Splitting {}: {} documents will move into a sub-shard",
+              reader,
+              docsMatchingRanges[ii]);
+          break;
+        default:
+          // document duplication
+          log.error(
+              "Splitting {}: {} documents will be moved to multiple ({}) sub-shards",
+              reader,
+              docsMatchingRanges[ii],
+              ii);
+          break;
+      }
+    }
   }
 
   private static void checkRouterSupportsSplitKey(HashBasedRouter hashRouter, String splitKey) {

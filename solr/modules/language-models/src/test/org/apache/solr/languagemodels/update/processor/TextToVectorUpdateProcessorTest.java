@@ -77,6 +77,9 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id,vector");
+    // *:* gives every doc the same score, so without an explicit sort the order between
+    // tied docs is arbitrary (depends on segment/merge timing), which made this flaky.
+    query.setSort("id", SolrQuery.ORDER.desc);
     return query;
   }
 
@@ -187,10 +190,10 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
-        "/response/docs/[0]/id=='98'",
-        "!/response/docs/[0]/vector==", // no vector field for document 98
-        "/response/docs/[1]/id=='99'",
-        "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
+        "/response/docs/[0]/id=='99'",
+        "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
+        "/response/docs/[1]/id=='98'",
+        "!/response/docs/[1]/vector=="); // no vector field for document 98
 
     restTestHarness.delete(TextToVectorModelStore.REST_END_POINT + "/dummy-1");
   }

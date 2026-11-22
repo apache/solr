@@ -18,12 +18,12 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.servlet.CoreContainerProvider.SOLR_INSTALL_DIR;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.jna.platform.win32.COM.COMUtils;
+import com.sun.jna.platform.win32.COM.WbemcliUtil.WmiQuery;
+import com.sun.jna.platform.win32.COM.WbemcliUtil.WmiResult;
+import com.sun.jna.platform.win32.Ole32;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
@@ -52,9 +51,25 @@ public class SolrProcessManager {
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
   private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
-  // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
-  // processes
-  public static boolean enableTestingMode = false;
+
+  /**
+   * System property ({@code solr.process.scan.marker}, or the {@code SOLR_PROCESS_SCAN_MARKER}
+   * environment variable) restricting process discovery to Solr nodes whose command line contains
+   * the given string. Unset by default, in which case every Solr node on the host is discovered.
+   *
+   * <p>For automated tests: discovery is host-wide by nature, so without this a test asserting on
+   * the set of running nodes also sees a developer's own Solr or another suite sharing a CI
+   * machine. A harness sets this to a value unique to itself and starts its nodes carrying the same
+   * marker, via {@code SOLR_OPTS_INTERNAL}.
+   *
+   * <p>While it is set, a PID file belonging to a node without the marker counts as stale and is
+   * removed by {@link #scanSolrPidFiles()}. A marker therefore scopes a PID directory, not just a
+   * scan: whoever sets one must also point its nodes at a PID directory of their own, as the CATS
+   * harness does with {@code SOLR_PID_DIR}. Nodes that share a PID directory must share the marker,
+   * or run with none, or a live node outside the marker loses its PID file.
+   */
+  public static final String PROCESS_SCAN_MARKER = "solr.process.scan.marker";
+
   private static final Map<Long, String> pidToWindowsCommandLineMap = new HashMap<>();
 
   public SolrProcessManager() {
@@ -62,12 +77,12 @@ public class SolrProcessManager {
       pidToWindowsCommandLineMap.putAll(commandLinesWindows());
     }
 
+    String scanMarker = EnvUtils.getProperty(PROCESS_SCAN_MARKER);
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
             .filter(p -> commandLine(p).orElse("").contains("-Dsolr.port.listen="))
-            .filter(
-                p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
+            .filter(p -> scanMarker == null || commandLine(p).orElse("").contains(scanMarker))
             .collect(
                 Collectors.toUnmodifiableMap(
                     ProcessHandle::pid,
@@ -113,6 +128,9 @@ public class SolrProcessManager {
    * @return a list of SolrProcesses for each running Solr instance
    */
   public Collection<SolrProcess> scanSolrPidFiles() throws IOException {
+    if (!Files.isDirectory(pidDir)) {
+      return List.of();
+    }
     List<SolrProcess> processes = new ArrayList<>();
     try (Stream<Path> pidFiles =
         Files.list(pidDir)
@@ -160,7 +178,7 @@ public class SolrProcessManager {
 
   /**
    * Gets the command line of a process as a string. For Windows, we need to fetch command lines
-   * using a PowerShell command.
+   * from WMI (see {@link #commandLinesWindows()}).
    *
    * @param ph the process handle
    * @return the command line of the process
@@ -174,53 +192,43 @@ public class SolrProcessManager {
   }
 
   /**
-   * Gets the command lines of all java processes on Windows using PowerShell.
+   * WMI columns to select from {@code Win32_Process}. The enum constant names are used verbatim as
+   * the WQL {@code SELECT} column names (WQL is case-insensitive).
+   */
+  enum ProcessProperty {
+    PROCESSID,
+    COMMANDLINE
+  }
+
+  /**
+   * Gets the command lines of all java processes on Windows by querying WMI ({@code Win32_Process})
+   * through JNA. This avoids spawning an external PowerShell process.
    *
    * @return a map of process IDs to command lines
    */
   private static Map<Long, String> commandLinesWindows() {
+    COMUtils.checkRC(Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_MULTITHREADED));
     try {
-      Process process =
-          new ProcessBuilder(
-                  "powershell.exe",
-                  "-Command",
-                  "Get-CimInstance -ClassName Win32_Process | Where-Object { $_.Name -like '*java*' } | Select-Object ProcessId, CommandLine | ConvertTo-Json -Depth 1")
-              .redirectErrorStream(true)
-              .start();
-      String output = IOUtils.toString(process.getInputStream(), StandardCharsets.UTF_8);
-      int exitCode = process.waitFor();
-      if (exitCode != 0) {
-        String errorText = IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8);
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Error getting command lines for Windows: " + errorText);
+      // Filter to java processes in the WQL query itself; LIKE is case-insensitive in WMI, so this
+      // matches processes named e.g. "java.exe" while letting WMI do the filtering.
+      WmiResult<ProcessProperty> result =
+          new WmiQuery<>("Win32_Process WHERE Name LIKE '%java%'", ProcessProperty.class).execute();
+      Map<Long, String> pidToCommandLine = new HashMap<>();
+      for (int i = 0; i < result.getResultCount(); i++) {
+        Object commandLine = result.getValue(ProcessProperty.COMMANDLINE, i);
+        Object processId = result.getValue(ProcessProperty.PROCESSID, i);
+        // CommandLine can be null if the current user cannot read it for that process
+        if (commandLine != null && processId != null) {
+          pidToCommandLine.put(((Number) processId).longValue(), commandLine.toString());
+        }
       }
-      return parseWindowsPidToCommandLineJson(output);
-    } catch (IOException e) {
+      return pidToCommandLine;
+    } catch (RuntimeException e) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows");
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Interrupted while getting command lines for Windows");
+          SolrException.ErrorCode.SERVER_ERROR, "Error getting command lines for Windows", e);
+    } finally {
+      Ole32.INSTANCE.CoUninitialize();
     }
-  }
-
-  static Map<Long, String> parseWindowsPidToCommandLineJson(String jsonString)
-      throws JsonProcessingException {
-    // Json format: [{"ProcessId": 1234, "CommandLine": "java foo"}]
-    ObjectMapper mapper = new ObjectMapper();
-    List<WindowsProcessInfo> processInfoList =
-        mapper.readValue(jsonString, new TypeReference<>() {});
-    return processInfoList.stream()
-        .filter(p -> p.CommandLine != null)
-        .collect(Collectors.toMap(p -> p.ProcessId, p -> p.CommandLine));
-  }
-
-  public static class WindowsProcessInfo {
-    public long ProcessId;
-    public String CommandLine;
   }
 
   /**

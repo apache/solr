@@ -307,6 +307,9 @@ public class BBoxStrategy extends SpatialStrategy {
   //  }
 
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // SpatialOperation constants are singletons; identity check is
+  // intentional
   public Query makeQuery(SpatialArgs args) {
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle bbox))

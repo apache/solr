@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.not;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -54,6 +55,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.SolrPluginUtils;
+import org.hamcrest.Matcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -151,7 +153,15 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testMatchAllDocs() throws Exception {
     for (String sow : Arrays.asList("true", "false")) {
       for (String q : Arrays.asList("*:*", "*")) {
-        try (SolrQueryRequest req = req("sow", sow, "qf", "id")) {
+        // pf, pf2, pf3, and an all-stopword bq must not add empty clauses
+        try (SolrQueryRequest req =
+            req(
+                "sow", sow,
+                "qf", "id",
+                "pf", "id^10 text^5",
+                "pf2", "id^10",
+                "pf3", "id^10",
+                "bq", "text:a")) {
           QParser qParser = QParser.getParser(q, "edismax", req);
           assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
         }
@@ -1191,6 +1201,56 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "//str[@name='id'][.='145']",
         "//str[@name='id'][.='146']");
+  }
+
+  // When no phrase qualifies for the pf boost, no empty phrase clause should be added
+  public void testNoEmptyPhraseBoostClause() throws Exception {
+    // Single-token query: minClauseSize discards the one-position phrase
+    assertPhraseBoostParsedQuery(
+        "wireless", "subject", allOf(not(containsString("^10.0")), not(containsString("()"))));
+  }
+
+  public void testNoEmptyPhraseBoostClauseForFieldedQuery() throws Exception {
+    assertPhraseBoostParsedQuery(
+        "subject:wireless",
+        "subject",
+        allOf(not(containsString("^10.0")), not(containsString("()"))));
+  }
+
+  // Whitespace-free query that analyzes into multiple tokens keeps its phrase boost
+  public void testAnalyzedSingleTermKeepsPhraseBoost() throws Exception {
+    assertPhraseBoostParsedQuery("wi-fi", "subject", containsString("(subject:\"wi fi\")^10.0"));
+  }
+
+  // The unanalyzed qf field keeps this phrase exclusive to the pf clause.
+  public void testSingleTermSynonymKeepsPhraseBoost() throws Exception {
+    assertPhraseBoostParsedQuery(
+        "grackle",
+        "id",
+        allOf(containsString("subject:\"crow blackbird\""), containsString("^10.0")));
+  }
+
+  /** Parses {@code q} with {@code pf=subject^10} in both {@code sow} modes and checks each. */
+  private void assertPhraseBoostParsedQuery(String q, String qf, Matcher<String> matcher)
+      throws Exception {
+    for (String sow : Arrays.asList("true", "false")) {
+      String parsed =
+          getParsedQuery(
+              req(
+                  "q",
+                  q,
+                  "qf",
+                  qf,
+                  "pf",
+                  "subject^10",
+                  "sow",
+                  sow,
+                  "defType",
+                  "edismax",
+                  "debugQuery",
+                  "true"));
+      assertThat("sow=" + sow, parsed, matcher);
+    }
   }
 
   // test phrase fields including pf2 pf3 and phrase slop
@@ -3376,5 +3436,34 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertEquals(
         "org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
         exception.getMessage());
+  }
+
+  /** SOLR-504: a missing or blank "pf" must not add an empty/no-op boolean clause to the query */
+  @Test
+  public void testPfMissingOrBlankAddsNoEmptyClause() throws Exception {
+    final String expectedNoPf = "+((subject:hello | title:hello) (subject:world | title:world))";
+    final String expectedRealPf = expectedNoPf + " (subject:\"hello world\")";
+
+    for (String defType : List.of("dismax", "edismax")) {
+      try (SolrQueryRequest req = req("qf", "subject title", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedNoPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+      try (SolrQueryRequest req = req("qf", "subject title", "pf", "", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedNoPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+      // sanity check: a real pf *does* add a (non-empty) phrase clause
+      try (SolrQueryRequest req = req("qf", "subject title", "pf", "subject", "defType", defType)) {
+        assertEquals(
+            defType,
+            expectedRealPf,
+            QParser.getParser("hello world", defType, req).getQuery().toString());
+      }
+    }
   }
 }

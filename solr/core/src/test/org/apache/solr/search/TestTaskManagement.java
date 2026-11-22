@@ -29,7 +29,10 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.client.api.model.CancelTaskResponse;
+import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,6 +40,7 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.TasksApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -262,17 +266,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
   }
 
   /**
-   * Regression test for cross-shard task visibility.
-   *
-   * <p>On {@code main}, {@code ActiveTasksListHandler.handleRequestBody()} delegates to {@code
-   * processRequest()}, which fans the request out to every shard via the distributed query
-   * pipeline. {@code ActiveTasksListComponent.handleResponses()} then aggregates the per-shard
-   * results, so a task running on shard 2 is visible when the status-check request lands on shard
-   * 1.
-   *
-   * <p>If this handler is migrated to JAX-RS and the fan-out is replaced with a direct call to the
-   * handler node's own {@code CancellableQueryTracker}, a task registered only on shard 2 becomes
-   * invisible to a request handled by shard 1, causing a false "inactive" response.
+   * Regression test for cross-shard task visibility -- guards against a task on shard 2 becoming
+   * invisible to a status-check request handled by shard 1.
    */
   @Test
   public void testCrossShardTaskStatusVisibility() throws Exception {
@@ -325,6 +320,108 @@ public class TestTaskManagement extends SolrCloudTestCase {
         }
       } finally {
         shard2Core.getCancellableQueryTracker().releaseQueryID(taskId);
+      }
+    }
+  }
+
+  /**
+   * Regression test for cross-shard task cancellation. The current V1 approach is dependent on
+   * string matching and that makes it brittle, so this helps us make sure no issues creep in.
+   */
+  @Test
+  public void testCrossShardTaskCancellationVisibility() throws Exception {
+    DocCollection docCollection =
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
+    List<Slice> slices = new ArrayList<>(docCollection.getSlices());
+    assertEquals("test requires exactly 2 shards", 2, slices.size());
+    Replica shard1Leader = slices.get(0).getLeader();
+    Replica shard2Leader = slices.get(1).getLeader();
+    assumeFalse(
+        "Both shard leaders landed on the same node — cross-shard scenario cannot be tested",
+        shard1Leader.getNodeName().equals(shard2Leader.getNodeName()));
+
+    final String taskId = "cross-shard-cancellation-test";
+
+    JettySolrRunner shard2Jetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> j.getNodeName().equals(shard2Leader.getNodeName()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No Jetty found for shard 2 leader"));
+    try (SolrCore shard2Core = shard2Jetty.getCoreContainer().getCore(shard2Leader.getCoreName())) {
+      assertNotNull("Could not open shard 2 core", shard2Core);
+      shard2Core
+          .getCancellableQueryTracker()
+          .addShardLevelActiveQuery(taskId, new CancellableCollector(new TotalHitCountCollector()));
+
+      try {
+        try (var shard1Client =
+            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl()).build()) {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CommonParams.QUERY_UUID, taskId);
+          var cancelReq =
+              new GenericSolrRequest(
+                      SolrRequest.METHOD.POST, "/tasks/cancel", SolrRequestType.ADMIN, params)
+                  .setRequiresCollection(true);
+          NamedList<Object> response = shard1Client.request(cancelReq, COLLECTION_NAME);
+
+          assertEquals(
+              "Task registered only on shard 2 must be cancellable via cross-shard fan-out from "
+                  + "shard 1. Got: "
+                  + response.get("status"),
+              200,
+              response.get("responseCode"));
+        }
+      } finally {
+        shard2Core.getCancellableQueryTracker().removeCancellableQuery(taskId);
+      }
+    }
+  }
+
+  /**
+   * Same as {@link #testCrossShardTaskCancellationVisibility}, but via the V2 API -- confirms V2
+   * shares the same cross-shard string-matching fragility as V1.
+   */
+  @Test
+  public void testCrossShardTaskCancellationVisibilityV2() throws Exception {
+    DocCollection docCollection =
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
+    List<Slice> slices = new ArrayList<>(docCollection.getSlices());
+    assertEquals("test requires exactly 2 shards", 2, slices.size());
+    Replica shard1Leader = slices.get(0).getLeader();
+    Replica shard2Leader = slices.get(1).getLeader();
+    assumeFalse(
+        "Both shard leaders landed on the same node — cross-shard scenario cannot be tested",
+        shard1Leader.getNodeName().equals(shard2Leader.getNodeName()));
+
+    final String taskId = "cross-shard-cancellation-test-v2";
+
+    JettySolrRunner shard2Jetty =
+        cluster.getJettySolrRunners().stream()
+            .filter(j -> j.getNodeName().equals(shard2Leader.getNodeName()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No Jetty found for shard 2 leader"));
+    try (SolrCore shard2Core = shard2Jetty.getCoreContainer().getCore(shard2Leader.getCoreName())) {
+      assertNotNull("Could not open shard 2 core", shard2Core);
+      shard2Core
+          .getCancellableQueryTracker()
+          .addShardLevelActiveQuery(taskId, new CancellableCollector(new TotalHitCountCollector()));
+
+      try {
+        try (var shard1Client =
+            new HttpJettySolrClient.Builder(shard1Leader.getBaseUrl()).build()) {
+          var cancelReq =
+              new TasksApi.CancelRunningTask(IndexType.COLLECTION, COLLECTION_NAME, taskId);
+          CancelTaskResponse response = cancelReq.process(shard1Client, COLLECTION_NAME);
+
+          assertEquals(
+              "Task registered only on shard 2 must be cancellable via the V2 API's cross-shard "
+                  + "fan-out from shard 1. Got: "
+                  + response.status,
+              CancelTaskResponse.CancellationStatus.SUCCESS,
+              response.status);
+        }
+      } finally {
+        shard2Core.getCancellableQueryTracker().removeCancellableQuery(taskId);
       }
     }
   }

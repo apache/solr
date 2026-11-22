@@ -80,7 +80,6 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   protected int maxTotalChars;
 
   // Regex patterns
-  protected final Pattern tikaSimilarityPattern = Pattern.compile(".*\\((.*?)\\)");
   protected final Pattern langPattern = Pattern.compile("\\{lang\\}");
 
   public LanguageIdentifierUpdateProcessor(
@@ -95,7 +94,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     if (params != null) {
       // Document-centric langId params
       setEnabled(params.getBool(LANGUAGE_ID, true));
-      if (params.get(FIELDS_PARAM, "").length() > 0) {
+      if (!params.get(FIELDS_PARAM, "").isEmpty()) {
         inputFields = params.get(FIELDS_PARAM, "").split(",");
       }
       langField = params.get(LANG_FIELD, DOCID_LANGFIELD_DEFAULT);
@@ -105,7 +104,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
           params.get(
               DOCID_PARAM, uniqueKeyField == null ? DOCID_FIELD_DEFAULT : uniqueKeyField.getName());
       fallbackValue = params.get(FALLBACK);
-      if (params.get(FALLBACK_FIELDS, "").length() > 0) {
+      if (!params.get(FALLBACK_FIELDS, "").isEmpty()) {
         fallbackFields = params.get(FALLBACK_FIELDS).split(",");
       }
       overwrite = params.getBool(OVERWRITE, false);
@@ -119,7 +118,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
 
       // Mapping params (field centric)
       enableMapping = params.getBool(MAP_ENABLE, false);
-      if (params.get(MAP_FL, "").length() > 0) {
+      if (!params.get(MAP_FL, "").isEmpty()) {
         mapFields = params.get(MAP_FL, "").split(",");
       } else {
         mapFields = inputFields;
@@ -129,8 +128,8 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       mapIndividual = params.getBool(MAP_INDIVIDUAL, false);
 
       // Process individual fields
-      String[] mapIndividualFields = {};
-      if (params.get(MAP_INDIVIDUAL_FL, "").length() > 0) {
+      String[] mapIndividualFields;
+      if (!params.get(MAP_INDIVIDUAL_FL, "").isEmpty()) {
         mapIndividualFields = params.get(MAP_INDIVIDUAL_FL, "").split(",");
       } else {
         mapIndividualFields = mapFields;
@@ -225,7 +224,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * @param doc the SolrInputDocument to modify
    */
   protected void process(SolrInputDocument doc) {
-    String docLang = null;
+    String docLang;
     HashSet<String> docLangs = new HashSet<>();
     String fallbackLang = getFallbackLang(doc, fallbackFields, fallbackValue);
 
@@ -247,7 +246,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
           log.debug("Overwritten old value {}", doc.getFieldValue(langField));
         }
       }
-      if (langField != null && langField.length() != 0) {
+      if (langField != null && !langField.isEmpty()) {
         doc.setField(langField, docLang);
       }
     } else {
@@ -297,7 +296,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     }
 
     // Set the languages field to an array of all detected languages
-    if (langsField != null && langsField.length() != 0) {
+    if (langsField != null && !langsField.isEmpty()) {
       doc.setField(langsField, docLangs.toArray());
     }
   }
@@ -367,7 +366,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    */
   protected String resolveLanguage(List<DetectedLanguage> languages, String fallbackLang) {
     String langStr;
-    if (languages.size() == 0) {
+    if (languages.isEmpty()) {
       log.debug("No language detected, using fallback {}", fallbackLang);
       langStr = fallbackLang;
     } else {
@@ -395,7 +394,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       }
     }
 
-    if (langStr == null || langStr.length() == 0) {
+    if (langStr == null || langStr.isEmpty()) {
       log.warn("Language resolved to null or empty string. Fallback not configured?");
       langStr = "";
     }
@@ -429,7 +428,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    * @return The new schema field name, based on pattern and replace, or null if illegal
    */
   protected String getMappedField(String currentField, String language) {
-    String lc = mapLcMap.containsKey(language) ? mapLcMap.get(language) : language;
+    String lc = mapLcMap.getOrDefault(language, language);
     String newFieldName =
         langPattern
             .matcher(mapPattern.matcher(currentField).replaceFirst(mapReplaceStr))
@@ -473,10 +472,5 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
    */
   protected SolrInputDocumentReader solrDocReader(SolrInputDocument doc, String[] fields) {
     return new SolrInputDocumentReader(doc, fields, maxTotalChars, maxFieldValueChars, " ");
-  }
-
-  /** Concatenates content from input fields defined in langid.fl. For test purposes only */
-  protected String concatFields(SolrInputDocument doc) {
-    return SolrInputDocumentReader.asString(solrDocReader(doc, inputFields));
   }
 }

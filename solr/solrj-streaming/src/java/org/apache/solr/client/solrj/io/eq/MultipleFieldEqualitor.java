@@ -119,4 +119,53 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
 
     return true;
   }
+
+  @Override
+  public boolean isDerivedFromLeft(StreamComparator base) {
+    if (null == base) {
+      return false;
+    }
+    if (!(base instanceof MultipleFieldComparator baseComps)) {
+      return false;
+    }
+
+    if (baseComps.getComps().length >= eqs.length) {
+      for (int idx = 0; idx < eqs.length; ++idx) {
+        if (!eqs[idx].isDerivedFromLeft(baseComps.getComps()[idx])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  public boolean isDerivedFromRight(StreamComparator base) {
+    if (null == base) {
+      return false;
+    }
+    if (!(base instanceof MultipleFieldComparator baseComps)) {
+      return false;
+    }
+
+    if (baseComps.getComps().length >= eqs.length) {
+      for (int idx = 0; idx < eqs.length; ++idx) {
+        if (!eqs[idx].isDerivedFromRight(baseComps.getComps()[idx])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
+  public void assertFieldsPresent(Tuple left, Tuple right) throws IOException {
+    for (StreamEqualitor eq : eqs) {
+      eq.assertFieldsPresent(left, right);
+    }
+  }
 }

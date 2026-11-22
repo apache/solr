@@ -1,0 +1,13 @@
+title: >
+  Fix a memory leak where every SolrIndexSearcher ever opened was retained by the OpenTelemetry
+  metric registry via its "index.commit_size" observable gauge, along with its DirectoryReader and
+  segment live-docs bitsets. Nodes with a high commit cadence would eventually run out of heap.
+  Observable metrics registered through SolrMetricsContext with an explicit unit are now closed
+  together with the context.
+type: fixed
+authors:
+  - name: Jan Høydahl
+  - name: Mikhail Khludnev
+links:
+  - name: SOLR-18442
+    url: https://issues.apache.org/jira/browse/SOLR-18442

@@ -214,6 +214,9 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
         conf.getInt(KafkaCrossDcConf.MAX_PARTITION_FETCH_BYTES));
     kafkaConsumerProperties.put(
         ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, conf.getInt(KafkaCrossDcConf.REQUEST_TIMEOUT_MS));
+
+    KafkaCrossDcConf.addSecurityProps(conf, kafkaConsumerProperties);
+
     kafkaConsumerProperties.putAll(conf.getAdditionalProperties());
 
     return new KafkaConsumer<>(

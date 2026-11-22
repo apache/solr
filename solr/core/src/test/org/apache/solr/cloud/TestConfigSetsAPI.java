@@ -136,39 +136,37 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testCreateErrors() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      getConfigSetService().uploadConfig("configSet", configset("configset-2"));
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
+    getConfigSetService().uploadConfig("configSet", configset("configset-2"));
 
-      // no action
-      CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
-      createNoAction.setAction(null);
-      verifyException(solrClient, createNoAction, "action");
+    // no action
+    CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
+    createNoAction.setAction(null);
+    verifyException(solrClient, createNoAction, "action");
 
-      // no ConfigSet name
-      CreateNoErrorChecking create = new CreateNoErrorChecking();
-      verifyException(solrClient, create, NAME);
+    // no ConfigSet name
+    CreateNoErrorChecking create = new CreateNoErrorChecking();
+    verifyException(solrClient, create, NAME);
 
-      // set ConfigSet
-      create.setConfigSetName("configSetName");
+    // set ConfigSet
+    create.setConfigSetName("configSetName");
 
-      // ConfigSet already exists
-      Create alreadyExists = new Create();
-      alreadyExists.setConfigSetName("configSet").setBaseConfigSetName("baseConfigSet");
-      verifyException(solrClient, alreadyExists, "ConfigSet already exists");
+    // ConfigSet already exists
+    Create alreadyExists = new Create();
+    alreadyExists.setConfigSetName("configSet").setBaseConfigSetName("baseConfigSet");
+    verifyException(solrClient, alreadyExists, "ConfigSet already exists");
 
-      // Base ConfigSet does not exist
-      Create baseConfigNoExists = new Create();
-      baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
-      verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
+    // Base ConfigSet does not exist
+    Create baseConfigNoExists = new Create();
+    baseConfigNoExists.setConfigSetName("newConfigSet").setBaseConfigSetName("baseConfigSet");
+    verifyException(solrClient, baseConfigNoExists, "Base ConfigSet does not exist");
 
-      // Invalid configset names
-      for (String invalidName :
-          new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
-        Create invalidNameCreate = new Create();
-        invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
-        verifyException(solrClient, invalidNameCreate, "Invalid configset");
-      }
+    // Invalid configset names
+    for (String invalidName :
+        new String[] {"configset!", "configset\"", "-configset", "configset name"}) {
+      Create invalidNameCreate = new Create();
+      invalidNameCreate.setConfigSetName(invalidName).setBaseConfigSetName("_default");
+      verifyException(solrClient, invalidNameCreate, "Invalid configset");
     }
   }
 
@@ -223,25 +221,23 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Map<String, String> newProps,
       String username)
       throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      setupBaseConfigSet(baseConfigSetName, oldProps);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
+    setupBaseConfigSet(baseConfigSetName, oldProps);
 
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(cluster.getZkServer().getZkAddress())
-              .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        assertFalse(getConfigSetService().checkConfigExists(configSetName));
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      assertFalse(getConfigSetService().checkConfigExists(configSetName));
 
-        ConfigSetAdminResponse response =
-            createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
-        assertNotNull(response.getResponse());
-        assertTrue(getConfigSetService().checkConfigExists(configSetName));
+      ConfigSetAdminResponse response =
+          createConfigSet(baseConfigSetName, configSetName, newProps, solrClient, username);
+      assertNotNull(response.getResponse());
+      assertTrue(getConfigSetService().checkConfigExists(configSetName));
 
-        verifyProperties(configSetName, oldProps, newProps, zkClient);
-      }
+      verifyProperties(configSetName, oldProps, newProps, zkClient);
     }
   }
 
@@ -1639,8 +1635,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testDeleteErrors() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     // Ensure ConfigSet is immutable
@@ -1658,8 +1653,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     // ConfigSet is immutable
     delete.setConfigSetName("configSet");
     verifyException(solrClient, delete, "Requested delete of immutable ConfigSet");
-
-    solrClient.close();
   }
 
   @SuppressWarnings("try")
@@ -1675,13 +1668,11 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testDelete() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
     final String configSet = "testDelete";
     getConfigSetService().uploadConfig(configSet, configset("configset-2"));
     assertDelete(solrClient, configSet, true);
     assertDelete(solrClient, "configSetBogus", false);
-    solrClient.close();
   }
 
   private void assertDelete(SolrClient solrClient, String configSet, boolean assertExists)
@@ -1707,8 +1698,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testList() throws Exception {
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
+    final SolrClient solrClient = cluster.getJettySolrRunners().get(0).getSolrClient();
 
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -1737,8 +1727,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     } finally {
       zkClient.close();
     }
-
-    solrClient.close();
   }
 
   /**

@@ -26,7 +26,7 @@ import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.RankQuery;
 
 /**
- * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the
+ * A learning to rank Query, will encapsulate a learning to rank model, and delegate to it the
  * rescoring of the documents.
  */
 public class LTRQuery extends AbstractReRankQuery {

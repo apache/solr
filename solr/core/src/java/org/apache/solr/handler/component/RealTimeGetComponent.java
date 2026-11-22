@@ -354,7 +354,7 @@ public class RealTimeGetComponent extends SearchComponent {
           reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
         }
         docFetcher.decorateDocValueFields(
-            doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
+            doc, docid, docFetcher.getNonStoredDVsUsedAsStored(), reuseDvIters);
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
@@ -643,6 +643,8 @@ public class RealTimeGetComponent extends SearchComponent {
    *
    * @see #getInputDocumentFromTlog(SolrCore, BytesRef, AtomicLong, Set, Resolution)
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   private static SolrInputDocument getInputDocumentFromTlog(
       SolrCore core,
       BytesRef idBytes,
@@ -755,6 +757,8 @@ public class RealTimeGetComponent extends SearchComponent {
    * @param resolveStrategy {@link Resolution#DOC} or {@link Resolution#ROOT_WITH_CHILDREN}.
    * @see Resolution
    */
+  @SuppressWarnings(
+      "ReferenceEquality") // DELETED is a unique sentinel; identity check is intentional
   public static SolrInputDocument getInputDocument(
       SolrCore core,
       BytesRef idBytes,

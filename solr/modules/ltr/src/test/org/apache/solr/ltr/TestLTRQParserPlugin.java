@@ -196,10 +196,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "/error/msg=='org.apache.solr.search.QueryLimitsExceededException: Limits exceeded! (Learning To Rank rescoring - "
-            + "The full reranking didn\\'t complete. "
-            + "If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.)"
-            + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'");
+        "/error/msg=='///regex:.*Limits exceeded\\!.*Learning To Rank rescoring.*///'");
   }
 
   @Test

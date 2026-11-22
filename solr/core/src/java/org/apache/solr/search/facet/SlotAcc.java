@@ -226,6 +226,8 @@ public abstract class SlotAcc implements Closeable {
       return values;
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // fast-path: values array is prefilled with defaultValue already
     public <T> T[] resize(T[] old, T defaultValue) {
       @SuppressWarnings({"unchecked"})
       T[] values = (T[]) Array.newInstance(old.getClass().getComponentType(), getNewSize());
@@ -757,6 +759,7 @@ public abstract class SlotAcc implements Closeable {
      * @param toAcc - the replacement {@link SlotAcc}
      * @see SweepableSlotAcc#registerSweepingAccs(SweepingCountSlotAcc)
      */
+    @SuppressWarnings("ReferenceEquality") // SlotAcc identity, not equality, is what matters here
     public void registerMapping(SlotAcc fromAcc, SlotAcc toAcc) {
       assert fromAcc.key.equals(toAcc.key);
       output.add(toAcc);

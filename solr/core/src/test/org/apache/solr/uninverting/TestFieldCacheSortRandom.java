@@ -351,7 +351,9 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
+    @SuppressWarnings("ReferenceEquality")
     private boolean equalsTo(RandomQuery other) {
+      // Consistent with hashCode(), which uses System.identityHashCode(docValues) below.
       return seed == other.seed && docValues == other.docValues && density == other.density;
     }
 

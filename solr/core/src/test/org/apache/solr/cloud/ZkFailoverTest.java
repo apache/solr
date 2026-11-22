@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,11 +42,6 @@ public class ZkFailoverTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @AfterClass
-  public static void resetWaitForZk() {
-    System.setProperty("solr.cloud.wait.for.zk.seconds", "30");
-  }
-
   public void testRestartZkWhenClusterDown() throws Exception {
     String coll = "coll1";
     CollectionAdminRequest.createCollection(coll, 2, 1).process(cluster.getSolrClient());
@@ -56,12 +50,12 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     zkTestServer = cluster.getZkServer();
 
     // This attempt will fail since it will time out after 1 second
-    System.setProperty("solr.cloud.wait.for.zk.seconds", "1");
+    System.setProperty("solr.zookeeper.client.timeout", "1000");
     restartSolrAndZk();
     waitForState("Timeout waiting for 0 live nodes", coll, (liveNodes, c) -> liveNodes.isEmpty());
 
     // This attempt will succeed since there will be enough time to connect
-    System.setProperty("solr.cloud.wait.for.zk.seconds", "20");
+    System.setProperty("solr.zookeeper.client.timeout", "20000");
     restartSolrAndZk();
     waitForState(
         "Timeout waiting for all nodes to come up",

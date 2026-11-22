@@ -212,6 +212,8 @@ public class DimensionalRoutedAlias extends RoutedAlias {
    * @return A list of actions across the DRA.
    */
   @Override
+  @SuppressWarnings(
+      "ReferenceEquality") // RoutedAlias dimension identity, not equality, is what matters here
   protected List<Action> calculateActions(String targetCol) {
     String[] routeValues = SEP_MATCHER.split(targetCol);
     // remove the alias name to avoid all manner of off by one errors...

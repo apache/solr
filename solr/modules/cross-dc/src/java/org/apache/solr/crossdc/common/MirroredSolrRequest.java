@@ -36,9 +36,10 @@ import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.ContentStream;
+import org.apache.solr.util.ContentStreamBase;
 
 /**
  * Class to encapsulate a mirrored Solr request. This adds a timestamp and #attempts to the request
@@ -214,7 +215,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   private long submitTimeNanos = 0;
 
   public MirroredSolrRequest(final SolrRequest<T> solrRequest) {
-    this(Type.UPDATE, 1, solrRequest, System.nanoTime());
+    this(Type.UPDATE, 1, solrRequest, TimeSource.CURRENT_TIME.getTimeNs());
   }
 
   public MirroredSolrRequest(final Type type, final SolrRequest<T> solrRequest) {
@@ -222,7 +223,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
   }
 
   public MirroredSolrRequest(final Type type, final int attempt, final SolrRequest<T> solrRequest) {
-    this(type, attempt, solrRequest, System.nanoTime());
+    this(type, attempt, solrRequest, TimeSource.CURRENT_TIME.getTimeNs());
   }
 
   public MirroredSolrRequest(

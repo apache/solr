@@ -21,14 +21,11 @@ import io.opentelemetry.context.ContextKey;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
-import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Simple Http Header Propagator. When enabled, this will only propagate the trace id from the
@@ -39,10 +36,9 @@ import org.slf4j.LoggerFactory;
  * replacing/upgrading once that becomes generally available
  */
 public class SimplePropagator implements TextMapPropagator {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String TRACE_HOST_NAME =
-      EnvUtils.getProperty("solr.traceHostName", EnvUtils.getProperty("host"));
+      EnvUtils.getProperty("solr.traceHostName", EnvUtils.getProperty("solr.host.advertise"));
   private static final TextMapPropagator INSTANCE = new SimplePropagator();
   private static final ContextKey<String> TRACE_ID_KEY = ContextKey.named("trace_id");
 

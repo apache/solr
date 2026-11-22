@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.DeleteClusterCommandStatusResponse;
 import org.apache.solr.client.api.model.GetClusterCommandStatusResponse;
-import org.apache.solr.client.api.model.GetClusterCommandStatusResponse.CommandStatus.State;
+import org.apache.solr.client.api.model.GetClusterCommandStatusResponse.CommandStatus.RequestState;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -49,7 +49,7 @@ public class ClusterCommandsTest extends SolrCloudTestCase {
 
     assertNotNull(rsp);
     assertNull(rsp.error);
-    assertEquals(State.NOT_FOUND, rsp.status.state);
+    assertEquals(RequestState.NOT_FOUND, rsp.status.state);
     assertEquals("Did not find [does-not-exist] in any tasks queue", rsp.status.msg);
   }
 
@@ -61,7 +61,7 @@ public class ClusterCommandsTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection(collection, "conf1", 1, 1).processAsync(client);
 
     GetClusterCommandStatusResponse getRsp = waitForCompleted(asyncId, client);
-    assertEquals(State.COMPLETED, getRsp.status.state);
+    assertEquals(RequestState.COMPLETED, getRsp.status.state);
     assertEquals("found [" + asyncId + "] in completed tasks", getRsp.status.msg);
     assertTrue(
         "completed create should include sub-responses from the original command",
@@ -74,7 +74,7 @@ public class ClusterCommandsTest extends SolrCloudTestCase {
 
     GetClusterCommandStatusResponse afterDelete =
         new ClusterApi.GetClusterCommandStatus(asyncId).process(client);
-    assertEquals(State.NOT_FOUND, afterDelete.status.state);
+    assertEquals(RequestState.NOT_FOUND, afterDelete.status.state);
   }
 
   @Test
@@ -102,9 +102,11 @@ public class ClusterCommandsTest extends SolrCloudTestCase {
     assertEquals("successfully cleared stored collection api responses", flushRsp.status);
 
     assertEquals(
-        State.NOT_FOUND, new ClusterApi.GetClusterCommandStatus(id1).process(client).status.state);
+        RequestState.NOT_FOUND,
+        new ClusterApi.GetClusterCommandStatus(id1).process(client).status.state);
     assertEquals(
-        State.NOT_FOUND, new ClusterApi.GetClusterCommandStatus(id2).process(client).status.state);
+        RequestState.NOT_FOUND,
+        new ClusterApi.GetClusterCommandStatus(id2).process(client).status.state);
   }
 
   private static GetClusterCommandStatusResponse waitForCompleted(String id, SolrClient client)
@@ -113,16 +115,16 @@ public class ClusterCommandsTest extends SolrCloudTestCase {
     long endTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(MAX_WAIT_TIMEOUT);
     while (System.nanoTime() < endTime) {
       rsp = new ClusterApi.GetClusterCommandStatus(id).process(client);
-      State state = rsp.status.state;
-      assumeTrue("Error creating collection - skipping test", state != State.FAILED);
-      if (state == State.COMPLETED) {
+      RequestState state = rsp.status.state;
+      assumeTrue("Error creating collection - skipping test", state != RequestState.FAILED);
+      if (state == RequestState.COMPLETED) {
         return rsp;
       }
       TimeUnit.SECONDS.sleep(1);
     }
     assumeTrue(
         "Timed out waiting for async request " + id,
-        rsp != null && State.COMPLETED.equals(rsp.status.state));
+        rsp != null && RequestState.COMPLETED.equals(rsp.status.state));
     return rsp;
   }
 }

@@ -93,9 +93,7 @@ public class AdminUiQueryScreenTest extends AdminUiTestBase {
     setParams.setContentWriter(
         new RequestWriter.StringPayloadContentWriter(
             "{\"set\":{\"" + paramset + "\":{\"rows\":\"2\"}}}", CommonParams.JSON_MIME));
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
-      client.request(setParams);
-    }
+    cluster.getJettySolrRunner(0).getSolrClient().request(setParams);
 
     openPage(COLLECTION + "/query", By.id("query"));
     chosenSelect("useParams", paramset);

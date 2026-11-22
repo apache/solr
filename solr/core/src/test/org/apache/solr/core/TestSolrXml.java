@@ -21,6 +21,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -33,12 +34,14 @@ import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.Ignore;
 
@@ -180,6 +183,22 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertFalse("schema cache", cfg.hasSchemaCache());
   }
 
+  public void testShippedSolrXmlUsesZkClientTimeoutProperty() {
+    EnvUtils.setProperty("solr.zookeeper.client.timeout", "45000");
+    NodeConfig cfg =
+        SolrXmlConfig.fromFile(
+            solrHome, ExternalPaths.SERVER_HOME.resolve("solr.xml"), new Properties());
+    assertEquals(45000, cfg.getCloudConfig().getZkClientTimeout());
+  }
+
+  public void testShippedSolrXmlZkClientTimeoutDefault() {
+    System.clearProperty("solr.zookeeper.client.timeout");
+    NodeConfig cfg =
+        SolrXmlConfig.fromFile(
+            solrHome, ExternalPaths.SERVER_HOME.resolve("solr.xml"), new Properties());
+    assertEquals(30000, cfg.getCloudConfig().getZkClientTimeout());
+  }
+
   public void testNodeLevelCache() {
     NodeConfig cfg =
         SolrXmlConfig.fromString(createTempDir(), TestThinCache.SOLR_NODE_LEVEL_CACHE_XML);
@@ -205,6 +224,24 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
     assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
     assertEquals("hostPort", 8000, cfg.getCloudConfig().getSolrHostPort());
+  }
+
+  // SOLR-18224: allowZkHosts is parsed via a helper that drops blank entries so a
+  // stray comma or unset ${prop:} expansion cannot produce an empty allow-list entry.
+  public void testAllowZkHostsParsing() {
+    String withEntries =
+        "<solr><str name=\"allowZkHosts\">zk-a:2181,,zk-b:2181/chroot, ,zk-c:2181</str></solr>";
+    NodeConfig cfgEntries = SolrXmlConfig.fromString(solrHome, withEntries);
+    assertEquals(
+        List.of("zk-a:2181", "zk-b:2181/chroot", "zk-c:2181"), cfgEntries.getAllowZkHosts());
+
+    String empty = "<solr><str name=\"allowZkHosts\"></str></solr>";
+    NodeConfig cfgEmpty = SolrXmlConfig.fromString(solrHome, empty);
+    assertEquals(List.of(), cfgEmpty.getAllowZkHosts());
+
+    String absent = "<solr></solr>";
+    NodeConfig cfgAbsent = SolrXmlConfig.fromString(solrHome, absent);
+    assertEquals(List.of(), cfgAbsent.getAllowZkHosts());
   }
 
   public void testIntAsLongBad() {

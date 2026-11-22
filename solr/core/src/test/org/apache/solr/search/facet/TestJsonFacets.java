@@ -3784,6 +3784,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
    * @param extraSubFacet if an extra sub facet should be included, this hits slightly diff code
    *     paths
    */
+  @SuppressWarnings("ReferenceEquality")
   public void doTestPrelimSorting(
       final Client client, final boolean extraAgg, final boolean extraSubFacet) throws Exception {
 
@@ -3799,6 +3800,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // (which will affect some assertions)
     final SolrClient shardA = clients.get(0);
     final SolrClient shardB = clients.get(clients.size() - 1);
+    // Identity check: same client instance means a single-node setup.
     final int numShardsWithData = (shardA == shardB) ? 1 : 2;
 
     // for simplicity, each foo_s "term" exists on each shard in the same number of docs as it's

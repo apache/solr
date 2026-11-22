@@ -108,7 +108,6 @@ allprojects {
           [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
           [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
           [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
-          [propName: 'tests.badapples', value: null, description: "Enables or disables @BadApple tests."],
           [propName: 'tests.file.encoding',
               value: {->
                 RandomPicks

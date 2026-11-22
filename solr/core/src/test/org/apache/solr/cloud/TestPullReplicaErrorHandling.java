@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrException;
@@ -140,9 +141,8 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.close();
       for (int i = 1; i <= 10; i++) {
         addDocs(10 + i);
-        try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-          assertNumDocs(10 + i, leaderClient);
-        }
+        Replica leader = s.getLeader();
+        assertNumDocs(10 + i, cluster.getSolrClient(leader));
       }
 
       SolrServerException e =
@@ -150,7 +150,11 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
               SolrServerException.class,
               () -> {
                 try (SolrClient pullReplicaClient =
-                    getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
+                    new HttpJettySolrClient.Builder(
+                            s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getBaseUrl())
+                        .withDefaultCollection(
+                            s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreName())
+                        .build()) {
                   pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
                 }
               });
@@ -174,10 +178,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.reopen();
     }
 
-    try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
-      assertNumDocs(20, pullReplicaClient);
-    }
+    assertNumDocs(20, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
   }
 
   public void testCantConnectToLeader() throws Exception {
@@ -191,16 +192,10 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     SocketProxy proxy = getProxyForReplica(s.getLeader());
     try {
       // wait for replication
-      try (SolrClient pullReplicaClient =
-          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
-        assertNumDocs(10, pullReplicaClient);
-      }
+      assertNumDocs(10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
       proxy.close();
       expectThrows(SolrException.class, () -> addDocs(1));
-      try (SolrClient pullReplicaClient =
-          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
-        assertNumDocs(10, pullReplicaClient);
-      }
+      assertNumDocs(10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
       assertNumDocs(10, cluster.getSolrClient(collectionName));
     } finally {
       log.info("Opening leader node");
@@ -227,10 +222,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
-    try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
-      assertNumDocs(10, pullReplicaClient);
-    }
+    assertNumDocs(10, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
     addDocs(20);
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
     cluster.expireZkSession(jetty);
@@ -238,10 +230,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(40);
     waitForState("Expecting node to be reconnected", collectionName, activeReplicaCount(1, 0, 1));
-    try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
-      assertNumDocs(40, pullReplicaClient);
-    }
+    assertNumDocs(40, cluster.getSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0)));
   }
 
   public void testCloseHooksDeletedOnReconnect() throws Exception {

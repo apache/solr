@@ -35,7 +35,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.NodeConfigClusterPluginsSource;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -120,6 +119,8 @@ public class NodeConfig {
 
   private final String defaultZkHost;
 
+  private final List<String> allowZkHosts;
+
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
@@ -154,6 +155,7 @@ public class NodeConfig {
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
+      List<String> allowZkHosts,
       boolean hideStackTraces,
       String configSetServiceClass,
       String modules,
@@ -192,6 +194,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
+    this.allowZkHosts = allowZkHosts;
     this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
@@ -235,21 +238,16 @@ public class NodeConfig {
     initModules(loader, null);
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
 
-    // TODO: Only job of this block is to
-    //  delay starting a solr core to satisfy
-    //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut =
-          1000
-              * Integer.getInteger(
-                  "solr.cloud.wait.for.zk.seconds", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT);
+      int startUpZkTimeOutMillis =
+          EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withTimeout(startUpZkTimeOutMillis, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOutMillis, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
         zkClient.exists("/configs");
@@ -437,6 +435,15 @@ public class NodeConfig {
     return allowUrls;
   }
 
+  /**
+   * Allow-list of remote ZooKeeper connection strings that may be passed to query/streaming
+   * features which accept a {@code zkHost} parameter (e.g. cross-collection join, /stream
+   * expressions). The local cluster's own ZK ensemble is always trusted and need not be listed.
+   */
+  public List<String> getAllowZkHosts() {
+    return allowZkHosts;
+  }
+
   public boolean hideStackTraces() {
     return hideStackTraces;
   }
@@ -600,6 +607,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Set.of();
     private List<String> allowUrls = List.of();
+    private List<String> allowZkHosts = List.of();
     private boolean hideStackTrace =
         !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 
@@ -804,6 +812,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setAllowZkHosts(List<String> zkHosts) {
+      this.allowZkHosts = zkHosts;
+      return this;
+    }
+
     public NodeConfigBuilder setHideStackTrace(boolean hide) {
       this.hideStackTrace = hide;
       return this;
@@ -895,6 +908,7 @@ public class NodeConfig {
           defaultZkHost,
           allowPaths,
           allowUrls,
+          allowZkHosts,
           hideStackTrace,
           configSetServiceClass,
           modules,

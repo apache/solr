@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.ContentStreamLoader;
@@ -30,6 +29,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.apache.solr.util.ContentStreamBase;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -116,7 +116,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     ContentStreamLoader loader = new XSLTUpdateRequestHandler.XsltXMLLoader().init(null);
     loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
 
-    AddUpdateCommand add = p.addCommands.get(0);
+    AddUpdateCommand add = p.addCommands.getFirst();
     assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
     assertEquals("zzz", add.solrDoc.getField("foo_s").getFirstValue());
     req.close();

@@ -27,18 +27,18 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 - See `dev-docs/gradle-help/tests.txt` for hints on running tests
 - To run a specific test: `gradlew :solr:core:test --tests "org.apache.solr.search.TestCaffeineCache"`
-- To run a specific BATS test: `gradlew iTest --tests test_adminconsole_urls.bats`
+- To run CATS (Cross-platform Automated Testing System), the cross-platform CLI suites: `gradlew -p solr/packaging catsTests --tests "*ZkTest"`
+- To run a specific BATS test (deprecated, replaced by CATS): `gradlew iTest --tests test_adminconsole_urls.bats`
 - The randomization seed is important.  To repeat a failing tests, pass the same seed given in the failure by adding to Gradle: `-Ptests.seed=HEXADECIMALHERE`.
 - Test output goes to `solr/<module>/build/test-results/test/outputs/OUTPUT-<fully.qualified.TestName>.txt` (stdout/stderr log) and `solr/<module>/build/test-results/test/TEST-<fully.qualified.TestName>.xml` (JUnit XML with pass/fail/error details)
 - To scan test output for a specific issue across already-run tests: `grep -rl "pattern" solr/*/build/test-results/test/outputs/`
 
 ## Writing Tests
 
-- When adding a test to an existing suite/file, keep the same style / design choices
-- When adding a *new* Java test suite/file:
-    - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
-    - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
-    - Avoid SolrTestCaseJ4 for new tests
+**Read `dev-docs/writing-tests.adoc` before writing any test.** It is the authority on which harness to use — `SolrTestCase` by default, `SolrCloudTestCase` only when a cluster is needed, `SolrCatsTestCase` for `bin/solr` and `bin\solr.cmd`, `AdminUiTestBase` for the browser, a Testcontainers `@ClassRule` for a real external service, and never `SolrTestCaseJ4`, a new `.bats` file, or `docker run` from a test — and on the lifecycle, randomization and waiting conventions, with a worked example per kind.
+
+When adding a test to a suite that already exists, match the design choices of the file you are editing.
+
 - For BATS shell integration tests in `solr/packaging/test/`:
     - Always use `run <command>` followed by `assert_output --partial "..."` or `refute_output --partial "..."` instead of capturing output into local variables and using `[[ ]]` comparisons
     - Avoid patterns like `local var=$(cmd | grep ...); [[ "$var" == *"..."* ]]` — use `run cmd` + `assert_output`/`refute_output` instead
@@ -46,7 +46,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 ## Documentation
 
 - For major or breaking changes, add a prominent note in reference guide major-changes-in-solr-X.adoc
-- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user
+- Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user. To write or edit a page, see `dev-docs/ref-guide/` and the "About This Guide" page (`solr/solr-ref-guide/modules/getting-started/pages/about-this-guide.adoc`), which says how examples are presented to readers
 - For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
 - Keep all documentation including javadoc concise
 - New classes should have some javadocs
@@ -62,12 +62,13 @@ Internals:
 - `dev-docs/shard-split/shard-split.adoc` — SPLITSHARD: shard/replica states, tlog buffering during split
 - `dev-docs/distributed-update-internals.adoc` — SolrCloud update path: routing, `_version_`/optimistic concurrency, tlog durability, replication acks, shard terms (user-facing consistency model: ref-guide page `solrcloud-update-consistency.adoc`)
 - `dev-docs/plugins-modules-packages.adoc` — plugin/module/package concepts
-- `dev-docs/apis.adoc`, `dev-docs/v2-api-conventions.adoc` — API design and v2 conventions
+- `dev-docs/apis.adoc`, `dev-docs/apis-v2-conventions.adoc` — API design and v2 conventions
 - `dev-docs/ui/` — new Admin UI architecture, component development, testing
 
 Process & tooling:
 
 - `dev-docs/solr-source-code.adoc`, `git.adoc`, `IDEs.adoc`, `jvms.adoc` — build and dev environment
+- `dev-docs/writing-tests.adoc` — the test harnesses, how to choose one, lifecycle and randomization conventions
 - `dev-docs/ref-guide/` — ref-guide authoring (AsciiDoc syntax, Antora templates)
 - `dev-docs/dependency-upgrades.adoc`, `lucene-upgrade.md`, `working-between-major-versions.adoc` — upgrades and branch management
 - `dev-docs/releasing.adoc`, `changelog.adoc`, `asf-jenkins.adoc` — release and CI process

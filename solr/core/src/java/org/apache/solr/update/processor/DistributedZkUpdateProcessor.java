@@ -685,7 +685,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  void setupRequest(UpdateCommand cmd) {
+  public void setupRequest(UpdateCommand cmd) {
     zkCheck(cmd);
     if (cmd instanceof AddUpdateCommand acmd) {
       nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument(), null, cmd);
@@ -1369,7 +1369,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   /** If necessary, include in the response the achieved replication factor */
-  @SuppressWarnings("deprecation")
   private void handleReplicationFactor() {
     if (leaderReplicationTracker != null || rollupReplicationTracker != null) {
       int achievedRf = Integer.MAX_VALUE;

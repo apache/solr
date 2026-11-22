@@ -16,26 +16,18 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import org.apache.lucene.analysis.TokenStream;
 
 /** Passes the entire query string to the configured analyzer as-is. */
 public class SuggestQueryConverter extends SpellingQueryConverter {
 
   @Override
-  public Collection<Token> convert(String original) {
+  public TokenStream convert(String original) {
     if (original == null) { // this can happen with q.alt = and no query
-      return List.of();
+      return new QueryWordsTokenStream(List.of(), analyzer);
     }
-
-    Collection<Token> result = new ArrayList<>();
-    try {
-      analyze(result, original, 0, 0);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return result;
+    return new QueryWordsTokenStream(
+        List.of(new QueryWordsTokenStream.ParsedWord(original, 0, 0)), analyzer);
   }
 }

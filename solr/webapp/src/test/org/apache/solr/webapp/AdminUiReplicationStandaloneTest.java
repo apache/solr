@@ -91,15 +91,14 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
         "polling should be disabled", () -> "true".equals(followerDetail("isPollingDisabled")));
 
     // index documents on the leader; the follower does not poll them
-    try (var client = leaderJetty.newClient()) {
-      for (int i = 1; i <= 2; i++) {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", "repl-doc-" + i);
-        doc.addField("name", "replicated");
-        client.add(CORE, doc);
-      }
-      client.commit(CORE);
+    var client = leaderJetty.getSolrClient();
+    for (int i = 1; i <= 2; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "repl-doc-" + i);
+      doc.addField("name", "replicated");
+      client.add(CORE, doc);
     }
+    client.commit(CORE);
 
     // replicate on demand and watch the docs arrive on the follower
     click(By.cssSelector("#replication button.replicate-now"));
@@ -151,8 +150,12 @@ public class AdminUiReplicationStandaloneTest extends AdminUiStandaloneTestBase 
   }
 
   private long followerNumDocs() {
-    try (var client = standaloneJetty.newClient()) {
-      return client.query(CORE, new SolrQuery("*:*")).getResults().getNumFound();
+    try {
+      return standaloneJetty
+          .getSolrClient()
+          .query(CORE, new SolrQuery("*:*"))
+          .getResults()
+          .getNumFound();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

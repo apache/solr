@@ -16,8 +16,8 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -57,10 +57,12 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
   public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
 
   /**
-   * Returns the Collection of {@link Token}s for the query. Offsets on the Token should correspond
-   * to the correct offset in the origQuery
+   * Returns a fresh {@link TokenStream} over the query's terms. Offsets should correspond to the
+   * correct offset in the origQuery. The caller owns the returned stream's lifecycle: {@link
+   * SpellCheckToken#drain(TokenStream)} resets it, reads it to the end and closes it, and the
+   * spellcheckers read that list rather than this stream.
    */
-  public abstract Collection<Token> convert(String original);
+  public abstract TokenStream convert(String original);
 
   /** Set the analyzer to use. Must be set before any calls to convert. */
   public void setAnalyzer(Analyzer analyzer) {
