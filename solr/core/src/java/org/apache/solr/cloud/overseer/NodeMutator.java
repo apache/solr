@@ -36,7 +36,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.common.ZKConfig;
 import org.slf4j.Logger;
@@ -47,10 +46,7 @@ public class NodeMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected SolrZkClient zkClient;
 
-  /**
-   * DOWNNODE message property listing the collections that had a replica on the node when the node
-   * sent the message.
-   */
+  /** DOWNNODE message property: the collections the sending node has replicas in */
   public static final String DOWN_NODE_COLLECTIONS_PROP = "collections";
 
   private final boolean useListedCollectionsOnly;
@@ -80,59 +76,36 @@ public class NodeMutator {
   }
 
   /**
-   * Returns the list a node puts in its DOWNNODE message under {@link #DOWN_NODE_COLLECTIONS_PROP},
-   * or null when the names are too long to send, in which case the overseer loads every collection.
+   * The value of {@link #DOWN_NODE_COLLECTIONS_PROP} for a node's DOWNNODE message, or null when
+   * the list could push the message past jute.maxbuffer, which would lose it.
    */
   public static List<String> collectionsForDownNodeMessage(Collection<String> collections) {
-    // ZooKeeper rejects a queue entry larger than jute.maxbuffer, which would lose the DOWNNODE
-    // and leave the node's replicas in their last published state
-    int maxBytes = maxListedCollectionsBytes();
-    long bytes = 0;
-    for (String collection : collections) {
-      // 3 for the quotes and the comma
-      bytes += collection.getBytes(StandardCharsets.UTF_8).length + 3;
-      if (bytes > maxBytes) {
-        return null;
-      }
-    }
-    return List.copyOf(collections);
+    // half of the limit, read the way ZooKeeper reads it, leaves room for the rest of the message
+    int maxBytes =
+        Integer.getInteger(ZKConfig.JUTE_MAXBUFFER, ZKClientConfig.CLIENT_MAX_PACKET_LENGTH_DEFAULT)
+            / 2;
+    // indented JSON adds 8 bytes to each name
+    long bytes =
+        collections.stream().mapToLong(c -> c.getBytes(StandardCharsets.UTF_8).length + 8).sum();
+    return bytes > maxBytes ? null : List.copyOf(collections);
   }
 
   /**
-   * The most bytes of collection names a DOWNNODE message may list: half of this node's
-   * jute.maxbuffer, which leaves room for the rest of the message and is expected to match the
-   * limit the ZooKeeper servers enforce.
-   */
-  private static int maxListedCollectionsBytes() {
-    String juteMaxBuffer = EnvUtils.getProperty(ZKConfig.JUTE_MAXBUFFER);
-    int limit = ZKClientConfig.CLIENT_MAX_PACKET_LENGTH_DEFAULT;
-    if (juteMaxBuffer != null) {
-      try {
-        // ZooKeeper reads it with Integer.getInteger, which takes hex and octal too
-        limit = Integer.decode(juteMaxBuffer.trim());
-      } catch (NumberFormatException e) {
-        // ZooKeeper falls back to its default as well
-      }
-    }
-    return limit / 2;
-  }
-
-  /**
-   * The collections a DOWNNODE has to look at. Loading a collection the overseer hasn't written yet
-   * is a ZooKeeper round trip, so when the message lists the node's collections only those are
-   * loaded. A message without the list (from a node that doesn't send it, or whose list was too
-   * long) loads every collection. A replica added to the node after it built the list is not looked
-   * at.
+   * The collections a DOWNNODE has to check: every collection, or with the cluster property on only
+   * those the message lists, since loading a collection can be a ZooKeeper round trip. The list is
+   * the node's view, so a replica in a collection it leaves out (one added to the node after the
+   * list was built, say) is not marked down.
    */
   private Stream<DocCollection> collectionsToCheck(ClusterState clusterState, ZkNodeProps message) {
     Object collectionsFromNode = message.get(DOWN_NODE_COLLECTIONS_PROP);
     if (!useListedCollectionsOnly || collectionsFromNode == null) {
       return clusterState.collectionStream();
     }
+    // Solr writes this message, so a value that isn't a collection is a bug: fail on the cast
+    // rather than hide it behind a fallback to every collection
     return ((Collection<?>) collectionsFromNode)
         .stream()
             .map(String::valueOf)
-            .distinct()
             .map(clusterState::getCollectionOrNull)
             .filter(Objects::nonNull);
   }
