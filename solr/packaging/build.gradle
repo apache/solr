@@ -24,6 +24,8 @@ import org.apache.tools.ant.util.TeeOutputStream
 plugins {
   id 'base'
   id 'distribution'
+  // Only for the CATS suites under src/test; this project ships no Java of its own.
+  id 'java'
 }
 
 description = 'Solr distribution packaging'
@@ -62,6 +64,14 @@ dependencies {
   server project(path: ":solr:server", configuration: "packaging")
 
   docker project(path: ':solr:docker', configuration: 'packaging')
+
+  // The CATS harness lives in solr/test-framework; the suites that use it live here, next to
+  // the BATS tests they are ported from.
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
+  // For suites whose BATS original ran a 'docker run' by hand: a Testcontainers @ClassRule starts
+  // the container once per class, maps a free port and skips when Docker is absent.
+  testImplementation libs.testcontainers
 
   solrFullTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
     builtBy ":solr:distribution:signFullBinaryTgz"
@@ -341,6 +351,93 @@ def configureBatsTask(BatsTask task, String outputName, boolean usePicocli) {
   if (!usePicocli) {
     task.environment SOLR_PICOCLI: 'false'
   }
+}
+
+// CATS - Cross-platform Automated Testing System - the CLI suites built on the
+// org.apache.solr.cats harness and its Solr layer org.apache.solr.shell, both in
+// solr/test-framework. Like the BATS suites these need the
+// unpacked distribution, so they are not part of 'check' and the stock 'test' task is turned off.
+tasks.named('test') {
+  enabled = false
+}
+
+// Shared configuration for the CATS suites, mirroring configureBatsTask. outputName keeps
+// each variant's SOLR_HOMEs, port-block counter and failure snapshots apart; picocli selects the
+// CLI implementation, or null to take whatever bin/solr defaults to.
+def configureCatsTestTask(Test task, String outputName, String picocli) {
+  task.dependsOn installFullDist
+
+  task.testClassesDirs = sourceSets.test.output.classesDirs
+  task.classpath = sourceSets.test.runtimeClasspath
+
+  // ExtractionTest is the one suite that wants Docker: it pulls a Tika image rather than building
+  // one, and skips when the daemon or the image is missing.
+
+  // Each class gets its own SOLR_HOME and port block (see SolrCatsHarnessEnv.forClass), so classes
+  // can run in parallel. Defaults to the build's tests.jvms, capped because the ceiling is memory
+  // not CPU: every fork may hold a Solr JVM plus embedded ZooKeeper. Override with
+  // -Pcats.tests.jvms.
+  // (availableProcessors() is not usable: the Gradle daemon runs with -XX:ActiveProcessorCount=1.)
+  task.maxParallelForks = (project.findProperty('cats.tests.jvms')
+      ?: Math.min(4, resolvedTestOption('tests.jvms') as Integer)) as Integer
+  task.timeout.set(java.time.Duration.ofMinutes(60))
+
+  def catsTestOutput = file("$buildDir/$outputName")
+  task.inputs.dir(distDir)
+  task.environment SOLR_TIP: distDir.toString()
+  task.environment CATS_OUTPUT_DIR: catsTestOutput.toString()
+  if (picocli != null) {
+    task.environment SOLR_PICOCLI: picocli
+  }
+
+  task.doFirst {
+    // Wiped per run, not per fork, so the port-block counter starts at zero and the last run's
+    // failure snapshots do not pile up. Matches what configureBatsTask does for the BATS output.
+    // Nodes a killed run left behind are reaped by SolrCatsTestCase's pre-flight check instead,
+    // which matches on the command-line marker: reaping here would mean reading pid files, whose
+    // names the two scripts disagree about, or process command lines, which the Gradle daemon
+    // cannot read on Windows.
+    delete catsTestOutput
+    catsTestOutput.mkdirs()
+    // The harness spawns bin/solr and writes outside the test sandbox, neither of which the test
+    // security policy allows. Dropping the property is enough; nothing installs an SM later.
+    task.systemProperties.remove('java.security.manager')
+    logger.lifecycle("Running CATS with ${task.maxParallelForks} parallel fork(s)")
+  }
+
+  // Gradle buffers each fork's output and prints nothing but failures, so a CATS run looks hung for
+  // minutes at a time. One line per test, as BATS printed. The class name is included because forks
+  // interleave, and skips are shown because most of them mean a missing Docker.
+  def marks = [SUCCESS: 'ok  ', SKIPPED: 'skip', FAILURE: 'FAIL']
+  task.afterTest { desc, result ->
+    // Locale.ROOT, or the decimal separator follows the randomized test locale ("0,9s" on nb-NO).
+    task.logger.lifecycle(String.format(Locale.ROOT, "%s %s.%s (%.1fs)",
+        marks[result.resultType.name()] ?: result.resultType.name(),
+        desc.className.substring(desc.className.lastIndexOf('.') + 1),
+        desc.name,
+        (result.endTime - result.startTime) / 1000.0d))
+  }
+}
+
+tasks.register('catsTests', Test) {
+  group = 'verification'
+  description = 'Runs the CATS bin/solr CLI suites against the unpacked distribution.'
+  configureCatsTestTask(it, 'cats-test-output', null)
+}
+
+tasks.register('catsTestsPicocli', Test) {
+  group = 'verification'
+  description = 'Runs the CATS suites against picocli, pinned rather than taken as the default.'
+  configureCatsTestTask(it, 'cats-test-output-picocli', 'true')
+}
+
+// Deprecated: delete along with commons-cli itself, once picocli is the only CLI in Solr 11. Until
+// then the two differ in some usage and error wording, so it is worth running the suites against
+// whichever bin/solr is not defaulting to.
+tasks.register('catsTestsCommonsCli', Test) {
+  group = 'verification'
+  description = 'Deprecated. Runs the CATS suites against the commons-cli implementation.'
+  configureCatsTestTask(it, 'cats-test-output-commons-cli', 'false')
 }
 
 // TODO: Remove this when cleaning up commons-cli
