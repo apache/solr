@@ -230,8 +230,9 @@ public class StatusTool extends ToolBase {
     if (port != null) {
       // When asked to wait, this also waits for a newly started process to become visible. One
       // budget covers both that and the HTTP wait below, so that the time spent finding the
-      // process does not extend --max-wait-secs.
-      TimeOut timeout = new TimeOut(maxWaitSecs, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      // process does not extend --max-wait-secs. The extra second absorbs timeLeft() truncating
+      // to whole seconds, which would otherwise leave nothing of a 1-second budget.
+      TimeOut timeout = new TimeOut(maxWaitSecs + 1, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       Optional<SolrProcess> proc = processMgr.waitForProcessOnPort(port, maxWaitSecs);
       long secsLeft = maxWaitSecs > 0 ? timeout.timeLeft(TimeUnit.SECONDS) : 0;
       if (proc.isEmpty()) {
