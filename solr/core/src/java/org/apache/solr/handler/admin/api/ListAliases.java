@@ -16,15 +16,16 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.SolrException.ErrorCode.NOT_FOUND;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import jakarta.inject.Inject;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.api.endpoint.ListAliasesApi;
 import org.apache.solr.client.api.model.GetAliasByNameResponse;
 import org.apache.solr.client.api.model.ListAliasesResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -43,12 +44,7 @@ public class ListAliases extends AdminAPIBase implements ListAliasesApi {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  /**
-   * V2 API for listing all aliases known by Solr.
-   *
-   * <p>This API <code>GET /api/aliases</code> is analogous to the v1 <code>GET /api/cluster/aliases
-   * </code> API.
-   */
+  /** V2 API for listing all aliases known by Solr. */
   @Override
   @PermissionName(COLL_READ_PERM)
   public ListAliasesResponse getAliases() throws Exception {
@@ -56,19 +52,15 @@ public class ListAliases extends AdminAPIBase implements ListAliasesApi {
 
     final ListAliasesResponse response = instantiateJerseyResponse(ListAliasesResponse.class);
     final Aliases aliases = readAliasesFromZk();
+    response.aliases = new LinkedHashMap<>();
 
     if (aliases != null) {
-      // the aliases themselves...
-      response.aliases = aliases.getCollectionAliasMap();
-      // Any properties for the above aliases.
-      Map<String, Map<String, String>> meta = new LinkedHashMap<>();
-      for (String alias : aliases.getCollectionAliasListMap().keySet()) {
-        Map<String, String> collectionAliasProperties = aliases.getCollectionAliasProperties(alias);
-        if (!collectionAliasProperties.isEmpty()) {
-          meta.put(alias, collectionAliasProperties);
-        }
+      for (String aliasName : aliases.getCollectionAliasListMap().keySet()) {
+        final GetAliasByNameResponse entry = new GetAliasByNameResponse();
+        entry.responseHeader = null;
+        populateAlias(entry, aliases, aliasName);
+        response.aliases.put(aliasName, entry);
       }
-      response.properties = meta;
     }
 
     return response;
@@ -80,15 +72,22 @@ public class ListAliases extends AdminAPIBase implements ListAliasesApi {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     final GetAliasByNameResponse response = instantiateJerseyResponse(GetAliasByNameResponse.class);
-    response.alias = aliasName;
-
     final Aliases aliases = readAliasesFromZk();
+    if (aliases == null || !aliases.hasAlias(aliasName)) {
+      throw new SolrException(NOT_FOUND, "No such alias [" + aliasName + "]");
+    }
+    populateAlias(response, aliases, aliasName);
+
+    return response;
+  }
+
+  private static void populateAlias(
+      GetAliasByNameResponse response, Aliases aliases, String aliasName) {
+    response.alias = aliasName;
     if (aliases != null) {
       response.collections = aliases.getCollectionAliasListMap().getOrDefault(aliasName, List.of());
       response.properties = aliases.getCollectionAliasProperties(aliasName);
     }
-
-    return response;
   }
 
   private Aliases readAliasesFromZk() throws Exception {

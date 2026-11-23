@@ -35,14 +35,15 @@ import org.junit.Test;
  * Integration tests for the JAX-RS-based {@link ClusterPackage}.
  *
  * <p>Note: SolrJettyTestRule cannot be used here because the Package API requires ZooKeeper for its
- * cluster-level operations. A one-node SolrCloud cluster is used instead.
+ * cluster-level operations. A two-node SolrCloud cluster is used instead, so tests can check that
+ * changes reach a node other than the one handling the request.
  */
 public class ClusterPackageTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.packages.enabled", "true");
-    configureCluster(1)
+    configureCluster(2)
         .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -103,16 +104,28 @@ public class ClusterPackageTest extends SolrCloudTestCase {
       // Delete the package version via DELETE /cluster/packages/{name}/versions/{version}
       new PackageApi.DeletePackageVersion("pkgapitestpkg", "1.0").process(client);
 
-      // Verify it's deleted
-      ListPackagesResponse listAfterDelete = new PackageApi.ListPackages().process(client);
-      assertNotNull("Expected non-null list response after delete", listAfterDelete);
-      assertNotNull("Expected non-null packages after delete", listAfterDelete.packages);
-      // After deleting the only version, the package entry should be empty or absent
-      List<?> versionsAfterDelete = listAfterDelete.packages.get("pkgapitestpkg");
-      assertTrue(
-          "Expected no versions after delete",
-          versionsAfterDelete == null || versionsAfterDelete.isEmpty());
+      // Verify it's deleted on the handling node
+      assertPackageDeleted(client);
     }
+
+    // The delete must also be visible at once on the other node, not only after its ZK watcher
+    // fires
+    try (HttpJettySolrClient otherClient =
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(1).getBaseUrl().toString())
+            .build()) {
+      assertPackageDeleted(otherClient);
+    }
+  }
+
+  private static void assertPackageDeleted(HttpJettySolrClient client) throws Exception {
+    ListPackagesResponse listAfterDelete = new PackageApi.ListPackages().process(client);
+    assertNotNull("Expected non-null list response after delete", listAfterDelete);
+    assertNotNull("Expected non-null packages after delete", listAfterDelete.packages);
+    // After deleting the only version, the package entry should be empty or absent
+    List<?> versionsAfterDelete = listAfterDelete.packages.get("pkgapitestpkg");
+    assertTrue(
+        "Expected no versions after delete",
+        versionsAfterDelete == null || versionsAfterDelete.isEmpty());
   }
 
   @Test
