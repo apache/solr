@@ -63,7 +63,7 @@ public class PackageStore {
   final CoreContainer coreContainer;
   final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   final SolrPackageLoader packageLoader;
-  Packages pkgs;
+  volatile Packages pkgs;
 
   public PackageStore(CoreContainer coreContainer, SolrPackageLoader loader) {
     this.coreContainer = coreContainer;
@@ -297,19 +297,23 @@ public class PackageStore {
     if (finalState[0] == null) {
       return null;
     }
-    pkgs = finalState[0];
+    publishIfNewer(finalState[0]);
     packageLoader.refreshPackageConf();
-    return pkgs.znodeVersion;
+    return finalState[0].znodeVersion;
   }
 
   /**
-   * Removes a specific version of a package from ZooKeeper.
+   * Removes a specific version of a package from ZooKeeper, then refreshes this node's package
+   * configuration to drop it immediately.
    *
+   * @return the new {@code packages.json} znode version, or {@code null} if the ZooKeeper update
+   *     failed (and so {@code pkgs} was left unchanged)
    * @throws SolrException NOT_FOUND if the package or version doesn't exist
    */
-  void deleteVersion(String packageName, String version) {
+  Integer deleteVersion(String packageName, String version) {
     requireEnabled();
 
+    final Packages[] finalState = new Packages[1];
     try {
       coreContainer
           .getZkController()
@@ -336,10 +340,29 @@ public class PackageStore {
                 }
                 versions.remove(idxToRemove);
                 packages.znodeVersion = stat.getVersion() + 1;
+                finalState[0] = packages;
                 return Utils.toJSON(packages);
               });
     } catch (KeeperException | InterruptedException e) {
+      finalState[0] = null;
       handleZkErr(e);
+    }
+
+    if (finalState[0] == null) {
+      return null;
+    }
+    publishIfNewer(finalState[0]);
+    packageLoader.refreshPackageConf();
+    return finalState[0].znodeVersion;
+  }
+
+  /**
+   * Installs a state this node just wrote to ZooKeeper, unless a concurrent mutation already
+   * installed a newer one.
+   */
+  private synchronized void publishIfNewer(Packages newState) {
+    if (newState.znodeVersion >= pkgs.znodeVersion) {
+      pkgs = newState;
     }
   }
 

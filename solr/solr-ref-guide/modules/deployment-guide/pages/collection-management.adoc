@@ -2537,6 +2537,9 @@ This is particularly useful prior to reindexing or making config changes to a co
 Unlike backups, which copy collection data off-disk, snapshots themselves don't provide disaster recovery in case of disk or hardware failure.
 They provide less protection than backups, at a much cheaper cost.
 
+The v2 API requires a JSON request body (use `{}` for the defaults) and returns HTTP 404 if the collection does not exist.
+The v1 API returns HTTP 400 for a missing collection.
+
 === CREATESNAPSHOT Example
 
 *Input*
@@ -2571,6 +2574,27 @@ curl 'http://localhost:8983/api/collections/techproducts/snapshots/snapshot0' -H
 
 *Output*
 
+[tabs#createsnapshot-response]
+======
+V1 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 214
+  },
+  "requestid": "someAsyncId",
+  "snapshot": "snapshot0"
+}
+----
+====
+
+V2 API::
++
+====
 [source,json]
 ----
 {
@@ -2584,6 +2608,8 @@ curl 'http://localhost:8983/api/collections/techproducts/snapshots/snapshot0' -H
   "followAliases": true
 }
 ----
+====
+======
 
 === CREATESNAPSHOT Parameters
 
@@ -2627,6 +2653,7 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 == LISTSNAPSHOTS: List all snapshots for a collection
 
 Lists all the snapshots taken of a collection.
+The v2 API returns HTTP 404 if the collection does not exist; the v1 API returns HTTP 400.
 
 === LISTSNAPSHOTS Example
 
@@ -2641,7 +2668,7 @@ V1 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts
+http://localhost:8983/solr/admin/collections?action=LISTSNAPSHOTS&collection=techproducts&json.nl=map
 ----
 ====
 
@@ -2657,6 +2684,59 @@ curl 'http://localhost:8983/api/collections/techproducts/snapshots'
 
 *Output*
 
+The responses below show a snapshot containing one shard with one replica.
+The v1 request uses `json.nl=map` to render named lists as JSON objects.
+The v1 metadata contains a `replicas` map keyed by core name; v2 uses a `replicaSnapshots` array and a `shards` list.
+
+[tabs#listsnapshots-response]
+======
+V1 API::
++
+====
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "snapshots": {
+    "snapshot0": {
+      "name": "snapshot0",
+      "status": "Successful",
+      "creationDate": 1677985318116,
+      "replicas": {
+        "techproducts_shard1_replica_n6": {
+          "core": "techproducts_shard1_replica_n6",
+          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard1_replica_n6/data/index/",
+          "generation": 2,
+          "shard_id": "shard1",
+          "leader": true,
+          "files": [
+            "_0.si",
+            "_0.fdm",
+            "_0_Lucene90_0.dvd",
+            "segments_2",
+            "_0_Lucene90_0.doc",
+            "_0_Lucene90_0.tim",
+            "_0.fdx",
+            "_0.fdt",
+            "_0_Lucene90_0.dvm",
+            "_0_Lucene90_0.tip",
+            "_0_Lucene90_0.tmd",
+            "_0.fnm"
+          ]
+        }
+      }
+    }
+  }
+}
+----
+====
+
+V2 API::
++
+====
 [source,json]
 ----
 {
@@ -2690,58 +2770,17 @@ curl 'http://localhost:8983/api/collections/techproducts/snapshots'
             "_0_Lucene90_0.tmd",
             "_0.fnm"
           ]
-        },
-        {
-          "coreName": "techproducts_shard1_replica_n2",
-          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard1_replica_n2/data/index/",
-          "generationNumber": 2,
-          "leader": false,
-          "shardId": "shard1",
-          "files": [
-            "_0.si",
-            "_0.fdm",
-            "_0_Lucene90_0.dvd",
-            "segments_2",
-            "_0_Lucene90_0.doc",
-            "_0_Lucene90_0.tim",
-            "_0.fdx",
-            "_0.fdt",
-            "_0_Lucene90_0.dvm",
-            "_0_Lucene90_0.tip",
-            "_0_Lucene90_0.tmd",
-            "_0.fnm"
-          ]
-        },
-        {
-          "coreName": "techproducts_shard2_replica_n4",
-          "indexDirPath": "/path/to/solr/dir/node1/solr/techproducts_shard2_replica_n4/data/index/",
-          "generationNumber": 6,
-          "leader": true,
-          "shardId": "shard2",
-          "files": [
-            "segments_6"
-          ]
-        },
-        {
-          "coreName": "techproducts_shard2_replica_n1",
-          "indexDirPath": "/path/to/solr/dir/node2/solr/techproducts_shard2_replica_n1/data/index/",
-          "generationNumber": 6,
-          "leader": false,
-          "shardId": "shard2",
-          "files": [
-            "segments_6"
-          ]
         }
       ],
       "shards": [
-        "shard2",
         "shard1"
       ]
     }
   }
 }
-
 ----
+====
+======
 
 === LISTSNAPSHOTS Parameters
 
@@ -2758,6 +2797,9 @@ The name of the collection to create a snapshot for.
 == DELETESNAPSHOT: Delete a snapshot taken of a collection
 
 Deletes a snapshot taken of a specified collection.
+
+The v2 API returns HTTP 404 if the collection or snapshot does not exist.
+The v1 API returns HTTP 400 for a missing collection and treats deletion of a missing snapshot as a successful no-op.
 
 === DELETESNAPSHOT Example
 
@@ -2787,6 +2829,8 @@ curl -X DELETE 'http://localhost:8983/api/collections/techproducts/snapshots/sna
 ======
 
 *Output*
+
+The response fields are the same for v1 and v2.
 
 [source,json]
 ----

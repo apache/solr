@@ -62,17 +62,52 @@ public class SnapshotToolsTest extends SolrCloudTestCase {
 
   @Test
   public void testSnapshotLifecycle() throws Exception {
-    run(SnapshotCreateTool.class, "snapshot-create", "--snapshot-name", "snap1");
+    assertTrue(
+        run(SnapshotCreateTool.class, "snapshot-create", "--snapshot-name", "snap1")
+            .contains("Successfully created snapshot"));
 
     assertTrue(run(SnapshotListTool.class, "snapshot-list").contains("snap1"));
 
     String described =
         run(SnapshotDescribeTool.class, "snapshot-describe", "--snapshot-name", "snap1");
     assertTrue(described, described.contains("Name: snap1"));
+    assertTrue(described, described.contains("Status: Successful"));
+    assertTrue(described, described.contains("Total number of cores with snapshot: 1"));
+    assertTrue(described, described.contains("leader=true"));
 
     run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "snap1");
 
     assertFalse(run(SnapshotListTool.class, "snapshot-list").contains("snap1"));
+  }
+
+  @Test
+  public void testDeleteMissingSnapshot() throws Exception {
+    String output = run(SnapshotDeleteTool.class, "snapshot-delete", "--snapshot-name", "missing");
+    assertTrue(output, output.contains("Snapshot with name missing"));
+    assertTrue(output, output.contains("does not exist"));
+    assertTrue(output, output.contains("nothing to delete"));
+    assertFalse(output, output.contains("Failed to delete"));
+    assertFalse(output, output.contains("Successfully deleted"));
+  }
+
+  @Test
+  public void testDeleteSnapshotFromMissingCollectionFails() throws Exception {
+    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
+    assertEquals(
+        1,
+        runTool(
+            new String[] {
+              "snapshot-delete",
+              "-c",
+              "missing_collection",
+              "--snapshot-name",
+              "missing",
+              "--solr-url",
+              cluster.getJettySolrRunner(0).getBaseUrl().toString()
+            },
+            runtime,
+            SnapshotDeleteTool.class));
+    assertFalse(runtime.getOutput(), runtime.getOutput().contains("nothing to delete"));
   }
 
   // snapshot-list reports a failed request in its output and still exits 0, so check the output.
