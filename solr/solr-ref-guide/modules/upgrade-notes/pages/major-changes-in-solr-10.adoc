@@ -79,11 +79,25 @@ Javadocs published for earlier releases are unaffected, so existing links to tho
 
 Searching from any Javadoc page now covers the whole API rather than the one module.
 
+== Configuration Changes
+
+=== Language-Specific Fields Moved to `_multilingual`
+
+The shipped `_default` configset now contains general-purpose field types and dynamic fields, with generic stopword and synonym files.
+Language-specific text types, including `text_en` and its splitting variants, their dynamic fields, and language files have moved to the new `_multilingual` configset.
+The full distribution includes `_multilingual`; the slim distribution ships only `_default`.
+When creating a collection that needs types such as `text_en` or dynamic fields such as `*_txt_en` and `*_txt_fr`, select `_multilingual` explicitly, for example with `bin/solr create -c mycollection -d _multilingual`.
+The xref:indexing-guide:schema-designer.adoc[Schema Designer] can also add selected languages from `_multilingual` to a schema copied from `_default`.
+
+SolrCloud uploads both built-in configsets during initialization when they are available locally and absent from ZooKeeper.
+Existing configsets and indexed collections are not modified by this change.
+See xref:configuration-guide:config-sets.adoc[] for details.
+
 === Czech Field Type Naming
 
 The `sample_techproducts_configs` configset now uses `text_cs` instead of `text_cz` for Czech, matching the language code `cs`.
 Its stopword file is now `lang/stopwords_cs.txt` instead of `lang/stopwords_cz.txt`.
-Update references when adopting the new configset; existing schemas are not modified automatically.
+Update references when adopting the new configset; existing schemas are not modified automatically.  The `_multilingual` configset also uses `text_cs`.
 
 === V2 API
 
