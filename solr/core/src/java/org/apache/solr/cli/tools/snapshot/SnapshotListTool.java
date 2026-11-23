@@ -28,10 +28,7 @@ import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-list command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -106,20 +103,9 @@ public class SnapshotListTool extends ToolBase {
   }
 
   public void listSnapshots(SolrClient solrClient, String collectionName) {
-    CollectionAdminRequest.ListSnapshots listSnaps =
-        new CollectionAdminRequest.ListSnapshots(collectionName);
-    CollectionAdminResponse resp;
     try {
-      resp = listSnaps.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
-      }
-
-      NamedList<?> apiResult =
-          (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-      apiResult.forEach((name, value) -> echo(name));
-
+      var response = new CollectionSnapshotsApi.ListSnapshots(collectionName).process(solrClient);
+      response.snapshots.keySet().forEach(this::echo);
     } catch (Exception e) {
       echo(
           "Failed to list snapshots for collection "

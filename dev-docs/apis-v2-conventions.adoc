@@ -160,7 +160,7 @@ Don't settle for a bare `SolrJerseyResponse` if the underlying operation actuall
 
 When an API exposes both a "list all" endpoint and a "get one by name" endpoint for the same kind of resource, give each its own response type rather than reusing the list's shape for a single item:
 
-* `List<Resource>Response` - the collection endpoint's response. Its data is a map or list keyed/indexed across every matching resource (e.g. `ListAliasesResponse.aliases: Map<String, String>`).
+* `List<Resource>Response` - the collection endpoint's response. Its data is a map or list keyed/indexed across every matching resource (e.g. `ListAliasesResponse.aliases: Map<String, GetAliasByNameResponse>`).
 * `Get<Resource>Response` (or `Get<Resource>ByNameResponse`) - the single-resource endpoint's response. Its data is a flat object describing just that one resource, with no collection wrapper (e.g. `GetAliasByNameResponse.collections`, `GetAliasByNameResponse.properties`).
 
 Don't have the single-resource endpoint return the list type filtered down to one entry (e.g. a `Map<String, ...>` with one key) - that forces callers to re-extract by name something they already specified in the request, and conveys no information once only one key is possible.

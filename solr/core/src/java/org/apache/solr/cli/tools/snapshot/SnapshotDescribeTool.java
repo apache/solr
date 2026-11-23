@@ -16,11 +16,9 @@
  */
 package org.apache.solr.cli.tools.snapshot;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Date;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -34,12 +32,7 @@ import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.ToolBase;
 import org.apache.solr.cli.ToolRuntime;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-describe command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -140,55 +133,30 @@ public class SnapshotDescribeTool extends ToolBase {
 
   public void describeSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
     try {
-      Collection<CollectionSnapshotMetaData> snaps =
-          listCollectionSnapshots(solrClient, collectionName);
-      for (CollectionSnapshotMetaData m : snaps) {
-        if (snapshotName.equals(m.getName())) {
-          echo("Name: " + m.getName());
-          echo("Status: " + m.getStatus());
-          echo("Time of creation: " + dateFormat.format(m.getCreationDate()));
-          echo("Total number of cores with snapshot: " + m.getReplicaSnapshots().size());
-          echo("-----------------------------------");
-          for (CollectionSnapshotMetaData.CoreSnapshotMetaData n : m.getReplicaSnapshots()) {
-            String builder =
-                "Core [name="
-                    + n.getCoreName()
-                    + ", leader="
-                    + n.isLeader()
-                    + ", generation="
-                    + n.getGenerationNumber()
-                    + ", indexDirPath="
-                    + n.getIndexDirPath()
-                    + "]\n";
-            echo(builder);
-          }
+      var response = new CollectionSnapshotsApi.ListSnapshots(collectionName).process(solrClient);
+      var metadata = response.snapshots.get(snapshotName);
+      if (metadata != null) {
+        echo("Name: " + metadata.name);
+        echo("Status: " + metadata.status);
+        echo("Time of creation: " + dateFormat.format(new Date(metadata.creationDate)));
+        echo("Total number of cores with snapshot: " + metadata.replicaSnapshots.size());
+        echo("-----------------------------------");
+        for (var replica : metadata.replicaSnapshots) {
+          echo(
+              "Core [name="
+                  + replica.coreName
+                  + ", leader="
+                  + replica.leader
+                  + ", generation="
+                  + replica.generationNumber
+                  + ", indexDirPath="
+                  + replica.indexDirPath
+                  + "]\n");
         }
       }
     } catch (Exception e) {
       echo("Failed to fetch snapshot details due to following error : " + e.getLocalizedMessage());
     }
-  }
-
-  private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(
-      SolrClient solrClient, String collectionName) throws SolrServerException, IOException {
-    CollectionAdminRequest.ListSnapshots listSnapshots =
-        new CollectionAdminRequest.ListSnapshots(collectionName);
-    CollectionAdminResponse resp = listSnapshots.process(solrClient);
-
-    if (resp.getStatus() != 0) {
-      throw new IllegalStateException(
-          "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
-    }
-
-    NamedList<?> apiResult =
-        (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-
-    Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
-    for (int i = 0; i < apiResult.size(); i++) {
-      result.add(new CollectionSnapshotMetaData((NamedList<?>) apiResult.getVal(i)));
-    }
-
-    return result;
   }
 
   @Override
