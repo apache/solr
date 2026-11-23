@@ -24,9 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -318,6 +320,14 @@ public class PackageToolTest extends SolrCloudTestCase {
       for (String file : files) {
         assertTrue(cluster.getZkClient().exists("/packagestore" + file));
       }
+
+      var deleteManifest = new FileStoreApi.DeleteFile(version.manifest);
+      deleteManifest.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
+      var exc =
+          expectThrows(
+              RemoteSolrException.class, () -> deleteManifest.process(cluster.getSolrClient()));
+      assertEquals(400, exc.code());
+      assertTrue(cluster.getZkClient().exists("/packagestore" + version.manifest));
 
       run(
           new String[] {

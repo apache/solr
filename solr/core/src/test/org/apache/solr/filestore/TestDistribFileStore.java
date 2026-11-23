@@ -187,32 +187,38 @@ public class TestDistribFileStore extends SolrCloudTestCase {
           .getZkClient()
           .delete(DistribFileStore.ZK_PACKAGESTORE + "/package/mypkg/v1.0/runtimelibs.jar", -1);
       JettySolrRunner j = cluster.getRandomJetty(random());
-      String path =
-          j.getBaseURLV2() + "/cluster/filestore/files" + "/package/mypkg/v1.0/runtimelibs.jar";
-      var resp = j.getSolrClient().getHttpClient().newRequest(path).method("DELETE").send();
-      assertEquals(200, resp.getStatus());
+      SolrClient nodeClient = j.getSolrClient();
+      new FileStoreApi.DeleteFile("/package/mypkg/v1.0/runtimelibs.jar").process(nodeClient);
 
       expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
       checkAllNodesForFile(cluster, "/package/mypkg/v1.0/runtimelibs.jar", expected, false);
 
       final String filePath = "/package/mypkg/v1.0/runtimelibs_v2.jar";
-      final String fileUrl = j.getBaseURLV2() + "/cluster/filestore/files" + filePath;
       assertTrue(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + filePath));
 
-      resp =
-          j.getSolrClient()
-              .getHttpClient()
-              .newRequest(fileUrl + "?localDelete=true")
-              .method("DELETE")
-              .send();
-      assertEquals(400, resp.getStatus());
+      final var localDelete = new FileStoreApi.DeleteFile(filePath);
+      localDelete.setLocalDelete(Boolean.TRUE);
+      var exc = expectThrows(RemoteSolrException.class, () -> localDelete.process(nodeClient));
+      assertEquals(400, exc.code());
       assertTrue(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + filePath));
 
-      resp = j.getSolrClient().getHttpClient().newRequest(fileUrl).method("DELETE").send();
-      assertEquals(200, resp.getStatus());
+      new FileStoreApi.DeleteFile(filePath).process(nodeClient);
       assertFalse(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + filePath));
       expected = Collections.singletonMap(":files:" + filePath, null);
       checkAllNodesForFile(cluster, filePath, expected, false);
+
+      // A registered file that no live node holds can still be deleted, clearing its registration.
+      final String orphanPath = "/package/mypkg/v1.0/orphan.jar";
+      cluster.getZkClient().makePath(DistribFileStore.ZK_PACKAGESTORE + orphanPath, true);
+      new FileStoreApi.DeleteFile(orphanPath).process(nodeClient);
+      assertFalse(cluster.getZkClient().exists(DistribFileStore.ZK_PACKAGESTORE + orphanPath));
+
+      // With neither a registration nor a copy, the file does not exist.
+      exc =
+          expectThrows(
+              RemoteSolrException.class,
+              () -> new FileStoreApi.DeleteFile(orphanPath).process(nodeClient));
+      assertEquals(400, exc.code());
     } finally {
       cluster.shutdown();
     }

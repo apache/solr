@@ -406,7 +406,7 @@ public class PackageStore {
     }
     for (List<PkgVersion> vers : pkg.packages.values()) {
       for (PkgVersion ver : vers) {
-        if (ver.files.contains(path)) {
+        if (ver.files.contains(path) || path.equals(ver.manifest)) {
           return true;
         }
       }
