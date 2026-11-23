@@ -61,15 +61,12 @@ REM set ZK_HOST=
 REM Set to true if your ZK host has a chroot path, and you want to create it automatically.
 REM set ZK_CREATE_CHROOT=true
 
-REM Set the ZooKeeper client timeout (for SolrCloud mode)
+REM Set the ZooKeeper client timeout in milliseconds
 REM set ZK_CLIENT_TIMEOUT=30000
 
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
 REM set SOLR_HOST_ADVERTISE=192.168.1.1
-
-REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
-REM set SOLR_CLOUD_WAIT_FOR_ZK_SECONDS=30
 
 REM By default Solr will log a warning for cores that are not registered in Zookeeper at startup
 REM but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
@@ -97,6 +94,10 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
 REM Most properties have an environment variable equivalent.
 REM A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
 REM SOLR_CLUSTERING_ENABLED=true
+
+REM Location where the bin\solr script will save the files recording running instances
+REM If not set, the script will create them in %SOLR_TIP%\bin
+REM set SOLR_PID_DIR=
 
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml

@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.api.model.CollectionSnapshotMetadata;
+import org.apache.solr.client.api.model.CollectionSnapshotMetadata.ReplicaSnapshotMetadata;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -181,6 +183,49 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
           new CoreSnapshotMetaData(
               coreName, indexDirPath, generationNumber, shardId, leader, files));
     }
+  }
+
+  /** Build internal metadata from the API representation. */
+  public CollectionSnapshotMetaData(CollectionSnapshotMetadata metadata) {
+    this(
+        metadata.name,
+        SnapshotStatus.valueOf(metadata.status),
+        new Date(metadata.creationDate),
+        metadata.replicaSnapshots.stream()
+            .map(
+                replica ->
+                    new CoreSnapshotMetaData(
+                        replica.coreName,
+                        replica.indexDirPath,
+                        replica.generationNumber,
+                        replica.shardId,
+                        replica.leader,
+                        replica.files))
+            .toList());
+  }
+
+  /** Return the public API representation of this snapshot. */
+  public CollectionSnapshotMetadata toApiModel() {
+    var result = new CollectionSnapshotMetadata();
+    result.name = name;
+    result.status = status.toString();
+    result.creationDate = creationDate.getTime();
+    result.shards = List.copyOf(getShards());
+    result.replicaSnapshots =
+        replicaSnapshots.stream()
+            .map(
+                replica -> {
+                  var entry = new ReplicaSnapshotMetadata();
+                  entry.coreName = replica.getCoreName();
+                  entry.indexDirPath = replica.getIndexDirPath();
+                  entry.generationNumber = replica.getGenerationNumber();
+                  entry.shardId = replica.getShardId();
+                  entry.leader = replica.isLeader();
+                  entry.files = List.copyOf(replica.getFiles());
+                  return entry;
+                })
+            .toList();
+    return result;
   }
 
   public String getName() {

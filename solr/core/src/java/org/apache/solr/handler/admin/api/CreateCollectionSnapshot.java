@@ -59,6 +59,7 @@ public class CreateCollectionSnapshot extends AdminAPIBase
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
+    ensureRequiredRequestBodyProvided(requestBody);
     final String collectionName = resolveCollectionName(collName, requestBody.followAliases);
 
     final SolrZkClient client = coreContainer.getZkController().getZkClient();

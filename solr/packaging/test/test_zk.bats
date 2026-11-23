@@ -66,6 +66,13 @@ teardown() {
   assert_output --partial "aliases.json"
 }
 
+@test "unreachable ZooKeeper reports a connection timeout" {
+  run solr zk ls / -z 127.0.0.1:1
+  assert_failure
+  assert_output --partial "ZooKeeper did not respond within the connection timeout"
+  refute_output --partial "Could not complete ls operation"
+}
+
 @test "connecting to solr via various solr urls and zk hosts" {
   run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"

@@ -318,7 +318,8 @@ public class StatusTool extends ToolBase {
   }
 
   /**
-   * Wait for Solr to come online and return true if it does, false otherwise.
+   * Wait for Solr to come online and return true if it does, false otherwise. A node that rejects
+   * the request as unauthenticated or unauthorized counts as online.
    *
    * @return true if Solr comes online, false otherwise
    */
@@ -328,6 +329,11 @@ public class StatusTool extends ToolBase {
       return true;
     } catch (TimeoutException timeout) {
       return false;
+    } catch (Exception e) {
+      if (CLIUtils.exceptionIsAuthRelated(e)) {
+        return true;
+      }
+      throw e;
     }
   }
 
