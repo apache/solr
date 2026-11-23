@@ -104,6 +104,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @After
+  @SuppressWarnings("deprecation") // no replacement for SolrJettyTestRule.reset() yet
   public void cleanup() throws Exception {
     solrTestRule.reset();
   }

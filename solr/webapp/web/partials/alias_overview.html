@@ -28,7 +28,7 @@ limitations under the License.
 
           <dt><span>Collections:</span></dt>
           <dd>
-            <span ng-repeat="coll in (selectedCollection.collections | splitByComma)">
+            <span ng-repeat="coll in selectedCollection.collections">
               <a href="#~collections/{{coll}}">{{coll}}</a>{{$last ? '' : ', '}}
             </span>
           </dd>

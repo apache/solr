@@ -38,6 +38,19 @@ Replica state changes during the rolling restart are fine.
 
 Clusters running with the Overseer are not affected.
 
+== API Changes
+
+=== V2 alias and collection snapshot responses
+
+`GET /api/aliases` now returns an object for each alias, containing its `name`, a `collections` array, and a `properties` map.
+The separate top-level `properties` map has been removed from this v2 response.
+See xref:deployment-guide:alias-management.adoc#listaliases[LISTALIASES] for examples of both API versions.
+
+V2 collection snapshot creation responses now include `collection` and `followAliases` consistently in JSON, XML, and Javabin.
+The v2 snapshot APIs return HTTP 404 for missing collections, and v2 snapshot deletion also returns HTTP 404 for a missing snapshot.
+The v1 response formats and error codes are unchanged.
+See xref:deployment-guide:collection-management.adoc#createsnapshot[collection snapshots] for examples.
+
 == Removed Features
 
 === Overseer Roles API
