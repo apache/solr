@@ -90,7 +90,6 @@ public class SslTest extends SolrCatsTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18336")
   public void useDifferentHostnameWhenNotCheckingPeerName() {
     // Using a CN that is not localhost, as we will not be checking peer-name
     Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
