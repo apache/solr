@@ -8,14 +8,14 @@ rather than mounted directly into the Angular app: Scalar manages its own URL ha
 which conflicts with AngularJS's `ngRoute` (both rewrite `window.location.hash`), causing an
 infinite digest/navigation loop. A dedicated document/window avoids the conflict entirely.
 The project owns everything the explorer needs (`web/index.html`, `web/scalar-init.js`,
-the bundled-license files, and the Scalar bundle itself), and `:solr:webapp` mounts its
+and the Scalar bundle itself), and `:solr:webapp` mounts its
 output at `libs/scalar` in the WAR.
 `LoadAdminUiServlet` permits same-origin frames; the Scalar-specific headers in
 `solr/server/etc/jetty.xml` permit the explorer page to be framed by the Admin UI.
 
 == Usage
 
-Build and start a local Solr with `./gradlew dev` and `bin/solr start -c`.
+Start solr as usual.
 Open the *API Explorer* item in the Admin UI's left nav to browse endpoints and send requests.
 The page and its assets are served locally; API requests go directly to the same Solr origin.
 Executing a request can change the running instance, just as calling its API directly can.
@@ -34,22 +34,5 @@ The initializer lives in `web/scalar-init.js` as a
 separate script so it also works with a policy that disallows inline scripts.
 Default CDN fonts, the request proxy, AI chat, hosted-client links, developer tools, and telemetry are disabled.
 
-=== Reviewing bundled licenses
-
-As with the Admin UI's other JavaScript libraries, Scalar is covered by the root
-`LICENSE.txt` and `NOTICE.txt` rather than `solr/licenses`.
-Because the bundle compiles in many third-party packages, the full inventory (license texts,
-copyright notices, source URLs, and audit exceptions) is in `web/THIRD-PARTY-LICENSES.txt`
-and `web/THIRD-PARTY-NOTICES.txt`, which ship alongside `standalone.js`.
-
-When upgrading Scalar:
-
-. Extract `standalone.js` and `dist/browser/webpack-stats.json` from the same pinned archive.
-Use the exact versions in that report; a fresh npm installation can resolve newer transitive versions.
-. Read the package's npm build attestation to identify its source revision.
-Inspect that revision for copied icons, injected CSS, and generated helpers outside the module report.
-. Retrieve the bundled components' license and notice files from their exact published archives
-or source revisions, retaining copyright notices and recording any missing-license provenance.
-Update `THIRD-PARTY-LICENSES.txt` (including its version header and bundle checksum),
-`THIRD-PARTY-NOTICES.txt`, and the root LICENSE/NOTICE as needed.
-. Bump `scalar-api-reference`, run `./gradlew resolveAndLockAll --write-locks`, and rebuild the WAR.
+As with the Admin UI's other JavaScript libraries, Scalar's MIT license is recorded in the
+root `LICENSE.txt` and `NOTICE.txt` rather than in `solr/licenses`.
