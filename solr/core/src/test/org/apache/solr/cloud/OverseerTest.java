@@ -792,7 +792,18 @@ public class OverseerTest extends SolrTestCaseJ4 {
                     node,
                     NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
                     List.of("collection0"))));
+        // a later update to collection1 shows that the overseer is done with the DOWNNODE
+        mockController.publishState(
+            "collection1",
+            "core2",
+            "core_node2",
+            "shard1",
+            Replica.State.ACTIVE,
+            1,
+            false,
+            overseers.get(0));
         verifyReplicaStatus(reader, "collection0", "shard1", "core_node1", Replica.State.DOWN);
+        verifyReplicaStatus(reader, "collection1", "shard1", "core_node2", Replica.State.ACTIVE);
         verifyReplicaStatus(reader, "collection1", "shard1", "core_node1", Replica.State.ACTIVE);
 
         // a message without the list scans every collection

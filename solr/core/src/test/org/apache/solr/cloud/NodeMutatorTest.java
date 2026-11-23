@@ -21,6 +21,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4Test;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -31,6 +33,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.common.ZKConfig;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL // tests compare for http:
@@ -172,6 +175,31 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
     } finally {
       reader.close();
     }
+  }
+
+  @Test
+  public void downNodeMessageLeavesOutAListTooLongToSend() {
+    assertEquals(
+        List.of("collection1", "collection2"),
+        NodeMutator.collectionsForDownNodeMessage(List.of("collection1", "collection2")));
+    assertEquals(List.of(), NodeMutator.collectionsForDownNodeMessage(List.of()));
+
+    String longName = "c".repeat(1024);
+    List<String> tooLong =
+        IntStream.range(0, 600).mapToObj(i -> longName + i).collect(Collectors.toList());
+    assertNull(NodeMutator.collectionsForDownNodeMessage(tooLong));
+    assertEquals(
+        tooLong.subList(0, 400),
+        NodeMutator.collectionsForDownNodeMessage(tooLong.subList(0, 400)));
+
+    // the cap is half of jute.maxbuffer, whether that is raised or lowered
+    System.setProperty(ZKConfig.JUTE_MAXBUFFER, "0x200000");
+    assertEquals(tooLong, NodeMutator.collectionsForDownNodeMessage(tooLong));
+    System.setProperty(ZKConfig.JUTE_MAXBUFFER, "204800");
+    assertNull(NodeMutator.collectionsForDownNodeMessage(tooLong.subList(0, 400)));
+    assertEquals(
+        tooLong.subList(0, 90), NodeMutator.collectionsForDownNodeMessage(tooLong.subList(0, 90)));
+    System.clearProperty(ZKConfig.JUTE_MAXBUFFER);
   }
 
   private static int loads(ClusterState clusterState, String collection) {

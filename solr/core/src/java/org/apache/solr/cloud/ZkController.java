@@ -3099,6 +3099,8 @@ public class ZkController implements Closeable {
       distributedClusterStateUpdater.executeNodeDownStateUpdate(nodeName, zkStateReader);
     } else {
       try {
+        // the collections left for the overseer, which has nothing to do for PRS collections
+        List<String> collectionsForOverseer = new ArrayList<>();
         for (String collName : replicasPerCollectionOnNode.keySet()) {
           DocCollection coll;
           if (collName != null
@@ -3111,8 +3113,12 @@ public class ZkController implements Closeable {
                     PerReplicaStatesOps.fetch(
                         coll.getZNode(), zkClient, coll.getPerReplicaStates()))
                 .persist(coll.getZNode(), zkClient);
+          } else {
+            collectionsForOverseer.add(collName);
           }
         }
+        List<String> listedCollections =
+            NodeMutator.collectionsForDownNodeMessage(collectionsForOverseer);
 
         // We always send a down node event to overseer to be safe, but overseer will not need to do
         // anything for PRS collections
@@ -3123,9 +3129,7 @@ public class ZkController implements Closeable {
                     m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
                         .put(ZkStateReader.NODE_NAME_PROP, nodeName)
                         // lets the overseer load only these collections
-                        .put(
-                            NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
-                            List.copyOf(replicasPerCollectionOnNode.keySet())));
+                        .putIfNotNull(NodeMutator.DOWN_NODE_COLLECTIONS_PROP, listedCollections));
       } catch (IllegalStateException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");
