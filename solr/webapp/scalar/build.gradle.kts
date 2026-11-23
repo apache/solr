@@ -15,38 +15,67 @@
  * limitations under the License.
  */
 
-import com.github.gradle.node.npm.task.NpmTask
-
-// Downloads the pre-built @scalar/api-reference browser bundle via npm, for :solr:webapp to
-// include in the war. Keeps the large generated bundle out of source control, unlike a
-// hand-vendored copy.
+// The Admin UI's API Explorer: a standalone page that renders the generated OpenAPI spec with
+// Scalar. It can't be an ordinary Admin UI screen because Scalar manages its own URL hash for
+// deep-linking, which conflicts with AngularJS's ngRoute (both rewrite window.location.hash) and
+// causes an infinite digest/navigation loop. The Admin UI instead loads this page in an iframe,
+// and :solr:webapp mounts this project's output at libs/scalar in the war.
 
 plugins {
   id("base")
-  alias(libs.plugins.nodegradle.node)
 }
 
-description = "Downloads the Scalar API Reference browser bundle for the Admin UI's API Explorer"
+description = "The Admin UI's API Explorer, a standalone Scalar page loaded in an iframe"
 
-val scalarBundleDir = layout.buildDirectory.dir("scalarBundle").get().asFile
+// Scalar's prebuilt browser bundle is published only to npm. Fetch the package archive directly
+// (from npm's registry, or the mirror the node-based builds use) rather than running npm.
+val propertyOrEnvOrDefault: groovy.lang.Closure<*> by extra
+val npmRegistry = propertyOrEnvOrDefault.call("solr.npm.registry", "SOLR_NPM_REGISTRY", "")
+  .toString()
+  .ifEmpty { "https://registry.npmjs.org" }
+
+repositories {
+  exclusiveContent {
+    forRepository {
+      ivy {
+        name = "scalarNpm"
+        url = uri(npmRegistry)
+        patternLayout {
+          artifact("[organisation]/[module]/-/[module]-[revision].[ext]")
+        }
+        metadataSources { artifact() }
+      }
+    }
+    filter { includeModule("@scalar", "api-reference") }
+  }
+}
+
+val scalarArchive = configurations.create("scalarArchive") {
+  isTransitive = false
+}
+
+dependencies {
+  scalarArchive(libs.scalar.api.reference) {
+    artifact {
+      type = "tgz"
+      extension = "tgz"
+    }
+  }
+}
+
+val scalarBundleDir = layout.buildDirectory.dir("scalarBundle")
 
 val scalarBundle = configurations.create("scalarBundle") {
   isCanBeConsumed = true
   isCanBeResolved = false
 }
 
-val downloadScalarApiReference = tasks.register<NpmTask>("downloadScalarApiReference") {
-  args.set(listOf("install", "@scalar/api-reference@${libs.versions.scalar.api.reference.get()}"))
-
-  inputs.property("scalar-api-reference version", libs.versions.scalar.api.reference.get())
-  outputs.dir(project.extra["nodeProjectDir"].toString() + "/node_modules/@scalar/api-reference")
-}
-
-val copyScalarBundle = tasks.register<Sync>("copyScalarBundle") {
-  dependsOn(downloadScalarApiReference)
-
-  from(project.extra["nodeProjectDir"].toString() + "/node_modules/@scalar/api-reference/dist/browser") {
-    include("standalone.js")
+val assembleScalarBundle = tasks.register<Sync>("assembleScalarBundle") {
+  from("web")
+  from(provider { tarTree(resources.gzip(scalarArchive.singleFile)) }) {
+    include("package/dist/browser/standalone.js")
+    eachFile { path = name }
+    includeEmptyDirs = false
   }
 
   into(scalarBundleDir)
@@ -54,6 +83,6 @@ val copyScalarBundle = tasks.register<Sync>("copyScalarBundle") {
 
 artifacts {
   add("scalarBundle", scalarBundleDir) {
-    builtBy(copyScalarBundle)
+    builtBy(assembleScalarBundle)
   }
 }

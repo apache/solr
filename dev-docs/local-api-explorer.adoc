@@ -3,10 +3,15 @@
 Solr's v2 (JAX-RS) API is described by an OpenAPI spec generated at build time
 from the annotated interfaces in `solr/api/src/java/.../client/api/endpoint`.
 The API Explorer is bundled in the Admin UI and renders the generated spec using Scalar.
-It's loaded in an iframe from `solr/webapp/web/libs/scalar/index.html` rather than mounted
-directly into the Angular app: Scalar manages its own URL hash for deep-linking to operations,
+It's a standalone page in its own project, `solr/webapp/scalar`, loaded in an iframe
+rather than mounted directly into the Angular app: Scalar manages its own URL hash for deep-linking to operations,
 which conflicts with AngularJS's `ngRoute` (both rewrite `window.location.hash`), causing an
 infinite digest/navigation loop. A dedicated document/window avoids the conflict entirely.
+The project owns everything the explorer needs (`web/index.html`, `web/scalar-init.js`,
+the bundled-license files, and the Scalar bundle itself), and `:solr:webapp` mounts its
+output at `libs/scalar` in the WAR.
+`LoadAdminUiServlet` permits same-origin frames; the Scalar-specific headers in
+`solr/server/etc/jetty.xml` permit the explorer page to be framed by the Admin UI.
 
 == Usage
 
@@ -19,11 +24,32 @@ Rebuild the webapp after changing API annotations to refresh the explorer's spec
 
 == Maintaining Scalar
 
-`solr/webapp/scalar` downloads the `@scalar/api-reference` npm package at build time and
-copies its `dist/browser/standalone.js` into the webapp's war, so the bundle is never
-checked into source control. Its version is recorded as `scalar-api-reference` in
-`gradle/libs.versions.toml`; bump that version to upgrade, and review the new version's
-license and bundled dependencies. The MIT license text is recorded in the root `NOTICE.txt`.
-The initializer lives in `solr/webapp/web/libs/scalar/scalar-init.js` as a
+The build downloads the pinned `@scalar/api-reference` npm archive directly
+(not through npm) and copies its `dist/browser/standalone.js` next to the page.
+The version is recorded as `scalar-api-reference` in `gradle/libs.versions.toml`.
+The archive comes from npm's registry, or from a mirror set with `solr.npm.registry` /
+`SOLR_NPM_REGISTRY` (the same override the node-based builds use); once cached, `--offline` works.
+
+The initializer lives in `web/scalar-init.js` as a
 separate script so it also works with a policy that disallows inline scripts.
 Default CDN fonts, the request proxy, AI chat, hosted-client links, developer tools, and telemetry are disabled.
+
+=== Reviewing bundled licenses
+
+As with the Admin UI's other JavaScript libraries, Scalar is covered by the root
+`LICENSE.txt` and `NOTICE.txt` rather than `solr/licenses`.
+Because the bundle compiles in many third-party packages, the full inventory (license texts,
+copyright notices, source URLs, and audit exceptions) is in `web/THIRD-PARTY-LICENSES.txt`
+and `web/THIRD-PARTY-NOTICES.txt`, which ship alongside `standalone.js`.
+
+When upgrading Scalar:
+
+. Extract `standalone.js` and `dist/browser/webpack-stats.json` from the same pinned archive.
+Use the exact versions in that report; a fresh npm installation can resolve newer transitive versions.
+. Read the package's npm build attestation to identify its source revision.
+Inspect that revision for copied icons, injected CSS, and generated helpers outside the module report.
+. Retrieve the bundled components' license and notice files from their exact published archives
+or source revisions, retaining copyright notices and recording any missing-license provenance.
+Update `THIRD-PARTY-LICENSES.txt` (including its version header and bundle checksum),
+`THIRD-PARTY-NOTICES.txt`, and the root LICENSE/NOTICE as needed.
+. Bump `scalar-api-reference`, run `./gradlew resolveAndLockAll --write-locks`, and rebuild the WAR.

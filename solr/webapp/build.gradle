@@ -57,7 +57,7 @@ dependencies {
   uiBundle files(layout.buildDirectory.dir("generated/ui-resources")) { builtBy tasks.named('prepareUiResources') }
   // Supplies the generated specification to the API Explorer.
   openapiSpec project(path: ":solr:api", configuration: "openapiSpec")
-  // Supplies the Scalar browser bundle that renders the API Explorer.
+  // Supplies the API Explorer, a standalone Scalar page the Admin UI loads in an iframe.
   scalarBundle project(path: ":solr:webapp:scalar", configuration: "scalarBundle")
 
   // Browser-based tests of the AngularJS Admin UI (see src/test)
@@ -115,16 +115,16 @@ tasks.withType(Test).configureEach {
         'excludes the js-client bundle the Admin UI tests need.')
   }
 
-  // The API Explorer's iframe page loads the Scalar bundle and fetches the OpenAPI spec;
-  // both are build-time-generated files the war ships, and like the js-client bundle above,
-  // neither exists in the source tree these tests serve.
+  // The API Explorer (its own project) and the OpenAPI spec it fetches are built separately
+  // and mounted into the war; like the js-client bundle above, neither exists in the source
+  // tree these tests serve.
   if (seleniumEnabled) {
     def scalarBundle = configurations.scalarBundle
     def openapiSpec = configurations.openapiSpec
     inputs.files(scalarBundle).withPropertyName('scalarBundle')
     inputs.files(openapiSpec).withPropertyName('openapiSpec')
     doFirst {
-      systemProperty 'tests.ui.scalar.bundle', new File(scalarBundle.singleFile, 'standalone.js')
+      systemProperty 'tests.ui.scalar.bundle', scalarBundle.singleFile
       systemProperty 'tests.ui.scalar.spec', openapiSpec.singleFile
     }
   }
@@ -148,7 +148,7 @@ war {
     rename { "spec.json" }
   })
 
-  // Supplies the Scalar browser bundle that renders the API Explorer.
+  // Supplies the API Explorer, a standalone Scalar page the Admin UI loads in an iframe.
   from(configurations.scalarBundle, {
     into "libs/scalar"
   })

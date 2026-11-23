@@ -161,16 +161,22 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   }
 
   /**
-   * Serves the Scalar browser bundle the API Explorer page loads (in an iframe, isolated from the
-   * Angular app - see {@code solr/webapp/web/libs/scalar/index.html}): built by {@code
-   * :solr:webapp:scalar} and its location handed to the test JVM in {@code tests.ui.scalar.bundle};
-   * it only exists inside the built webapp, not in the source tree tests serve from.
+   * Serves the API Explorer, a standalone Scalar page the Admin UI loads in an iframe (see {@code
+   * solr/webapp/scalar}): assembled by {@code :solr:webapp:scalar} and its directory handed to the
+   * test JVM in {@code tests.ui.scalar.bundle}; it only exists inside the built webapp, not in the
+   * source tree tests serve from.
    */
   public static class ScalarBundleServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-      resp.setContentType("text/javascript");
-      Files.copy(scalarBundlePath(), resp.getOutputStream());
+      Path dir = scalarBundlePath();
+      Path file = dir.resolve(req.getPathInfo().substring(1)).normalize();
+      if (!file.startsWith(dir) || !Files.isRegularFile(file)) {
+        resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+        return;
+      }
+      resp.setContentType(getServletContext().getMimeType(file.getFileName().toString()));
+      Files.copy(file, resp.getOutputStream());
     }
   }
 
@@ -187,9 +193,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   }
 
   /**
-   * The generated Scalar bundle: handed to us by the build in {@code tests.ui.scalar.bundle}, with
-   * the scalar build's output location as a fallback so tests can also run from an IDE (after a
-   * Gradle build has produced the bundle). Null when unavailable.
+   * The assembled API Explorer directory: handed to us by the build in {@code
+   * tests.ui.scalar.bundle}, with the scalar build's output location as a fallback so tests can
+   * also run from an IDE (after a Gradle build has produced it). Null when unavailable.
    */
   private static Path scalarBundlePath() {
     String path = EnvUtils.getProperty("tests.ui.scalar.bundle");
@@ -199,8 +205,8 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     Path bundle =
         path != null
             ? Path.of(path)
-            : ExternalPaths.SOURCE_HOME.resolve("webapp/scalar/build/scalarBundle/standalone.js");
-    return Files.isReadable(bundle) ? bundle : null;
+            : ExternalPaths.SOURCE_HOME.resolve("webapp/scalar/build/scalarBundle");
+    return Files.isReadable(bundle.resolve("standalone.js")) ? bundle : null;
   }
 
   /** The generated OpenAPI spec: handed to us by the build in {@code tests.ui.scalar.spec}. */
@@ -302,9 +308,9 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
   protected static void configureJettyForUi(JettyConfig.Builder jetty) {
     jetty
         .enableAdminUi(true)
-        // exact-path mapping takes precedence over the static /libs/* servlet
+        // exact and longer path mappings take precedence over the static /libs/* servlet
         .withServlet(new ServletHolder(new JsClientServlet()), "/libs/solr/index.js")
-        .withServlet(new ServletHolder(new ScalarBundleServlet()), "/libs/scalar/standalone.js");
+        .withServlet(new ServletHolder(new ScalarBundleServlet()), "/libs/scalar/*");
     if (scalarSpecPath() != null) {
       jetty.withServlet(new ServletHolder(new ScalarSpecServlet()), "/libs/scalar/spec.json");
     }

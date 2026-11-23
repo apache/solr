@@ -451,6 +451,7 @@ picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "pico
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
+scalar-api-reference = { module = "@scalar:api-reference", version.ref = "scalar-api-reference" }
 selenium-chromedriver = { module = "org.seleniumhq.selenium:selenium-chrome-driver", version.ref = "selenium" }
 semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
