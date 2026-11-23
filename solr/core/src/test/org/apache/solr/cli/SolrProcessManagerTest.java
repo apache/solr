@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
@@ -38,6 +39,12 @@ import org.slf4j.LoggerFactory;
 
 public class SolrProcessManagerTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Restricts discovery to this class's own mock processes, which is what the marker is for. Unique
+   * per run so a developer's own Solr, or another suite on the same machine, is not discovered.
+   */
+  private static final String SCAN_MARKER = "SolrProcessManagerTest-" + UUID.randomUUID();
 
   private static SolrProcessManager solrProcessManager;
   private static Pair<Integer, Process> processHttp;
@@ -52,7 +59,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     processHttps = createProcess(findAvailablePort(), true);
     long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
-    SolrProcessManager.enableTestingMode = true;
+    System.setProperty(SolrProcessManager.PROCESS_SCAN_MARKER, SCAN_MARKER);
     System.setProperty("solr.port.listen", Integer.toString(processHttp.getKey()));
     Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
@@ -68,7 +75,6 @@ public class SolrProcessManagerTest extends SolrTestCase {
   public static void afterClass() throws Exception {
     processHttp.getValue().destroyForcibly();
     processHttps.getValue().destroyForcibly();
-    SolrProcessManager.enableTestingMode = false;
   }
 
   private static int findAvailablePort() throws IOException {
@@ -92,7 +98,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
             System.getProperty("java.home") + "/bin/java",
             "-Dsolr.port.listen=" + port,
             "-DisHttps=" + https,
-            "-DmockSolr=true",
+            "-D" + SolrProcessManager.PROCESS_SCAN_MARKER + "=" + SCAN_MARKER,
             "-cp",
             classPath,
             "org.apache.solr.cli.SolrProcessManagerTest$MockSolrProcess",

@@ -16,12 +16,14 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.common.SolrException.ErrorCode.NOT_FOUND;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
+import org.apache.solr.common.SolrException;
 
 /** Supports snapshot-delete command in the bin/solr script. */
 @SuppressWarnings("UnnecessarilyFullyQualified")
@@ -118,15 +120,10 @@ public class SnapshotDeleteTool extends ToolBase {
   }
 
   public void deleteSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
-    CollectionAdminRequest.DeleteSnapshot deleteSnapshot =
-        new CollectionAdminRequest.DeleteSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
+    var deleteSnapshot =
+        new CollectionSnapshotsApi.DeleteCollectionSnapshot(collectionName, snapshotName);
     try {
-      resp = deleteSnapshot.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The DELETESNAPSHOT request failed. The status code is " + resp.getStatus());
-      }
+      deleteSnapshot.process(solrClient);
       echo(
           "Successfully deleted snapshot with name "
               + snapshotName
@@ -134,13 +131,39 @@ public class SnapshotDeleteTool extends ToolBase {
               + collectionName);
 
     } catch (Exception e) {
-      echo(
+      if (isMissingSnapshot(solrClient, collectionName, snapshotName, e)) {
+        echo(
+            "Snapshot with name "
+                + snapshotName
+                + " does not exist for collection "
+                + collectionName
+                + "; nothing to delete.");
+        return;
+      }
+      throw new IllegalStateException(
           "Failed to delete a snapshot with name "
               + snapshotName
               + " for collection "
               + collectionName
               + " due to following error : "
-              + e.getLocalizedMessage());
+              + e.getLocalizedMessage(),
+          e);
+    }
+  }
+
+  private static boolean isMissingSnapshot(
+      SolrClient solrClient, String collectionName, String snapshotName, Exception failure) {
+    if (!(failure instanceof SolrException error) || error.code() != NOT_FOUND.code) {
+      return false;
+    }
+    try {
+      return !new CollectionSnapshotsApi.ListSnapshots(collectionName)
+          .process(solrClient)
+          .snapshots
+          .containsKey(snapshotName);
+    } catch (Exception lookupFailure) {
+      failure.addSuppressed(lookupFailure);
+      return false;
     }
   }
 

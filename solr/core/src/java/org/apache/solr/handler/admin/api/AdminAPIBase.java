@@ -106,7 +106,7 @@ public abstract class AdminAPIBase extends JerseyResource {
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
     if (!clusterState.hasCollection(collectionName)) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
+          SolrException.ErrorCode.NOT_FOUND,
           "Collection '" + collectionName + "' does not exist, no action taken.");
     }
 
