@@ -32,10 +32,12 @@ import org.openqa.selenium.WebElement;
 public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
   private static final String COLLECTION = "collscreen";
+  private static final String ALIAS_COLLECTION = "collscreen_alias_target";
 
   @BeforeClass
   public static void setupCollection() throws Exception {
     createFixtureCollection(COLLECTION, 1, 1);
+    createFixtureCollection(ALIAS_COLLECTION, 1, 1);
   }
 
   @Test
@@ -127,6 +129,52 @@ public class AdminUiCollectionsScreenTest extends AdminUiTestBase {
 
     waitUntil("alias " + alias + " should be gone", () -> !listAliases().containsKey(alias));
     assertNoSevereConsoleErrors();
+  }
+
+  @Test
+  public void testAliasCollectionsAndPropertiesDisplay() throws Exception {
+    String alias = "uimulticollectionalias";
+    CollectionAdminRequest.createAlias(alias, COLLECTION + "," + ALIAS_COLLECTION)
+        .process(cluster.getSolrClient());
+    try {
+      CollectionAdminRequest.setAliasProperty(alias)
+          .addProperty("description", "Multiple collection alias")
+          .process(cluster.getSolrClient());
+      CollectionAdminResponse response =
+          new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient());
+      List<String> collections = List.of(response.getAliases().get(alias).split(","));
+      String description = response.getAliasProperties().get(alias).get("description");
+
+      openPage(alias + "/alias-overview", By.id("dashboard"));
+      waitFor(By.cssSelector("#collection-menu .query a[href='#/" + alias + "/query']"));
+      for (String page : List.of("analysis", "documents", "paramsets", "files", "schema")) {
+        assertFalse(
+            page + " should be hidden for an alias with multiple collections",
+            driver.findElement(By.cssSelector("#collection-menu ." + page)).isDisplayed());
+      }
+
+      openPage("~collections/alias_" + alias, By.id("collections"));
+      waitForTextContains(By.cssSelector("#alias-data h2"), alias);
+      By collectionLinks = By.cssSelector("#alias-data dd a");
+      waitUntil(
+          "each aliased collection should have its own link",
+          () -> driver.findElements(collectionLinks).size() == collections.size());
+      List<WebElement> links = driver.findElements(collectionLinks);
+      for (int i = 0; i < collections.size(); i++) {
+        assertEquals(collections.get(i), links.get(i).getText());
+        assertTrue(
+            links.get(i).getAttribute("href").endsWith("#~collections/" + collections.get(i)));
+      }
+      waitForTextContains(
+          By.xpath("//div[@id='alias-data']//dt[span='description']/following-sibling::dd[1]"),
+          description);
+
+      click(collectionLinks);
+      waitForTextContains(By.cssSelector("#collection-data h2"), collections.getFirst());
+      assertNoSevereConsoleErrors();
+    } finally {
+      CollectionAdminRequest.deleteAlias(alias).process(cluster.getSolrClient());
+    }
   }
 
   @Test
