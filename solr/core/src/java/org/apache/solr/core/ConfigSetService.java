@@ -79,6 +79,7 @@ public abstract class ConfigSetService {
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
     ConfigSetService configSetService = instantiate(coreContainer);
+    configSetService.zkController = coreContainer.getZkController();
     // bootstrap conf in SolrCloud mode
     if (coreContainer.getZkController() != null) {
       configSetService.bootstrapConfigSet(coreContainer);
@@ -113,8 +114,17 @@ public abstract class ConfigSetService {
     }
   }
 
-  private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf and solr.configset.bootstrap.confdir if provided via system property
+  /**
+   * Called once at startup in SolrCloud mode. Does nothing by default; an implementation may call
+   * {@link #bootstrapDefaultConfigSets()}.
+   */
+  protected void bootstrapConfigSet(CoreContainer coreContainer) {}
+
+  /**
+   * Uploads the {@code _default} ConfigSet if absent, and the one at {@code
+   * solr.configset.bootstrap.confdir} if that system property is set.
+   */
+  protected final void bootstrapDefaultConfigSets() {
     try {
       // _default conf
       bootstrapDefaultConf();
@@ -226,6 +236,7 @@ public abstract class ConfigSetService {
    * @return a ConfigSet
    */
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
+    resolveCloudConfigSetName(dcore);
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
@@ -253,7 +264,21 @@ public abstract class ConfigSetService {
     }
   }
 
+  /**
+   * For a SolrCloud core lacking a configSet name, sets it to its collection's configName. Not
+   * persisted; re-resolved on each load (e.g. reload).
+   */
+  private void resolveCloudConfigSetName(CoreDescriptor cd) {
+    if (cd.getConfigSet() == null && cd.getCloudDescriptor() != null && zkController != null) {
+      cd.setConfigSet(
+          zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName());
+    }
+  }
+
   protected final SolrResourceLoader parentLoader;
+
+  /** Set by {@link #createConfigSetService(CoreContainer)}; null when not in SolrCloud mode. */
+  private ZkController zkController;
 
   /** Optional cache of schemas, key'ed by a bunch of concatenated things */
   private final Cache<String, IndexSchema> schemaCache;

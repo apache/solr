@@ -1,0 +1,10 @@
+title: >
+  SolrCloud now supports FileSystemConfigSetService (configSetService in solr.xml), loading the ConfigSet
+  named by the collection's configName from the local file system.  The Admin UI's "Files" view works with it too.
+  Only ZkConfigSetService bootstraps the _default ConfigSet now.
+type: added
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18685
+    url: https://issues.apache.org/jira/browse/SOLR-18685
