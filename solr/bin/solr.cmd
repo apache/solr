@@ -1179,27 +1179,27 @@ IF "%FG%"=="1" (
     -Dsolr.port.listen=%SOLR_PORT_LISTEN% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
+  set "SOLR_STATE_FILE=!SOLR_LOGS_DIR!\solr-%SOLR_PORT_LISTEN%.state"
+  del "!SOLR_STATE_FILE!" 2>nul
   START /B "Solr-%SOLR_PORT_LISTEN%" /D "%SOLR_SERVER_DIR%" ^
     "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.install.symDir="%SOLR_TIP%" ^
     -Dsolr.port.listen=%SOLR_PORT_LISTEN% -Djetty.home="%SOLR_SERVER_DIR%" ^
-    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT_LISTEN%-console.log"
+    -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% --module=state "jetty.state=!SOLR_STATE_FILE!" "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT_LISTEN%-console.log"
   echo %SOLR_PORT_LISTEN%>"%SOLR_PID_DIR%"\solr-%SOLR_PORT_LISTEN%.port
 
   IF "!SOLR_START_WAIT!"=="" (
     set SOLR_START_WAIT=180
   )
-  REM now wait to see Solr come online ...
-  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
-    -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-    -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI status --max-wait-secs !SOLR_START_WAIT!
+  echo Waiting up to !SOLR_START_WAIT! seconds to see Solr running on port %SOLR_PORT_LISTEN%
+  CALL :wait_for_solr_ready
   IF NOT "!ERRORLEVEL!"=="0" (
-      set "SCRIPT_ERROR=Solr did not start or was not reachable. Check the logs for errors."
+      set "SCRIPT_ERROR=Solr did not start. Check the logs for errors."
       goto err
   )
+  echo Started Solr server on port %SOLR_PORT_LISTEN%. Happy searching^^!
 )
 
 goto done
@@ -1325,6 +1325,17 @@ GOTO :eof
       )
   )
 GOTO :eof
+
+:wait_for_solr_ready
+  REM Wait for Jetty to report STARTED in the state file it writes for background starts
+  set ELAPSED=0
+  :isstarted
+  findstr /b STARTED "%SOLR_STATE_FILE%" >nul 2>nul && exit /b 0
+  findstr /b FAILED "%SOLR_STATE_FILE%" >nul 2>nul && exit /b 1
+  ping 127.0.0.1 -n 2 > NUL
+  set /A ELAPSED=ELAPSED+1
+  IF %ELAPSED% LSS %SOLR_START_WAIT% goto isstarted
+exit /b 1
 
 :done
 ENDLOCAL
