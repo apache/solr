@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
@@ -72,33 +73,33 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
     assertEquals(INITIAL_DOCS, countDocs());
   }
 
-    @Test
-    public void testRestoreByNameFromExplicitLocation() throws Exception {
-      final String backupName = "explicitLocation";
-      final Path location = allowedTempDir();
-      resetIndex(INITIAL_DOCS);
-      createBackup(backupName, location);
-      addDocs(INITIAL_DOCS, EXTRA_DOCS);
+  @Test
+  public void testRestoreByNameFromExplicitLocation() throws Exception {
+    final String backupName = "explicitLocation";
+    final Path location = allowedTempDir();
+    resetIndex(INITIAL_DOCS);
+    createBackup(backupName, location);
+    addDocs(INITIAL_DOCS, EXTRA_DOCS);
 
-      var request = new ReplicationApi.RestoreIndex(CORE_NAME);
-      request.setName(backupName);
-      request.setLocation(location.toString());
-      assertNull(request.process(client()).error);
+    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
+    request.setName(backupName);
+    request.setLocation(location.toString());
+    assertNull(request.process(client()).error);
 
-      waitForRestoreSuccess();
-      assertEquals(INITIAL_DOCS, countDocs());
-    }
+    waitForRestoreSuccess();
+    assertEquals(INITIAL_DOCS, countDocs());
+  }
 
-    @Test
-    public void testRestoreOfUnknownLocationIsRejected() {
-      var request = new ReplicationApi.RestoreIndex(CORE_NAME);
-      request.setName("doesNotExist");
-      request.setLocation(createTempDir().toString());
-      final RemoteSolrException ex =
-          expectThrows(RemoteSolrException.class, () -> request.process(client()));
-      // Not under the allowed paths
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    }
+  @Test
+  public void testRestoreOfUnknownLocationIsRejected() {
+    var request = new ReplicationApi.RestoreIndex(CORE_NAME);
+    request.setName("doesNotExist");
+    request.setLocation(createTempDir().toString());
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> request.process(client()));
+    // Not under the allowed paths
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+  }
 
   @Test
   public void testDeleteBackupFromDefaultLocation() throws Exception {
@@ -118,7 +119,7 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
     final Path location = allowedTempDir();
     resetIndex(INITIAL_DOCS);
     createBackup(backupName, location);
-    assertTrue(location.resolve("snapshot." + backupName).toFile().isDirectory());
+    assertTrue(Files.isDirectory(location.resolve("snapshot." + backupName)));
 
     var request = new ReplicationBackupsApi.DeleteBackup(CORE_NAME, backupName);
     request.setLocation(location.toString());
@@ -127,7 +128,7 @@ public class RestoreAndDeleteBackupAPITest extends SolrTestCase {
     final TimeOut timeOut = new TimeOut(WAIT_SECONDS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeOut.waitFor(
         "backup directory was not deleted",
-        () -> !location.resolve("snapshot." + backupName).toFile().exists());
+        () -> !Files.exists(location.resolve("snapshot." + backupName)));
   }
 
   @Test
