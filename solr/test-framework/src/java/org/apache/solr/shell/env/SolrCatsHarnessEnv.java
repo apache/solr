@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.solr.cats.env.CatsHarnessEnv;
 import org.apache.solr.cats.env.PortBlock;
 import org.apache.solr.cats.exec.CatsFiles;
-import org.apache.solr.cli.SolrProcessManager;
+import org.apache.solr.cli.process.SolrProcessManager;
 import org.apache.solr.shell.exec.SolrProgram;
 
 /**
