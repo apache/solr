@@ -56,6 +56,7 @@ import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -69,6 +70,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.ClusterSingletons;
 import org.apache.solr.core.CoreContainer;
@@ -736,6 +738,71 @@ public class OverseerTest extends SolrTestCaseJ4 {
         for (int i = 0; i < 5; i++) {
           verifyReplicaStatus(reader, "collection" + i, "shard1", "core_node1", Replica.State.DOWN);
         }
+      }
+    } finally {
+      if (mockController != null) {
+        mockController.close();
+      }
+      close(overseerClient);
+    }
+  }
+
+  @Test
+  @SuppressWarnings({"try"})
+  public void testDownNodeReadsOnlyCollectionsListedInMessage() throws Exception {
+    MockZKController mockController = null;
+    SolrZkClient overseerClient = null;
+    try {
+      ZkController.createClusterZkNodes(zkClient);
+      new ClusterProperties(zkClient)
+          .setClusterProperty(ZkStateReader.USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE, "true");
+      overseerClient = electNewOverseer(server.getZkAddress());
+
+      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
+        reader.createClusterStateWatchersAndUpdate();
+        String node = "127.0.0.1:8983_solr";
+        mockController = new MockZKController(server.getZkAddress(), node, overseers);
+
+        try (ZkController zkController =
+            createMockZkController(server.getZkAddress(), zkClient, reader)) {
+          for (int i = 0; i < 2; i++) {
+            mockController.createCollection("collection" + i, 1);
+            assertNotNull(
+                mockController.publishState(
+                    "collection" + i,
+                    "core1",
+                    "core_node1",
+                    "shard1",
+                    Replica.State.ACTIVE,
+                    1,
+                    true,
+                    overseers.get(0)));
+          }
+        }
+        ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
+
+        // collection1 also has a replica on the node, and is left out of the list to show that
+        // the overseer doesn't look past it
+        q.offer(
+            Utils.toJSON(
+                Map.of(
+                    Overseer.QUEUE_OPERATION,
+                    OverseerAction.DOWNNODE.toLower(),
+                    ZkStateReader.NODE_NAME_PROP,
+                    node,
+                    NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
+                    List.of("collection0"))));
+        verifyReplicaStatus(reader, "collection0", "shard1", "core_node1", Replica.State.DOWN);
+        verifyReplicaStatus(reader, "collection1", "shard1", "core_node1", Replica.State.ACTIVE);
+
+        // a message without the list scans every collection
+        q.offer(
+            new ZkNodeProps(
+                Overseer.QUEUE_OPERATION,
+                OverseerAction.DOWNNODE.toLower(),
+                ZkStateReader.NODE_NAME_PROP,
+                node));
+        verifyReplicaStatus(reader, "collection1", "shard1", "core_node1", Replica.State.DOWN);
       }
     } finally {
       if (mockController != null) {

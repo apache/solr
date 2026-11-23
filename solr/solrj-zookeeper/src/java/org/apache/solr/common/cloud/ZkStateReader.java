@@ -150,6 +150,11 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONTAINER_PLUGINS = "plugin";
 
   public static final String PLACEMENT_PLUGIN = "placement-plugin";
+
+  /** Cluster property that makes a DOWNNODE read only the collections its message lists */
+  public static final String USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE =
+      "useListedCollectionsOnlyForDownNode";
+
   private final CollectionPropertiesZkStateReader collectionPropertiesZkStateReader;
 
   /** A view of the current state of all collections. */
@@ -378,7 +383,9 @@ public class ZkStateReader implements SolrCloseable {
           CollectionAdminParams.DEFAULTS,
           CONTAINER_PLUGINS,
           PLACEMENT_PLUGIN,
-          OVERSEER_ENABLED);
+          OVERSEER_ENABLED,
+          // lets CLUSTERPROP set it
+          USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE);
 
   private final SolrZkClient zkClient;
 

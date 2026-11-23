@@ -73,6 +73,7 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
+import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
@@ -3120,7 +3121,11 @@ public class ZkController implements Closeable {
             .offer(
                 m ->
                     m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
-                        .put(ZkStateReader.NODE_NAME_PROP, nodeName));
+                        .put(ZkStateReader.NODE_NAME_PROP, nodeName)
+                        // lets the overseer load only these collections
+                        .put(
+                            NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
+                            List.copyOf(replicasPerCollectionOnNode.keySet())));
       } catch (IllegalStateException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");

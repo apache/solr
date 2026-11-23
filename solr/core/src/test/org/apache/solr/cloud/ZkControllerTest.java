@@ -346,6 +346,9 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
     try {
       cluster = configureCluster(1).configure();
+      // the overseer then marks down only the collections publishNodeAsDown lists
+      new ClusterProperties(cluster.getZkClient())
+          .setClusterProperty(ZkStateReader.USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE, "true");
 
       AtomicReference<ZkController> zkControllerRef = new AtomicReference<>();
       CoreContainer cc =

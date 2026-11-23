@@ -18,10 +18,13 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -40,8 +43,24 @@ public class NodeMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected SolrZkClient zkClient;
 
+  /**
+   * DOWNNODE message property listing the collections that had a replica on the node when the node
+   * sent the message.
+   */
+  public static final String DOWN_NODE_COLLECTIONS_PROP = "collections";
+
+  private final boolean useListedCollectionsOnly;
+
   public NodeMutator(SolrCloudManager cloudManager) {
     zkClient = SliceMutator.getZkClient(cloudManager);
+    useListedCollectionsOnly =
+        cloudManager != null
+            && Boolean.parseBoolean(
+                String.valueOf(
+                    cloudManager
+                        .getClusterStateProvider()
+                        .getClusterProperty(
+                            ZkStateReader.USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE)));
   }
 
   public List<ZkWriteCommand> downNode(ClusterState clusterState, ZkNodeProps message) {
@@ -49,12 +68,29 @@ public class NodeMutator {
 
     log.debug("DownNode state invoked for node: {}", nodeName);
 
-    return clusterState
-        .collectionStream()
+    return collectionsToCheck(clusterState, message)
         .filter(entry -> !entry.isPerReplicaState())
         .map(docCollection -> computeCollectionUpdate(nodeName, docCollection, zkClient))
         .flatMap(Optional::stream)
         .toList();
+  }
+
+  /**
+   * The collections a DOWNNODE has to look at. Loading a collection the overseer hasn't written yet
+   * is a ZooKeeper round trip, so when the message lists the node's collections only those are
+   * loaded. A message without the list (from a node that doesn't send it) loads every collection.
+   */
+  private Stream<DocCollection> collectionsToCheck(ClusterState clusterState, ZkNodeProps message) {
+    Object collectionsFromNode = message.get(DOWN_NODE_COLLECTIONS_PROP);
+    if (!useListedCollectionsOnly || collectionsFromNode == null) {
+      return clusterState.collectionStream();
+    }
+    return ((Collection<?>) collectionsFromNode)
+        .stream()
+            .map(String::valueOf)
+            .distinct()
+            .map(clusterState::getCollectionOrNull)
+            .filter(Objects::nonNull);
   }
 
   /**
