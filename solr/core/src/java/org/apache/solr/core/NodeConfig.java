@@ -35,7 +35,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.NodeConfigClusterPluginsSource;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -244,21 +243,16 @@ public class NodeConfig {
     boolean zookeeperQuorumNode =
         NodeRoles.MODE_ON.equals(nodeRoles.getRoleMode(NodeRoles.Role.ZOOKEEPER_QUORUM));
 
-    // This block demonstrates how we pause and wait for a ZooKeeper to be available before
-    // continuing.
-    // See the ZkFailoverTest to see how changing solr.cloud.wait.for.zk.seconds impacts this
-    // capability.
     if (StrUtils.isNotNullOrEmpty(zkHost) && !zookeeperQuorumNode) {
-      int startUpZkTimeOut =
-          1000
-              * Integer.getInteger(
-                  "solr.cloud.wait.for.zk.seconds", SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT);
+      int startUpZkTimeOutMillis =
+          EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
+
 
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withTimeout(startUpZkTimeOutMillis, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOutMillis, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
         zkClient.exists("/configs");

@@ -24,13 +24,15 @@ import java.util.List;
 public class AddPackageVersionRequestBody {
 
   @JsonProperty("version")
-  @Schema(description = "The version string for this package version.", required = true)
+  @Schema(
+      description = "The version string for this package version.",
+      requiredMode = Schema.RequiredMode.REQUIRED)
   public String version;
 
   @JsonProperty("files")
   @Schema(
       description = "File paths from the file store to include in this version.",
-      required = true)
+      requiredMode = Schema.RequiredMode.REQUIRED)
   public List<String> files;
 
   @JsonProperty("manifest")

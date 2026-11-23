@@ -189,6 +189,8 @@ public class {{classname}} {
              * @param {{name}} {{description}}
              */
              {{/description}}
+             // the model field this writes to may itself be deprecated
+             @SuppressWarnings("deprecation")
              public void {{setter}}({{{dataType}}} {{name}}) {
                this.requestBody.{{name}} = {{name}};
              }
