@@ -178,7 +178,7 @@ Solr will create core directories under this directory.
 This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `--server-dir` parameter.
 If set, the specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 +
-This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
+This parameter is ignored when running examples (`-e`), except for `secure`, which uses it as the parent directory for both node homes and the TLS configuration.
 +
 The default value is `server/solr`.
 If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
@@ -265,6 +265,7 @@ These examples are provided to help you get started faster with Solr generally, 
 The available options are:
 
 * `cloud`: SolrCloud example
+* `secure`: Two-node SolrCloud example with HTTPS, Basic Authentication, and ZooKeeper ACLs (Bash only)
 * `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
 * `schemaless`: Schema-less example (schema is inferred from data during indexing)
 * `films`: Example of starting with _default configset and adding explicit fields dynamically

@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public class CreateCollectionSnapshotResponse extends SubResponseAccumulatingJerseyResponse {
   @Schema(description = "The name of the collection.")
+  @JsonProperty("collection")
   public String collection;
 
   @Schema(description = "The name of the snapshot to be created.")
@@ -28,5 +29,6 @@ public class CreateCollectionSnapshotResponse extends SubResponseAccumulatingJer
   public String snapshotName;
 
   @Schema(description = "A flag that treats the collName parameter as a collection alias.")
+  @JsonProperty("followAliases")
   public boolean followAliases;
 }
