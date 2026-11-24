@@ -72,8 +72,9 @@ Lucene can optionally write a skip index on top of DocValues (`docValuesSkipList
 With a skip index, DocValues range queries can approach points/BKD throughput when field values are correlated with document order -- for example when documents are inserted in value order, or when the index is sorted on that field -- without keeping a separate points tree on disk.
 
 This is opt-in and requires `docValues="true"`.
-It is supported for field types that use Lucene `NUMERIC`, `SORTED_NUMERIC`, `SORTED`, or `SORTED_SET` DocValues (the same types listed under <<Enabling DocValues>> that use those encodings).
-`BinaryField` and other types that use `BINARY` DocValues do not support skip lists.
+It is supported for field types that use Lucene `NUMERIC`, `SORTED_NUMERIC`, `SORTED`, or `SORTED_SET` DocValues -- for example numeric/date PointField types, `StrField`, `BoolField`, `EnumFieldType`, and the collation/sortable text types.
+`LatLonPointSpatialField` does not support skip lists.
+`BinaryField` and numeric range field types (`IntRangeField`, `LongRangeField`, `FloatRangeField`, `DoubleRangeField`) use `BINARY` DocValues and also do not support skip lists.
 
 Example:
 

@@ -192,4 +192,13 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
         "bad-schema-docValuesSkipList-unsupportedType.xml",
         "does not support doc values skip lists");
   }
+
+  public void testDocValuesSkipListUnsupportedNumericRange() throws Exception {
+    doTest(
+        "bad-schema-docValuesSkipList-numericRange.xml", "does not support doc values skip lists");
+  }
+
+  public void testDocValuesSkipListUnsupportedLatLon() throws Exception {
+    doTest("bad-schema-docValuesSkipList-latlon.xml", "does not support doc values skip lists");
+  }
 }

@@ -218,6 +218,7 @@ public class AtomicUpdateDocumentMerger {
     return !(schemaField.indexed()
         || schemaField.stored()
         || !schemaField.hasDocValues()
+        || schemaField.hasDocValuesSkipList()
         || schemaField.multiValued()
         || !(schemaField.getType() instanceof NumericValueFieldType));
   }

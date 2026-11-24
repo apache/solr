@@ -26,6 +26,7 @@
   <!-- specific schema fields for dv in-place updates -->
   <field name="inplace_updatable_float" type="float" indexed="false" stored="false" docValues="true" />
   <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true" />
+  <field name="skip_list_long" type="long" indexed="false" stored="false" docValues="true" docValuesSkipList="true" />
 
   <field name="inplace_updatable_float_with_default"
          type="float" indexed="false" stored="false" docValues="true" default="42.0"/>
