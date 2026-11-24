@@ -360,7 +360,7 @@ For binary files, the raw bytes are returned directly, preserving the binary con
 [[configsets-create]]
 == Create a Configset
 
-The `create` command creates a new configset based on a configset that has been previously been created.
+The `create` command creates a new configset by copying an existing configset.
 
 If you have not yet created any configsets, see the <<Upload a Configset>> command above.
 
@@ -383,6 +383,8 @@ The configset to be created.
 |===
 +
 The name of the configset to copy as a base.
+In a V2 request, omit this field, set it to `null`, or pass an empty string to copy `_default`.
+The source configset must exist. If `_default` is unavailable, specify another existing configset.
 
 `configSetProp._property_=_value_`::
 +
