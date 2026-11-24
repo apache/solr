@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -31,6 +32,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.crossdc.common.CrossDcConf;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,7 +46,8 @@ import org.junit.Test;
 
 /**
  * Runs the expanding delete-by-query path of {@link MirroringUpdateProcessor} against a real
- * cluster, so the client it uses for the cursor query and the delete-by-id requests is not mocked.
+ * multi-node cluster, so the client it uses for the cursor query and the delete-by-id requests is
+ * not mocked.
  */
 public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
 
@@ -54,7 +57,7 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty(
         "solr.crossdc.processorFactory", RecordingMirroringProcessorFactory.class.getName());
-    configureCluster(1)
+    configureCluster(3)
         .addConfig("conf", getFile("configs/cloud-minimal/conf").toAbsolutePath())
         .configure();
   }
@@ -82,7 +85,7 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
     System.setProperty(CrossDcConf.EXPAND_DBQ, CrossDcConf.ExpandDbq.NONE.name());
     indexDocs();
 
-    new UpdateRequest().deleteByQuery("text:remove").commit(cluster.getSolrClient(), COLLECTION);
+    deleteByQuery("text:remove");
 
     assertEquals(2, numDocs());
     assertTrue("no delete-by-id expected", mirroredDeleteIds().isEmpty());
@@ -94,7 +97,7 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
     System.setProperty(CrossDcConf.EXPAND_DBQ, CrossDcConf.ExpandDbq.EXPAND.name());
     indexDocs();
 
-    new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTION);
+    deleteByQuery("*:*");
 
     assertEquals(0, numDocs());
     assertTrue("no delete-by-id expected", mirroredDeleteIds().isEmpty());
@@ -109,7 +112,7 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
 
     // 10 matches with 3 rows per page: the delete is only complete if every cursor page is read
     System.setProperty("solr.crossdc.dbq_rows", "3");
-    new UpdateRequest().deleteByQuery("text:remove").commit(cluster.getSolrClient(), COLLECTION);
+    deleteByQuery("text:remove");
 
     assertEquals(2, numDocs());
     List<String> expectedIds = new ArrayList<>();
@@ -125,11 +128,20 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
 
     // more matches than the page size, to exercise the cursor loop
     System.setProperty("solr.crossdc.dbq_rows", "2");
-    new UpdateRequest().deleteByQuery("text:remove").commit(cluster.getSolrClient(), COLLECTION);
+    deleteByQuery("text:remove");
 
     assertEquals(2, numDocs());
     assertEquals(List.of("doc00", "doc01", "doc02"), mirroredDeleteIds());
     assertTrue("DBQ must not be mirrored as-is", mirroredDeleteQueries().isEmpty());
+  }
+
+  /** Sends the delete to a random node, which may not host the matching documents. */
+  private void deleteByQuery(String query) throws Exception {
+    JettySolrRunner node =
+        cluster.getJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
+    try (SolrClient client = node.newSolrClient(COLLECTION)) {
+      new UpdateRequest().deleteByQuery(query).commit(client, COLLECTION);
+    }
   }
 
   private void indexDocs() throws Exception {
@@ -138,9 +150,9 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
 
   /** Indexes docs matching {@code text:remove}, followed by docs that do not. */
   private void indexDocs(int matching, int others) throws Exception {
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1)
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 1, 1);
+    cluster.waitForActiveCollection(COLLECTION, 3, 6);
 
     UpdateRequest add = new UpdateRequest();
     for (int i = 0; i < matching + others; i++) {
