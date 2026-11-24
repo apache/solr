@@ -17,18 +17,24 @@
 
 package org.apache.solr.docker;
 
+import static org.apache.solr.docker.DockerHelpers.HEAP;
+import static org.apache.solr.docker.DockerHelpers.MEMORY_LIMIT_BYTES;
+import static org.apache.solr.docker.DockerHelpers.STARTUP_TIMEOUT;
+import static org.apache.solr.docker.DockerHelpers.assertExec;
+import static org.apache.solr.docker.DockerHelpers.exec;
+import static org.apache.solr.docker.DockerHelpers.firstGroup;
+import static org.apache.solr.docker.DockerHelpers.imageOverride;
+import static org.apache.solr.docker.DockerHelpers.requireProperty;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
@@ -63,7 +69,7 @@ import org.testcontainers.utility.DockerImageName;
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
-      RollingUpgradeTest.TestcontainersThreadsFilter.class
+      DockerHelpers.TestcontainersThreadsFilter.class
     })
 public class ExternalZkEnsembleTest extends SolrTestCase {
 
@@ -79,20 +85,13 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
   /** Every request is sent from inside the container it targets, so loopback reaches its node. */
   private static final String LOCAL_SOLR = "http://localhost:" + SOLR_PORT;
 
-  /** A 200m heap in a 400m container. */
-  private static final long MEMORY_LIMIT_BYTES = 400L * 1024 * 1024;
-
-  private static final String HEAP = "200m";
-
-  private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
-
   /** How long to wait for ZooKeeper to elect a leader, or for Solr to reconnect after one dies. */
   private static final long CONVERGE_TIMEOUT_SECONDS = 60;
 
   @Test
   public void solrCloudOnExternalZkEnsemble() {
     assumeTrue("Docker is not available", DockerClientFactory.instance().isDockerAvailable());
-    String solrImage = requireProperty("solr.docker.imageId");
+    String solrImage = requireProperty("solr.docker.imageId", "dockerExternalZkEnsembleTest");
     String zkImage = imageOverride("SOLR_ZK_IMAGE", DEFAULT_ZK_IMAGE);
 
     List<GenericContainer<?>> zks = new ArrayList<>();
@@ -112,7 +111,7 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
         Startables.deepStart(solrs).join();
         GenericContainer<?> solr1 = solrs.get(0);
         GenericContainer<?> solr2 = solrs.get(1);
-        awaitLiveNodes(solr1, 2);
+        waitFor("2 live Solr nodes", () -> liveNodeCount(solr1) == 2);
 
         assertExec(
             exec(
@@ -132,16 +131,14 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
         assertEquals(status, ZK_SERVERS, jsonInt(status, "ensembleSize"));
         assertEquals(status, "green", jsonString(status, "status"));
 
-        index(solr1, "before-failover");
+        assertTrue("Could not index before-failover", tryIndex(solr1, "before-failover"));
         assertEquals(1, numFound(solr2));
 
         // Losing the leader leaves 2 of 3 servers, still a quorum, so Solr must carry on.
         GenericContainer<?> leader = zkLeader(zks);
         leader.stop();
-        List<GenericContainer<?>> survivors = new ArrayList<>(zks);
-        survivors.remove(leader);
-        awaitZkLeader(survivors);
 
+        // Succeeds once the two survivors have elected a new leader and Solr has reconnected.
         waitFor(
             "indexing through solr2 after the ZooKeeper leader stopped",
             () -> tryIndex(solr2, "after-failover"));
@@ -166,16 +163,15 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
 
   @SuppressWarnings("resource")
   private static GenericContainer<?> zkContainer(String image, Network network, int id) {
-    StringBuilder servers = new StringBuilder();
-    for (int i = 1; i <= ZK_SERVERS; i++) {
-      servers.append(" server.").append(i).append("=zk").append(i);
-      servers.append(":2888:3888;").append(ZK_CLIENT_PORT);
-    }
+    String servers =
+        IntStream.rangeClosed(1, ZK_SERVERS)
+            .mapToObj(i -> "server." + i + "=zk" + i + ":2888:3888;" + ZK_CLIENT_PORT)
+            .collect(Collectors.joining(" "));
     return new GenericContainer<>(DockerImageName.parse(image))
         .withNetwork(network)
         .withNetworkAliases("zk" + id)
         .withEnv("ZOO_MY_ID", String.valueOf(id))
-        .withEnv("ZOO_SERVERS", servers.toString().strip())
+        .withEnv("ZOO_SERVERS", servers)
         // Solr's ZK Status page reads these four-letter-word commands.
         .withEnv("ZOO_4LW_COMMANDS_WHITELIST", "mntr,conf,ruok")
         .withExposedPorts(ZK_CLIENT_PORT)
@@ -208,14 +204,9 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
   }
 
   private static String zkHost() {
-    StringBuilder zkHost = new StringBuilder();
-    for (int i = 1; i <= ZK_SERVERS; i++) {
-      if (i > 1) {
-        zkHost.append(',');
-      }
-      zkHost.append("zk").append(i).append(':').append(ZK_CLIENT_PORT);
-    }
-    return zkHost.toString();
+    return IntStream.rangeClosed(1, ZK_SERVERS)
+        .mapToObj(i -> "zk" + i + ":" + ZK_CLIENT_PORT)
+        .collect(Collectors.joining(","));
   }
 
   /** The ZooKeeper container currently leading, according to {@code zkServer.sh status}. */
@@ -232,10 +223,6 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
     waitFor("a ZooKeeper leader among " + zks.size() + " servers", () -> zkLeader(zks) != null);
   }
 
-  private static void awaitLiveNodes(GenericContainer<?> solr, int expected) {
-    waitFor(expected + " live Solr nodes", () -> liveNodeCount(solr) == expected);
-  }
-
   private static void awaitHealthy(GenericContainer<?> solr) {
     waitFor(
         COLLECTION + " to report healthy",
@@ -243,10 +230,6 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
             exec(solr, "solr", "healthcheck", "-c", COLLECTION, "--solr-url", LOCAL_SOLR)
                     .getExitCode()
                 == 0);
-  }
-
-  private static void index(GenericContainer<?> solr, String id) {
-    assertTrue("Could not index " + id, tryIndex(solr, id));
   }
 
   private static boolean tryIndex(GenericContainer<?> solr, String id) {
@@ -281,7 +264,7 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
     return status.getStdout();
   }
 
-  /** Port of {@code jq -r '.cluster.live_nodes | length'}; the array holds no nested brackets. */
+  /** Live node count, or -1 while the node can't answer. */
   private static int liveNodeCount(GenericContainer<?> solr) {
     ExecResult clusterStatus =
         exec(
@@ -289,16 +272,9 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
             "curl",
             "-fsS",
             LOCAL_SOLR + "/solr/admin/collections?action=CLUSTERSTATUS&wt=json");
-    if (clusterStatus.getExitCode() != 0) {
-      return -1;
-    }
-    Matcher matcher =
-        Pattern.compile("\"live_nodes\"\\s*:\\s*\\[([^]]*)]").matcher(clusterStatus.getStdout());
-    if (!matcher.find()) {
-      return -1;
-    }
-    String entries = matcher.group(1).strip();
-    return entries.isEmpty() ? 0 : entries.split(",").length;
+    return clusterStatus.getExitCode() == 0
+        ? DockerHelpers.liveNodeCount(clusterStatus.getStdout())
+        : -1;
   }
 
   private static String jsonString(String json, String key) {
@@ -307,12 +283,6 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
 
   private static int jsonInt(String json, String key) {
     return Integer.parseInt(firstGroup(json, "\"" + key + "\"\\s*:\\s*(\\d+)"));
-  }
-
-  private static String firstGroup(String text, String regex) {
-    Matcher matcher = Pattern.compile(regex).matcher(text);
-    assertTrue("Output did not match " + regex + ": " + text, matcher.find());
-    return matcher.group(1);
   }
 
   private static void waitFor(String what, BooleanSupplier condition) {
@@ -327,24 +297,6 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
     }
   }
 
-  private static ExecResult exec(GenericContainer<?> container, String... command) {
-    try {
-      return container.execInContainer(command);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new AssertionError(e);
-    }
-  }
-
-  private static void assertExec(ExecResult result) {
-    assertEquals(
-        "exec failed:\nstdout: " + result.getStdout() + "\nstderr: " + result.getStderr(),
-        0,
-        result.getExitCode());
-  }
-
   private static void logContainers(List<GenericContainer<?>> containers) {
     for (GenericContainer<?> container : containers) {
       if (container.isRunning()) {
@@ -355,24 +307,5 @@ public class ExternalZkEnsembleTest extends SolrTestCase {
             container.getLogs());
       }
     }
-  }
-
-  /**
-   * A property the Gradle task is responsible for; absent means the test was run some other way.
-   */
-  private static String requireProperty(String name) {
-    String value = System.getProperty(name);
-    if (value == null || value.isBlank()) {
-      throw new IllegalStateException(
-          name
-              + " is not set. Run this through './gradlew -p solr/docker"
-              + " dockerExternalZkEnsembleTest'.");
-    }
-    return value;
-  }
-
-  private static String imageOverride(String variable, String fallback) {
-    String override = System.getenv(variable);
-    return (override == null || override.isBlank()) ? fallback : override;
   }
 }

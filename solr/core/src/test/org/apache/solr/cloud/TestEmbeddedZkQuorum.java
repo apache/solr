@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -115,12 +117,6 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
    */
   @Test
   public void testColdBootstrapWithOneNodeThenGrowsToThreeViaLiveJoins() throws Exception {
-    // ZooKeeper renders the ports in its dynamic config with the JVM's default locale, so under a
-    // locale with non-ASCII digits (e.g. as-Beng-IN) the config it publishes can't be parsed back
-    // -- by ZooKeeper's own clients or by Solr -- and dynamic reconfiguration doesn't work.
-    assumeTrue(
-        "Default locale formats integers with non-ASCII digits, which ZooKeeper can't parse back",
-        String.format(Locale.getDefault(), "%d", 10).equals("10"));
     Path configPath = TEST_PATH().resolve("collection1").resolve("conf");
     MiniSolrCloudCluster privateCluster =
         configureCluster(1).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
@@ -132,19 +128,14 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
       assertEquals(1L, afterBootstrap.get("ensembleSize"));
       assertEquals(Boolean.TRUE, afterBootstrap.get("dynamicReconfig"));
 
-      privateCluster.addEmbeddedZkQuorumNode();
-      privateCluster.waitForLiveNodes(2, 60);
+      for (int size = 2; size <= 3; size++) {
+        privateCluster.addEmbeddedZkQuorumNode();
+        privateCluster.waitForLiveNodes(size, 60);
 
-      Map<String, Object> afterFirstJoin = fetchZkStatus(privateCluster.getJettySolrRunner(0));
-      assertEquals("ensemble", afterFirstJoin.get("mode"));
-      assertEquals(2L, afterFirstJoin.get("ensembleSize"));
-
-      privateCluster.addEmbeddedZkQuorumNode();
-      privateCluster.waitForLiveNodes(3, 60);
-
-      Map<String, Object> afterSecondJoin = fetchZkStatus(privateCluster.getJettySolrRunner(0));
-      assertEquals("ensemble", afterSecondJoin.get("mode"));
-      assertEquals(3L, afterSecondJoin.get("ensembleSize"));
+        Map<String, Object> afterJoin = fetchZkStatus(privateCluster.getJettySolrRunner(0));
+        assertEquals("ensemble", afterJoin.get("mode"));
+        assertEquals((long) size, afterJoin.get("ensembleSize"));
+      }
     } finally {
       privateCluster.shutdown();
     }
@@ -698,31 +689,20 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   }
 
   /**
-   * After quorum loss, a shard can stay leaderless because the Overseer's state-update thread stops
-   * applying updates without logging why; its stack is the missing piece of that diagnosis. One log
-   * call per thread, since the test logging truncates long messages, and only threads running
-   * SolrCloud code, to keep it readable.
+   * Logs the full stack of every thread running SolrCloud code, one log call per thread because the
+   * test logging truncates long messages.
    */
   private static void logThreadDump() {
-    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
-      StackTraceElement[] frames = entry.getValue();
-      boolean inSolrCloud = false;
-      for (StackTraceElement frame : frames) {
-        if (frame.getClassName().startsWith("org.apache.solr.cloud.")) {
-          inSolrCloud = true;
-          break;
-        }
-      }
-      if (!inSolrCloud) {
-        continue;
-      }
-      Thread thread = entry.getKey();
-      StringBuilder stack = new StringBuilder();
-      for (StackTraceElement frame : frames) {
-        stack.append("\n    at ").append(frame);
-      }
-      log.error("Thread dump: \"{}\" {}{}", thread.getName(), thread.getState(), stack);
-    }
+    Thread.getAllStackTraces()
+        .forEach(
+            (thread, frames) -> {
+              if (Arrays.stream(frames)
+                  .anyMatch(f -> f.getClassName().startsWith("org.apache.solr.cloud."))) {
+                String stack =
+                    Arrays.stream(frames).map(f -> "\n    at " + f).collect(Collectors.joining());
+                log.error("Thread dump: \"{}\" {}{}", thread.getName(), thread.getState(), stack);
+              }
+            });
   }
 
   private static void waitForZkConnected(MiniSolrCloudCluster cluster, int timeoutSeconds)

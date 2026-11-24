@@ -80,6 +80,15 @@ public class ZkContainer {
   // Per ZooKeeper, "0" means no limit for max client connections.
   public static final String ZK_MAX_CNXNS_DEFAULT = "0";
 
+  /**
+   * Default offsets from the Solr port to an embedded ZooKeeper's client, quorum and election
+   * ports.
+   */
+  public static final int DEFAULT_ZK_CLIENT_PORT_OFFSET = 1000;
+
+  public static final int DEFAULT_ZK_QUORUM_PORT_OFFSET = 1010;
+  public static final int DEFAULT_ZK_ELECTION_PORT_OFFSET = 1020;
+
   // How long to wait for a quick TCP probe when deciding whether a zkHost peer is already
   // serving (and thus whether we should join its ensemble via reconfig instead of bootstrapping).
   private static final long ZK_JOIN_PROBE_TIMEOUT_MS =
@@ -167,11 +176,14 @@ public class ZkContainer {
       // When running multiple quorum nodes on the same machine sharing a solrHome,
       // override the default data and config directories with unique ones
       final int zkClientPortOffset =
-          EnvUtils.getPropertyAsInteger("solr.zookeeper.server.client.port.offset", 1000);
+          EnvUtils.getPropertyAsInteger(
+              "solr.zookeeper.server.client.port.offset", DEFAULT_ZK_CLIENT_PORT_OFFSET);
       final int zkQuorumPortOffset =
-          EnvUtils.getPropertyAsInteger("solr.zookeeper.server.quorum.port.offset", 1010);
+          EnvUtils.getPropertyAsInteger(
+              "solr.zookeeper.server.quorum.port.offset", DEFAULT_ZK_QUORUM_PORT_OFFSET);
       final int zkElectionPortOffset =
-          EnvUtils.getPropertyAsInteger("solr.zookeeper.server.election.port.offset", 1020);
+          EnvUtils.getPropertyAsInteger(
+              "solr.zookeeper.server.election.port.offset", DEFAULT_ZK_ELECTION_PORT_OFFSET);
       final int zkPort = config.getSolrHostPort() + zkClientPortOffset;
       final var zkDataDir =
           solrHome.resolve(EnvUtils.getProperty("solr.zookeeper.server.datadir", "zoo_data"));

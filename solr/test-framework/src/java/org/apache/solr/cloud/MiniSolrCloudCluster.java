@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
@@ -82,6 +84,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.ZkContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -352,16 +355,10 @@ public class MiniSolrCloudCluster implements SolrBackend {
     // Phase 1: Reserve random ports for all nodes
     int[] ports = reservePortPairs(numServers);
 
-    // Build the zkHost string with all ZK ports (Solr port + 1000)
-    StringBuilder zkHostBuilder = new StringBuilder();
-    for (int i = 0; i < numServers; i++) {
-      if (i > 0) {
-        zkHostBuilder.append(",");
-      }
-      int zkPort = ports[i] + 1000;
-      zkHostBuilder.append("127.0.0.1:").append(zkPort);
-    }
-    this.zkHost = zkHostBuilder.toString(); // Save for later use
+    this.zkHost =
+        Arrays.stream(ports)
+            .mapToObj(port -> "127.0.0.1:" + (port + ZkContainer.DEFAULT_ZK_CLIENT_PORT_OFFSET))
+            .collect(Collectors.joining(","));
 
     if (log.isInfoEnabled()) {
       log.info("Reserved ports for {} nodes: {}", numServers, Arrays.toString(ports));
@@ -396,7 +393,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
             JettySolrRunner jetty =
                 new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
 
-            int zkPort = solrPort + 1000;
+            int zkPort = solrPort + ZkContainer.DEFAULT_ZK_CLIENT_PORT_OFFSET;
             log.info("Starting {} on port {} with ZK on port {}", nodeName, solrPort, zkPort);
             jetty.start();
             log.info("Node {} started successfully", nodeName);
@@ -496,7 +493,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
 
     int solrPort = reservePortPairs(1)[0];
-    int zkPort = solrPort + 1000;
+    int zkPort = solrPort + ZkContainer.DEFAULT_ZK_CLIENT_PORT_OFFSET;
     String extendedZkHost = zkHost + ",127.0.0.1:" + zkPort;
     String nodeName = newNodeName();
 
@@ -537,24 +534,21 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return jetty;
   }
 
-  // Range that candidate Solr ports are drawn from in reservePortPairs. Kept below the OS
-  // ephemeral range (32768+ on Linux, 49152+ on macOS) so that the derived ZK ports (up to
-  // +1020) stay valid, and so we don't depend on the OS's ephemeral allocator: macOS hands out
-  // ephemeral ports sequentially, so asking for port 0 eventually returns only ports too close to
-  // 65535 to fit the ZK offsets, until the counter wraps.
+  // Candidate Solr ports for reservePortPairs: below the OS ephemeral range, so the derived ZK
+  // ports always fit and macOS's sequential ephemeral allocator can't push them past 65535.
   private static final int QUORUM_PORT_RANGE_START = 10000;
   private static final int QUORUM_PORT_RANGE_END = 30000;
 
   /**
    * Reserves port pairs for embedded ZK quorum mode. For each node, we need a Solr port plus the ZK
-   * client, quorum and election ports that {@code ZkContainer} derives from it (Solr port + 1000,
-   * +1010 and +1020 by default). This method ensures all four are available before returning.
+   * client, quorum and election ports that {@link ZkContainer} derives from it with its default
+   * offsets. This method ensures all four are available before returning.
    *
    * <p>The method keeps all ServerSockets open during the search to prevent race conditions where
    * another process might grab a port between our check and actual usage.
    *
    * @param numPairs the number of port pairs to reserve
-   * @return array of Solr ports (ZK ports are Solr port + 1000)
+   * @return array of Solr ports
    * @throws IOException if unable to find enough available port pairs
    */
   private int[] reservePortPairs(int numPairs) throws IOException {
@@ -581,12 +575,12 @@ public class MiniSolrCloudCluster implements SolrBackend {
                   + LuceneTestCase.random()
                       .nextInt(QUORUM_PORT_RANGE_END - QUORUM_PORT_RANGE_START);
           solrSocket = new ServerSocket(solrPort);
-          int zkPort = solrPort + 1000;
+          int zkPort = solrPort + ZkContainer.DEFAULT_ZK_CLIENT_PORT_OFFSET;
 
           // Verify the ZK client, quorum and election ports are all available
           zkSocket = new ServerSocket(zkPort);
-          zkQuorumSocket = new ServerSocket(solrPort + 1010);
-          zkLeaderSocket = new ServerSocket(solrPort + 1020);
+          zkQuorumSocket = new ServerSocket(solrPort + ZkContainer.DEFAULT_ZK_QUORUM_PORT_OFFSET);
+          zkLeaderSocket = new ServerSocket(solrPort + ZkContainer.DEFAULT_ZK_ELECTION_PORT_OFFSET);
 
           // All ports are available - keep the sockets and record the Solr port
           solrSockets.add(solrSocket);
@@ -601,8 +595,8 @@ public class MiniSolrCloudCluster implements SolrBackend {
                 "Reserved port pair {}/{}: Solr={}, ZK={}", pairsFound, numPairs, solrPort, zkPort);
           }
 
-        } catch (IOException | IllegalArgumentException e) {
-          // A port was not available or invalid, close sockets and try again
+        } catch (IOException e) {
+          // A port was not available, close sockets and try again
           for (ServerSocket s :
               new ServerSocket[] {solrSocket, zkSocket, zkQuorumSocket, zkLeaderSocket}) {
             if (s != null) {
@@ -1591,6 +1585,11 @@ public class MiniSolrCloudCluster implements SolrBackend {
         throw new IllegalArgumentException(
             "ZooKeeper quorum requires at least 1 node to cold-bootstrap, got: " + nodeCount);
       }
+      // ZooKeeper writes the ports in its dynamic config with the default locale, so under one with
+      // non-ASCII digits it can't parse that config back (see the ref guide's Known Limitations).
+      LuceneTestCase.assumeTrue(
+          "Default locale formats integers with non-ASCII digits, which ZooKeeper can't parse back",
+          String.format(Locale.getDefault(), "%d", 10).equals("10"));
       this.useEmbeddedZkQuorum = true;
       return this;
     }

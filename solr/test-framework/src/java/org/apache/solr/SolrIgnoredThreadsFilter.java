@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import java.lang.Thread.State;
+import java.util.Arrays;
 
 /** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrIgnoredThreadsFilter implements ThreadFilter {
@@ -95,19 +96,17 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    // ZooKeeper's LearnerHandler can leak its packet sender thread when the leader shuts down: the
-    // leader's shutdown() queues a "proposal of death" for the sender and interrupts the handler
-    // thread, whose own finally-block shutdown() then clears that packet from the queue and fails
-    // to re-queue it (put() throws InterruptedException), leaving the sender parked in take()
-    // forever. An idle sender of a still-running leader looks the same, but a ZK server that was
-    // never closed is still caught through its other threads (QuorumPeer, LearnerHandler, ...).
-    if (threadName.startsWith("Sender-/") && t.getState() == State.WAITING) {
-      for (StackTraceElement frame : t.getStackTrace()) {
-        if ("org.apache.zookeeper.server.quorum.LearnerHandler".equals(frame.getClassName())
-            && "sendPackets".equals(frame.getMethodName())) {
-          return true;
-        }
-      }
+    // ZooKeeper's LearnerHandler leaks its Sender thread, parked in take(), when the leader shuts
+    // down: an interrupt drops its "proposal of death" packet. A ZK server that was never closed is
+    // still caught through its other threads.
+    if (threadName.startsWith("Sender-/")
+        && t.getState() == State.WAITING
+        && Arrays.stream(t.getStackTrace())
+            .anyMatch(
+                f ->
+                    "org.apache.zookeeper.server.quorum.LearnerHandler".equals(f.getClassName())
+                        && "sendPackets".equals(f.getMethodName()))) {
+      return true;
     }
 
     if (threadName.startsWith("closeThreadPool")) {

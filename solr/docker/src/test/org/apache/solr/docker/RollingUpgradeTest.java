@@ -17,7 +17,15 @@
 
 package org.apache.solr.docker;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
+import static org.apache.solr.docker.DockerHelpers.HEAP;
+import static org.apache.solr.docker.DockerHelpers.MEMORY_LIMIT_BYTES;
+import static org.apache.solr.docker.DockerHelpers.STARTUP_TIMEOUT;
+import static org.apache.solr.docker.DockerHelpers.assertExec;
+import static org.apache.solr.docker.DockerHelpers.firstGroup;
+import static org.apache.solr.docker.DockerHelpers.imageOverride;
+import static org.apache.solr.docker.DockerHelpers.liveNodeCount;
+import static org.apache.solr.docker.DockerHelpers.requireProperty;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.github.dockerjava.api.model.Bind;
 import java.io.IOException;
@@ -26,14 +34,11 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
@@ -83,37 +88,13 @@ import org.testcontainers.utility.DockerImageName;
     filters = {
       SolrIgnoredThreadsFilter.class,
       QuickPatchThreadsFilter.class,
-      RollingUpgradeTest.TestcontainersThreadsFilter.class
+      DockerHelpers.TestcontainersThreadsFilter.class
     })
 public class RollingUpgradeTest extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** Non-daemon threads Testcontainers and its Docker client leave behind. */
-  @SuppressWarnings("NewClassNamingConvention")
-  public static class TestcontainersThreadsFilter implements ThreadFilter {
-    @Override
-    public boolean reject(Thread t) {
-      if (t == null || t.getName() == null) {
-        return false;
-      }
-      String name = t.getName();
-      return name.startsWith("testcontainers-")
-          || name.startsWith("ducttape-")
-          || name.startsWith("docker-java-")
-          || name.startsWith("HttpClient-")
-          || name.startsWith("OkHttp")
-          || name.startsWith("Okio");
-    }
-  }
-
-  /** A 200m heap in a 400m container. */
-  private static final long MEMORY_LIMIT_BYTES = 400L * 1024 * 1024;
-
-  private static final String HEAP = "200m";
-
-  /** How long Testcontainers waits for a node's port to listen before giving up. */
-  private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(2);
+  private static final String GRADLE_TASK = "dockerRollingUpgradeTest";
 
   private String beginImage;
   private String endImage;
@@ -227,24 +208,13 @@ public class RollingUpgradeTest extends SolrTestCase {
    * fail loudly where a container needs it, rather than skipping.
    */
   private void resolveImages() throws IOException {
-    int previousMajor = Integer.parseInt(requireProperty("solr.version").split("\\.", 2)[0]) - 1;
+    int previousMajor =
+        Integer.parseInt(requireProperty("solr.version", GRADLE_TASK).split("\\.", 2)[0]) - 1;
     beginImage = imageOverride("SOLR_BEGIN_IMAGE", "solr:" + previousMajor + "-slim");
-    endImage = imageOverride("SOLR_END_IMAGE", requireProperty("solr.docker.imageId"));
+    endImage = imageOverride("SOLR_END_IMAGE", requireProperty("solr.docker.imageId", GRADLE_TASK));
 
-    artifactDir = Files.createDirectories(Path.of(requireProperty("solr.docker.artifactDir")));
-  }
-
-  /**
-   * A property the Gradle task is responsible for; absent means the test was run some other way.
-   */
-  private static String requireProperty(String name) {
-    String value = System.getProperty(name);
-    if (value == null || value.isBlank()) {
-      throw new IllegalStateException(
-          name
-              + " is not set. Run this through './gradlew -p solr/docker dockerRollingUpgradeTest'.");
-    }
-    return value;
+    artifactDir =
+        Files.createDirectories(Path.of(requireProperty("solr.docker.artifactDir", GRADLE_TASK)));
   }
 
   /**
@@ -255,11 +225,6 @@ public class RollingUpgradeTest extends SolrTestCase {
    */
   private ImagePullPolicy pullPolicyFor(String image) {
     return image.equals(beginImage) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy();
-  }
-
-  private String imageOverride(String variable, String fallback) {
-    String override = System.getenv(variable);
-    return (override == null || override.isBlank()) ? fallback : override;
   }
 
   /** Waits for {@code solr healthcheck} inside the container to report the collection healthy. */
@@ -317,25 +282,6 @@ public class RollingUpgradeTest extends SolrTestCase {
       // Diagnostics only; losing one must not mask the failure the test is reporting.
       log.warn("Could not write Docker artifact {}", name, e);
     }
-  }
-
-  private static void assertExec(ExecResult result) {
-    assertEquals(
-        "exec failed:\nstdout: " + result.getStdout() + "\nstderr: " + result.getStderr(),
-        0,
-        result.getExitCode());
-  }
-
-  private static String firstGroup(String text, String regex) {
-    Matcher matcher = Pattern.compile(regex).matcher(text);
-    assertTrue("Output did not match " + regex + ": " + text, matcher.find());
-    return matcher.group(1);
-  }
-
-  /** Port of {@code jq -r '.cluster.live_nodes | length'}; the array holds no nested brackets. */
-  private static int liveNodeCount(String clusterStatusJson) {
-    String entries = firstGroup(clusterStatusJson, "\"live_nodes\"\\s*:\\s*\\[([^]]*)]").strip();
-    return entries.isEmpty() ? 0 : entries.split(",").length;
   }
 
   /**
@@ -428,14 +374,7 @@ public class RollingUpgradeTest extends SolrTestCase {
     }
 
     ExecResult exec(String... command) {
-      try {
-        return container.execInContainer(command);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new AssertionError(e);
-      }
+      return DockerHelpers.exec(container, command);
     }
 
     /** Port of {@code docker exec --user=solr}. */
