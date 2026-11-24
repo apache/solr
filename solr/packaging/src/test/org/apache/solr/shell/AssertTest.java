@@ -22,8 +22,8 @@ import org.junit.Test;
 /**
  * Port of {@code test_assert.bats}.
  *
- * <p>Each test starts its own node — one user-managed, one in cloud mode — and the harness stops it
- * when the test ends.
+ * <p>Each test starts its own nodes — one user-managed, two in cloud mode — and the harness stops
+ * them when the test ends.
  */
 public class AssertTest extends SolrCatsTestCase {
 
@@ -41,6 +41,11 @@ public class AssertTest extends SolrCatsTestCase {
         .assertContains("ERROR: Solr is not running in cloud mode");
 
     runFail("solr assert --cloud http://localhost:${SOLR_PORT} --exitcode");
+
+    runFail(
+            "solr assert --cloud-nodes 1 --solr-url http://localhost:${SOLR_PORT} --timeout 0"
+                + " --exitcode")
+        .assertExitCode(1);
   }
 
   @Test
@@ -56,5 +61,18 @@ public class AssertTest extends SolrCatsTestCase {
         .assertContains("ERROR: Solr is not running in standalone mode");
 
     runFail("solr assert --not-cloud http://localhost:${SOLR_PORT} --exitcode");
+
+    run("solr assert --cloud-nodes 1 --solr-url http://localhost:${SOLR_PORT}")
+        .assertNotContains("ERROR");
+    runFail(
+            "solr assert --cloud-nodes 2 --solr-url http://localhost:${SOLR_PORT} --timeout 0"
+                + " --exitcode")
+        .assertExitCode(1);
+
+    run("solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}");
+    run("solr assert --cloud-nodes 2 --solr-url http://localhost:${SOLR_PORT} --timeout 5000")
+        .assertNotContains("ERROR");
+    run("solr assert --cloud-nodes 2 --solr-url http://localhost:${SOLR2_PORT} --timeout 5000")
+        .assertNotContains("ERROR");
   }
 }
