@@ -669,6 +669,33 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testCloudExampleRejectsPortTooHighForEmbeddedZkEnsemble() throws Exception {
+    String[] toolArgs =
+        new String[] {
+          "--example",
+          "cloud",
+          "--no-prompt",
+          "--port",
+          "64535",
+          "--server-dir",
+          ExternalPaths.SERVER_HOME.getParent().toString(),
+          "--example-dir",
+          createTempDir().toString()
+        };
+    RunExampleTool tool =
+        new RunExampleTool(null, System.in, new CLITestHelper.TestingRuntime(false));
+
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> tool.runImpl(SolrCLI.processCommandLineArgs(tool, toolArgs)));
+
+    assertTrue(
+        exception.getMessage(),
+        exception.getMessage().startsWith("Port 64535 is too high for an embedded ZooKeeper"));
+  }
+
+  @Test
   public void testMissingDefaultExampleDirectoryExplainsSlimDistribution() throws Exception {
     Path solrServerDir = createTestServerDir();
     RunExampleTool tool =

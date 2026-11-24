@@ -685,6 +685,8 @@ Each can be overridden with a system property:
 |Offset from Solr port to ZK leader election port
 |===
 
+The client port offset also applies to the standalone embedded ZooKeeper (`solr.zookeeper.server.enabled`) when its `zoo.cfg` does not set `clientPort`.
+
 === Known Limitations
 
 * A node's `-z` connection string is not updated when the ensemble grows. The running node follows the new members anyway, but on restart it can only connect through the hosts it lists, so keep `-z` current on every node (the ZK Status page warns when it is out of date).

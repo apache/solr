@@ -356,7 +356,11 @@ public class ZkContainer {
             EnvUtils.getProperty("solr.zookeeper.embedded.host", "127.0.0.1");
         zkProps.setProperty("clientPortAddress", clientPortAddress);
         if (zkProps.getProperty("clientPort") == null) {
-          zkProps.setProperty("clientPort", Integer.toString(config.getSolrHostPort() + 1000));
+          int clientPortOffset =
+              EnvUtils.getPropertyAsInteger(
+                  "solr.zookeeper.server.client.port.offset", DEFAULT_ZK_CLIENT_PORT_OFFSET);
+          zkProps.setProperty(
+              "clientPort", Integer.toString(config.getSolrHostPort() + clientPortOffset));
         }
         if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
           System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");

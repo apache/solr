@@ -579,6 +579,19 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
+  /** Rejects a quorum node's port whose embedded ZooKeeper ports would exceed 65535. */
+  private static void validateQuorumPort(int port) {
+    int highest = port + ZkContainer.DEFAULT_ZK_ELECTION_PORT_OFFSET;
+    if (highest > 65535) {
+      throw new IllegalArgumentException(
+          "Port "
+              + port
+              + " is too high for an embedded ZooKeeper ensemble node, which also needs ports up to "
+              + highest
+              + ". Choose a lower port.");
+    }
+  }
+
   /**
    * Resolves and validates the server, example and Solr home directories plus the bin/solr script
    * from the given raw values, seeding the corresponding tool state.
@@ -1521,6 +1534,9 @@ public class RunExampleTool extends ToolBase {
     int firstPlainNode; // 0-based index of the first node that just connects, no special role
 
     if (zkQuorum) {
+      for (int n = 0; n < quorumSize; n++) {
+        validateQuorumPort(cloudPorts[n]);
+      }
       // Bootstrap a single-member ensemble on node 1, then grow it one node at a time: each new
       // member lists the current members plus itself, and joins the running ensemble through
       // ZooKeeper's dynamic reconfiguration before its startup returns.
