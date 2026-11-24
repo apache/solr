@@ -621,7 +621,7 @@ The ZK connection string must list all nodes' ZK client ports (`solr_port + 1000
 When several nodes are listed in the connection string like this, they cold-bootstrap the ensemble together: a leader can only be elected once a majority of the listed nodes is up, so a node started ahead of its peers simply waits for them (its log repeats `still waiting for a quorum` while it does).
 If you'd rather bring nodes up one at a time, on their own schedule, see <<Starting with a Single Node and Growing the Ensemble>> below instead.
 
-NOTE: On a single machine, each node needs distinct ports. Because each ZK instance also binds to `zk_client_port+1` (quorum peer) and `zk_client_port+2` (leader election), Solr ports must be spaced *at least 1001 apart* to avoid collisions.
+NOTE: On a single machine, each node needs distinct ports. Because each node also binds `solr_port+1000` (ZK client), `solr_port+1010` (quorum peer) and `solr_port+1020` (leader election), space Solr ports *more than 1020 apart* to avoid collisions.
 When nodes share the same working directory, also set `solr.zookeeper.server.datadir` to a distinct path per node to avoid ZooKeeper data directory conflicts.
 
 [source,bash]
