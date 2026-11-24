@@ -92,11 +92,11 @@ public class ZkContainer {
   // How long to wait for a quick TCP probe when deciding whether a zkHost peer is already
   // serving (and thus whether we should join its ensemble via reconfig instead of bootstrapping).
   private static final long ZK_JOIN_PROBE_TIMEOUT_MS =
-      EnvUtils.getPropertyAsLong("solr.zookeeper.server.join.probeTimeoutMs", 1500L);
+      EnvUtils.getPropertyAsLong("solr.zookeeper.server.join.probe.timeout.ms", 1500L);
   // How long to wait for our ZooKeeperAdmin client to connect to the existing ensemble when
   // joining it.
   private static final long ZK_JOIN_CONNECT_TIMEOUT_MS =
-      EnvUtils.getPropertyAsLong("solr.zookeeper.server.join.connectTimeoutMs", 15000L);
+      EnvUtils.getPropertyAsLong("solr.zookeeper.server.join.timeout.ms", 15000L);
 
   // How often to re-announce that this quorum node is still waiting for the rest of the
   // ensemble to form, while cold-bootstrapping. Quorum mode's ZK connect timeout is a full day
@@ -105,7 +105,7 @@ public class ZkContainer {
   // minutes or hours later sees only raw ZooKeeper/Curator connection-retry noise, which reads
   // identically to a genuinely broken deployment.
   private static final long QUORUM_WAIT_LOG_INTERVAL_MS =
-      EnvUtils.getPropertyAsLong("solr.zookeeper.server.quorum.waitLogIntervalMs", 30000L);
+      EnvUtils.getPropertyAsLong("solr.zookeeper.server.quorum.wait.log.interval.ms", 30000L);
 
   protected ZkController zkController;
 
