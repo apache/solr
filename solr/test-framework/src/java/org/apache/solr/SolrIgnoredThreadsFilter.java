@@ -95,6 +95,21 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    // ZooKeeper's LearnerHandler can leak its packet sender thread when the leader shuts down: the
+    // leader's shutdown() queues a "proposal of death" for the sender and interrupts the handler
+    // thread, whose own finally-block shutdown() then clears that packet from the queue and fails
+    // to re-queue it (put() throws InterruptedException), leaving the sender parked in take()
+    // forever. An idle sender of a still-running leader looks the same, but a ZK server that was
+    // never closed is still caught through its other threads (QuorumPeer, LearnerHandler, ...).
+    if (threadName.startsWith("Sender-/") && t.getState() == State.WAITING) {
+      for (StackTraceElement frame : t.getStackTrace()) {
+        if ("org.apache.zookeeper.server.quorum.LearnerHandler".equals(frame.getClassName())
+            && "sendPackets".equals(frame.getMethodName())) {
+          return true;
+        }
+      }
+    }
+
     if (threadName.startsWith("closeThreadPool")) {
       return true;
     }

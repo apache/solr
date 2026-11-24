@@ -311,12 +311,11 @@ public class MiniSolrCloudCluster implements SolrBackend {
    * Create a MiniSolrCloudCluster with embedded ZooKeeper quorum mode. Each Solr node runs its own
    * embedded ZooKeeper server, and together they form a quorum.
    *
-   * @param numServers number of Solr servers to cold-bootstrap together (must be at least 2 --
-   *     use {@link #addEmbeddedZkQuorumNode()} afterward to grow the ensemble further one node at
-   *     a time, e.g. to reach 3, rather than bootstrapping all of them here). A single node is not
-   *     sufficient: ZooKeeper itself runs a lone voting member in plain standalone mode, which
-   *     doesn't support the dynamic reconfiguration {@code addEmbeddedZkQuorumNode()} relies on to
-   *     add more members later.
+   * @param numServers number of Solr servers to cold-bootstrap together (must be at least 1 -- use
+   *     {@link #addEmbeddedZkQuorumNode()} afterward to grow the ensemble further one node at a
+   *     time, e.g. 1 -&gt; 2 -&gt; 3, rather than bootstrapping all of them here). Even a single
+   *     node forms a real, reconfigurable ensemble: the embedded server runs with {@code
+   *     standaloneEnabled=false}, so ZooKeeper doesn't fall back to its plain standalone mode.
    * @param baseDir base directory that the mini cluster should be run from
    * @param solrXml solr.xml file content
    * @param jettyConfig Jetty configuration
@@ -335,11 +334,9 @@ public class MiniSolrCloudCluster implements SolrBackend {
     if (!useEmbeddedZkQuorum) {
       throw new IllegalArgumentException("This constructor is only for embedded ZK quorum mode");
     }
-    if (numServers < 2) {
+    if (numServers < 1) {
       throw new IllegalArgumentException(
-          "ZooKeeper quorum requires at least 2 nodes to cold-bootstrap (a single node runs in"
-              + " ZK's plain standalone mode and can never dynamically grow), got: "
-              + numServers);
+          "ZooKeeper quorum requires at least 1 node to cold-bootstrap, got: " + numServers);
     }
 
     Objects.requireNonNull(securityJson);
@@ -540,10 +537,18 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return jetty;
   }
 
+  // Range that candidate Solr ports are drawn from in reservePortPairs. Kept below the OS
+  // ephemeral range (32768+ on Linux, 49152+ on macOS) so that the derived ZK ports (up to
+  // +1020) stay valid, and so we don't depend on the OS's ephemeral allocator: macOS hands out
+  // ephemeral ports sequentially, so asking for port 0 eventually returns only ports too close to
+  // 65535 to fit the ZK offsets, until the counter wraps.
+  private static final int QUORUM_PORT_RANGE_START = 10000;
+  private static final int QUORUM_PORT_RANGE_END = 30000;
+
   /**
-   * Reserves port pairs for embedded ZK quorum mode. For each node, we need both a Solr port and a
-   * ZK port (Solr port + 1000). This method ensures both ports in each pair are available before
-   * returning.
+   * Reserves port pairs for embedded ZK quorum mode. For each node, we need a Solr port plus the ZK
+   * client, quorum and election ports that {@code ZkContainer} derives from it (Solr port + 1000,
+   * +1010 and +1020 by default). This method ensures all four are available before returning.
    *
    * <p>The method keeps all ServerSockets open during the search to prevent race conditions where
    * another process might grab a port between our check and actual usage.
@@ -570,21 +575,18 @@ public class MiniSolrCloudCluster implements SolrBackend {
         ServerSocket zkLeaderSocket = null;
 
         try {
-          // Try to get a random available port for Solr
-          solrSocket = new ServerSocket(0);
-          int solrPort = solrSocket.getLocalPort();
+          // Try a random candidate port for Solr
+          int solrPort =
+              QUORUM_PORT_RANGE_START
+                  + LuceneTestCase.random()
+                      .nextInt(QUORUM_PORT_RANGE_END - QUORUM_PORT_RANGE_START);
+          solrSocket = new ServerSocket(solrPort);
           int zkPort = solrPort + 1000;
 
-          // Check if ZK ports would exceed the valid port range (0-65535)
-          if (zkPort + 2 > 65535) {
-            solrSocket.close();
-            continue; // Skip this port and try again
-          }
-
-          // Verify the ZK client port and quorum/election ports (+1/+2) are all available
+          // Verify the ZK client, quorum and election ports are all available
           zkSocket = new ServerSocket(zkPort);
-          zkQuorumSocket = new ServerSocket(zkPort + 1);
-          zkLeaderSocket = new ServerSocket(zkPort + 2);
+          zkQuorumSocket = new ServerSocket(solrPort + 1010);
+          zkLeaderSocket = new ServerSocket(solrPort + 1020);
 
           // All ports are available - keep the sockets and record the Solr port
           solrSockets.add(solrSocket);
@@ -1578,18 +1580,16 @@ public class MiniSolrCloudCluster implements SolrBackend {
      * embedded ZooKeeper server, and together they form a quorum. This tests the embedded ZK quorum
      * functionality.
      *
-     * <p>Requires at least 2 nodes to cold-bootstrap (a single node runs in ZK's plain standalone
-     * mode, which can't dynamically grow); use {@link MiniSolrCloudCluster#addEmbeddedZkQuorumNode()}
-     * afterward to add more members one at a time instead of bootstrapping them all here.
+     * <p>Requires at least 1 node to cold-bootstrap; use {@link
+     * MiniSolrCloudCluster#addEmbeddedZkQuorumNode()} afterward to add more members one at a time
+     * instead of bootstrapping them all here.
      *
      * @return this Builder
      */
     public Builder withEmbeddedZkQuorum() {
-      if (nodeCount < 2) {
+      if (nodeCount < 1) {
         throw new IllegalArgumentException(
-            "ZooKeeper quorum requires at least 2 nodes to cold-bootstrap (a single node runs in"
-                + " ZK's plain standalone mode and can never dynamically grow), got: "
-                + nodeCount);
+            "ZooKeeper quorum requires at least 1 node to cold-bootstrap, got: " + nodeCount);
       }
       this.useEmbeddedZkQuorum = true;
       return this;

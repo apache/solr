@@ -524,11 +524,13 @@ public class ZkContainer {
             new SolrNamedThreadFactory("zkContainer-quorumWaitLogger"));
     long startNanos = System.nanoTime();
     executor.scheduleAtFixedRate(
-        () ->
-            log.info(
-                "Zookeeper client={} (quorum mode) still waiting for a quorum after {}s.",
-                zookeeperHost,
-                TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos)),
+        () -> {
+          long waitedSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos);
+          log.info(
+              "Zookeeper client={} (quorum mode) still waiting for a quorum after {}s.",
+              zookeeperHost,
+              waitedSeconds);
+        },
         QUORUM_WAIT_LOG_INTERVAL_MS,
         QUORUM_WAIT_LOG_INTERVAL_MS,
         TimeUnit.MILLISECONDS);
@@ -549,10 +551,10 @@ public class ZkContainer {
 
   /**
    * How to join an already-running ensemble: the server id to run under, the {@code server.N=}
-   * lines to seed our own static config with, and -- when we're a genuinely new member rather
-   * than one reconnecting to a seat it already holds -- the {@code server.N=} line to ask the
-   * ensemble to add via dynamic reconfiguration once our own server is up ({@code null} when
-   * rejoining an existing seat, where no reconfiguration is needed).
+   * lines to seed our own static config with, and -- when we're a genuinely new member rather than
+   * one reconnecting to a seat it already holds -- the {@code server.N=} line to ask the ensemble
+   * to add via dynamic reconfiguration once our own server is up ({@code null} when rejoining an
+   * existing seat, where no reconfiguration is needed).
    */
   private record ZkJoinPlan(int myId, String serverLines, String joiningServer) {}
 
@@ -663,9 +665,9 @@ public class ZkContainer {
    * dynamic reconfiguration, to add {@code joiningServer} -- our own, already-started server -- as
    * a voting member. Retries on {@code NewConfigNoQuorum} for up to {@link
    * #ZK_JOIN_CONNECT_TIMEOUT_MS}: the leader only commits a reconfiguration once a quorum of the
-   * NEW config is synced with it, and right after starting we may still be mid-sync as a
-   * non-voting follower -- which is the whole reason the reconfiguration has to come after our
-   * server starts rather than before (growing 1-&gt;2 needs us synced to form a 2-of-2 quorum).
+   * NEW config is synced with it, and right after starting we may still be mid-sync as a non-voting
+   * follower -- which is the whole reason the reconfiguration has to come after our server starts
+   * rather than before (growing 1-&gt;2 needs us synced to form a 2-of-2 quorum).
    */
   private void completeJoinExistingEnsemble(List<ZkQuorumPeer> otherPeers, String joiningServer)
       throws Exception {
@@ -717,8 +719,7 @@ public class ZkContainer {
 
   /**
    * Opens a {@link ZooKeeperAdmin} client to {@code connectString} and waits up to {@code waitMs}
-   * for it to connect. Returns {@code null} (with the client closed) if it doesn't connect in
-   * time.
+   * for it to connect. Returns {@code null} (with the client closed) if it doesn't connect in time.
    */
   private static ZooKeeperAdmin connectAdmin(String connectString, long waitMs)
       throws IOException, InterruptedException {

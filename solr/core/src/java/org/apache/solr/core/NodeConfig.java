@@ -247,7 +247,6 @@ public class NodeConfig {
       int startUpZkTimeOutMillis =
           EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
 
-
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)

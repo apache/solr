@@ -104,34 +104,45 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
   }
 
   /**
-   * A single node cannot bootstrap a growable embedded-ZK quorum on its own: ZooKeeper runs a lone
-   * voting member in plain standalone mode, which doesn't support the dynamic reconfiguration that
-   * {@link MiniSolrCloudCluster#addEmbeddedZkQuorumNode()} relies on to add more members later
-   * (confirmed via a real {@code bin/solr} node, not just this test framework -- it fails with ZK's
-   * own {@code KeeperErrorCode = Unimplemented}). 2 nodes is the actual minimum: cold-bootstrapping
-   * exactly 2 together already forms a genuine ZK ensemble (leader+follower, dynamic reconfiguration
-   * enabled), from which further nodes can join one at a time via a live join instead of all being
-   * cold-bootstrapped together up front.
+   * A single node can bootstrap a growable embedded-ZK quorum on its own and then grow one node at
+   * a time via live joins. ZooKeeper would normally run a lone voting member in plain standalone
+   * mode, which doesn't support dynamic reconfiguration ({@code KeeperErrorCode = Unimplemented} on
+   * the first join); the embedded server is configured with {@code standaloneEnabled=false} to
+   * prevent that. Growing 1 -&gt; 2 also exercises the joiner starting its own server before asking
+   * to be added, since the resulting 2-of-2 quorum needs the joiner itself synced.
    */
   @Test
-  public void testColdBootstrapWithTwoNodesThenGrowsToThreeViaLiveJoin() throws Exception {
+  public void testColdBootstrapWithOneNodeThenGrowsToThreeViaLiveJoins() throws Exception {
+    // ZooKeeper renders the ports in its dynamic config with the JVM's default locale, so under a
+    // locale with non-ASCII digits (e.g. as-Beng-IN) the config it publishes can't be parsed back
+    // -- by ZooKeeper's own clients or by Solr -- and dynamic reconfiguration doesn't work.
+    assumeTrue(
+        "Default locale formats integers with non-ASCII digits, which ZooKeeper can't parse back",
+        String.format(Locale.getDefault(), "%d", 10).equals("10"));
     Path configPath = TEST_PATH().resolve("collection1").resolve("conf");
     MiniSolrCloudCluster privateCluster =
-        configureCluster(2).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
+        configureCluster(1).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
     try {
       privateCluster.waitForAllNodes(60);
 
       Map<String, Object> afterBootstrap = fetchZkStatus(privateCluster.getJettySolrRunner(0));
       assertEquals("ensemble", afterBootstrap.get("mode"));
-      assertEquals(2L, afterBootstrap.get("ensembleSize"));
+      assertEquals(1L, afterBootstrap.get("ensembleSize"));
       assertEquals(Boolean.TRUE, afterBootstrap.get("dynamicReconfig"));
+
+      privateCluster.addEmbeddedZkQuorumNode();
+      privateCluster.waitForLiveNodes(2, 60);
+
+      Map<String, Object> afterFirstJoin = fetchZkStatus(privateCluster.getJettySolrRunner(0));
+      assertEquals("ensemble", afterFirstJoin.get("mode"));
+      assertEquals(2L, afterFirstJoin.get("ensembleSize"));
 
       privateCluster.addEmbeddedZkQuorumNode();
       privateCluster.waitForLiveNodes(3, 60);
 
-      Map<String, Object> afterGrowth = fetchZkStatus(privateCluster.getJettySolrRunner(0));
-      assertEquals("ensemble", afterGrowth.get("mode"));
-      assertEquals(3L, afterGrowth.get("ensembleSize"));
+      Map<String, Object> afterSecondJoin = fetchZkStatus(privateCluster.getJettySolrRunner(0));
+      assertEquals("ensemble", afterSecondJoin.get("mode"));
+      assertEquals(3L, afterSecondJoin.get("ensembleSize"));
     } finally {
       privateCluster.shutdown();
     }

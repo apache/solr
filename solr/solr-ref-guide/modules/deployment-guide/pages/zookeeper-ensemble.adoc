@@ -691,6 +691,10 @@ Each can be overridden with a system property:
 * Quorum loss and recovery (majority of nodes down simultaneously) is not yet fully reliable.
 * The hostname in the ZK connection string must exactly match Solr's configured host (`solr.host` / `-Dhost`). Using `localhost` on some nodes and `127.0.0.1` on others will not work.
 * Runs best with the Java security manager disabled (`solr.security.manager.enabled=false`).
+* The JVM's default locale must format numbers with ASCII digits. ZooKeeper writes the ports in its ensemble configuration using the default locale, so under a locale with native digits (for example `as-IN` or `bn-BD`) that configuration cannot be read back, and joining or restarting nodes fails. Set `-Duser.language=en` (or another locale with ASCII digits) if your system default is affected.
+* Ensemble membership changes are not authenticated. To let nodes join a running ensemble, Solr enables ZooKeeper's dynamic reconfiguration and sets `zookeeper.skipACL=yes` for the whole JVM, so anyone who can reach a node's ZK client port (`solr_port + 1000`) can add or remove voting members -- and a member they control can win leadership and then read or rewrite all cluster state, including `security.json`. Any node started with the `zookeeper_quorum` role that can reach an existing member will also add itself automatically. Keep the ZK client, quorum and election ports reachable only from the Solr nodes themselves, on a trusted network.
+* Every join changes the size of the majority the ensemble needs. Growing from one member to two leaves *less* fault tolerance than one (both are then needed), and a node that joins by mistake becomes a voter that can stall writes until it is removed. Plan joins deliberately and aim for an odd number of members.
+* With dynamic reconfiguration on, ZooKeeper keeps the authoritative member list in its own data and conf directories (`zoo.cfg.dynamic.*`), not in `-z`. Those directories must persist across restarts: a node whose ZK data is wiped comes back as a stranger rather than reclaiming its seat.
 
 == Securing the ZooKeeper Connection
 
