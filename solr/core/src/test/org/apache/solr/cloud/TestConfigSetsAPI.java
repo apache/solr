@@ -202,26 +202,26 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   @Test
   public void testV2CreateWithoutBaseConfigsetUsesDefault() throws Exception {
-    final String configSetName = "v2ConfigSetNoBase" + System.nanoTime();
-    final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (final SolrClient solrClient = getHttpSolrClient(baseUrl);
-        SolrZkClient zkClient =
-            new SolrZkClient.Builder()
-                .withUrl(cluster.getZkServer().getZkAddress())
-                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-                .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-                .build()) {
-      assertFalse(getConfigSetService().checkConfigExists(configSetName));
+    final String configSetName = "v2ConfigSetNoBase";
+    final String configFile = "solrconfig.xml";
+    final var jetty = cluster.getJettySolrRunners().get(0);
+    final var configSetService = getConfigSetService();
+    final byte[] defaultConfig = configSetService.downloadFileFromConfig("_default", configFile);
+    assertNotNull(defaultConfig);
+    assertFalse(configSetService.checkConfigExists(configSetName));
 
-      final var createRequest = new ConfigsetsApi.CloneExistingConfigSet();
-      createRequest.setName(configSetName);
-      final var response = createRequest.process(solrClient);
+    final var response =
+        postDataAndGetResponse(
+            jetty,
+            jetty.getBaseURLV2() + "/configsets",
+            "application/json",
+            ByteBuffer.wrap(Utils.toJSON(Map.of("name", configSetName))),
+            "solr",
+            false);
 
-      assertNotNull(response);
-      assertEquals(0, response.responseHeader.status);
-      assertTrue(getConfigSetService().checkConfigExists(configSetName));
-      assertTrue(zkClient.exists("/configs/" + configSetName + "/solrconfig.xml"));
-    }
+    assertEquals(response.toString(), 0, getStatusCode(response));
+    assertArrayEquals(
+        defaultConfig, configSetService.downloadFileFromConfig(configSetName, configFile));
   }
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
