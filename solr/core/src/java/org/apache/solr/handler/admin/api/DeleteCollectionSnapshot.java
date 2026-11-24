@@ -25,10 +25,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
 import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -50,11 +52,29 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
   public DeleteCollectionSnapshotResponse deleteCollectionSnapshot(
       String collName, String snapshotName, boolean followAliases, String asyncId)
       throws Exception {
+    return deleteCollectionSnapshot(collName, snapshotName, followAliases, asyncId, true);
+  }
+
+  /** Shared implementation that can retain the legacy API's missing-snapshot no-op. */
+  public DeleteCollectionSnapshotResponse deleteCollectionSnapshot(
+      String collName,
+      String snapshotName,
+      boolean followAliases,
+      String asyncId,
+      boolean failIfSnapshotMissing)
+      throws Exception {
     final var response = instantiateJerseyResponse(DeleteCollectionSnapshotResponse.class);
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
     final String collectionName = resolveCollectionName(collName, followAliases);
+    if (failIfSnapshotMissing
+        && !SolrSnapshotManager.snapshotExists(
+            coreContainer.getZkController().getZkClient(), collectionName, snapshotName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "Snapshot '" + snapshotName + "' does not exist for collection '" + collectionName + "'");
+    }
 
     submitRemoteMessageAndHandleResponse(
         response,
