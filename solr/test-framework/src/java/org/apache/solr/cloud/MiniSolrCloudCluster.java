@@ -1586,9 +1586,10 @@ public class MiniSolrCloudCluster implements SolrBackend {
             "ZooKeeper quorum requires at least 1 node to cold-bootstrap, got: " + nodeCount);
       }
       // ZooKeeper writes the ports in its dynamic config with the default locale, so under one with
-      // non-ASCII digits it can't parse that config back (see the ref guide's Known Limitations).
+      // non-ASCII digits it can't parse that config back. Remove once ZOOKEEPER-5139 is fixed.
       LuceneTestCase.assumeTrue(
-          "Default locale formats integers with non-ASCII digits, which ZooKeeper can't parse back",
+          "Default locale formats integers with non-ASCII digits, which ZooKeeper can't parse back"
+              + " (ZOOKEEPER-5139)",
           String.format(Locale.getDefault(), "%d", 10).equals("10"));
       this.useEmbeddedZkQuorum = true;
       return this;
