@@ -1,0 +1,8 @@
+title: >
+  Fix HTTP 500 when deleting a file registered in ZooKeeper using DELETE /api/cluster/filestore/files/{file}.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17733
+    url: https://issues.apache.org/jira/browse/SOLR-17733

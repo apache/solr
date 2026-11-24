@@ -250,6 +250,8 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     helper.storeSampleDocs(
         configSet, SchemaDesignerConfigSetHelper.readAllBytes(() -> toJavabin(List.of(doc))));
+    String path = helper.getSampleDocsPathFromConfigSet(configSet);
+    assertTrue(cluster.getZkClient().exists("/packagestore" + path));
 
     List<SolrInputDocument> docs = helper.retrieveSampleDocs(configSet);
     assertTrue(docs != null && docs.size() == 1);
@@ -257,7 +259,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     helper.deleteStoredSampleDocs(configSet);
 
-    String path = helper.getSampleDocsPathFromConfigSet(configSet);
+    assertFalse(cluster.getZkClient().exists("/packagestore" + path));
     FileStore.FileType type = cc.getFileStore().getType(path, true);
     assertEquals(FileStore.FileType.NOFILE, type);
   }
