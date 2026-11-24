@@ -1,0 +1,8 @@
+title: >
+  CrossDC fix broken expandDbq=expand.
+type: fixed
+authors:
+  - name: Andrzej Białecki
+links:
+  - name: SOLR-18687
+    url: https://issues.apache.org/jira/browse/SOLR-18687
