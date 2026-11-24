@@ -120,6 +120,12 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
       expectedIds.add(String.format(Locale.ROOT, "doc%02d", i));
     }
     assertEquals(expectedIds, mirroredDeleteIds());
+    assertEquals(
+        "one mirrored delete-by-id request per cursor page",
+        4,
+        RecordingMirroringProcessorFactory.MIRRORED.stream()
+            .filter(r -> r.getDeleteById() != null)
+            .count());
     assertTrue("DBQ must not be mirrored as-is", mirroredDeleteQueries().isEmpty());
   }
 
@@ -215,11 +221,16 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
     @Override
     public UpdateRequestProcessor getInstance(
         SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      boolean doMirroring =
+          req.getParams()
+              .getBool(MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR, true);
       ModifiableSolrParams mirrorParams = new ModifiableSolrParams();
       mirrorParams.set("collection", req.getCore().getCoreDescriptor().getCollectionName());
+      mirrorParams.set(
+          MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR, Boolean.FALSE.toString());
       return new MirroringUpdateProcessor(
           next,
-          true,
+          doMirroring,
           false,
           true,
           CrossDcConf.ExpandDbq.getOrDefault(
@@ -227,7 +238,7 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
           Long.MAX_VALUE,
           mirrorParams,
           DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM)),
-          MIRRORED::add,
+          doMirroring ? MIRRORED::add : null,
           producerMetrics);
     }
   }

@@ -306,7 +306,13 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private static void processDBQResults(
+  /**
+   * Deletes the documents found by an expanded DBQ and mirrors the deletes as one delete-by-id
+   * request. The expanded deletes are sent with mirroring disabled and instead their collected id-s
+   * are mirrored from here, because the processor of a delete-by-id request mirrors only when the
+   * request reaches the shard leader directly, which a cloud client can't guarantee.
+   */
+  private void processDBQResults(
       SolrClient client, String collection, String uniqueField, QueryResponse rsp)
       throws SolrServerException, IOException {
     SolrDocumentList results = rsp.getResults();
@@ -316,8 +322,26 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           String id = entries.getFirstValue(uniqueField).toString();
           ids.add(id);
         });
-    if (!ids.isEmpty()) {
-      client.deleteById(collection, ids);
+    if (ids.isEmpty()) {
+      return;
+    }
+    UpdateRequest deleteRequest = new UpdateRequest();
+    deleteRequest.deleteById(ids);
+    // process locally first, don't mirror yet
+    deleteRequest.setParam(MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR, "false");
+    deleteRequest.process(client, collection);
+
+    UpdateRequest mirrorRequest = createMirrorRequest();
+    mirrorRequest.deleteById(ids);
+    try {
+      requestMirroringHandler.mirror(mirrorRequest);
+      producerMetrics.getSubmitted().inc();
+      producerMetrics.getSubmittedDeleteById().add((long) ids.size());
+    } catch (Exception e) {
+      log.error("mirror submit failed", e);
+      producerMetrics.getSubmittedDeleteByIdError().add((long) ids.size());
+      producerMetrics.getSubmitError().inc();
+      throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
     }
   }
 
