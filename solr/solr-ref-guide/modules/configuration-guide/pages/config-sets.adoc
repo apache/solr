@@ -26,9 +26,20 @@ These example configsets are named `_default` and `sample_techproducts_configs`.
 
 == Configsets in SolrCloud Clusters
 
-In SolrCloud, it's critical to understand that configsets are stored in ZooKeeper _and not_ in the file system.
+In SolrCloud, it's critical to understand that by default, configsets are stored in ZooKeeper _and not_ in the file system.
 Solr's `_default` configset is uploaded to ZooKeeper on initialization.
 This and a couple of example configsets remain on the file system but Solr does not use them unless they are used with a new collection.
+
+Operators can configure a different backing implementation, such as `FileSystemConfigSetService`, via `configSetService` in `solr.xml`.
+See xref:configuring-solr-xml.adoc#configsetservice[`configSetService`].
+The file system choice is desirable for custom docker image deployments that package plugins & configsets together as a read-only tested unit.
+It's inherently more secure and it simplifies upgrade scenarios since custom plugins will only ever read configuration it shipped and was tested with.
+The file system option is simple; it will try to write to the `configSetBaseDir` if an upload or other mutable command is given, subject to OS level permissions.
+It does _not_ replicate to other nodes.
+In Solr's Docker image, `configSetBaseDir` defaults to `/var/solr/data/configsets`, which is writable.
+For a read-only setup, point `configSetBaseDir` at a directory in the Solr installation (e.g. `/opt/solr/server/solr/configsets`), where uploads then fail.
+See xref:deployment-guide:solr-in-docker.adoc[].
+The rest of this section describes the default ZooKeeper-backed behavior.
 
 When you create a collection in SolrCloud, you can specify a named configset.
 If you don't, then the `_default` will be copied and given a unique name for use by the new collection.

@@ -16,7 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-With SolrCloud your configuration files are kept in ZooKeeper.
+By default, SolrCloud keeps configsets (`solrconfig.xml`, `schema.xml`, ...) in ZooKeeper.
+The backing implementation is configurable; see xref:configuration-guide:configuring-solr-xml.adoc#configsetservice[`configSetService`].
 
 These files are uploaded in either of the following cases:
 

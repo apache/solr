@@ -18,15 +18,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Configsets API enables you to upload new configsets to ZooKeeper, create, and delete configsets when Solr is running SolrCloud mode.
+The Configsets API enables you to upload new configsets, create, and delete configsets when Solr is running SolrCloud mode.
 
 Configsets are a collection of configuration files such as `solrconfig.xml`, `synonyms.txt`, the schema, language-specific files, and other collection-level configuration files (everything that normally lives in the `conf` directory).
 Solr ships with two example configsets (`_default` and `sample_techproducts_configs`) which can be used when creating collections.
 Using the same concept, you can create your own configsets and make them available when creating collections.
 
-This API provides a way to upload configuration files to ZooKeeper and share the same set of configuration files between two or more collections.
+This API provides a way to upload configuration files and share the same set of configuration files between two or more collections.
 
-Once a configset has been uploaded to ZooKeeper, use the configset name when creating the collection with the xref:collections-api.adoc[] and the collection will use your configuration files.
+Configsets are stored in ZooKeeper by default.
+Operators can configure a different backing implementation; see xref:configuring-solr-xml.adoc#configsetservice[`configSetService`].
+For example, with `FileSystemConfigSetService` in SolrCloud, changes made through this API only affect the receiving node's disk and are not replicated to other nodes.
+
+Once a configset has been uploaded, use the configset name when creating the collection with the xref:collections-api.adoc[] and the collection will use your configuration files.
 
 Configsets do not have to be shared between collections if they are uploaded with this API, but this API makes it easier to do so if you wish.
 An alternative to uploading your configsets in advance would be to put the configuration files into a directory under `server/solr/configsets` and using the directory name as the `-d` parameter when using `bin/solr create` to create a collection.
@@ -162,7 +166,7 @@ If set to `true`, Solr will overwrite an existing configset with the same name (
 |===
 |Optional |Default: `false`
 |===
-When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files in ZooKeeper that existed in the old configset but not in the one being uploaded.
+When overwriting an existing configset (`overwrite=true`), this parameter tells Solr to delete the files that existed in the old configset but not in the one being uploaded.
 
 When uploading an entire configset, the body of the request should be a zip file that contains the configset.
 The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).

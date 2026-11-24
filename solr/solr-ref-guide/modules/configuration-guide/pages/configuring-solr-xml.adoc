@@ -79,6 +79,7 @@ Unless the `-DzkHost` or `-Dsolr.zookeeper.server.enabled=true` are specified at
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`.
 The tables below list the child nodes of each XML element in `solr.xml`.
 
+[[configsetservice]]
 `configSetService`::
 +
 [%autowidth,frame=none]
@@ -91,7 +92,8 @@ This attribute does not need to be set.
 If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
-If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
+The default is `org.apache.solr.cloud.ZkConfigSetService` in SolrCloud or `org.apache.solr.core.FileSystemConfigSetService` otherwise.
+The latter also works in SolrCloud; see xref:config-sets.adoc#configsets-in-solrcloud-clusters[Configsets in SolrCloud Clusters].
 
 `adminHandler`::
 +

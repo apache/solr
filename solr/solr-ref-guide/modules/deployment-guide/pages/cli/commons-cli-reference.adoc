@@ -606,7 +606,7 @@ Name of the collection or core to create.
 +
 The configuration directory.
 +
-See the section xref:solr-control-script-reference.adoc#configuration-directories-and-solrcloud[Configuration Directories and SolrCloud] for more details about this option when running in SolrCloud mode.
+See the section xref:solr-control-script-reference.adoc#configsets-and-solrcloud[Configsets and SolrCloud] for more details about this option when running in SolrCloud mode.
 +
 *Example*: `bin/solr create -d _default`
 

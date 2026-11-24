@@ -115,9 +115,9 @@ In this example, a collection is divided into 2 shards, each shard has 2 replica
 A SolrCloud cluster (or simply "SolrCloud") uses Apache ZooKeeper to provide the centralized cluster management that is its main feature.
 ZooKeeper holds a list of each live node in the cluster and the state of each collection (and thus shard and replica).
 
-In this mode, configuration files (a "Configset") are stored in ZooKeeper and not on the file system of each node.
-Like most things in Solr, this choice is configurable.
-When configuration changes are made, they must be uploaded to ZooKeeper, which in turn makes sure each node knows changes have been made.
+In this mode, configuration files (a "Configset") are by default stored in ZooKeeper and not on the file system of each node.
+Like most things in Solr, this choice is configurable; see xref:configuration-guide:configuring-solr-xml.adoc#configsetservice[`configSetService`].
+With the default, when configuration changes are made, they must be uploaded to ZooKeeper, which in turn makes sure each node knows changes have been made.
 
 SolrCloud manages collections as first-class entities.
 A collection represents the entire group of shards and replicas that together provide access to a corpus of documents.
