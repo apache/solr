@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -33,6 +34,12 @@ import org.slf4j.LoggerFactory;
 
 public class BackupRepositoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** Max retries of a failed file copy (default 2); 0 disables retrying. */
+  static final String MAX_COPY_RETRIES_PROP = "solr.backup.maxcopyretries";
+
+  /** Delay before the first retry in milliseconds (default 1000), doubled on each later retry. */
+  static final String COPY_RETRY_BACKOFF_MILLIS_PROP = "solr.backup.copyretrybackoffms";
 
   private final Map<String, PluginInfo> backupRepoPluginByName = new HashMap<>();
   private PluginInfo defaultBackupRepoPlugin = null;
@@ -93,7 +100,20 @@ public class BackupRepositoryFactory {
       delegatingRepo.setDelegate(delegate);
     }
 
-    return backupRepository;
+    return withRetries(backupRepository);
+  }
+
+  /**
+   * Wraps {@code repo} so failed file copies are retried, unless {@code solr.backup.maxcopyretries}
+   * is 0.
+   */
+  private static BackupRepository withRetries(BackupRepository repo) {
+    int maxRetries = EnvUtils.getPropertyAsInteger(MAX_COPY_RETRIES_PROP, 2);
+    if (maxRetries <= 0) {
+      return repo;
+    }
+    long backoffMillis = EnvUtils.getPropertyAsLong(COPY_RETRY_BACKOFF_MILLIS_PROP, 1000L);
+    return new RetryingBackupRepository(repo, maxRetries, backoffMillis);
   }
 
   private PluginInfo getBackupRepoPlugin(String name) {
@@ -107,6 +127,6 @@ public class BackupRepositoryFactory {
     }
     LocalFileSystemRepository repo = new LocalFileSystemRepository();
     repo.init(new NamedList<>());
-    return repo;
+    return withRetries(repo);
   }
 }
