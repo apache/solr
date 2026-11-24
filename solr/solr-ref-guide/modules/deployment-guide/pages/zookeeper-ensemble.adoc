@@ -660,7 +660,7 @@ A joining node's connection string must include its own address (that is how Sol
 Restarting a node that is already a member reconnects it to its existing seat rather than adding it again.
 
 NOTE: A two-member ensemble has no fault tolerance -- both members are needed for a majority -- so treat it as a stepping stone to three (or another odd number) rather than a place to stop.
-Keep in mind, too, that ensemble membership and a node's *client* connection string are separate things: a node started with a one-host connection string keeps using that one host to talk to ZooKeeper even after the ensemble has grown, and its ZK Status page flags the mismatch.
+A running node's ZooKeeper client follows ensemble changes on its own, so it can fail over to members that joined after it started. Its connection string still matters at startup, though: a node can only start if at least one host it lists is up, so update `-z` on each node as the ensemble grows. Until you do, its ZK Status page flags the mismatch.
 
 [[embedded-zk-ports]]
 === Configuring Embedded ZK Ports
@@ -687,7 +687,7 @@ Each can be overridden with a system property:
 
 === Known Limitations
 
-* A running node's own ZK *client* connection string is fixed at startup: nodes that join the ensemble later are not added to it, so that node only ever talks to the members it was originally started with (and its ZK Status page reports the mismatch as a warning). Restart the node with an updated `-z` to pick up the new members.
+* A node's `-z` connection string is not updated when the ensemble grows. The running node follows the new members anyway, but on restart it can only connect through the hosts it lists, so keep `-z` current on every node (the ZK Status page warns when it is out of date).
 * Quorum loss and recovery (majority of nodes down simultaneously) is not yet fully reliable.
 * The hostname in the ZK connection string must exactly match Solr's configured host (`solr.host` / `-Dhost`). Using `localhost` on some nodes and `127.0.0.1` on others will not work.
 * Runs best with the Java security manager disabled (`solr.security.manager.enabled=false`).

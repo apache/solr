@@ -144,8 +144,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
                 + " hosts) is different from the "
                 + "dynamic ensemble config ("
                 + dynamicHosts.size()
-                + " hosts). This node only connects to the ZK hosts in its own connection string;"
-                + " restart it with an updated zkHost to use the other ensemble members.");
+                + " hosts). Solr follows the ensemble while running, but only uses the hosts in"
+                + " its connection string to connect at startup; update zkHost so this node can"
+                + " still start if those hosts are down.");
         status = STATUS_YELLOW;
       }
       if (zkDynamicConfig.getServers().get(0).clientPort != null) {
