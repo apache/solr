@@ -38,10 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -55,9 +51,8 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.ZkContainer;
 import org.apache.solr.util.TimeOut;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -1081,19 +1076,6 @@ public class RunExampleTool extends ToolBase {
     }
   }
 
-  /**
-   * Best-effort stop of a cloud example node, used to roll back siblings that started successfully
-   * when another member of the same concurrent quorum startup batch failed.
-   */
-  private void stopQuorumNode(int port) {
-    try {
-      Map<String, String> environment = new HashMap<>(EnvironmentUtils.getProcEnvironment());
-      runSecureCommand(environment, script, "stop", "-p", Integer.toString(port));
-    } catch (Exception e) {
-      echoIfVerbose("Failed to stop node on port " + port + " during cleanup: " + e);
-    }
-  }
-
   private static String secureExampleShellQuote(String value) {
     return "'" + value.replace("'", "'\\''") + "'";
   }
@@ -1539,82 +1521,31 @@ public class RunExampleTool extends ToolBase {
     int firstPlainNode; // 0-based index of the first node that just connects, no special role
 
     if (zkQuorum) {
-      // The quorum members all need the full ensemble connection string up front, so build it
-      // before starting any of them.
-      StringBuilder zkHostBuilder = new StringBuilder();
-      for (int n = 0; n < quorumSize; n++) {
-        if (n > 0) zkHostBuilder.append(",");
-        zkHostBuilder.append("localhost:").append(cloudPorts[n] + 1000);
-      }
-      zkHost = zkHostBuilder.toString();
-      String quorumZkHost = zkHost;
-
+      // Bootstrap a single-member ensemble on node 1, then grow it one node at a time: each new
+      // member lists the current members plus itself, and joins the running ensemble through
+      // ZooKeeper's dynamic reconfiguration before its startup returns.
       echo(
-          "\nStarting the first "
+          "\nStarting node 1 as a one-member embedded ZooKeeper ensemble, then adding nodes 2-"
               + quorumSize
-              + " nodes together as an embedded ZooKeeper quorum (zkHost="
-              + quorumZkHost
-              + ") ...");
-
-      // The quorum members must be started concurrently: each one blocks on connecting to the ZK
-      // ensemble it's helping to form, which only becomes reachable once a majority are up.
+              + " to it one at a time ...");
       StartSolrParams quorumStart = withExtraArg(params.start(), ZK_QUORUM_ROLE_ARG);
-      List<Callable<Map<String, Object>>> quorumStartups = new ArrayList<>();
+      StringBuilder ensemble = new StringBuilder();
       for (int n = 0; n < quorumSize; n++) {
+        if (n > 0) ensemble.append(",");
+        ensemble
+            .append("localhost:")
+            .append(cloudPorts[n] + ZkContainer.DEFAULT_ZK_CLIENT_PORT_OFFSET);
         Path nodeDir =
             (n == 0)
                 ? node1Dir.resolve("solr")
                 : solrHomeDir.resolve("node" + (n + 1)).resolve("solr");
-        int nodePort = cloudPorts[n];
-        quorumStartups.add(
-            () ->
-                startSolr(
-                    new DefaultExecutor.Builder<>().get(),
-                    nodeDir,
-                    true,
-                    quorumStart,
-                    nodePort,
-                    quorumZkHost,
-                    30));
-      }
-
-      ExecutorService quorumExecutor =
-          ExecutorUtil.newMDCAwareFixedThreadPool(
-              quorumSize, new SolrNamedThreadFactory("solrcli-quorum-startup"));
-      List<Future<Map<String, Object>>> futures;
-      try {
-        futures = quorumExecutor.invokeAll(quorumStartups);
-      } finally {
-        quorumExecutor.shutdown();
-      }
-
-      // One member failing to start doesn't stop its siblings (each runs in its own future), so
-      // collect every outcome before deciding whether to fail -- any sibling that did start
-      // successfully needs to be stopped, or it's left running as an orphaned background
-      // process that a retry would then port-conflict with.
-      List<Integer> startedPorts = new ArrayList<>();
-      Exception firstFailure = null;
-      for (int n = 0; n < futures.size(); n++) {
-        try {
-          Map<String, Object> result = getQuorumStartupResult(futures, n);
-          if (n == 0) {
-            nodeStatus = result;
-          }
-          startedPorts.add(cloudPorts[n]);
-        } catch (Exception e) {
-          if (firstFailure == null) {
-            firstFailure = e;
-          } else {
-            firstFailure.addSuppressed(e);
-          }
+        Map<String, Object> status =
+            startSolr(nodeDir, true, quorumStart, cloudPorts[n], ensemble.toString(), 30);
+        if (n == 0) {
+          nodeStatus = status;
         }
       }
-      if (firstFailure != null) {
-        for (int startedPort : startedPorts) {
-          stopQuorumNode(startedPort);
-        }
-        throw firstFailure;
-      }
+      zkHost = ensemble.toString();
 
       firstPlainNode = quorumSize;
     } else {
@@ -1649,8 +1580,9 @@ public class RunExampleTool extends ToolBase {
     String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
     // wait until live nodes == numNodes; same check as `bin/solr assert --cloud-nodes`. A
-    // node joining the cluster can be slower than usual (e.g. forming a fresh multi-node
-    // quorum), so a timeout here is just a warning, not fatal -- collection creation below
+    // node joining the cluster can be slower than usual (e.g. right after its embedded ZooKeeper
+    // joined the ensemble), so a timeout here is just a warning, not fatal -- collection creation
+    // below
     // retries on its own if the cluster is still settling in.
     try {
       new AssertTool(runtime)
@@ -1713,36 +1645,7 @@ public class RunExampleTool extends ToolBase {
         extraArgs);
   }
 
-  /** Unwraps and surfaces the result/failure of one of the parallel ZK quorum node startups. */
-  private static Map<String, Object> getQuorumStartupResult(
-      List<Future<Map<String, Object>>> futures, int index) throws Exception {
-    try {
-      return futures.get(index).get();
-    } catch (ExecutionException ee) {
-      Throwable cause = ee.getCause();
-      throw (cause instanceof Exception) ? (Exception) cause : ee;
-    }
-  }
-
   Map<String, Object> startSolr(
-      Path solrHomeDir,
-      boolean cloudMode,
-      StartSolrParams params,
-      int port,
-      String zkHost,
-      int maxWaitSecs)
-      throws Exception {
-    return startSolr(executor, solrHomeDir, cloudMode, params, port, zkHost, maxWaitSecs);
-  }
-
-  /**
-   * Like {@link #startSolr(Path, boolean, StartSolrParams, int, String, int)}, but with an explicit
-   * {@link Executor}. {@link org.apache.commons.exec.DefaultExecutor} isn't safe to reuse across
-   * concurrent {@code execute} calls, so callers starting multiple nodes in parallel (e.g. ZK
-   * quorum members) must each pass their own instance rather than share {@link #executor}.
-   */
-  Map<String, Object> startSolr(
-      Executor execUsed,
       Path solrHomeDir,
       boolean cloudMode,
       StartSolrParams params,
@@ -1841,7 +1744,7 @@ public class RunExampleTool extends ToolBase {
         }
       }
       DefaultExecuteResultHandler handler = new DefaultExecuteResultHandler();
-      execUsed.execute(startCmd, startEnv, handler);
+      executor.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
         handler.waitFor(Duration.ofSeconds(3));
@@ -1858,7 +1761,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       try {
-        int code = execUsed.execute(startCmd);
+        int code = executor.execute(startCmd);
         if (code != 0) throw new Exception("Failed to start Solr using command: " + cmdStr);
       } catch (ExecuteException e) {
         throw new Exception("Failed to start Solr using command: " + cmdStr + " Exception : " + e);
@@ -2019,9 +1922,9 @@ public class RunExampleTool extends ToolBase {
           "--solr-url", solrUrl
         };
 
-    // A freshly-formed cluster (especially an embedded ZK quorum, which needs leader election
-    // across separate JVMs plus Overseer election on top of that) can still be settling in by the
-    // time we get here despite waitToSeeLiveNodes, so retry a few times before giving up.
+    // A freshly-formed cluster (especially one whose embedded ZooKeeper ensemble just grew, with
+    // Overseer election on top of that) can still be settling in by the time we get here despite
+    // waitToSeeLiveNodes, so retry a few times before giving up.
     int attempts = 3;
     int createCode;
     do {
