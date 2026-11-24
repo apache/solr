@@ -50,9 +50,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -645,7 +647,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
         privateCluster.stopJettySolrRunner(node1);
         privateCluster.stopJettySolrRunner(node2);
 
-        // Wait for ZK to detect quorum loss
+        // Counts running Jetty nodes only; with quorum lost, ZK itself can't be asked.
         privateCluster.waitForLiveNodes(1, 120);
 
         // Restart both nodes to restore quorum
@@ -661,10 +663,16 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
         privateCluster.waitForNode(node2, 120);
         privateCluster.waitForLiveNodes(3, 120);
 
-        // CRITICAL: Wait for collection to become active (replicas up, leader elected)
-        // After catastrophic failure, we need to ensure at least one replica is active
-        // before attempting operations
-        privateCluster.waitForActiveCollection(collectionName, 120, TimeUnit.SECONDS, 1, 1);
+        // The surviving node's ZK session outlived the quorum loss, so ZK still lists it as live
+        // with an active replica even while its own client is reconnecting -- and until then it
+        // rejects updates ("Cannot talk to ZooKeeper"). Wait for every node to be connected.
+        waitForZkConnected(privateCluster, 120);
+        try {
+          privateCluster.waitForActiveCollection(collectionName, 120, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
+          logThreadDump();
+          throw e;
+        }
 
         // After catastrophic failure, the cluster should be operational with quorum restored
         // even if not all replicas are immediately active
@@ -685,11 +693,48 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
         }
       }
     } finally {
-      // Clean up collection and cluster
-      CollectionAdminRequest.deleteCollection(collectionName)
-          .process(privateCluster.getSolrClient());
       privateCluster.shutdown();
     }
+  }
+
+  /**
+   * After quorum loss, a shard can stay leaderless because the Overseer's state-update thread stops
+   * applying updates without logging why; its stack is the missing piece of that diagnosis. One log
+   * call per thread, since the test logging truncates long messages, and only threads running
+   * SolrCloud code, to keep it readable.
+   */
+  private static void logThreadDump() {
+    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+      StackTraceElement[] frames = entry.getValue();
+      boolean inSolrCloud = false;
+      for (StackTraceElement frame : frames) {
+        if (frame.getClassName().startsWith("org.apache.solr.cloud.")) {
+          inSolrCloud = true;
+          break;
+        }
+      }
+      if (!inSolrCloud) {
+        continue;
+      }
+      Thread thread = entry.getKey();
+      StringBuilder stack = new StringBuilder();
+      for (StackTraceElement frame : frames) {
+        stack.append("\n    at ").append(frame);
+      }
+      log.error("Thread dump: \"{}\" {}{}", thread.getName(), thread.getState(), stack);
+    }
+  }
+
+  private static void waitForZkConnected(MiniSolrCloudCluster cluster, int timeoutSeconds)
+      throws InterruptedException, TimeoutException {
+    new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "every running node's ZooKeeper client to be connected",
+            () ->
+                cluster.getJettySolrRunners().stream()
+                    .filter(JettySolrRunner::isRunning)
+                    .allMatch(
+                        j -> j.getCoreContainer().getZkController().getZkClient().isConnected()));
   }
 
   // Helper methods for improved test clarity and reusability
