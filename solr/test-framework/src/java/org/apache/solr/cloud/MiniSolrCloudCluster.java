@@ -581,11 +581,19 @@ public class MiniSolrCloudCluster implements SolrBackend {
     }
   }
 
-  /** Deletes all configsets except the built-in _default and _multilingual configsets. */
+  /** Deletes all configsets except those bootstrapped at startup. */
   public void deleteAllConfigSets() throws Exception {
     ZkConfigSetService service = new ZkConfigSetService(getZkClient());
+    List<String> bootstrapped =
+        getJettySolrRunners().stream()
+            .map(JettySolrRunner::getCoreContainer)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No running Solr node"))
+            .getConfig()
+            .getBootstrapConfigSetNames();
     for (String configSet : service.listConfigs()) {
-      if (configSet.equals("_default") || configSet.equals("_multilingual")) {
+      if (bootstrapped.contains(configSet)) {
         continue;
       }
       service.deleteConfig(configSet);
