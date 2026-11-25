@@ -18,8 +18,12 @@
 package org.apache.solr.shell;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -69,6 +73,29 @@ public class SecurityManagerTest extends SolrCatsTestCase {
 
         // Java 24+ has no security manager; Solr's allowPaths check rejects it instead
         .assertMatches("access denied|Could not backup all shards");
+  }
+
+  /**
+   * Jetty writes its state file into {@code SOLR_PID_DIR}, which the policy grants only that file
+   * in. The harness default puts the PID dir in {@code SOLR_HOME}, which is granted anyway.
+   */
+  @Test
+  public void stateFileInSeparatePidDir() throws IOException {
+    Path pidDir = mkdirs("pid-dir").toRealPath();
+    env("SOLR_SECURITY_MANAGER_ENABLED", "true");
+    env("SOLR_PID_DIR", pidDir.toString());
+    run("solr start");
+
+    // Without a security manager this test proves nothing; fail rather than pass vacuously
+    String systemInfo = http("/solr/admin/info/system").assertStatus(200).body();
+    Matcher spec = Pattern.compile("\"spec\":\\{[^}]*\"version\":\"(\\d+)").matcher(systemInfo);
+    assertTrue("No JVM spec version in " + systemInfo, spec.find());
+    Assume.assumeTrue("Java 24+ has no security manager", Integer.parseInt(spec.group(1)) < 24);
+    assertTrue(
+        "Node runs without a security manager", systemInfo.contains("-Djava.security.manager"));
+    Path stateFile = pidDir.resolve("solr-" + env("SOLR_PORT") + ".state");
+    assertTrue(stateFile + " missing", Files.exists(stateFile));
+    assertTrue(Files.readString(stateFile).contains("STARTED"));
   }
 
   /** A {@code file:} URL for a directory, without the trailing slash {@code toUri()} adds. */

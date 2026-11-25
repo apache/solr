@@ -1354,7 +1354,7 @@ function start_solr() {
 
   # shellcheck disable=SC2164
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.logs.dir="$SOLR_LOGS_DIR" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.logs.dir="$SOLR_LOGS_DIR" -Dsolr.pid.dir="$SOLR_PID_DIR" \
     "-Dsolr.port.listen=$SOLR_PORT_LISTEN" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "-Djava.io.tmpdir=$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
@@ -1382,7 +1382,7 @@ function start_solr() {
     exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
   else
     # run Solr in the background
-    SOLR_STATE_FILE="$SOLR_LOGS_DIR/solr-$SOLR_PORT_LISTEN.state"
+    SOLR_STATE_FILE="$SOLR_PID_DIR/solr-$SOLR_PORT_LISTEN.state"
     rm -f "$SOLR_STATE_FILE"
     # shellcheck disable=SC2086
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \

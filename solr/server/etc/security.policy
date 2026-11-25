@@ -204,6 +204,9 @@ grant {
   permission java.io.FilePermission "${solr.logs.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.logs.dir}${/}-", "read,write,delete,readlink";
 
+  // Jetty's state file, which bin/solr start waits on
+  permission java.io.FilePermission "${solr.pid.dir}${/}solr-${solr.port.listen}.state", "read,write,delete";
+
   permission java.io.FilePermission "${solr.security.allow.paths}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.security.allow.paths}${/}-", "read,write,delete,readlink";
 
