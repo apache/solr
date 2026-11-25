@@ -18,7 +18,6 @@ package org.apache.solr.common.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
@@ -194,19 +193,22 @@ public class NamedListTest extends SolrTestCase {
   }
 
   @Test
-  public void testShallowMap() {
-    NamedList<String> nl = new NamedList<>();
-    nl.add("key1", "Val1");
-    Map<String, String> m = nl.asShallowMap();
-    m.put("key1", "Val1_");
-    assertEquals("Val1_", nl.get("key1"));
-    assertEquals("Val1_", m.get("key1"));
-    assertEquals(0, nl.indexOf("key1", 0));
-    m.putAll(Map.of("key1", "Val1__", "key2", "Val2"));
-    assertEquals("Val1__", nl.get("key1"));
-    assertEquals("Val1__", m.get("key1"));
-    assertEquals(0, nl.indexOf("key1", 0));
-    assertEquals("Val2", nl.get("key2"));
-    assertEquals("Val2", m.get("key2"));
+  public void testGetImmutableCopyKeepsNullNamesAndValues() {
+    NamedList<Object> withNulls = new NamedList<>();
+    withNulls.add("aNull", null);
+    withNulls.add(null, 4);
+    withNulls.add("dup", 1);
+    withNulls.add("dup", 2);
+
+    NamedList<Object> copy = withNulls.getImmutableCopy();
+
+    assertEquals(withNulls, copy);
+    assertEquals("aNull", copy.getName(0));
+    assertNull(copy.getVal(0));
+    assertNull(copy.getName(1));
+    assertEquals(4, copy.getVal(1));
+    assertEquals(2, copy.getAll("dup").size());
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("x", 1));
+    assertThrows(UnsupportedOperationException.class, () -> copy.setVal(0, 11));
   }
 }

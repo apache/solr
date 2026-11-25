@@ -43,6 +43,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -671,7 +672,11 @@ public abstract class LBSolrClient extends SolrClient {
       if (!isNonRetryable
           && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable && isConnectException(rootCause)) {
+      } else if (isNonRetryable
+          && (isConnectException(rootCause)
+              || SolrException.hasCause(e, RequestNotSentException.class))) {
+        // Nothing of the request reached the server, so replaying it elsewhere is safe even though
+        // it isn't idempotent.
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;

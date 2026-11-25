@@ -16,16 +16,32 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.common.SolrException.ErrorCode.NOT_FOUND;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
+import org.apache.solr.common.SolrException;
 
 /** Supports snapshot-delete command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "delete",
+    description = "Deletes a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Delete a snapshot",
+      "  bin/solr snapshot delete -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotDeleteTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -35,6 +51,11 @@ public class SnapshotDeleteTool extends ToolBase {
           .desc("Name of collection to manage.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -43,6 +64,25 @@ public class SnapshotDeleteTool extends ToolBase {
           .required()
           .desc("Name of the snapshot to delete")
           .get();
+
+  /** Parameters for the snapshot-delete command, independent of the command line parser. */
+  record SnapshotDeleteParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
+
+  public SnapshotDeleteTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotDeleteTool(ToolRuntime runtime) {
     super(runtime);
@@ -64,23 +104,26 @@ public class SnapshotDeleteTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      deleteSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotDeleteParams params =
+        new SnapshotDeleteParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    deleteSnapshot(params);
+  }
+
+  void deleteSnapshot(SnapshotDeleteParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      deleteSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 
   public void deleteSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
-    CollectionAdminRequest.DeleteSnapshot deleteSnapshot =
-        new CollectionAdminRequest.DeleteSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
+    var deleteSnapshot =
+        new CollectionSnapshotsApi.DeleteCollectionSnapshot(collectionName, snapshotName);
     try {
-      resp = deleteSnapshot.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The DELETESNAPSHOT request failed. The status code is " + resp.getStatus());
-      }
+      deleteSnapshot.process(solrClient);
       echo(
           "Successfully deleted snapshot with name "
               + snapshotName
@@ -88,13 +131,51 @@ public class SnapshotDeleteTool extends ToolBase {
               + collectionName);
 
     } catch (Exception e) {
-      echo(
+      if (isMissingSnapshot(solrClient, collectionName, snapshotName, e)) {
+        echo(
+            "Snapshot with name "
+                + snapshotName
+                + " does not exist for collection "
+                + collectionName
+                + "; nothing to delete.");
+        return;
+      }
+      throw new IllegalStateException(
           "Failed to delete a snapshot with name "
               + snapshotName
               + " for collection "
               + collectionName
               + " due to following error : "
-              + e.getLocalizedMessage());
+              + e.getLocalizedMessage(),
+          e);
     }
+  }
+
+  private static boolean isMissingSnapshot(
+      SolrClient solrClient, String collectionName, String snapshotName, Exception failure) {
+    if (!(failure instanceof SolrException error) || error.code() != NOT_FOUND.code) {
+      return false;
+    }
+    try {
+      return !new CollectionSnapshotsApi.ListSnapshots(collectionName)
+          .process(solrClient)
+          .snapshots
+          .containsKey(snapshotName);
+    } catch (Exception lookupFailure) {
+      failure.addSuppressed(lookupFailure);
+      return false;
+    }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    SnapshotDeleteParams params =
+        new SnapshotDeleteParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name,
+            snapshot.name);
+    deleteSnapshot(params);
+    return 0;
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.MutableListenerFactory;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
@@ -38,12 +39,16 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
+  private final MutableListenerFactory securityListenerFactory = new MutableListenerFactory();
+
   HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
     var httpClientBuilder =
-        new HttpJettySolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
+        new HttpJettySolrClient.Builder()
+            .addListenerFactory(trackHttpSolrMetrics)
+            .addListenerFactory(securityListenerFactory);
 
     if (cfg != null) {
       httpClientBuilder
@@ -73,7 +78,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
   }
 
   void setSecurityBuilder(HttpClientBuilderPlugin builder) {
-    builder.setup(httpSolrClient);
+    builder.setup(securityListenerFactory);
   }
 
   @Override

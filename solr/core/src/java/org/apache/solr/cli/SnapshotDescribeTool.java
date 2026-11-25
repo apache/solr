@@ -16,26 +16,33 @@
  */
 package org.apache.solr.cli;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Date;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-describe command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "describe",
+    description = "Describes a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Describe a snapshot",
+      "  bin/solr snapshot describe -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotDescribeTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -45,6 +52,11 @@ public class SnapshotDescribeTool extends ToolBase {
           .desc("Name of collection to be snapshot.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -53,6 +65,25 @@ public class SnapshotDescribeTool extends ToolBase {
           .required()
           .desc("Name of the snapshot to describe")
           .get();
+
+  /** Parameters for the snapshot-describe command, independent of the command line parser. */
+  record SnapshotDescribeParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
+
+  public SnapshotDescribeTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotDescribeTool(ToolRuntime runtime) {
     super(runtime);
@@ -77,37 +108,42 @@ public class SnapshotDescribeTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      describeSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotDescribeParams params =
+        new SnapshotDescribeParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    describeSnapshot(params);
+  }
+
+  void describeSnapshot(SnapshotDescribeParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      describeSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 
   public void describeSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
     try {
-      Collection<CollectionSnapshotMetaData> snaps =
-          listCollectionSnapshots(solrClient, collectionName);
-      for (CollectionSnapshotMetaData m : snaps) {
-        if (snapshotName.equals(m.getName())) {
-          echo("Name: " + m.getName());
-          echo("Status: " + m.getStatus());
-          echo("Time of creation: " + dateFormat.format(m.getCreationDate()));
-          echo("Total number of cores with snapshot: " + m.getReplicaSnapshots().size());
-          echo("-----------------------------------");
-          for (CollectionSnapshotMetaData.CoreSnapshotMetaData n : m.getReplicaSnapshots()) {
-            String builder =
-                "Core [name="
-                    + n.getCoreName()
-                    + ", leader="
-                    + n.isLeader()
-                    + ", generation="
-                    + n.getGenerationNumber()
-                    + ", indexDirPath="
-                    + n.getIndexDirPath()
-                    + "]\n";
-            echo(builder);
-          }
+      var response = new CollectionSnapshotsApi.ListSnapshots(collectionName).process(solrClient);
+      var metadata = response.snapshots.get(snapshotName);
+      if (metadata != null) {
+        echo("Name: " + metadata.name);
+        echo("Status: " + metadata.status);
+        echo("Time of creation: " + dateFormat.format(new Date(metadata.creationDate)));
+        echo("Total number of cores with snapshot: " + metadata.replicaSnapshots.size());
+        echo("-----------------------------------");
+        for (var replica : metadata.replicaSnapshots) {
+          echo(
+              "Core [name="
+                  + replica.coreName
+                  + ", leader="
+                  + replica.leader
+                  + ", generation="
+                  + replica.generationNumber
+                  + ", indexDirPath="
+                  + replica.indexDirPath
+                  + "]\n");
         }
       }
     } catch (Exception e) {
@@ -115,25 +151,15 @@ public class SnapshotDescribeTool extends ToolBase {
     }
   }
 
-  private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(
-      SolrClient solrClient, String collectionName) throws SolrServerException, IOException {
-    CollectionAdminRequest.ListSnapshots listSnapshots =
-        new CollectionAdminRequest.ListSnapshots(collectionName);
-    CollectionAdminResponse resp = listSnapshots.process(solrClient);
-
-    if (resp.getStatus() != 0) {
-      throw new IllegalStateException(
-          "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
-    }
-
-    NamedList<?> apiResult =
-        (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-
-    Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
-    for (int i = 0; i < apiResult.size(); i++) {
-      result.add(new CollectionSnapshotMetaData((NamedList<?>) apiResult.getVal(i)));
-    }
-
-    return result;
+  @Override
+  public int callTool() throws Exception {
+    SnapshotDescribeParams params =
+        new SnapshotDescribeParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name,
+            snapshot.name);
+    describeSnapshot(params);
+    return 0;
   }
 }

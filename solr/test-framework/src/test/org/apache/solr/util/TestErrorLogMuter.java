@@ -102,43 +102,4 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
       assertEquals(0, rootErrorCheck.getCount());
     }
   }
-
-  @LogLevel("=WARN")
-  public void testDeprecatedBaseClassMethods() {
-
-    // NOTE: using the same queue for both interceptors (mainly as proof that you can)
-    try (LogListener rootWarnCheck = LogListener.warn("");
-        LogListener rootErrorCheck = LogListener.error("").setQueue(rootWarnCheck.getQueue())) {
-
-      log.error("this matches the default ignore_exception pattern");
-      log.error("something matching foo that should make it"); // E1
-      assertEquals(1, rootErrorCheck.getCount());
-      assertThat(rootErrorCheck.pollMessage(), containsString("should make it"));
-      ignoreException("foo");
-      log.error("something matching foo that should NOT make it");
-      ignoreException("foo");
-      ignoreException("ba+r");
-      log.error("something matching foo that should still NOT make it");
-      log.error("something matching baaaar that should NOT make it");
-      log.warn(
-          "A warning should be fine even if it matches ignore_exception and foo and bar"); // W1
-      assertEquals(1, rootErrorCheck.getCount());
-      assertEquals(1, rootWarnCheck.getCount());
-      assertThat(rootErrorCheck.pollMessage(), containsString("should be fine"));
-      unIgnoreException("foo");
-      log.error("another thing matching foo that should make it"); // E2
-      assertEquals(2, rootErrorCheck.getCount());
-      assertThat(rootErrorCheck.pollMessage(), containsString("another thing"));
-      log.error("something matching baaaar that should still NOT make it");
-      assertEquals(2, rootErrorCheck.getCount());
-      resetExceptionIgnores();
-      log.error("this still matches the default ignore_exception pattern");
-      log.error("but something matching baaaar should make it now"); // E3
-      assertThat(rootErrorCheck.pollMessage(), containsString("should make it now"));
-
-      // the root logger must have only gotten the non-muted messages...
-      assertEquals(3, rootErrorCheck.getCount());
-      assertEquals(1, rootWarnCheck.getCount());
-    }
-  }
 }

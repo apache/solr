@@ -421,13 +421,10 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
+            "/get",
             params(
-                "qt",
-                "/get",
-                "getVersions",
-                Integer.toString(numVersions),
-                "sync",
-                StrUtils.join(Arrays.asList(syncWith), ',')));
+                "getVersions", Integer.toString(numVersions),
+                "sync", StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList<?> rsp = client.request(qr);
     assertEquals(expectedResult, (Boolean) rsp.get("sync"));
   }

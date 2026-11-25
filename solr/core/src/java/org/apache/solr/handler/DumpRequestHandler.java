@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -33,6 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.ContentStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +43,7 @@ public class DumpRequestHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     // Show params
-    rsp.add("params", req.getParams().toNamedList());
+    rsp.add("params", new SimpleOrderedMap<>(req.getParams()));
     String[] parts = req.getParams().getParams("urlTemplateValues");
     if (parts != null && parts.length > 0) {
       Map<String, String> map = new LinkedHashMap<>();

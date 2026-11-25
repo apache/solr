@@ -24,9 +24,13 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
+import io.opentelemetry.instrumentation.api.config.IncludeExclude;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry;
+import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetryBuilder;
+import io.opentelemetry.instrumentation.runtimetelemetry.internal.Experimental;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
+import java.util.List;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.metrics.otel.OtelUnit;
@@ -37,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class OtelRuntimeJvmMetrics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private RuntimeMetrics runtimeMetrics;
+  private RuntimeTelemetry runtimeMetrics;
   private ObservableLongGauge systemMemoryGauge;
   private boolean isInitialized = false;
 
@@ -52,7 +56,10 @@ public class OtelRuntimeJvmMetrics {
               + " gauges; guarded by instanceof check so gracefully absent on non-HotSpot JVMs")
   public OtelRuntimeJvmMetrics initialize(
       SolrMetricManager solrMetricManager, String registryName) {
-    if (!isJvmMetricsEnabled()) return this;
+    if (!isJvmMetricsEnabled()) {
+      log.info("JVM metrics are disabled"); // log because this isn't a default
+      return this;
+    }
 
     // a dummy instance; we only care to provide the MeterProvider
     var otel =
@@ -72,11 +79,18 @@ public class OtelRuntimeJvmMetrics {
             return OpenTelemetry.noop().getPropagators();
           }
         };
-    this.runtimeMetrics =
-        RuntimeMetrics.builder(otel)
-            // TODO: We should have this configurable to enable/disable specific JVM metrics
-            .enableAllFeatures()
-            .build();
+
+    RuntimeTelemetryBuilder builder = RuntimeTelemetry.builder(otel);
+    // TODO: Make this configurable — Experimental.setJfrMetrics(builder, IncludeExclude) lets
+    // callers select individual JVM metrics instead of all-or-nothing; expose that via a
+    // solr.metrics.jvm.* system property instead of hardcoding true/true here.
+    Experimental.setEmitExperimentalMetrics(builder, true);
+    Experimental.setEmitExperimentalJfrMetrics(builder, true);
+    // Get CPU utilization from JFR instead of JMX to work around JDK bugs
+    Experimental.setJfrMetrics(
+        builder,
+        IncludeExclude.builder().setIncluded(List.of("jvm.system.cpu.utilization")).build());
+    this.runtimeMetrics = builder.build();
     java.lang.management.OperatingSystemMXBean osMxBean =
         ManagementFactory.getOperatingSystemMXBean();
     if (osMxBean instanceof com.sun.management.OperatingSystemMXBean extOsMxBean) {
@@ -93,16 +107,13 @@ public class OtelRuntimeJvmMetrics {
                 if (free >= 0) measurement.record(free, Attributes.of(STATE_KEY_ATTR, "free"));
               },
               OtelUnit.BYTES);
-      log.info("Physical memory metrics enabled");
+      log.debug("Physical memory metrics enabled");
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Physical memory metrics unavailable:"
-                + " com.sun.management.OperatingSystemMXBean not present on this JVM");
-      }
+      log.info(
+          "Physical memory metrics unavailable:"
+              + " com.sun.management.OperatingSystemMXBean not present on this JVM");
     }
     isInitialized = true;
-    log.info("JVM metrics collection successfully initialized");
     return this;
   }
 

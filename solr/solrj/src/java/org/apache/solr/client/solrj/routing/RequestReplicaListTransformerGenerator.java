@@ -216,7 +216,7 @@ public class RequestReplicaListTransformerGenerator {
         if (log.isDebugEnabled()) {
           log.debug(
               "Applied sorting preferences to replica list: {}",
-              choices.stream().map(T::toString).collect(Collectors.joining(",", "[", "]")));
+              choices.stream().map(Object::toString).collect(Collectors.joining(",", "[", "]")));
         }
       }
     }

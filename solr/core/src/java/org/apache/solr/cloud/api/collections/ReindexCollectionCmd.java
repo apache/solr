@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -98,7 +97,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String TARGET = "target";
   public static final String TARGET_COL_PREFIX = ".rx_";
   public static final String CHK_COL_PREFIX = ".rx_ck_";
-  public static final String REINDEXING_STATE = CollectionAdminRequest.PROPERTY_PREFIX + "rx";
+  public static final String REINDEXING_STATE = CollectionAdminParams.PROPERTY_PREFIX + "rx";
 
   public static final String STATE = "state";
   public static final String PHASE = "phase";
@@ -413,7 +412,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // Recipe taken from:
       // http://joelsolr.blogspot.com/2016/10/solr-63-batch-jobs-parallel-etl-and.html
       ModifiableSolrParams q = new ModifiableSolrParams();
-      q.set(CommonParams.QT, "/stream");
       q.set("collection", collection);
       q.set(
           "expr",
@@ -451,7 +449,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       log.debug("- starting copying documents from {} to {}", collection, targetCollection);
       SolrResponse rsp;
       try {
-        rsp = new QueryRequest(q).process(ccc.getSolrCloudManager().getSolrClient());
+        rsp = new QueryRequest("/stream", q).process(ccc.getSolrCloudManager().getSolrClient());
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -672,7 +670,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   // XXX see #waitForDaemon() for why we need this
-  private Replica getReplicaForDaemon(SolrResponse rsp, DocCollection coll) {
+  private Replica getReplicaForDaemon(SolrResponse rsp, DocCollection collectionState) {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> rs = (Map<String, Object>) rsp.getResponse().get("result-set");
     if (rs == null || rs.isEmpty()) {
@@ -713,13 +711,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     if (replicaName == null) {
       return null;
     }
+    final String finalReplicaName = replicaName;
     // build a baseUrl of the replica
-    for (Replica r : coll.getReplicas()) {
-      if (replicaName.equals(r.getCoreName())) {
-        return r;
-      }
-    }
-    return null;
+    return collectionState
+        .replicaStream()
+        .filter(r -> finalReplicaName.equals(r.getCoreName()))
+        .findFirst()
+        .orElse(null);
   }
 
   // XXX currently this is complicated to due a bug in the way the daemon 'list'
@@ -902,56 +900,62 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     ClusterState clusterState = ccc.getSolrCloudManager().getClusterState();
     NamedList<Object> cmdResults = new NamedList<>();
-    if (createdTarget
-        && !collection.equals(targetCollection)
-        && clusterState.hasCollection(targetCollection)) {
-      log.debug(" -- removing {}", targetCollection);
-      ZkNodeProps cmd =
-          new ZkNodeProps(CommonParams.NAME, targetCollection, FOLLOW_ALIASES, "false");
-      new DeleteCollectionCmd(ccc)
-          .call(
-              adminCmdContext
-                  .subRequestContext(CollectionParams.CollectionAction.DELETE, null)
-                  .withClusterState(clusterState),
-              cmd,
-              cmdResults);
-      CollectionHandlingUtils.checkResults(
-          "CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
+    try {
+      if (createdTarget
+          && !collection.equals(targetCollection)
+          && clusterState.hasCollection(targetCollection)) {
+        log.debug(" -- removing {}", targetCollection);
+        ZkNodeProps cmd =
+            new ZkNodeProps(CommonParams.NAME, targetCollection, FOLLOW_ALIASES, "false");
+        new DeleteCollectionCmd(ccc)
+            .call(
+                adminCmdContext
+                    .subRequestContext(CollectionParams.CollectionAction.DELETE, null)
+                    .withClusterState(clusterState),
+                cmd,
+                cmdResults);
+        CollectionHandlingUtils.checkResults(
+            "CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
+      }
+      // remove chk collection
+      if (clusterState.hasCollection(chkCollection)) {
+        log.debug(" -- removing {}", chkCollection);
+        ZkNodeProps cmd =
+            new ZkNodeProps(CommonParams.NAME, chkCollection, FOLLOW_ALIASES, "false");
+        cmdResults = new NamedList<>();
+        new DeleteCollectionCmd(ccc)
+            .call(
+                adminCmdContext
+                    .subRequestContext(CollectionParams.CollectionAction.DELETE, null)
+                    .withClusterState(clusterState),
+                cmd,
+                cmdResults);
+        CollectionHandlingUtils.checkResults(
+            "CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
+      }
+    } finally {
+      // always restore the source collection, even if the temporary collections could not be
+      // removed (e.g. the target is referenced by an alias), otherwise it is left read-only
+      log.debug(" -- turning readOnly mode off for {}", collection);
+      ZkNodeProps props =
+          new ZkNodeProps(
+              Overseer.QUEUE_OPERATION,
+              CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
+              ZkStateReader.COLLECTION_PROP,
+              collection,
+              ZkStateReader.READ_ONLY,
+              null);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater()
+            .doSingleStateUpdate(
+                DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection,
+                props,
+                ccc.getSolrCloudManager(),
+                ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(props);
+      }
+      removeReindexingState(collection);
     }
-    // remove chk collection
-    if (clusterState.hasCollection(chkCollection)) {
-      log.debug(" -- removing {}", chkCollection);
-      ZkNodeProps cmd = new ZkNodeProps(CommonParams.NAME, chkCollection, FOLLOW_ALIASES, "false");
-      cmdResults = new NamedList<>();
-      new DeleteCollectionCmd(ccc)
-          .call(
-              adminCmdContext
-                  .subRequestContext(CollectionParams.CollectionAction.DELETE, null)
-                  .withClusterState(clusterState),
-              cmd,
-              cmdResults);
-      CollectionHandlingUtils.checkResults(
-          "CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
-    }
-    log.debug(" -- turning readOnly mode off for {}", collection);
-    ZkNodeProps props =
-        new ZkNodeProps(
-            Overseer.QUEUE_OPERATION,
-            CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
-            ZkStateReader.COLLECTION_PROP,
-            collection,
-            ZkStateReader.READ_ONLY,
-            null);
-    if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      ccc.getDistributedClusterStateUpdater()
-          .doSingleStateUpdate(
-              DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection,
-              props,
-              ccc.getSolrCloudManager(),
-              ccc.getZkStateReader());
-    } else {
-      ccc.offerStateUpdate(props);
-    }
-    removeReindexingState(collection);
   }
 }

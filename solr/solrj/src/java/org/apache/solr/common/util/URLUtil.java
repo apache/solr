@@ -179,7 +179,7 @@ public class URLUtil {
    * @param baseUri the base URI (e.g., URI for "http://localhost:8983/solr")
    * @param path the path to append (e.g., "/config/overlay" or "admin/cores"). May include a query
    *     string (e.g., "/select?q=test")
-   * @param queryParams optional query parameters to append (may be null). If the path already
+   * @param queryParams optional query parameters to append (can be null). If the path already
    *     contains a query string, these params will be added to it.
    * @return a properly encoded URI
    * @throws IllegalArgumentException if the baseUri or path are invalid

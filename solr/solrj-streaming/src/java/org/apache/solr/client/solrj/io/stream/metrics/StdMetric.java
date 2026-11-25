@@ -23,16 +23,15 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+/**
+ * Metric that computes the sample standard deviation of a numeric column over a stream. Consistent
+ * with the {@code std} streaming evaluator.
+ */
 public class StdMetric extends Metric {
-  // How'd the MeanMetric get to be so mean?
-  // Maybe it was born with it.
-  // Maybe it was mayba-mean.
-  //
-  // I'll see myself out.
 
   private String columnName;
-  private double doubleSum;
-  private long longSum;
+  private double sum;
+  private double sumSq;
   private long count;
 
   public StdMetric(String columnName) {
@@ -75,11 +74,28 @@ public class StdMetric extends Metric {
   }
 
   @Override
-  public void update(Tuple tuple) {}
+  public void update(Tuple tuple) {
+    Object o = tuple.get(columnName);
+    double val;
+    if (o instanceof Double d) {
+      val = d;
+    } else if (o instanceof Float f) {
+      val = f.doubleValue();
+    } else if (o instanceof Integer i) {
+      val = i.doubleValue();
+    } else if (o instanceof Long l) {
+      val = l.doubleValue();
+    } else {
+      return;
+    }
+    ++count;
+    sum += val;
+    sumSq += val * val;
+  }
 
   @Override
   public Metric newInstance() {
-    return new MeanMetric(columnName, outputLong);
+    return new StdMetric(columnName, outputLong);
   }
 
   @Override
@@ -87,9 +103,16 @@ public class StdMetric extends Metric {
     return new String[] {columnName};
   }
 
+  /** Returns the sample standard deviation of the values seen so far. */
   @Override
   public Number getValue() {
-    return null;
+    double std =
+        count <= 1 ? 0.0d : Math.sqrt(((count * sumSq) - (sum * sum)) / (count * (count - 1.0D)));
+    if (outputLong) {
+      return Math.round(std);
+    } else {
+      return std;
+    }
   }
 
   @Override

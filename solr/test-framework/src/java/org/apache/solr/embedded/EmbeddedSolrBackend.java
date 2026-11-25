@@ -54,6 +54,14 @@ public class EmbeddedSolrBackend implements SolrBackend {
     this.adminClient = solrServer;
   }
 
+  /**
+   * @lucene.internal
+   */
+  public EmbeddedSolrBackend(CoreContainer container) {
+    this.coreContainer = container;
+    this.adminClient = new EmbeddedSolrServer(container, null);
+  }
+
   @Override
   public CoreContainer getCoreContainer() {
     return coreContainer;

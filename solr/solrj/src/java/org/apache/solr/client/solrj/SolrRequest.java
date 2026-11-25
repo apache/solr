@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.Principal;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +33,6 @@ import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -157,7 +155,7 @@ public abstract class SolrRequest<T> implements Serializable {
 
   public SolrRequest(METHOD m, String path, SolrRequestType requestType) {
     this.method = m;
-    this.path = path;
+    this.path = validatePath(path);
     this.requestType = requestType;
   }
 
@@ -172,12 +170,24 @@ public abstract class SolrRequest<T> implements Serializable {
     this.method = method;
   }
 
+  /**
+   * The URI path to a "request handler", such as "/select". Must start with a "/". For
+   * collection/core requests, this is appended to the core/collection path; otherwise it's a node
+   * level request and thus is relative to the solr root.
+   */
   public String getPath() {
     return path;
   }
 
   public void setPath(String path) {
-    this.path = path;
+    this.path = validatePath(path);
+  }
+
+  private static String validatePath(String path) {
+    if (path != null && !path.startsWith("/")) {
+      throw new IllegalArgumentException("Must start with a '/': " + path);
+    }
+    return path;
   }
 
   /**
@@ -258,14 +268,6 @@ public abstract class SolrRequest<T> implements Serializable {
    */
   public ApiVersion getApiVersion() {
     return ApiVersion.V1;
-  }
-
-  /**
-   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
-   */
-  @Deprecated
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
   }
 
   /**

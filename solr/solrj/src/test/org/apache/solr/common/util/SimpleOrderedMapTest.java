@@ -16,10 +16,17 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -37,6 +44,43 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertEquals(1, map.nvPairs.get(1));
     assertEquals("two", map.nvPairs.get(2));
     assertEquals(2, map.nvPairs.get(3));
+  }
+
+  @Test
+  @SuppressForbidden(
+      reason = "testing a same-version Java serialization round-trip on locally generated data")
+  public void testJavaSerializationRoundTrip() throws Exception {
+    SimpleOrderedMap<Object> original = new SimpleOrderedMap<>();
+    original.put("one", 1);
+    original.put("two", "two");
+    original.put("aNull", null);
+    original.put(null, 4);
+    SimpleOrderedMap<Object> nested = new SimpleOrderedMap<>();
+    nested.put("match", true);
+    nested.put("value", 1.4886642f);
+    original.put("nested", nested);
+    original.put("categories", List.of("electronics", "memory"));
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
+      out.writeObject(original);
+    }
+
+    SimpleOrderedMap<?> deserialized;
+    try (ObjectInputStream in =
+        new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+      deserialized = (SimpleOrderedMap<?>) in.readObject();
+    }
+
+    // One structural comparison covers size, order, keys, values and nesting.
+    assertEquals(original, deserialized);
+  }
+
+  @Test
+  public void testSerialVersionUID() {
+    assertEquals(
+        -8705511030983987520L,
+        ObjectStreamClass.lookup(SimpleOrderedMap.class).getSerialVersionUID());
   }
 
   @Test
@@ -193,9 +237,66 @@ public class SimpleOrderedMapTest extends SolrTestCase {
     assertFalse(map.containsKey("two"));
   }
 
+  /** The MapWriter constructor copies rather than returning a live view. */
+  @Test
+  public void testMapWriterConstructorCopiesRatherThanViewing() {
+    final NamedList<Integer> source = new NamedList<>();
+    source.add("one", 1);
+
+    final SimpleOrderedMap<Integer> copy = new SimpleOrderedMap<>(source);
+    assertEquals(Integer.valueOf(1), copy.get("one"));
+
+    copy.put("one", 11);
+    assertEquals(
+        "mutating the copy must not reach the source", Integer.valueOf(1), source.get("one"));
+    assertEquals(Integer.valueOf(11), copy.get("one"));
+
+    source.add("two", 2);
+    assertNull("adding to the source must not reach the copy", copy.get("two"));
+  }
+
   private void setupData() {
     map.add("one", 1);
     map.add("two", 2);
     map.add("three", 3);
+  }
+
+  @Test
+  public void testGetImmutableCopyKeepsType() {
+    map.put("one", 1);
+    map.put("two", 2);
+
+    NamedList<Integer> copy = map.getImmutableCopy();
+
+    assertTrue("immutable copy should stay a SimpleOrderedMap", copy instanceof SimpleOrderedMap);
+    assertEquals(map, copy);
+    assertEquals(List.of("one", 1, "two", 2), copy.nvPairs);
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("three", 3));
+    assertThrows(UnsupportedOperationException.class, () -> copy.remove("one"));
+    assertThrows(UnsupportedOperationException.class, () -> copy.setVal(0, 11));
+    Map<String, Integer> mapCopy = (SimpleOrderedMap<Integer>) copy;
+    assertThrows(UnsupportedOperationException.class, () -> mapCopy.put("one", 11));
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> mapCopy.entrySet().iterator().next().setValue(11));
+
+    map.put("three", 3);
+    assertEquals("copy must not see later changes to the original", 2, copy.size());
+  }
+
+  @Test
+  public void testGetImmutableCopyKeepsNullNamesAndValues() {
+    SimpleOrderedMap<Object> withNulls = new SimpleOrderedMap<>();
+    withNulls.add("aNull", null);
+    withNulls.add(null, 4);
+
+    NamedList<Object> copy = withNulls.getImmutableCopy();
+
+    assertEquals(withNulls, copy);
+    assertEquals("aNull", copy.getName(0));
+    assertNull(copy.getVal(0));
+    assertNull(copy.getName(1));
+    assertEquals(4, copy.getVal(1));
+    assertThrows(UnsupportedOperationException.class, () -> copy.add("x", 1));
   }
 }

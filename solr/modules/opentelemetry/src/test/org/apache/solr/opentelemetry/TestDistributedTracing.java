@@ -20,15 +20,12 @@ package org.apache.solr.opentelemetry;
 import com.carrotsearch.randomizedtesting.annotations.Seed;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
@@ -41,12 +38,11 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 @Seed("0") // don't want randomization when testing observability
@@ -54,17 +50,16 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
 
+  @ClassRule public static OpenTelemetryRule otelRule = OpenTelemetryRule.create();
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // force early init
-    CustomTestOtelTracerConfigurator.prepareForTest();
     // HTTP 2 clients can do things more asynchronously, leading to less determinism in what we test
     System.setProperty("solr.http1", "true");
 
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
-        .withTraceIdGenerationDisabled()
         .withOverseer(true) // some assertions assume overseer
         .configure();
 
@@ -99,11 +94,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
 
-  @AfterClass
-  public static void afterClass() {
-    CustomTestOtelTracerConfigurator.resetForTest();
-  }
-
   @Before
   private void resetSpanData() {
     getAndClearSpans();
@@ -111,7 +101,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    var verifier = new GoldFileTraceVerifier(getClass(), "test");
+    var verifier = new GoldFileTraceVerifier(otelRule, getClass(), "test");
     // TODO use a CloudSolrClient.  However it's not yet deterministic due to use of random not
     //   aligned to the test seed.
     var client = cluster.getJettySolrRunner(0).getSolrClient();
@@ -131,7 +121,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void testAdminApi() throws Exception {
-    var verifier = new GoldFileTraceVerifier(getClass(), "testAdminApi");
+    var verifier = new GoldFileTraceVerifier(otelRule, getClass(), "testAdminApi");
     // TODO use a CloudSolrClient.  However it's not yet deterministic due to use of random not
     //   aligned to the test seed.
     var client = cluster.getJettySolrRunner(0).getSolrClient();
@@ -150,7 +140,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void testV2Api() throws Exception {
-    var verifier = new GoldFileTraceVerifier(getClass(), "testV2Api");
+    var verifier = new GoldFileTraceVerifier(otelRule, getClass(), "testV2Api");
     // TODO use a CloudSolrClient.  However it's not yet deterministic due to use of random not
     //   aligned to the test seed.
     var client = cluster.getJettySolrRunner(0).getSolrClient();
@@ -195,13 +185,13 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(0, r1.getStatus());
 
     // Expecting 8 spans:
-    // 1. api call "name=create:/admin/collections". db.instance=testInternalCollectionApiCommands
+    // 1. api call "name=post:/admin/collections". db.instance=testInternalCollectionApiCommands
     // - unique traceId unrelated to the internal trace id generated for the operation
     // 2. internal CollectionApiCommand "name=CreateCollectionCmd"
     // db.instance=testInternalCollectionApiCommands
     // - this will be the parent span, all following spans will have the same traceId
     //
-    // 3..6 (4 times) name=post:/admin/cores
+    // 3..6 (4 times) name=create:/admin/cores
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
@@ -226,9 +216,9 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(11, finishedSpans.size());
-    var parentTraceId = getRootTraceId(finishedSpans);
+    var parentTraceId = TracingTestUtil.getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
-      if (isRootSpan(span)) {
+      if (TracingTestUtil.isRootSpan(span)) {
         assertCollectionName(span, collection);
       } else {
         assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
@@ -238,7 +228,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
     var expectedOps =
-        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 6);
+        Map.of("CreateCollectionCmd", 1, "create:/admin/cores", 4, "post:/{core}/get", 6);
     assertEquals(expectedOps, ops);
   }
 
@@ -254,7 +244,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // db.instance=testInternalCollectionApiCommands
     // - this will be the parent span, all following spans will have the same traceId
     //
-    // 3..6 (4 times) name=post:/admin/cores
+    // 3..6 (4 times) name=unload:/admin/cores
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
     // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
     // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
@@ -267,9 +257,9 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(5, finishedSpans.size());
-    var parentTraceId = getRootTraceId(finishedSpans);
+    var parentTraceId = TracingTestUtil.getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
-      if (isRootSpan(span)) {
+      if (TracingTestUtil.isRootSpan(span)) {
         assertCollectionName(span, collection);
       } else {
         assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
@@ -278,12 +268,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       assertEquals(span.getTraceId(), parentTraceId);
       ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
     }
-    var expectedOps = Map.of("DeleteCollectionCmd", 1, "post:/admin/cores", 4);
+    var expectedOps = Map.of("DeleteCollectionCmd", 1, "unload:/admin/cores", 4);
     assertEquals(expectedOps, ops);
-  }
-
-  private static boolean isRootSpan(SpanData span) {
-    return !span.getParentSpanContext().isValid();
   }
 
   private static void assertCollectionName(SpanData span, String collection) {
@@ -294,35 +280,11 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertTrue(span.getAttributes().get(TraceUtils.TAG_DB).startsWith(collection + "_"));
   }
 
-  static List<SpanData> getAndClearSpans() {
-    return getAndClearSpans(0);
+  private static List<SpanData> getAndClearSpans() {
+    return TracingTestUtil.getAndClearSpans(otelRule);
   }
 
-  static List<SpanData> getAndClearSpans(int minExpected) {
-    InMemorySpanExporter exporter = CustomTestOtelTracerConfigurator.getInMemorySpanExporter();
-    try {
-      RetryUtil.retryUntil(
-          "Timed out waiting for " + minExpected + " span(s)",
-          250,
-          20,
-          TimeUnit.MILLISECONDS,
-          () -> exporter.getFinishedSpanItems().size() >= minExpected);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-    List<SpanData> result = new ArrayList<>(exporter.getFinishedSpanItems());
-    Collections.reverse(result); // nicer to see spans chronologically
-    exporter.reset();
-    return result;
-  }
-
-  static String getRootTraceId(List<SpanData> finishedSpans) {
-    assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
-    return finishedSpans.stream()
-        .filter(TestDistributedTracing::isRootSpan)
-        .findFirst()
-        .get()
-        .getSpanContext()
-        .getTraceId();
+  private static List<SpanData> getAndClearSpans(int minExpected) {
+    return TracingTestUtil.getAndClearSpans(otelRule, minExpected);
   }
 }

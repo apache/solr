@@ -41,6 +41,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -452,7 +453,16 @@ public class EnumFieldType extends PrimitiveFieldType {
     final SortField result = getNumericSort(field, NumberType.INTEGER, top);
     if (null == result.getMissingValue()) {
       // special case 'enum' default behavior: assume missing values are "below" all enum values
-      result.setMissingValue(Integer.MIN_VALUE);
+      if (result instanceof SortedNumericSortField snsf) {
+        return new SortedNumericSortField(
+            snsf.getField(),
+            snsf.getNumericType(),
+            snsf.getReverse(),
+            snsf.getSelector(),
+            Integer.MIN_VALUE);
+      }
+      return new SortField(
+          result.getField(), result.getType(), result.getReverse(), Integer.MIN_VALUE);
     }
     return result;
   }

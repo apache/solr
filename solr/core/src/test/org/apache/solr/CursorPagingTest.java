@@ -48,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
@@ -141,9 +142,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             params(),
             params(CURSOR_MARK_PARAM, "gibberish"),
             params(CURSOR_MARK_PARAM, "gibberish", "sort", "id asc"))) {
-      assertJQ(req(p, "qt", "/get", "fl", "id", "id", "yyy"), "=={'doc':{'id':'yyy'}}");
+      assertJQ(reqWithPath("/get", p, "fl", "id", "id", "yyy"), "=={'doc':{'id':'yyy'}}");
       assertJQ(
-          req(p, "qt", "/get", "fl", "id", "id", "xxx"), // doesn't exist in our collection
+          reqWithPath("/get", p, "fl", "id", "id", "xxx"), // doesn't exist in our collection
           "=={'doc':null}");
     }
   }
@@ -629,19 +630,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     String cursorMark, nextCursorMark = CURSOR_MARK_START;
 
     SolrParams params =
-        params(
-            "q",
-            "name:a*",
-            "fl",
-            "id",
-            "sort",
-            "id asc",
-            "rows",
-            "50",
-            "qt",
-            "/delayed",
-            "sleep",
-            "10");
+        params("q", "name:a*", "fl", "id", "sort", "id asc", "rows", "50", "sleep", "10");
 
     List<String> foundDocIds = new ArrayList<>();
     String[] timeAllowedVariants = {"1", "50", wontExceedTimeout};
@@ -652,7 +641,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
         // execute the query
         String json =
-            assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark, TIME_ALLOWED, timeAllowed));
+            assertJQ(
+                reqWithPath(
+                    "/delayed", params, CURSOR_MARK_PARAM, cursorMark, TIME_ALLOWED, timeAllowed));
 
         Map<?, ?> response = (Map<?, ?>) fromJSONString(json);
         Map<?, ?> responseHeader = (Map<?, ?>) response.get("responseHeader");
@@ -789,7 +780,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             assertFullWalkNoDupsElevated(
                 wrapDefaults(
                     params(
-                        "qt", "/elevate",
                         "fl", "id,[elevated]",
                         "forceElevation", "true",
                         "elevateIds", "50,20,80"),
@@ -835,8 +825,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
           assertFullWalkNoDupsElevated(
               wrapDefaults(
                   params(
-                      "qt",
-                      "/elevate",
                       "fl",
                       fl + ",[elevated]",
                       // HACK: work around SOLR-15307... same results should match, just not same
@@ -917,6 +905,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final SentinelIntSet idsElevated = new SentinelIntSet(32, -1);
 
     assertFullWalkNoDups(
+        "/elevate",
         params,
         (doc) -> {
           final int id = Integer.parseInt(doc.get("id").toString());
@@ -972,11 +961,20 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    */
   public void assertFullWalkNoDups(SolrParams params, Consumer<Map<Object, Object>> consumer)
       throws Exception {
+    assertFullWalkNoDups(null, params, consumer);
+  }
+
+  /**
+   * Identical to {@link #assertFullWalkNoDups(SolrParams,Consumer)}, but dispatches the query to
+   * the specified request handler path.
+   */
+  public void assertFullWalkNoDups(
+      String handler, SolrParams params, Consumer<Map<Object, Object>> consumer) throws Exception {
 
     String cursorMark = CURSOR_MARK_START;
     int docsOnThisPage = Integer.MAX_VALUE;
     while (0 < docsOnThisPage) {
-      String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark));
+      String json = assertJQ(reqWithPath(handler, params, CURSOR_MARK_PARAM, cursorMark));
       Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
       assertTrue(
           "response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
@@ -1158,22 +1156,15 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /** execute a local request, verify that we get an expected error */
+  @SuppressWarnings("try")
   public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) {
 
-    try {
-      SolrException e =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                ignoreException(expSubstr);
-                assertJQ(req(p));
-              });
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(expSubstr)) {
+      SolrException e = expectThrows(SolrException.class, () -> assertJQ(req(p)));
       assertEquals(expCode.code, e.code());
       assertTrue(
           "Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
           e.getMessage().contains(expSubstr));
-    } finally {
-      unIgnoreException(expSubstr);
     }
   }
 

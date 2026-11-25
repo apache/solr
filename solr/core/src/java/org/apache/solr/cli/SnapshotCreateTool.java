@@ -20,12 +20,25 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-create command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "create",
+    description = "Creates a named snapshot of a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {
+      "  # Create a snapshot",
+      "  bin/solr snapshot create -c mycollection --snapshot-name snap1"
+    })
 public class SnapshotCreateTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -35,6 +48,11 @@ public class SnapshotCreateTool extends ToolBase {
           .desc("Name of collection to be snapshot.")
           .get();
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
@@ -43,6 +61,25 @@ public class SnapshotCreateTool extends ToolBase {
           .required()
           .desc("Name of the snapshot to produce")
           .get();
+
+  /** Parameters for the snapshot-create command, independent of the command line parser. */
+  record SnapshotCreateParams(
+      String solrUrl, String credentials, String collectionName, String snapshotName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  @picocli.CommandLine.Mixin private SnapshotNameOptions snapshot;
+
+  public SnapshotCreateTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotCreateTool(ToolRuntime runtime) {
     super(runtime);
@@ -64,23 +101,26 @@ public class SnapshotCreateTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      createSnapshot(solrClient, collectionName, snapshotName);
+    SnapshotCreateParams params =
+        new SnapshotCreateParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION),
+            cli.getOptionValue(SNAPSHOT_NAME_OPTION));
+    createSnapshot(params);
+  }
+
+  void createSnapshot(SnapshotCreateParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      createSnapshot(solrClient, params.collectionName(), params.snapshotName());
     }
   }
 
   public void createSnapshot(SolrClient solrClient, String collectionName, String snapshotName) {
-    CollectionAdminRequest.CreateSnapshot createSnapshot =
-        new CollectionAdminRequest.CreateSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
+    var createSnapshot =
+        new CollectionSnapshotsApi.CreateCollectionSnapshot(collectionName, snapshotName);
     try {
-      resp = createSnapshot.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
-      }
+      createSnapshot.process(solrClient);
       echo(
           "Successfully created snapshot with name "
               + snapshotName
@@ -96,5 +136,17 @@ public class SnapshotCreateTool extends ToolBase {
               + " due to following error : "
               + e.getLocalizedMessage());
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    SnapshotCreateParams params =
+        new SnapshotCreateParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name,
+            snapshot.name);
+    createSnapshot(params);
+    return 0;
   }
 }

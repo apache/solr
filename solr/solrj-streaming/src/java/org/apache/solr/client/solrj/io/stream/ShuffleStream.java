@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
@@ -95,6 +94,7 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     var solrConnection = factory.buildSolrConnection(expression, collectionName);
 
     init(solrConnection, collectionName, mParams);
+    this.path = "/export";
   }
 
   @Override
@@ -168,11 +168,5 @@ public class ShuffleStream extends CloudSolrStream implements Expressible {
     explanation.addChild(child);
 
     return explanation;
-  }
-
-  @Override
-  public ModifiableSolrParams adjustParams(ModifiableSolrParams mParams) {
-    mParams.set(CommonParams.QT, "/export");
-    return mParams;
   }
 }

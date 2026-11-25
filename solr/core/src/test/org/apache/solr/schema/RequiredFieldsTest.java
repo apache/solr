@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.util.Collection;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -52,6 +53,7 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testRequiredFieldsSingleAdd() {
     SolrCore core = h.getCore();
     // Add a single document
@@ -88,11 +90,11 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
 
     // Add another document without a required name, which has no default
     assertNull(core.getLatestSchema().getField("name").getDefaultValue());
-    ignoreException("missing required field");
-    assertFailedU(
-        "adding doc without required field",
-        adoc("id", "531", "subject", "no name document", "field_t", "what's inside?"));
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("missing required field")) {
+      assertFailedU(
+          "adding doc without required field",
+          adoc("id", "531", "subject", "no name document", "field_t", "what's inside?"));
+    }
     assertU(commit());
 
     // Check to make sure this submission did not succeed
@@ -100,6 +102,7 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testAddMultipleDocumentsWithErrors() {
     // Add three documents at once to make sure the baseline succeeds
     assertU(
@@ -190,32 +193,32 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
     // Check that only docs before the error should be in the index
     assertQ("should find one", req("name:baddef"), "//result[@numFound=1]");
 
-    ignoreException("missing required field");
     // Add three documents at once, with the middle one missing a required field that has no default
-    assertFailedU(
-        "adding 3 docs, with 2nd one missing required field",
-        "<add>"
-            + doc(
-                "id",
-                "701",
-                "name",
-                "noname batch one",
-                "field_t",
-                "what's inside?",
-                "subject",
-                "info")
-            + doc("id", "702", "field_t", "what's inside?", "subject", "info")
-            + doc(
-                "id",
-                "703",
-                "name",
-                "noname batch batch three",
-                "field_t",
-                "what's inside?",
-                "subject",
-                "info")
-            + "</add>");
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("missing required field")) {
+      assertFailedU(
+          "adding 3 docs, with 2nd one missing required field",
+          "<add>"
+              + doc(
+                  "id",
+                  "701",
+                  "name",
+                  "noname batch one",
+                  "field_t",
+                  "what's inside?",
+                  "subject",
+                  "info")
+              + doc("id", "702", "field_t", "what's inside?", "subject", "info")
+              + doc(
+                  "id",
+                  "703",
+                  "name",
+                  "noname batch batch three",
+                  "field_t",
+                  "what's inside?",
+                  "subject",
+                  "info")
+              + "</add>");
+    }
 
     assertU(commit());
 

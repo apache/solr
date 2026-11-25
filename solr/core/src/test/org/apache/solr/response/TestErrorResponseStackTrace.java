@@ -99,8 +99,8 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
   public void testRemoteSolrException() {
     var client = solrTestRule.getSolrClient("collection1");
     QueryRequest queryRequest =
-        new QueryRequest(new ModifiableSolrParams().set("q", "*:*").set("wt", "json"));
-    queryRequest.setPath("/withError");
+        new QueryRequest(
+            "/withError", new ModifiableSolrParams().set("q", "*:*").set("wt", "json"));
     RemoteSolrException exception =
         expectThrows(RemoteSolrException.class, () -> queryRequest.process(client, "collection1"));
     assertTrue(exception.getRemoteErrorObject() instanceof NamedList);

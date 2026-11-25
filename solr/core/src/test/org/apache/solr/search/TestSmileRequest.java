@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.response.SmileWriterTest;
 import org.apache.solr.search.json.TestJsonRequest;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     System.setProperty("solr.requests.streaming.body.enabled", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
@@ -60,7 +61,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
@@ -74,10 +74,6 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
               throws Exception {
             QueryRequest query = new QueryRequest(args);
             query.setResponseParser(new SmileResponseParser());
-            String path = args.get("qt");
-            if (path != null) {
-              query.setPath(path);
-            }
             NamedList<Object> rsp = client.request(query);
             @SuppressWarnings({"rawtypes"})
             Map m = rsp.asMap(5);

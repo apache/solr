@@ -459,7 +459,7 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
       // empty query -> return "paramToSet=valueToSet"
       builder.append(paramToSet);
       builder.append('=');
-      StrUtils.partialURLEncodeVal(builder, valueToSet);
+      builder.append(StrUtils.partialURLEncodeVal(valueToSet));
       return builder.toString();
     }
     MultiMapSolrParams requestParams = SolrRequestParsers.parseQueryString(query);
@@ -470,7 +470,7 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
       builder.append('&');
       builder.append(paramToSet);
       builder.append('=');
-      StrUtils.partialURLEncodeVal(builder, valueToSet);
+      builder.append(StrUtils.partialURLEncodeVal(valueToSet));
       return builder.toString();
     }
     if (1 == values.length && valueToSet.equals(values[0])) {
@@ -490,14 +490,14 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
           isFirst = false;
           builder.append(key);
           builder.append('=');
-          StrUtils.partialURLEncodeVal(builder, null == val ? "" : val);
+          builder.append(StrUtils.partialURLEncodeVal(null == val ? "" : val));
         }
       }
     }
     builder.append(isFirst ? "" : '&');
     builder.append(paramToSet);
     builder.append('=');
-    StrUtils.partialURLEncodeVal(builder, valueToSet);
+    builder.append(StrUtils.partialURLEncodeVal(valueToSet));
     return builder.toString();
   }
 }

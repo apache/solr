@@ -86,16 +86,10 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
   /** If true then commit commands are mirrored, otherwise they are processed only locally. */
   private final boolean mirrorCommits;
 
-  /** Controls the processing of Delete-By-Query requests.. */
+  /** Controls the processing of Delete-By-Query requests */
   private final CrossDcConf.ExpandDbq expandDbq;
 
   private final long maxMirroringDocSizeBytes;
-
-  /**
-   * The distributed processor downstream from us so we can establish if we're running on a leader
-   * shard
-   */
-  // private DistributedUpdateProcessor distProc;
 
   /** Distribution phase of the incoming requests */
   private DistributedUpdateProcessor.DistribPhase distribPhase;
@@ -226,7 +220,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
         boolean done = false;
         while (!done) {
           q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-          var client = cmd.getReq().getCoreContainer().getDefaultHttpSolrClient();
+          var client = cmd.getReq().getCoreContainer().getZkController().getSolrClient();
           QueryResponse rsp = client.query(collection, q);
           String nextCursorMark = rsp.getNextCursorMark();
 
@@ -255,7 +249,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     super.processDelete(cmd); // let this throw to prevent mirroring invalid requests
     producerMetrics.getLocal().inc();
     if (doMirroring) {
-      boolean isLeader = false;
+      boolean isLeader;
       UpdateRequest mirrorRequest = createMirrorRequest();
       if (cmd.isDeleteById()) {
         // deleteById requests runs once per leader, so we just submit the request from the leader
@@ -279,6 +273,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           } catch (Exception e) {
             log.error("mirror submit failed", e);
             producerMetrics.getSubmittedDeleteByIdError().inc();
+            producerMetrics.getSubmitError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }
@@ -311,7 +306,12 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private static void processDBQResults(
+  /**
+   * Deletes one page of documents found by an expanded DBQ and mirrors the deletes as one
+   * delete-by-id request. The local deletes are sent with mirroring disabled, so that each page
+   * produces a single mirrored request instead of one per document from the shard leaders.
+   */
+  private void processDBQResults(
       SolrClient client, String collection, String uniqueField, QueryResponse rsp)
       throws SolrServerException, IOException {
     SolrDocumentList results = rsp.getResults();
@@ -321,8 +321,26 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           String id = entries.getFirstValue(uniqueField).toString();
           ids.add(id);
         });
-    if (!ids.isEmpty()) {
-      client.deleteById(collection, ids);
+    if (ids.isEmpty()) {
+      return;
+    }
+    UpdateRequest deleteRequest = new UpdateRequest();
+    deleteRequest.deleteById(ids);
+    // process locally first, don't mirror yet
+    deleteRequest.setParam(MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR, "false");
+    deleteRequest.process(client, collection);
+
+    UpdateRequest mirrorRequest = createMirrorRequest();
+    mirrorRequest.deleteById(ids);
+    try {
+      requestMirroringHandler.mirror(mirrorRequest);
+      producerMetrics.getSubmitted().inc();
+      producerMetrics.getSubmittedDeleteById().add((long) ids.size());
+    } catch (Exception e) {
+      log.error("mirror submit failed", e);
+      producerMetrics.getSubmittedDeleteByIdError().add((long) ids.size());
+      producerMetrics.getSubmitError().inc();
+      throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
     }
   }
 

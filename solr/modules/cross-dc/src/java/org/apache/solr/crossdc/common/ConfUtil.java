@@ -22,6 +22,7 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -53,12 +54,7 @@ public class ConfUtil {
       }
     }
     // fill in aux Kafka env with prefix
-    env.forEach(
-        (key, val) -> {
-          if (key.startsWith(KAFKA_ENV_PREFIX)) {
-            properties.put(normalizeKafkaEnvKey(key), val);
-          }
-        });
+    addAdditionalKafkaProperties(properties, env, System.getProperties());
 
     // fill in from system properties
     for (ConfigProperty configKey : KafkaCrossDcConf.CONFIG_PROPERTIES) {
@@ -67,14 +63,6 @@ public class ConfUtil {
         properties.put(configKey.getKey(), val);
       }
     }
-    // fill in aux Kafka system properties with prefix
-    System.getProperties()
-        .forEach(
-            (key, val) -> {
-              if (key.toString().startsWith(KAFKA_PROP_PREFIX)) {
-                properties.put(normalizeKafkaSysPropKey(key.toString()), val);
-              }
-            });
 
     Properties zkProps = new Properties();
     if (solrClient != null) {
@@ -117,13 +105,54 @@ public class ConfUtil {
       Set<String> keys = new HashSet<>(properties.keySet());
       keys.forEach(
           key -> {
+            Object value = properties.get(key);
             if (key.startsWith(KAFKA_ENV_PREFIX)) {
-              properties.put(normalizeKafkaEnvKey(key), properties.remove(key));
+              properties.remove(key);
+              putIfNonBlankAndMissing(properties, normalizeKafkaEnvKey(key), value);
             } else if (key.startsWith(KAFKA_PROP_PREFIX)) {
-              properties.put(normalizeKafkaSysPropKey(key), properties.remove(key));
+              properties.remove(key);
+              putIfNonBlankAndMissing(properties, normalizeKafkaSysPropKey(key), value);
             }
           });
     }
+  }
+
+  // System properties override environment variables for pass-through Kafka properties.
+  // Existing explicit keys in properties are preserved.
+  static void addAdditionalKafkaProperties(
+      Map<String, Object> properties, Map<String, String> env, Properties sysProps) {
+    Set<String> envDerivedKeys = new LinkedHashSet<>();
+    env.forEach(
+        (key, val) -> {
+          if (!key.startsWith(KAFKA_ENV_PREFIX)) {
+            return;
+          }
+          String normalized = normalizeKafkaEnvKey(key);
+          if (!isValidAdditionalProperty(normalized, val)) {
+            return;
+          }
+          Object existingValue = properties.get(normalized);
+          if (isBlankValue(existingValue)) {
+            properties.put(normalized, val);
+            envDerivedKeys.add(normalized);
+          }
+        });
+
+    sysProps.forEach(
+        (key, val) -> {
+          String propKey = key.toString();
+          if (!propKey.startsWith(KAFKA_PROP_PREFIX)) {
+            return;
+          }
+          String normalized = normalizeKafkaSysPropKey(propKey);
+          if (!isValidAdditionalProperty(normalized, val)) {
+            return;
+          }
+          Object existingValue = properties.get(normalized);
+          if (isBlankValue(existingValue) || envDerivedKeys.contains(normalized)) {
+            properties.put(normalized, val.toString());
+          }
+        });
   }
 
   public static String normalizeKafkaEnvKey(String key) {
@@ -139,6 +168,21 @@ public class ConfUtil {
       return key.substring(KAFKA_PROP_PREFIX.length()).toLowerCase(Locale.ROOT);
     } else {
       return key;
+    }
+  }
+
+  private static boolean isValidAdditionalProperty(String key, Object value) {
+    return key != null && !key.isBlank() && !isBlankValue(value);
+  }
+
+  private static boolean isBlankValue(Object value) {
+    return value == null || (value instanceof String && ((String) value).isBlank());
+  }
+
+  private static void putIfNonBlankAndMissing(
+      Map<String, Object> properties, String key, Object value) {
+    if (isValidAdditionalProperty(key, value) && properties.get(key) == null) {
+      properties.put(key, value);
     }
   }
 

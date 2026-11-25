@@ -21,22 +21,39 @@ Configsets are a set of configuration files used in a Solr installation: `solrco
 
 Such configuration, _configsets_, can be named and then referenced by collections or cores, allowing you to share them to avoid duplication.
 
-Solr ships with two example configsets located in `server/solr/configsets`, which can be used as a base for your own.
-These example configsets are named `_default` and `sample_techproducts_configs`.
+The full Solr distribution ships with three configsets located in `server/solr/configsets`, which can be used as a base for your own:
+
+* `_default` provides general-purpose field types and dynamic fields, with generic stopword and synonym files.
+* `_multilingual` extends `_default` with language-specific text field types, dynamic fields, and supporting language files.
+Use it for types such as `text_en` and dynamic fields such as `*_txt_en` or `*_txt_fr`.
+* `sample_techproducts_configs` supports the techproducts example.
+
+The slim distribution ships only `_default`.
+To use built-in language analysis with slim, upload `_multilingual` from the full distribution to ZooKeeper.
+
+To create a collection or core with the language-specific definitions, select `_multilingual` explicitly:
+
+[source,bash]
+----
+bin/solr create -c mycollection -d _multilingual
+----
+
+Alternatively, use the xref:indexing-guide:schema-designer.adoc[Schema Designer] to add only the languages your application needs.
 
 == Configsets in SolrCloud Clusters
 
 In SolrCloud, it's critical to understand that configsets are stored in ZooKeeper _and not_ in the file system.
-Solr's `_default` configset is uploaded to ZooKeeper on initialization.
-This and a couple of example configsets remain on the file system but Solr does not use them unless they are used with a new collection.
+On initialization, Solr uploads the `_default` and `_multilingual` configsets to ZooKeeper when they are available locally and do not already exist in ZooKeeper.
+Existing configsets are left unchanged.
+The copies on the file system are starting points for new configsets; collections use the copies in ZooKeeper.
 
 When you create a collection in SolrCloud, you can specify a named configset.
 If you don't, then the `_default` will be copied and given a unique name for use by the new collection.
 
-A configset can be uploaded to ZooKeeper either via the xref:configsets-api.adoc[] or more directly via xref:deployment-guide:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk upconfig`].
+A configset can be uploaded to ZooKeeper either via the xref:configsets-api.adoc[] or more directly via xref:deployment-guide:cli/solr-zk-upconfig.adoc[`bin/solr zk upconfig`].
 The Configsets API has some other operations as well, and likewise, so does the CLI.
 
-To upload a file to a configset already stored on ZooKeeper, you can use xref:deployment-guide:solr-control-script-reference.adoc#copy-between-local-files-and-zookeeper-znodes[`bin/solr zk cp`] or the xref:configsets-api.adoc#configsets-upload-file[`API`].
+To upload a file to a configset already stored on ZooKeeper, you can use xref:deployment-guide:cli/solr-zk-cp.adoc[`bin/solr zk cp`] or the xref:configsets-api.adoc#configsets-upload-file[`API`].
 
 CAUTION: By default, ZooKeeper's file size limit is 1MB.
 If your files are larger than this, you'll need to either xref:deployment-guide:zookeeper-ensemble.adoc#increasing-the-file-size-limit[increase the ZooKeeper file size limit] or store them xref:libs.adoc[on the filesystem] of every node in a cluster.
@@ -99,7 +116,7 @@ V1 API::
 ====
 [source,bash]
 ----
-curl http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2
+curl 'http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2'
 ----
 ====
 
@@ -108,12 +125,11 @@ V2 API::
 ====
 [source,bash]
 ----
-curl -v -X POST -H 'Content-type: application/json' -d '{
+curl -v 'http://localhost:8983/api/cores' -H 'Content-type: application/json' -d '{
   "create":[{
     "name": "mycore",
     "instanceDir": "path/to/instance",
     "configSet": "configSet2"}]}'
-    http://localhost:8983/api/cores
 ----
 ====
 ======

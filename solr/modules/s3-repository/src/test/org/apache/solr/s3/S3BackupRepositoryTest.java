@@ -18,7 +18,7 @@ package org.apache.solr.s3;
 
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
-import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -37,6 +39,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamIndexOutput;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -47,7 +51,14 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
+@ThreadLeakFilters(
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      S3MockTestcontainersThreadFilter.class
+    })
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
@@ -55,13 +66,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public Path temporaryFolder;
 
   @ClassRule
-  @SuppressWarnings("removal")
-  public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+  public static final S3MockContainerRule s3MockContainer = new S3MockContainerRule(BUCKET_NAME);
 
   @Before
   @Override
@@ -95,8 +100,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
           "s3:///d/",
           directoryUri.toString());
 
-      repo.createDirectory(directoryUri);
-      assertTrue(repo.exists(directoryUri));
       directoryUri = repo.createDirectoryURI("d/");
       assertEquals(
           "createDirectoryURI should have a single trailing slash, even if one is provided",
@@ -116,24 +119,63 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
       URI path = new URI("/test/");
       repo.createDirectory(path);
-      assertTrue(repo.exists(path));
-      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
-      assertEquals("No files should exist in dir yet", repo.listAll(path).length, 0);
+      assertFalse("An empty directory doesn't exist on S3", repo.exists(path));
+      assertEquals("No files should exist in dir yet", 0, repo.listAll(path).length);
 
       URI subDir = new URI("/test/dir/");
       repo.createDirectory(subDir);
+      assertEquals("No files should exist in subdir yet", 0, repo.listAll(subDir).length);
+
+      try (OutputStream os = repo.createOutput(new URI("/test/dir/file"))) {
+        os.write(1);
+      }
+      assertTrue(repo.exists(path));
       assertTrue(repo.exists(subDir));
+      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));
-      assertEquals("No files should exist in subdir yet", repo.listAll(subDir).length, 0);
+      assertEquals(
+          "No directory marker objects should be written",
+          List.of("test/dir/file"),
+          listKeys("test/"));
 
       assertEquals(
           "subDir should now be returned when listing all in parent dir",
-          repo.listAll(path).length,
-          1);
+          1,
+          repo.listAll(path).length);
 
       repo.deleteDirectory(path);
       assertFalse(repo.exists(path));
       assertFalse(repo.exists(subDir));
+    }
+  }
+
+  /**
+   * Older Solr versions wrote a zero-byte marker object (content type {@code
+   * application/x-directory}) for every directory. Backups containing them must keep working.
+   */
+  @Test
+  public void testLegacyDirectoryMarkers() throws Exception {
+    try (S3BackupRepository repo = getRepository()) {
+      pushDirectoryMarker("legacy/");
+      pushDirectoryMarker("legacy/empty/");
+      pushDirectoryMarker("legacy/dir/");
+      pushObject("legacy/dir/file", "content");
+
+      URI legacy = new URI("s3:/legacy/");
+      assertTrue(repo.exists(legacy));
+      assertTrue(repo.exists(repo.resolveDirectory(legacy, "empty")));
+      assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(legacy));
+      assertEquals(
+          BackupRepository.PathType.DIRECTORY,
+          repo.getPathType(repo.resolveDirectory(legacy, "dir")));
+      assertEquals(
+          BackupRepository.PathType.FILE, repo.getPathType(repo.resolve(legacy, "dir", "file")));
+      assertEquals(Set.of("empty", "dir"), Set.of(repo.listAll(legacy)));
+      assertArrayEquals(new String[] {"file"}, repo.listAll(repo.resolveDirectory(legacy, "dir")));
+
+      repo.deleteDirectory(legacy);
+      assertFalse(repo.exists(legacy));
+      assertEquals("Directory markers should be deleted too", List.of(), listKeys("legacy/"));
     }
   }
 
@@ -256,7 +298,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
    * Check implementation of {@link S3BackupRepository#openInput(URI, String, IOContext)}. Open an
    * index input and seek to an absolute position.
    *
-   * <p>We use specified text. It must has the word "content" at given position.
+   * <p>We use specified text. It must have the word "content" at given position.
    */
   private void doRandomAccessTest(String content, int position) throws Exception {
 
@@ -302,7 +344,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       input.readBytes(buffer, 0, BufferedIndexInput.BUFFER_SIZE * 2);
 
       // Seek back to the 5th byte.
-      // It is not any more in the internal buffer, so we should fail
+      // It is not anymore in the internal buffer, so we should fail
       IOException exception = assertThrows(IOException.class, () -> input.seek(5));
       assertEquals("Cannot seek backward", exception.getMessage());
     }
@@ -336,18 +378,37 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     NamedList<Object> args = new NamedList<>();
     args.add(S3BackupRepositoryConfig.REGION, Region.US_EAST_1.id());
     args.add(S3BackupRepositoryConfig.BUCKET_NAME, BUCKET_NAME);
-    args.add(S3BackupRepositoryConfig.ENDPOINT, "http://localhost:" + S3_MOCK_RULE.getHttpPort());
+    args.add(S3BackupRepositoryConfig.ENDPOINT, s3MockContainer.getHttpEndpoint());
     return args;
   }
 
   private void pushObject(String path, String content) {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
       s3.putObject(b -> b.bucket(BUCKET_NAME).key(path), RequestBody.fromString(content));
     }
   }
 
+  private void pushDirectoryMarker(String path) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      s3.putObject(
+          b -> b.bucket(BUCKET_NAME).key(path).contentType("application/x-directory"),
+          RequestBody.empty());
+    }
+  }
+
+  private List<String> listKeys(String prefix) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
+      return s3
+          .listObjectsV2Paginator(b -> b.bucket(BUCKET_NAME).prefix(prefix))
+          .contents()
+          .stream()
+          .map(S3Object::key)
+          .toList();
+    }
+  }
+
   private Path pullObject(String path) throws IOException {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = s3MockContainer.createS3ClientV2()) {
       Path file = Files.createTempFile(temporaryFolder, "junit", null);
       InputStream input =
           s3.getObject(

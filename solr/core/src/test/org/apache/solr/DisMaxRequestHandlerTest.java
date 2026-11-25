@@ -106,7 +106,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     doTestSomeStuff("/dismax");
   }
 
-  public void doTestSomeStuff(final String qt) {
+  public void doTestSomeStuff(final String handler) {
 
     assertQ(
         "basic match",
@@ -127,7 +127,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "multi qf",
-        req("q", "cool", "qt", qt, "qf", "subject", "qf", "features_t"),
+        reqWithPath(handler, "q", "cool", "qf", "subject", "qf", "features_t"),
         "//*[@numFound='3']");
 
     assertQ(
@@ -137,7 +137,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "boost query",
-        req("q", "cool stuff", "qt", qt, "bq", "subject:hell^400"),
+        reqWithPath(handler, "q", "cool stuff", "bq", "subject:hell^400"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='666']",
         "//result/doc[2]/str[@name='id'][.='42']",
@@ -145,11 +145,10 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "multi boost query",
-        req(
+        reqWithPath(
+            handler,
             "q",
             "cool stuff",
-            "qt",
-            qt,
             "bq",
             "subject:hell^400",
             "bq",
@@ -172,29 +171,21 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ(
         "relying on ALTQ from config",
-        req(
-            "qt", qt,
-            "fq", "id:666",
-            "facet", "false"),
+        reqWithPath(handler, "fq", "id:666", "facet", "false"),
         "//*[@numFound='1']");
 
     assertQ(
         "explicit ALTQ",
-        req(
-            "qt", qt,
-            "q.alt", "id:9999",
-            "fq", "id:666",
-            "facet", "false"),
+        reqWithPath(handler, "q.alt", "id:9999", "fq", "id:666", "facet", "false"),
         "//*[@numFound='0']");
 
     assertQ(
-        "no query slop == no match", req("qt", qt, "q", "\"cool chick\""), "//*[@numFound='0']");
+        "no query slop == no match",
+        reqWithPath(handler, "q", "\"cool chick\""),
+        "//*[@numFound='0']");
     assertQ(
         "query slop == match",
-        req(
-            "qt", qt,
-            "qs", "2",
-            "q", "\"cool chick\""),
+        reqWithPath(handler, "qs", "2", "q", "\"cool chick\""),
         "//*[@numFound='1']");
   }
 
@@ -228,11 +219,10 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     Pattern p_bool = Pattern.compile("\\(subject:hell\\s*subject:cool\\)");
     String resp =
         h.query(
-            req(
+            reqWithPath(
+                "/dismax",
                 "q",
                 "cool stuff",
-                "qt",
-                "/dismax",
                 "bq",
                 "subject:hell OR subject:cool",
                 CommonParams.DEBUG_QUERY,
@@ -242,11 +232,10 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
 
     resp =
         h.query(
-            req(
+            reqWithPath(
+                "/dismax",
                 "q",
                 "cool stuff",
-                "qt",
-                "/dismax",
                 "bq",
                 "subject:hell OR subject:cool",
                 "bq",

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -55,7 +55,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .process(cluster.getSolrClient());
 
-    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
+    ContentWriterUpdateRequest up = new ContentWriterUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
     up.addFile(getFile("solrj/books.csv"), "application/csv");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);

@@ -53,6 +53,8 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
+    // this test inspects core level update metrics
+    System.setProperty("metricsEnabled", "true");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .withSecurityJson(SecurityJson.SIMPLE)
@@ -93,11 +95,11 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
-        assertEquals(
-            numDocs,
-            queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
-      }
+      Replica leader = s.getLeader();
+      SolrClient leaderClient = cluster.getSolrClient(leader);
+      assertEquals(
+          numDocs,
+          queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
 
       List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(

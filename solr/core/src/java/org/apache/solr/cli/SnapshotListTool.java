@@ -20,14 +20,22 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 
 /** Supports snapshot-list command in the bin/solr script. */
+@SuppressWarnings("UnnecessarilyFullyQualified")
+@picocli.CommandLine.Command(
+    name = "list",
+    description = "Lists the snapshots for a collection.",
+    footerHeading = "%nExamples:%n",
+    footer = {"  # List a collection's snapshots", "  bin/solr snapshot list -c mycollection"})
 public class SnapshotListTool extends ToolBase {
 
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
@@ -36,6 +44,22 @@ public class SnapshotListTool extends ToolBase {
           .required()
           .desc("Name of collection to list snapshots for.")
           .get();
+
+  /** Parameters for the snapshot-list command, independent of the command line parser. */
+  record SnapshotListParams(String solrUrl, String credentials, String collectionName) {}
+
+  // --- picocli fields ---
+
+  @picocli.CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+  private ConnectionOptions connectionOptions;
+
+  @picocli.CommandLine.Mixin private CredentialsOptions credentialsOptions;
+
+  @picocli.CommandLine.Mixin private CollectionNameOptions collection;
+
+  public SnapshotListTool() {
+    this(new DefaultToolRuntime());
+  }
 
   public SnapshotListTool(ToolRuntime runtime) {
     super(runtime);
@@ -56,27 +80,24 @@ public class SnapshotListTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    try (var solrClient = CLIUtils.getSolrClient(cli)) {
-      listSnapshots(solrClient, collectionName);
+    SnapshotListParams params =
+        new SnapshotListParams(
+            CLIUtils.normalizeSolrUrl(cli),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+            cli.getOptionValue(COLLECTION_NAME_OPTION));
+    listSnapshots(params);
+  }
+
+  void listSnapshots(SnapshotListParams params) throws Exception {
+    try (var solrClient = CLIUtils.getSolrClient(params.solrUrl(), params.credentials())) {
+      listSnapshots(solrClient, params.collectionName());
     }
   }
 
   public void listSnapshots(SolrClient solrClient, String collectionName) {
-    CollectionAdminRequest.ListSnapshots listSnaps =
-        new CollectionAdminRequest.ListSnapshots(collectionName);
-    CollectionAdminResponse resp;
     try {
-      resp = listSnaps.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
-      }
-
-      NamedList<?> apiResult =
-          (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-      apiResult.forEach((name, value) -> echo(name));
-
+      var response = new CollectionSnapshotsApi.ListSnapshots(collectionName).process(solrClient);
+      response.snapshots.keySet().forEach(this::echo);
     } catch (Exception e) {
       echo(
           "Failed to list snapshots for collection "
@@ -84,5 +105,16 @@ public class SnapshotListTool extends ToolBase {
               + " due to following error : "
               + e.getLocalizedMessage());
     }
+  }
+
+  @Override
+  public int callTool() throws Exception {
+    SnapshotListParams params =
+        new SnapshotListParams(
+            CLIUtils.resolveSolrUrl(connectionOptions, credentialsOptions.credentials),
+            credentialsOptions.credentials,
+            collection.name);
+    listSnapshots(params);
+    return 0;
   }
 }

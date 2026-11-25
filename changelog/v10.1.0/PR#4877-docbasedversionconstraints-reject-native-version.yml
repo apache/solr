@@ -1,0 +1,9 @@
+title: >
+  DocBasedVersionConstraintsProcessor now rejects a client-supplied _version_ with a 400 instead of silently ignoring it.
+  And it no longer validates the tombstone document shape when deleteVersionParam isn't configured
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4877
+    url: https://github.com/apache/solr/pull/4877

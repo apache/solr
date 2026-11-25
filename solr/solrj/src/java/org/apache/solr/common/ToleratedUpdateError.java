@@ -160,7 +160,7 @@ public final class ToleratedUpdateError {
    * @see #parseMetadataIfToleratedUpdateError
    */
   public String getMetadataValue() {
-    return message.toString();
+    return message;
   }
 
   /**
@@ -202,10 +202,10 @@ public final class ToleratedUpdateError {
   }
 
   /** Helper class for dealing with SolrException metadata (String) keys */
-  public static enum CmdType {
+  public enum CmdType {
     ADD,
     DELID,
-    DELQ;
+    DELQ
 
     // if we add support for things like commit, parsing/toString/hashCode logic
     // needs to be smarter to account for 'id' being null ... "usesId" should be a prop of enum

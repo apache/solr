@@ -22,6 +22,13 @@ This section details the other parsers, and gives examples for how they might be
 
 Many of these parsers are expressed the same way as xref:local-params.adoc[].
 
+== Auxiliary Index Join Query Parser
+
+It's similar to
+<<Join Query Parser,Join Query Parser>>, but uses a lazily written sidecar index for faster joins.
+
+Details of this query parser are in the section xref:auxindexjoin-query-parser.adoc[].
+
 == Block Join Query Parsers
 
 The Block Join query parsers are used with nested documents to query for parents and/or children.
@@ -487,6 +494,21 @@ The field name in candidate documents to inspect to identify incoming graph edge
 +
 An optional query that can be supplied to limit the scope of documents that are traversed.
 
+`expandFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+An optional query that limits which documents have their outgoing edges followed.
+Documents reached by the traversal (and matching `traversalFilter`, if specified) are always collected, but only those that also match `expandFilter` are expanded to find the next level of the graph.
+This also applies to the documents matching the initial query.
++
+Unlike `traversalFilter`, which excludes non-matching documents found by the traversal (but not those matching the initial query) from the results, `expandFilter` only skips the edge lookup for them.
+This is useful when many nodes are known to have no outgoing edges but still carry a value in the `to` field.
+For example, in a file system hierarchy where folders have `docType:folder` and files have `docType:file`, `{!graph from=parentId to=id expandFilter=docType:folder}id:folder1` returns `folder1` and all files and folders under it, but only expands folders: files are returned without searching for their children.
+
 `maxDepth`::
 +
 [%autowidth,frame=none]
@@ -725,6 +747,12 @@ Interval queries express positional constraints between terms, such as requiring
 Invoked with the syntax `{!intervals df=<field>}{"phrase":{"terms":["hash","map"]}}`,
 
 Details of this query parser are in the section xref:intervals-query-parser.adoc[].
+
+== Global Ordinals Join Query Parser
+
+The Global Ordinals Join Query Parser joins documents within an index using Lucene's global ordinals (`OrdinalMap`) over a shared single-valued docValues string field.
+
+Details of this query parser are in the section xref:global-ordinals-join-query-parser.adoc[].
 
 == Join Query Parser
 
@@ -1272,7 +1300,7 @@ For full analysis on all fields, including text fields, you may want to use the 
 
 == Ranking Query Parser
 
-The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/core/org/apache/solr/schema/RankField.html[`RankFields`] type.
+The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-core-javadocs}/org/apache/solr/schema/RankField.html[`RankFields`] type.
 
 It allows queries like:
 
@@ -1563,7 +1591,7 @@ Scales well with index size and moderately with the number of query terms.
 
 == XML Query Parser
 
-The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML.
+The {solr-core-javadocs}/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-core-javadocs}/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML.
 Example:
 
 [%autowidth.stretch,options="header"]
@@ -1594,7 +1622,7 @@ Example:
 ----
 |===
 
-The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class.
+The XmlQParser implementation uses the {solr-core-javadocs}/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class.
 XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
 [%autowidth.stretch,cols="30,70",options="header"]
@@ -1622,7 +1650,7 @@ XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/query
 === Customizing XML Query Parser
 
 You can configure your own custom query builders for additional XML elements.
-The custom builders need to extend the {solr-javadocs}/core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class.
+The custom builders need to extend the {solr-core-javadocs}/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-core-javadocs}/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class.
 Example `solrconfig.xml` snippet:
 
 [source,xml]

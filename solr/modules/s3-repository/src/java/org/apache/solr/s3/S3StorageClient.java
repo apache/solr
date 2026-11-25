@@ -41,10 +41,8 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
@@ -64,7 +62,6 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
@@ -83,9 +80,6 @@ public class S3StorageClient {
 
   // S3 has a hard limit of 1000 keys per batch delete request
   private static final int MAX_KEYS_PER_BATCH_DELETE = 1000;
-
-  // Metadata name used to identify flag directory entries in S3
-  private static final String S3_DIR_CONTENT_TYPE = "application/x-directory";
 
   // Error messages returned by S3 for a key not found.
   private static final Set<String> NOT_FOUND_CODES = Set.of("NoSuchKey", "404 Not Found");
@@ -182,30 +176,13 @@ public class S3StorageClient {
     return clientBuilder.build();
   }
 
-  /** Create a directory in S3, if it does not already exist. */
-  void createDirectory(String path) throws S3Exception {
-    String sanitizedDirPath = sanitizedDirPath(path);
-
-    // Only create the directory if it does not already exist
-    if (!pathExists(sanitizedDirPath)) {
-      createDirectory(getParentDirectory(sanitizedDirPath));
-      // TODO see https://issues.apache.org/jira/browse/SOLR-15359
-      //            throw new S3Exception("Parent directory doesn't exist, path=" + path);
-
-      try {
-        // Create empty object with content type header
-        PutObjectRequest putRequest =
-            PutObjectRequest.builder()
-                .bucket(bucketName)
-                .contentType(S3_DIR_CONTENT_TYPE)
-                .key(sanitizedDirPath)
-                .build();
-        s3Client.putObject(putRequest, RequestBody.empty());
-      } catch (SdkClientException ase) {
-        throw handleAmazonException(ase);
-      }
-    }
-  }
+  /**
+   * No-op: S3 has no directories, a "directory" is just a key prefix that exists as soon as an
+   * object is written under it. Older Solr versions wrote zero-byte marker objects here, but those
+   * get lost when a bucket is copied with tools such as {@code aws s3 sync}, so nothing may depend
+   * on them.
+   */
+  void createDirectory(String path) {}
 
   /**
    * Delete files from S3. Deletion order is not guaranteed.
@@ -230,7 +207,7 @@ public class S3StorageClient {
   }
 
   /**
-   * Delete directory, all the files and sub-directories from S3.
+   * Delete directory, all the files and subdirectories from S3.
    *
    * @param path Path to directory in S3.
    */
@@ -239,18 +216,15 @@ public class S3StorageClient {
 
     // Get all the files and subdirectories
     Set<String> entries = listAll(path);
-    if (pathExists(path)) {
-      entries.add(path);
-    }
 
     deleteObjects(entries);
   }
 
   /**
-   * List all the files and sub-directories directly under given path.
+   * List all the files and subdirectories directly under given path.
    *
    * @param path Path to directory in S3.
-   * @return Files and sub-directories in path.
+   * @return Files and subdirectories in path.
    */
   String[] listDir(String path) throws S3Exception {
     path = sanitizedDirPath(path);
@@ -292,10 +266,11 @@ public class S3StorageClient {
   }
 
   /**
-   * Check if path exists.
+   * Check if path exists. A directory path (ending with {@code /}) exists if any object is stored
+   * under that prefix, including a directory marker object written by older Solr versions.
    *
    * @param path to File/Directory in S3.
-   * @return true if path exists, otherwise false?
+   * @return true if path exists, otherwise false
    */
   boolean pathExists(String path) throws S3Exception {
     final String s3Path = sanitizedPath(path);
@@ -303,6 +278,10 @@ public class S3StorageClient {
     // for root return true
     if (s3Path.isEmpty() || S3_FILE_PATH_DELIMITER.equals(s3Path)) {
       return true;
+    }
+
+    if (s3Path.endsWith(S3_FILE_PATH_DELIMITER)) {
+      return hasObjectsUnderPrefix(s3Path);
     }
 
     try {
@@ -316,23 +295,22 @@ public class S3StorageClient {
   }
 
   /**
-   * Check if path is directory.
+   * Check if path is directory, i.e. if any object is stored under the {@code path + "/"} prefix.
    *
    * @param path to File/Directory in S3.
    * @return true if path is directory, otherwise false.
    */
   boolean isDirectory(String path) throws S3Exception {
-    final String s3Path = sanitizedDirPath(path);
+    return hasObjectsUnderPrefix(sanitizedDirPath(path));
+  }
 
+  private boolean hasObjectsUnderPrefix(String prefix) throws S3Exception {
     try {
-      HeadObjectResponse objectMetadata =
-          s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
-      String contentType = objectMetadata.contentType();
-
-      return StrUtils.isNotNullOrEmpty(contentType)
-          && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
-    } catch (NoSuchKeyException nske) {
-      return false;
+      // listObjectsV2's prefix already guarantees every returned key starts with it.
+      return !s3Client
+          .listObjectsV2(b -> b.bucket(bucketName).prefix(prefix).maxKeys(1))
+          .contents()
+          .isEmpty();
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -346,19 +324,18 @@ public class S3StorageClient {
    */
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
-    if (isDirectory(s3Path)) {
-      throw new S3Exception("Path is Directory");
-    }
     try {
+      // sanitizedFilePath rejects a trailing '/', so a successful HEAD here can never land on a
+      // directory marker object (whose key always ends in '/'); it's always a real file.
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
-      String contentType = objectMetadata.contentType();
-
-      if (StrUtils.isNullOrEmpty(contentType)
-          || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
-        return objectMetadata.contentLength();
+      return objectMetadata.contentLength();
+    } catch (NoSuchKeyException nske) {
+      // Only pay for the extra listing when the file is missing
+      if (isDirectory(s3Path)) {
+        throw new S3Exception("Path is Directory");
       }
-      throw new S3Exception("Path is Directory");
+      throw handleAmazonException(nske);
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
@@ -409,10 +386,6 @@ public class S3StorageClient {
   OutputStream pushStream(String path) throws S3Exception {
     path = sanitizedFilePath(path);
 
-    if (!parentDirectoryExist(path)) {
-      throw new S3Exception("Parent directory doesn't exist of path: " + path);
-    }
-
     try {
       return new S3OutputStream(s3Client, path, bucketName);
     } catch (SdkException sdke) {
@@ -432,7 +405,7 @@ public class S3StorageClient {
        * Per the S3 docs:
        * https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/DeleteObjectsResult.html
        * An exception is thrown if there's a client error processing the request or in S3 itself.
-       * However, there's no guarantee the delete did not happen if an exception is thrown.
+       * However, there's no guarantee the delete operation did not happen if an exception is thrown.
        */
       return deleteObjects(paths, MAX_KEYS_PER_BATCH_DELETE);
     } catch (SdkException sdke) {
@@ -519,36 +492,8 @@ public class S3StorageClient {
     }
   }
 
-  private boolean parentDirectoryExist(String path) throws S3Exception {
-    // Get the last non-slash character of the string, to find the parent directory
-    String parentDirectory = getParentDirectory(path);
-
-    // If we have no specific parent directory, we consider parent is root (and always exists)
-    if (parentDirectory.isEmpty() || parentDirectory.equals(S3_FILE_PATH_DELIMITER)) {
-      return true;
-    }
-
-    // Check for existence twice, because s3Mock has issues in the tests
-    return pathExists(parentDirectory);
-  }
-
-  private String getParentDirectory(String path) {
-    if (!path.contains(S3_FILE_PATH_DELIMITER)) {
-      return "";
-    }
-
-    // Get the last non-slash character of the string, to find the parent directory
-    int fromEnd = path.length() - 1;
-    if (path.endsWith(S3_FILE_PATH_DELIMITER)) {
-      fromEnd -= 1;
-    }
-    return fromEnd > 0
-        ? path.substring(0, path.lastIndexOf(S3_FILE_PATH_DELIMITER, fromEnd) + 1)
-        : "";
-  }
-
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
-  String sanitizedPath(String path) throws S3Exception {
+  String sanitizedPath(String path) {
     // Trim space from start and end
     String sanitizedPath = path.trim();
 
@@ -584,7 +529,7 @@ public class S3StorageClient {
    * Ensures directory path adheres to some rules: -Overall Path rules from `sanitizedPath` -Add a
    * trailing slash if one does not exist
    */
-  String sanitizedDirPath(String path) throws S3Exception {
+  String sanitizedDirPath(String path) {
     // Trim space from start and end
     String sanitizedPath = sanitizedPath(path);
 

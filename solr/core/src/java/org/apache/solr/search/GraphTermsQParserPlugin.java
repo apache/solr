@@ -211,6 +211,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
+    @SuppressWarnings(
+        "ReferenceEquality") // id is a unique marker Object created per non-clone construction, so
+    // identity is the intended equality check (clones share it, independent instances don't)
     public boolean equals(Object other) {
       return sameClassAs(other) && id == ((GraphTermsQuery) other).id;
     }
@@ -290,6 +293,8 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       };
     }
 
+    @SuppressWarnings(
+        "ReferenceEquality") // TermsEnum.EMPTY is a Lucene sentinel; identity check is intentional
     private void collectTermStates(
         IndexReader reader,
         List<LeafReaderContext> leaves,

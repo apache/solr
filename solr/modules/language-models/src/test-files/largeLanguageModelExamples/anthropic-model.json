@@ -1,0 +1,13 @@
+{
+  "class": "dev.langchain4j.model.anthropic.AnthropicChatModel",
+  "name": "anthropic-1",
+  "params": {
+    "baseUrl": "https://api.anthropic.com/v1",
+    "apiKey": "apiKey-anthropic",
+    "modelName": "claude-3-5-haiku-latest",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}

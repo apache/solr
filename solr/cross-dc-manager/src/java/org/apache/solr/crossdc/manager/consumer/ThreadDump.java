@@ -42,7 +42,7 @@ public class ThreadDump {
   }
 
   /**
-   * Dumps all of the threads' current information, including synchronization, to an output stream.
+   * Dumps all the threads' current information, including synchronization, to an output stream.
    *
    * @param out an output stream
    */
@@ -51,8 +51,8 @@ public class ThreadDump {
   }
 
   /**
-   * Dumps all of the threads' current information, optionally including synchronization, to an
-   * output stream.
+   * Dumps all the threads' current information, optionally including synchronization, to an output
+   * stream.
    *
    * <p>Having control over including synchronization info allows using this method (and its
    * wrappers, i.e. ThreadDumpServlet) in environments where getting object monitor and/or ownable
@@ -117,7 +117,7 @@ public class ThreadDump {
       for (int i = 0; i < elements.length; i++) {
         final StackTraceElement element = elements[i];
         writer.printf(Locale.ROOT, "    at %s%n", element);
-        for (int j = 1; j < monitors.length; j++) {
+        for (int j = 0; j < monitors.length; j++) {
           final MonitorInfo monitor = monitors[j];
           if (monitor.getLockedStackDepth() == i) {
             writer.printf(Locale.ROOT, "      - locked %s%n", monitor);

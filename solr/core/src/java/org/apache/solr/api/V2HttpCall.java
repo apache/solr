@@ -331,7 +331,8 @@ public class V2HttpCall extends HttpSolrCall {
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
     containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
     containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
-    containerRequest.setProperty(RequestContextKeys.COLLECTION_LIST, collectionsList);
+    containerRequest.setProperty(
+        RequestContextKeys.COLLECTION_LIST, getAuthorizationCollectionsList());
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_RSP, response);
     if (core != null) {
       containerRequest.setProperty(RequestContextKeys.SOLR_CORE, core);
@@ -525,6 +526,13 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected Object _getHandler() {
     return api;
+  }
+
+  @Override
+  protected boolean shouldAuthorize() {
+    // Container-level JAX-RS resources are authorized by SolrRequestAuthorizer, which knows their
+    // permission
+    return (api != null || action == PROCESS) && super.shouldAuthorize();
   }
 
   public Map<String, String> getUrlParts() {

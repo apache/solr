@@ -170,7 +170,7 @@ public class QueryComponent extends SearchComponent {
     ReturnFields returnFields = new SolrReturnFields(req);
     rsp.setReturnFields(returnFields);
     int flags = 0;
-    if (returnFields.wantsScore()) {
+    if (returnFields.returnsScore()) {
       flags |= SolrIndexSearcher.GET_SCORES;
     }
     rb.setFieldFlags(flags);
@@ -857,7 +857,7 @@ public class QueryComponent extends SearchComponent {
       if (fls != null && fls.length > 0 && (fls.length != 1 || !fls[0].isEmpty())) {
         // If the outer request contains actual FL's use them...
         sreq.params.set(CommonParams.FL, fls);
-        if (!fields.wantsField(keyFieldName)) {
+        if (!fields.returnsField(keyFieldName)) {
           additionalAdded = addFL(additionalFL, keyFieldName, additionalAdded);
         }
       } else {
@@ -1239,7 +1239,6 @@ public class QueryComponent extends SearchComponent {
     if (thereArePartialResults) {
       rb.rsp
           .getResponseHeader()
-          .asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
     if (segmentTerminatedEarly != null) {
@@ -1257,10 +1256,7 @@ public class QueryComponent extends SearchComponent {
           && Boolean.TRUE.equals(segmentTerminatedEarly)) {
         rb.rsp
             .getResponseHeader()
-            .remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-        rb.rsp
-            .getResponseHeader()
-            .add(
+            .put(
                 SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
                 segmentTerminatedEarly);
       }
@@ -1439,7 +1435,7 @@ public class QueryComponent extends SearchComponent {
       // we already have the field sort values
       sreq.params.remove(ResponseBuilder.FIELD_SORT_VALUES);
 
-      if (!rb.rsp.getReturnFields().wantsField(uniqueField.getName())) {
+      if (!rb.rsp.getReturnFields().returnsField(uniqueField.getName())) {
         sreq.params.add(CommonParams.FL, uniqueField.getName());
       }
 
@@ -1463,7 +1459,7 @@ public class QueryComponent extends SearchComponent {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
       String keyFieldName = uniqueKey;
-      boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      boolean removeKeyField = !rb.rsp.getReturnFields().returnsField(keyFieldName);
       boolean returnRawScore =
           rb.rsp.getReturnFields().getExplicitlyRequestedFieldNames() != null
               && rb.rsp
@@ -1488,8 +1484,8 @@ public class QueryComponent extends SearchComponent {
             if (nl.get("error") == null) {
               // Add the error to the shards info section if it wasn't added before
               Throwable t = srsp.getException();
-              if (t instanceof SolrServerException) {
-                t = ((SolrServerException) t).getCause();
+              if (t instanceof SolrServerException && t.getCause() != null) {
+                t = t.getCause();
               }
               nl.add("error", t.toString());
               if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {

@@ -28,6 +28,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -265,37 +266,46 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testBogusEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.numeric.dv").equals("false"));
 
-    ignoreException("Unknown value for enum field: " + FIELD_NAME + ", value: blabla");
-    ignoreException("Unknown value for enum field: " + FIELD_NAME + ", value: 145");
-    ignoreException("Unknown value for enum field: " + FIELD_NAME + ", value: -4");
+    try (ErrorLogMuter blabla =
+            ErrorLogMuter.regex("Unknown value for enum field: " + FIELD_NAME + ", value: blabla");
+        ErrorLogMuter n145 =
+            ErrorLogMuter.regex("Unknown value for enum field: " + FIELD_NAME + ", value: 145");
+        ErrorLogMuter neg4 =
+            ErrorLogMuter.regex("Unknown value for enum field: " + FIELD_NAME + ", value: -4")) {
+      clearIndex();
 
-    clearIndex();
-
-    assertFailedU(adoc("id", "0", FIELD_NAME, "blabla"));
-    assertFailedU(adoc("id", "0", FIELD_NAME, "145"));
-    assertFailedU(adoc("id", "0", FIELD_NAME, "-4"));
+      assertFailedU(adoc("id", "0", FIELD_NAME, "blabla"));
+      assertFailedU(adoc("id", "0", FIELD_NAME, "145"));
+      assertFailedU(adoc("id", "0", FIELD_NAME, "-4"));
+    }
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testMultivaluedBogusEnumIndexing() {
     assumeFalse(
         "Skipping testing of EnumFieldType without docValues, which is unsupported.",
         System.getProperty("solr.tests.numeric.dv").equals("false"));
 
-    ignoreException("Unknown value for enum field: " + MV_FIELD_NAME + ", value: blabla");
-    ignoreException("Unknown value for enum field: " + MV_FIELD_NAME + ", value: 145");
-    ignoreException("Unknown value for enum field: " + MV_FIELD_NAME + ", value: -4");
+    try (ErrorLogMuter blabla =
+            ErrorLogMuter.regex(
+                "Unknown value for enum field: " + MV_FIELD_NAME + ", value: blabla");
+        ErrorLogMuter n145 =
+            ErrorLogMuter.regex("Unknown value for enum field: " + MV_FIELD_NAME + ", value: 145");
+        ErrorLogMuter neg4 =
+            ErrorLogMuter.regex("Unknown value for enum field: " + MV_FIELD_NAME + ", value: -4")) {
+      clearIndex();
 
-    clearIndex();
-
-    assertFailedU(adoc("id", "0", MV_FIELD_NAME, "blabla", MV_FIELD_NAME, "High"));
-    assertFailedU(adoc("id", "0", MV_FIELD_NAME, "145", MV_FIELD_NAME, "Low"));
-    assertFailedU(adoc("id", "0", MV_FIELD_NAME, "-4", MV_FIELD_NAME, "Critical"));
+      assertFailedU(adoc("id", "0", MV_FIELD_NAME, "blabla", MV_FIELD_NAME, "High"));
+      assertFailedU(adoc("id", "0", MV_FIELD_NAME, "145", MV_FIELD_NAME, "Low"));
+      assertFailedU(adoc("id", "0", MV_FIELD_NAME, "-4", MV_FIELD_NAME, "Critical"));
+    }
   }
 
   @Test
@@ -681,7 +691,8 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
         "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='High']]");
 
     try (SolrQueryRequest req =
-        req(
+        reqWithPath(
+            "/select",
             "fl",
             "" + FIELD_NAME,
             "q",
@@ -690,7 +701,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             jsonFacetParam,
             "wt",
             "json")) {
-      SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+      SolrQueryResponse rsp = h.queryAndResponse(req);
       List<NamedList<?>> buckets =
           (List<NamedList<?>>)
               ((NamedList<?>) ((NamedList<?>) rsp.getValues().get("facets")).get("severity"))

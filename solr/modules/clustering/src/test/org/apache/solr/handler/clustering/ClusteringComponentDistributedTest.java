@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.Cluster;
@@ -118,7 +117,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     clusters.forEach(
         c -> {
           sb.append(indent);
-          sb.append("- " + c.getLabels().stream().collect(Collectors.joining("; ")));
+          sb.append("- " + String.join("; ", c.getLabels()));
           if (!c.getDocs().isEmpty()) {
             sb.append(" [" + c.getDocs().size() + "]");
           }

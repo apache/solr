@@ -39,6 +39,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,10 +66,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
 
-  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, "false");
     JSONTestUtil.failRepeatedKeys = true;
 
     origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
@@ -91,10 +92,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
-  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrEnableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE = origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
@@ -447,6 +446,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testExplicitQueryDomain() throws Exception {
     Client client = Client.localClient();
     indexSimple(client);
@@ -528,24 +528,26 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
 
     { // an (effectively) empty query should produce an error
-      ignoreException("'query' domain can not be null");
-      ignoreException("'query' domain must not evaluate to an empty list");
-      for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
-        expectThrows(
-            SolrException.class,
-            () -> {
-              assertJQ(
-                  req(
-                      "rows",
-                      "0",
-                      "q",
-                      "num_i:[0 TO *]",
-                      "json.facet",
-                      "{w: {type:terms, field:'where_s', "
-                          + "     facet: { c: { type:terms, field:'cat_s', domain: { query: "
-                          + raw
-                          + " }}}}}"));
-            });
+      try (ErrorLogMuter queryDomainNull = ErrorLogMuter.regex("'query' domain can not be null");
+          ErrorLogMuter queryDomainEmpty =
+              ErrorLogMuter.regex("'query' domain must not evaluate to an empty list")) {
+        for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
+          expectThrows(
+              SolrException.class,
+              () -> {
+                assertJQ(
+                    req(
+                        "rows",
+                        "0",
+                        "q",
+                        "num_i:[0 TO *]",
+                        "json.facet",
+                        "{w: {type:terms, field:'where_s', "
+                            + "     facet: { c: { type:terms, field:'cat_s', domain: { query: "
+                            + raw
+                            + " }}}}}"));
+              });
+        }
       }
     }
   }
@@ -3782,6 +3784,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
    * @param extraSubFacet if an extra sub facet should be included, this hits slightly diff code
    *     paths
    */
+  @SuppressWarnings("ReferenceEquality")
   public void doTestPrelimSorting(
       final Client client, final boolean extraAgg, final boolean extraSubFacet) throws Exception {
 
@@ -3797,6 +3800,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // (which will affect some assertions)
     final SolrClient shardA = clients.get(0);
     final SolrClient shardB = clients.get(clients.size() - 1);
+    // Identity check: same client instance means a single-node setup.
     final int numShardsWithData = (shardA == shardB) ? 1 : 2;
 
     // for simplicity, each foo_s "term" exists on each shard in the same number of docs as it's

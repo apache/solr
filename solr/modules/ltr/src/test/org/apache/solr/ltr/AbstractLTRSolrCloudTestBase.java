@@ -73,9 +73,9 @@ public abstract class AbstractLTRSolrCloudTestBase extends TestRerankBase {
     createCollection(COLLECTION, "conf1", numShards, numReplicas);
     indexDocuments(COLLECTION);
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
-      if (!solrRunner.getCoreContainer().getCores().isEmpty()) {
-        String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
-        restTestHarness = solrRunner.getRestClient(coreName);
+      List<String> coreNames = solrRunner.getCoreContainer().getLoadedCoreNames();
+      if (!coreNames.isEmpty()) {
+        restTestHarness = solrRunner.getRestClient(coreNames.get(0));
         break;
       }
     }

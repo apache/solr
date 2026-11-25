@@ -229,7 +229,7 @@ limitations under the License.
                     <textarea rows="20" cols="50" type="text" id="manipulate_field_type" ng-model="fieldTypeObj" focus-when="showManipulateFieldType" placeholder="specify field type operation(add, delete, replace) with field type patterns"></textarea>
                 </p>
 
-                <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="addFieldTypeErrors" class="clearfix note error">
+                <div ng-repeat="error in manipulateFieldTypeErrors" ng-show="manipulateFieldTypeErrors" class="clearfix note error">
                     <span>{{error}}</span></div>
                 <p class="clearfix buttons">
                     <button type="submit" class="submit" ng-class="{success: added}" ng-click="manipulateFieldType()"><span>{{fieldTypeManipulationOption.label}}</span></button>

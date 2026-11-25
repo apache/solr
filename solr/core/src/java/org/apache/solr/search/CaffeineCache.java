@@ -271,6 +271,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   }
 
   @Override
+  @SuppressWarnings("ReferenceEquality") // intentional, see the comment below re: Caffeine behavior
   public V put(K key, V val) {
     inserts.increment();
     V old = cache.asMap().put(key, val);

@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
+  function($scope, $route, $routeParams, $location, $timeout, Query, Constants, ParamSetsV2, ApiErrorHandler){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
@@ -30,28 +30,28 @@ solrAdminApp.controller('QueryController',
     $scope.val['indent'] = true;
     $scope.useParams = [];
 
-    getParamsets();
+    // isCloudEnabled populates asynchronously via resetMenu(), so calling getParamsets()
+    // synchronously here would race it and fall back to indexType "cores" even in SolrCloud --
+    // wait for isCloudEnabled to settle before the first fetch (see paramsets.js for the same fix).
+    var unwatchCloudEnabled = $scope.$watch('isCloudEnabled', function(value) {
+      if (value === undefined) return;
+      unwatchCloudEnabled();
+      getParamsets();
+    });
 
     function getParamsets() {
+      // The v2 config/paramsets API needs to know up front whether ":core" is a collection name
+      // (SolrCloud) or an actual core name (standalone/user-managed); see paramsets.js for details.
+      var indexType = $scope.isCloudEnabled ? "collections" : "cores";
 
-      var params = {};
-      params.core = $routeParams.core;
-      params.wt = "json";
+      ParamSetsV2.listParamSets(indexType, $routeParams.core, function(error, data, response) {
+        $timeout(function() {
+          if (error) { ApiErrorHandler.handle(response); $scope.responseStatus = response; return; }
 
-      ParamSet.get(params, callback, failure);
-
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
-      }
-
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
+          $scope.responseStatus = "success";
+          $scope.paramsetList = data.params ? Object.keys(data.params) : [];
+        });
+      });
     }
 
     // get list of ng-models that have a form element

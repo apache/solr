@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
@@ -133,6 +134,60 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=2",
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Document</em> snippet one. '",
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[2]='<em>Document</em> snippet two.'");
+  }
+
+  public void testPassageSort() {
+    clearIndex();
+    // The last sentence scores highest (two matches) but comes last by offset.
+    assertU(
+        adoc(
+            "text",
+            "Document here. Nothing to see in this filler sentence. Document plus document again.",
+            "id",
+            "101"));
+    assertU(commit());
+    String arr = "//lst[@name='highlighting']/lst[@name='101']/arr/str";
+    String early = "'<em>Document</em> here. '";
+    String late = "'<em>Document</em> plus <em>document</em> again.'";
+
+    // Default (no hl.passageSort) sorts by startOffset: the earlier passage comes first.
+    assertQ(
+        req(
+            "q",
+            "text:document",
+            "hl",
+            "true",
+            "hl.snippets",
+            "2",
+            "hl.bs.type",
+            "SENTENCE",
+            "hl.fragsize",
+            "-1"),
+        arr + "[1]=" + early,
+        arr + "[2]=" + late);
+    // hl.passageSort=score puts the highest-scoring passage first.
+    assertQ(
+        req(
+            "q",
+            "text:document",
+            "hl",
+            "true",
+            "hl.snippets",
+            "2",
+            "hl.bs.type",
+            "SENTENCE",
+            "hl.fragsize",
+            "-1",
+            "hl.passageSort",
+            "score"),
+        arr + "[1]=" + late,
+        arr + "[2]=" + early);
+
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () -> h.query(req("q", "text:document", "hl", "true", "hl.passageSort", "bogus")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
   public void testStrictPhrasesEnabledByDefault() {

@@ -19,11 +19,11 @@ package org.apache.solr.common.params;
 /** Expand parameters */
 public interface ExpandParams {
 
-  public static final String EXPAND = "expand";
-  public static final String EXPAND_SORT = EXPAND + ".sort";
-  public static final String EXPAND_ROWS = EXPAND + ".rows";
-  public static final String EXPAND_FIELD = EXPAND + ".field";
-  public static final String EXPAND_Q = EXPAND + ".q";
-  public static final String EXPAND_FQ = EXPAND + ".fq";
-  public static final String EXPAND_NULL = EXPAND + ".nullGroup";
+  String EXPAND = "expand";
+  String EXPAND_SORT = EXPAND + ".sort";
+  String EXPAND_ROWS = EXPAND + ".rows";
+  String EXPAND_FIELD = EXPAND + ".field";
+  String EXPAND_Q = EXPAND + ".q";
+  String EXPAND_FQ = EXPAND + ".fq";
+  String EXPAND_NULL = EXPAND + ".nullGroup";
 }

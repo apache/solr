@@ -80,7 +80,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
+      CLIENTS.add(jetty.newSolrClient(COLLECTION_NAME));
     }
 
     // index some docs...
@@ -133,8 +133,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
               params("q", input, "phrases", "true"),
               params("q", "*:*", "phrases.q", input, "phrases", "true"),
               params("q", "-*:*", "phrases.q", input, "phrases", "true"))) {
-        final QueryRequest req = new QueryRequest(p);
-        req.setPath(path);
+        final QueryRequest req = new QueryRequest(path, p);
         final QueryResponse rsp = req.process(getRandClient(random()));
         try {
           @SuppressWarnings({"unchecked"})
@@ -169,8 +168,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
           Arrays.asList(
               params("q", "*:*", "phrases.q", input, "phrases", "true"),
               params("q", "-*:*", "phrases.q", input, "phrases", "true"))) {
-        final QueryRequest req = new QueryRequest(p);
-        req.setPath("/phrases");
+        final QueryRequest req = new QueryRequest("/phrases", p);
         final QueryResponse rsp = req.process(getRandClient(random()));
         try {
           @SuppressWarnings({"unchecked"})

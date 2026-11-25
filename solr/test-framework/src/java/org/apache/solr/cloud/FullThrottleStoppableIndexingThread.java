@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,6 +146,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       log.warn("Exception waiting for the indexing client to finish", e);
     } finally {
       cusc.shutdownNow();
+      IOUtils.closeQuietly(httpClient);
     }
   }
 

@@ -194,10 +194,10 @@ public class NumericRangeQParserPlugin extends QParserPlugin {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
           }
           return switch (criteria) {
-            case INTERSECTS -> rangeField.newIntersectsQuery(fieldName, range);
-            case WITHIN -> rangeField.newWithinQuery(fieldName, range);
-            case CONTAINS -> rangeField.newContainsQuery(fieldName, range);
-            case CROSSES -> rangeField.newCrossesQuery(fieldName, range);
+            case INTERSECTS -> rangeField.newIntersectsQuery(schemaField, range);
+            case WITHIN -> rangeField.newWithinQuery(schemaField, range);
+            case CONTAINS -> rangeField.newContainsQuery(schemaField, range);
+            case CROSSES -> rangeField.newCrossesQuery(schemaField, range);
           };
         } else {
           throw new SolrException(

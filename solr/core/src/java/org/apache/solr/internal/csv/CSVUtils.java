@@ -18,7 +18,6 @@ package org.apache.solr.internal.csv;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.StringWriter;
 
 /** Utility methods for dealing with CSV files */
 public class CSVUtils {
@@ -32,39 +31,6 @@ public class CSVUtils {
    * <p>This constructor is public to permit tools that require a JavaBean instance to operate.
    */
   public CSVUtils() {}
-
-  /**
-   * Converts an array of string values into a single CSV line. All <code>null</code> values are
-   * converted to the string <code>"null"</code>, all strings equal to <code>"null"</code> will
-   * additionally get quotes around.
-   *
-   * @param values the value array
-   * @return the CSV string, will be an empty string if the length of the value array is 0
-   */
-  public static String printLine(String[] values, CSVStrategy strategy) {
-    // set up a CSVUtils
-    StringWriter stringWriter = new StringWriter();
-    CSVPrinter csvPrinter = new CSVPrinter(stringWriter, strategy);
-
-    // check for null values an "null" as strings and convert them
-    // into the strings "null" and "\"null\""
-    for (int i = 0; i < values.length; i++) {
-      if (values[i] == null) {
-        values[i] = "null";
-      } else if (values[i].equals("null")) {
-        values[i] = "\"null\"";
-      }
-    }
-
-    // convert to CSV
-    try {
-      csvPrinter.println(values);
-    } catch (IOException e) {
-      // should not happen with StringWriter
-    }
-    // as the resulting string has \r\n at the end, we will trim that away
-    return stringWriter.toString().trim();
-  }
 
   // ======================================================
   //  static parsers
@@ -105,7 +71,7 @@ public class CSVUtils {
       throw new IllegalArgumentException("Null argument not allowed.");
     }
     // uh,jh: make sure that parseLine("").length == 0
-    if (s.length() == 0) {
+    if (s.isEmpty()) {
       return EMPTY_STRING_ARRAY;
     }
     return (new CSVParser(new StringReader(s))).getLine();

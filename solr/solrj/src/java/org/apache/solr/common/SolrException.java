@@ -23,13 +23,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.slf4j.Logger;
-import org.slf4j.MDC;
 
 /** */
 public class SolrException extends RuntimeException {
-
-  private final Map<String, String> mdcContext;
 
   /**
    * This list of valid HTTP Status error codes that Solr may return when there is a "Server Side"
@@ -52,7 +48,7 @@ public class SolrException extends RuntimeException {
     UNKNOWN(0);
     public final int code;
 
-    private ErrorCode(int c) {
+    ErrorCode(int c) {
       code = c;
     }
 
@@ -62,24 +58,21 @@ public class SolrException extends RuntimeException {
       }
       return UNKNOWN;
     }
-  };
+  }
 
   public SolrException(ErrorCode code, String msg) {
     super(msg);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, String msg, Throwable th) {
     super(msg, th);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   public SolrException(ErrorCode code, Throwable th) {
     super(th);
     this.code = code.code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
   /**
@@ -90,10 +83,9 @@ public class SolrException extends RuntimeException {
   protected SolrException(int code, String msg, Throwable th) {
     super(msg, th);
     this.code = code;
-    this.mdcContext = MDC.getCopyOfContextMap();
   }
 
-  int code = 0;
+  int code;
   protected NamedList<String> metadata;
   protected List<Map<String, Object>> details;
 
@@ -162,6 +154,26 @@ public class SolrException extends RuntimeException {
     return t;
   }
 
+  /** Cause chains are shallow in practice; the cap only guards against a cyclic chain. */
+  private static final int MAX_CAUSE_DEPTH = 100;
+
+  /**
+   * Whether {@code t} or anything in its cause chain is of the given type. Prefer this to {@link
+   * #getRootCause} when classifying a failure, since a transport may report it wrapped at any
+   * depth.
+   */
+  public static boolean hasCause(Throwable t, Class<? extends Throwable> type) {
+    int depth = 0;
+    for (Throwable cause = t;
+        cause != null && depth++ < MAX_CAUSE_DEPTH;
+        cause = cause.getCause()) {
+      if (type.isInstance(cause)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Ensure that the provided tragic exception is wrapped in a 5xx SolrException
    *
@@ -179,35 +191,5 @@ public class SolrException extends RuntimeException {
     }
 
     return new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
-  }
-
-  public void logInfoWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.info(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
-  }
-
-  public void logDebugWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.debug(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
-  }
-
-  public void logWarnWithMdc(Logger logger, String msg) {
-    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
-    MDC.setContextMap(mdcContext);
-    try {
-      logger.warn(msg);
-    } finally {
-      MDC.setContextMap(previousMdcContext);
-    }
   }
 }

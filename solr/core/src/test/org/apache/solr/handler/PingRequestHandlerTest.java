@@ -85,6 +85,10 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
     rsp = makeRequest(handler, req("action", "ping"));
     assertEquals("OK", rsp.getValues().get("status"));
+
+    rsp = makeRequest(handler, req("action", "status"));
+    assertEquals("not_configured", rsp.getValues().get("status"));
+    assertNull(rsp.getException());
   }
 
   public void testEnablingServer() throws Exception {

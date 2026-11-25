@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated CoreContainer.getCores() and SolrCores.getCores() methods, which handed out cores without reserving them. Use getLoadedCoreNames() with getCore(String) and close each core, or getLoadedCoreNames().size() when only a count is needed.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18378
+    url: https://issues.apache.org/jira/browse/SOLR-18378

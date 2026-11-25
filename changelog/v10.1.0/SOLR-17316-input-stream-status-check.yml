@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  `bin/solr api` and the package manager's collection-agnostic API calls now fail on a non-2xx
+  response instead of printing it as if it had succeeded.
+type: fixed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-17316
+    url: https://issues.apache.org/jira/browse/SOLR-17316

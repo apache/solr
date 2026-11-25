@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -71,92 +72,91 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     handle.put("shards.qt", SKIP);
     handle.put("shards", SKIP);
     handle.put("q", SKIP);
-    handle.put("qt", SKIP);
     query(
-        "q",
-        "*:*",
-        "qt",
         "/elevate",
-        "shards.qt",
-        "/elevate",
-        "rows",
-        "500",
-        "sort",
-        "id desc",
-        CommonParams.FL,
-        "id, score, [elevated]");
+        params(
+            "q",
+            "*:*",
+            "shards.qt",
+            "/elevate",
+            "rows",
+            "500",
+            "sort",
+            "id desc",
+            CommonParams.FL,
+            "id, score, [elevated]"));
 
     query(
-        "q",
-        "ZZZZ",
-        "qt",
         "/elevate",
-        "shards.qt",
-        "/elevate",
-        "rows",
-        "500",
-        CommonParams.FL,
-        "*, [elevated]",
-        "forceElevation",
-        "true",
-        "sort",
-        "int_i desc");
+        params(
+            "q",
+            "ZZZZ",
+            "shards.qt",
+            "/elevate",
+            "rows",
+            "500",
+            CommonParams.FL,
+            "*, [elevated]",
+            "forceElevation",
+            "true",
+            "sort",
+            "int_i desc"));
 
     query(
-        "q",
-        "solr",
-        "qt",
         "/elevate",
-        "shards.qt",
-        "/elevate",
-        "rows",
-        "500",
-        CommonParams.FL,
-        "*, [elevated]",
-        "forceElevation",
-        "true",
-        "sort",
-        "int_i asc");
+        params(
+            "q",
+            "solr",
+            "shards.qt",
+            "/elevate",
+            "rows",
+            "500",
+            CommonParams.FL,
+            "*, [elevated]",
+            "forceElevation",
+            "true",
+            "sort",
+            "int_i asc"));
 
     query(
-        "q",
-        "ZZZZ",
-        "qt",
         "/elevate",
-        "shards.qt",
-        "/elevate",
-        "rows",
-        "500",
-        CommonParams.FL,
-        "*, [elevated]",
-        "forceElevation",
-        "true",
-        "sort",
-        "id desc");
+        params(
+            "q",
+            "ZZZZ",
+            "shards.qt",
+            "/elevate",
+            "rows",
+            "500",
+            CommonParams.FL,
+            "*, [elevated]",
+            "forceElevation",
+            "true",
+            "sort",
+            "id desc"));
 
     // See SOLR-4854 for background on following test code
 
     // Uses XML response format by default
     QueryResponse response =
         query(
-            "q",
-            "XXXX",
-            "qt",
             "/elevate",
-            "shards.qt",
-            "/elevate",
-            "rows",
-            "500",
-            CommonParams.FL,
-            "id, [elevated]",
-            "enableElevation",
-            "true",
-            "forceElevation",
-            "true",
-            "elevateIds",
-            "6",
-            "sort",
-            "id desc");
+            params(
+                "q",
+                "XXXX",
+                "shards.qt",
+                "/elevate",
+                "rows",
+                "500",
+                CommonParams.FL,
+                "id, [elevated]",
+                "enableElevation",
+                "true",
+                "forceElevation",
+                "true",
+                "elevateIds",
+                "6",
+                "sort",
+                "id desc"));
 
     assertTrue(response.getResults().getNumFound() > 0);
     SolrDocument document = response.getResults().get(0);
@@ -167,7 +167,6 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertTrue(client.getParser() instanceof JavaBinResponseParser);
     SolrQuery solrQuery =
         new SolrQuery("XXXX")
-            .setParam("qt", "/elevate")
             .setParam("shards.qt", "/elevate")
             .setRows(500)
             .setFields("id,[elevated]")
@@ -176,7 +175,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
             .setParam("elevateIds", "6")
             .setSort("id", SolrQuery.ORDER.desc);
     setDistributedParams(solrQuery);
-    response = client.query(DEFAULT_TEST_CORENAME, solrQuery);
+    response = new QueryRequest("/elevate", solrQuery).process(client, DEFAULT_TEST_CORENAME);
 
     assertTrue(response.getResults().getNumFound() > 0);
     document = response.getResults().get(0);

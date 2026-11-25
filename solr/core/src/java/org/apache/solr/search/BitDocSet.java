@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
@@ -270,8 +271,13 @@ public class BitDocSet extends DocSet {
     }
 
     final int base = context.docBase;
-    final int max = base + maxDoc; // one past the max doc in this segment.
     final FixedBitSet bs = bits;
+    // bits may be shorter than the index's maxDoc (e.g. from SortedIntDocSet.union)
+    if (base >= bs.length()) {
+      return null;
+    }
+    // one past the max doc to visit in this segment
+    final int max = Math.min(base + maxDoc, bs.length());
 
     return new DocIdSetIterator() {
       int pos = base - 1;
@@ -320,7 +326,7 @@ public class BitDocSet extends DocSet {
   }
 
   @Override
-  public DocSetQuery makeQuery() {
+  public Query makeQuery() {
     return new DocSetQuery(this);
   }
 

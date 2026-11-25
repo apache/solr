@@ -540,7 +540,6 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       ModifiableSolrParams joinSParams = new ModifiableSolrParams(queryParams);
       joinSParams.set("fl", buf.toString());
-      joinSParams.set("qt", "/export");
       joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
       StringBuilder nodeQuery = new StringBuilder();
@@ -566,7 +565,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       try {
         stream =
             new UniqueStream(
-                new CloudSolrStream(solrConnection, collection, joinSParams),
+                new CloudSolrStream(solrConnection, collection, "/export", joinSParams),
                 new MultipleFieldEqualitor(
                     new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
         stream.setStreamContext(streamContext);

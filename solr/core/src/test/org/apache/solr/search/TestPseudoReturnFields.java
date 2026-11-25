@@ -93,7 +93,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "/response/docs==[{'val2_ss':10,'val_ss':1}]");
 
     assertJQ(
-        req("qt", "/get", "id", "42", "fl", "val_ss:val_i, val2_ss:10"),
+        reqWithPath("/get", "id", "42", "fl", "val_ss:val_i, val2_ss:10"),
         "/doc=={'val2_ss':10,'val_ss':1}");
   }
 
@@ -101,12 +101,12 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
     // single value int using alias that matches multivalued dynamic field - via RTG
     assertJQ(
-        req("qt", "/get", "id", "42", "fl", "val_ss:val_i, val2_ss:10, subject"),
+        reqWithPath("/get", "id", "42", "fl", "val_ss:val_i, val2_ss:10, subject"),
         "/doc=={'val2_ss':10,'val_ss':1, 'subject':'aaa'}");
 
     // also check real-time-get from transaction log
     assertJQ(
-        req("qt", "/get", "id", "99", "fl", "val_ss:val_i, val2_ss:10, subject"),
+        reqWithPath("/get", "id", "99", "fl", "val_ss:val_i, val2_ss:10, subject"),
         "/doc=={'val2_ss':10,'val_ss':1,'subject':'uncommitted'}");
   }
 
@@ -145,7 +145,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
       for (String id : Arrays.asList("42", "99")) {
         assertQ(
             "id=" + id + ", fl=" + fl + " ... all real fields",
-            req("qt", "/get", "id", id, "wt", "xml", "fl", fl),
+            reqWithPath("/get", "id", id, "wt", "xml", "fl", fl),
             "count(//doc)=1",
             "//doc/str[@name='id']",
             "//doc/int[@name='val_i']",
@@ -161,8 +161,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // only one of these docs should match...
     assertQ(
         "RTG w/ 2 ids & fq that only matches 1 uncommitted doc",
-        req(
-            "qt",
+        reqWithPath(
             "/get",
             "ids",
             "42,99",
@@ -203,7 +202,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
       for (String id : Arrays.asList("42", "99")) {
         assertQ(
             "id=" + id + ", fl=" + fl + " ... score real fields",
-            req("qt", "/get", "id", id, "wt", "xml", "fl", fl),
+            reqWithPath("/get", "id", id, "wt", "xml", "fl", fl),
             "count(//doc)=1",
             "//doc/str[@name='id']",
             "//doc/int[@name='val_i']",
@@ -244,7 +243,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
           "id=" + id + ", fl=score,val_i",
-          req("qt", "/get", "id", id, "wt", "xml", "fl", "score,val_i"),
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "score,val_i"),
           "count(//doc)=1",
           "//doc/int[@name='val_i']",
           "//doc[count(*)=1]");
@@ -280,12 +279,11 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       for (SolrParams p :
           Arrays.asList(
-              params("qt", "/get", "id", id, "wt", "xml", "fl", "log(val_i),abs(val_i)"),
-              params(
-                  "qt", "/get", "id", id, "wt", "xml", "fl", "log(val_i)", "fl", "abs(val_i)"))) {
+              params("id", id, "wt", "xml", "fl", "log(val_i),abs(val_i)"),
+              params("id", id, "wt", "xml", "fl", "log(val_i)", "fl", "abs(val_i)"))) {
         assertQ(
             "id=" + id + ", params=" + p,
-            req(p),
+            reqWithPath("/get", p),
             "count(//doc)=1",
             // true for both these specific docs
             "//doc/double[@name='log(val_i)'][.='0.0']",
@@ -321,7 +319,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               params("fl", "log(val_i),val_i"), params("fl", "log(val_i)", "fl", "val_i"))) {
         assertQ(
             id + " " + p,
-            req(p, "qt", "/get", "wt", "xml", "id", id),
+            reqWithPath("/get", p, "wt", "xml", "id", id),
             "count(//doc)=1",
             // true for both these specific docs
             "//doc/double[@name='log(val_i)'][.='0.0']",
@@ -377,7 +375,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               params("fl", "score,log(val_i),abs(val_i)"))) {
         assertQ(
             "id=" + id + ", p=" + p,
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/double[@name='log(val_i)']",
             "//doc/float[@name='abs(val_i)'][.='1.0']",
@@ -415,7 +413,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
           id + ": fl=val_*",
-          req("qt", "/get", "id", id, "wt", "xml", "fl", "val_*"),
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "val_*"),
           "count(//doc)=1",
           "//doc/int[@name='val_i'][.=1]",
           "//doc[count(*)=1]");
@@ -424,7 +422,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               params("fl", "val_*,subj*,ss*"), params("fl", "val_*", "fl", "subj*,ss*"))) {
         assertQ(
             id + ": " + p,
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/int[@name='val_i'][.=1]",
             "//doc/str[@name='subject']", // value differs between docs
@@ -464,7 +462,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
           id + " + fl=val_*,id",
-          req("qt", "/get", "id", id, "wt", "xml", "fl", "val_*,id"),
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "val_*,id"),
           "count(//doc)=1",
           "//doc/int[@name='val_i'][.=1]",
           "//doc/str[@name='id']",
@@ -477,13 +475,46 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               params("fl", "val_*", "fl", "subj*,id"))) {
         assertQ(
             id + " + " + p,
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/int[@name='val_i'][.=1]",
             "//doc/str[@name='subject']",
             "//doc/str[@name='id']",
             "//doc[count(*)=3]");
       }
+    }
+  }
+
+  public void testGlobsAndExplicitNonStoredDocValues() {
+    // _version_ is useDocValuesAsStored=false, so only returned when named explicitly
+    assertQ(
+        req("q", "*:*", "rows", "1", "fl", "val_*,_version_"),
+        "//result[@numFound='5']",
+        "//result/doc/int[@name='val_i']",
+        "//result/doc/long[@name='_version_']",
+        "//result/doc[count(*)=2]");
+  }
+
+  public void testGlobsAndTransformerField() {
+    // the field read by the transformer is fetched, though the glob doesn't match it
+    assertQ(
+        req("q", "*:*", "rows", "1", "fl", "val_*,x:[json f=ssto]"),
+        "//result[@numFound='5']",
+        "//result/doc/int[@name='val_i']",
+        "//result/doc/str[@name='x'][.='X']",
+        "//result/doc[count(*)=2]");
+  }
+
+  public void testGlobsAndTransformerFieldRTG() {
+    // behavior shouldn't matter if we are committed or uncommitted
+    for (String id : Arrays.asList("42", "99")) {
+      assertQ(
+          id + ": fl=val_*,x:[json f=ssto]",
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "val_*,x:[json f=ssto]"),
+          "count(//doc)=1",
+          "//doc/int[@name='val_i'][.=1]",
+          "//doc/str[@name='x'][.='X']",
+          "//doc[count(*)=2]");
     }
   }
 
@@ -516,7 +547,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
           id + ": fl=val_*,score",
-          req("qt", "/get", "id", id, "wt", "xml", "fl", "val_*,score"),
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "val_*,score"),
           "count(//doc)=1",
           "//doc/int[@name='val_i']",
           "//doc[count(*)=1]");
@@ -527,7 +558,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               params("fl", "val_*", "fl", "subj*,score"))) {
         assertQ(
             "" + p,
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/int[@name='val_i']",
             "//doc/str[@name='subject']",
@@ -573,7 +604,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
           id + ": fl=[docid]",
-          req("qt", "/get", "id", id, "wt", "xml", "fl", "[docid]"),
+          reqWithPath("/get", "id", id, "wt", "xml", "fl", "[docid]"),
           "count(//doc)=1",
           "//doc/int[@name='[docid]'][.>=-1]",
           "//doc[count(*)=1]");
@@ -608,7 +639,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                   "abs(val_i)"))) {
         assertQ(
             id + ": " + p,
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/int[@name='[docid]'][.>=-1]",
             "//doc/float[@name='abs(val_i)'][.='1.0']",
@@ -666,7 +697,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                   "abs(val_i)"))) {
         assertQ(
             id + ": " + p,
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/str[@name='id']",
             "//doc/int[@name='[docid]'][.>=-1]",
@@ -724,8 +755,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     for (String id : Arrays.asList("42", "99")) {
       assertQ(
           id,
-          req(
-              "qt",
+          reqWithPath(
               "/get",
               "id",
               id,
@@ -756,7 +786,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
 
         assertQ(
             p.toString(),
-            req(p, "qt", "/get", "id", id, "wt", "xml"),
+            reqWithPath("/get", p, "id", id, "wt", "xml"),
             "//doc/int[@name='[docid]']", // TODO
             "//doc/float[@name='abs(val_i)'][.='1.0']",
             "//doc/int[@name='x_alias'][.=10]",
@@ -821,7 +851,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         for (SolrParams p : Arrays.asList(singleFl, multiFl)) {
           assertQ(
               id + ": " + p,
-              req(p, "qt", "/get", "id", id, "wt", "xml"),
+              reqWithPath("/get", p, "id", id, "wt", "xml"),
               "count(//doc)=1",
               "//doc/str[@name='id']",
               "//doc/int[@name='[docid]'][.>=-1]",

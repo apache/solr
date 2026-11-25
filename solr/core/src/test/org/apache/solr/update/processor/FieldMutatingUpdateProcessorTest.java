@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 
 /**
@@ -503,6 +504,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("last", d.getFieldValue("foo_s"));
   }
 
+  @SuppressWarnings("try")
   public void testMinValue() throws Exception {
     SolrInputDocument d = null;
 
@@ -526,8 +528,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // failure when un-comparable
 
     SolrException error = null;
-    try {
-      ignoreException(".*Unable to mutate field.*");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*Unable to mutate field.*")) {
       d =
           processAdd(
               "min-value",
@@ -538,13 +539,12 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                   f("yak_t", "aaa", "bbb")));
     } catch (SolrException e) {
       error = e;
-    } finally {
-      resetExceptionIgnores();
     }
     assertNotNull("no error on un-comparable values", error);
     assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));
   }
 
+  @SuppressWarnings("try")
   public void testMaxValue() throws Exception {
     SolrInputDocument d = null;
 
@@ -568,8 +568,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // failure when un-comparable
 
     SolrException error = null;
-    try {
-      ignoreException(".*Unable to mutate field.*");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".*Unable to mutate field.*")) {
       d =
           processAdd(
               "min-value",
@@ -580,8 +579,6 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                   f("yak_t", "aaa", "bbb")));
     } catch (SolrException e) {
       error = e;
-    } finally {
-      resetExceptionIgnores();
     }
     assertNotNull("no error on un-comparable values", error);
     assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));

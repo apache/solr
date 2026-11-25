@@ -30,11 +30,11 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRI
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -50,6 +50,7 @@ import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.DocBasedVersionConstraintsProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
@@ -165,11 +166,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
       }
       String enabledVal = collectionProperties.get("crossdc.enabled");
       if (enabledVal != null) {
-        if (Boolean.parseBoolean(enabledVal.toString())) {
-          this.enabled = true;
-        } else {
-          this.enabled = false;
-        }
+        this.enabled = Boolean.parseBoolean(enabledVal);
       }
     } catch (Exception e) {
       log.error("Exception looking for CrossDC configuration in Zookeeper", e);
@@ -212,7 +209,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     // core.getResourceLoader().newInstance(RequestMirroringHandler.class.getName(),
     // KafkaRequestMirroringHandler.class);
 
-    conf = new KafkaCrossDcConf(properties);
+    setKafkaCrossDcConf(new KafkaCrossDcConf(properties));
 
     KafkaMirroringSink sink = new KafkaMirroringSink(conf);
 
@@ -220,15 +217,17 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     core.addCloseHook(new MyCloseHook(closer));
 
     producerMetrics = new ProducerMetrics(core.getSolrMetricsContext().getChildContext(this), core);
-    mirroringHandler = new KafkaRequestMirroringHandler(sink);
+    setMirroringHandler(new KafkaRequestMirroringHandler(sink));
   }
 
-  private static Integer getIntegerPropValue(String name, Properties props) {
-    String value = props.getProperty(name);
-    if (value == null) {
-      return null;
-    }
-    return Integer.parseInt(value);
+  @VisibleForTesting
+  void setKafkaCrossDcConf(KafkaCrossDcConf conf) {
+    this.conf = conf;
+  }
+
+  @VisibleForTesting
+  void setMirroringHandler(KafkaRequestMirroringHandler mirroringHandler) {
+    this.mirroringHandler = mirroringHandler;
   }
 
   @Override
@@ -244,6 +243,10 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "mirroringHandler is null");
     }
 
+    // allow distributed forwarding to other replicas/shards
+    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(
+        req, SERVER_SHOULD_MIRROR);
+
     // Check if mirroring is disabled in request params, defaults to true
     boolean doMirroring = req.getParams().getBool(SERVER_SHOULD_MIRROR, true);
     boolean mirrorCommits = conf.getBool(MIRROR_COMMITS);
@@ -251,34 +254,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     final long maxMirroringBatchSizeBytes = conf.getInt(MAX_REQUEST_SIZE_BYTES);
     Boolean indexUnmirrorableDocs = conf.getBool(INDEX_UNMIRRORABLE_DOCS);
 
-    ModifiableSolrParams mirroredParams = null;
-    if (doMirroring) {
-      // Get the collection name for the core so we can be explicit in the mirrored request
-      CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-      String collection = coreDesc.getCollectionName();
-      if (collection == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Could not determine collection name for "
-                + MirroringUpdateProcessor.class.getSimpleName()
-                + ". Solr may not be running in cloud mode.");
-      }
-
-      mirroredParams = new ModifiableSolrParams(req.getParams());
-      mirroredParams.set("collection", collection);
-      // remove internal version parameter
-      mirroredParams.remove(CommonParams.VERSION_FIELD);
-      // remove fields added by distributed update proc
-      mirroredParams.remove(DISTRIB_UPDATE_PARAM);
-      mirroredParams.remove(DISTRIB_FROM_COLLECTION);
-      mirroredParams.remove(DISTRIB_INPLACE_PREVVERSION);
-      mirroredParams.remove(COMMIT_END_POINT);
-      mirroredParams.remove(DISTRIB_FROM_SHARD);
-      mirroredParams.remove(DISTRIB_FROM_PARENT);
-      mirroredParams.remove(DISTRIB_FROM);
-      // prevent circular mirroring
-      mirroredParams.set(SERVER_SHOULD_MIRROR, Boolean.FALSE.toString());
-    }
+    ModifiableSolrParams mirroredParams = doMirroring ? createMirroredParams(req) : null;
     if (log.isTraceEnabled()) {
       log.trace("Create MirroringUpdateProcessor with mirroredParams={}", mirroredParams);
     }
@@ -294,6 +270,39 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
         DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM)),
         doMirroring ? mirroringHandler : null,
         producerMetrics);
+  }
+
+  /**
+   * Builds the parameters of mirrored requests from the incoming request: names the collection
+   * explicitly, strips internal distributed-update parameters and disables mirroring on the target.
+   */
+  static ModifiableSolrParams createMirroredParams(SolrQueryRequest req) {
+    // Get the collection name for the core so we can be explicit in the mirrored request
+    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
+    String collection = coreDesc.getCollectionName();
+    if (collection == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not determine collection name for "
+              + MirroringUpdateProcessor.class.getSimpleName()
+              + ". Solr may not be running in cloud mode.");
+    }
+
+    ModifiableSolrParams mirroredParams = new ModifiableSolrParams(req.getParams());
+    mirroredParams.set("collection", collection);
+    // remove internal version parameter
+    mirroredParams.remove(CommonParams.VERSION_FIELD);
+    // remove fields added by distributed update proc
+    mirroredParams.remove(DISTRIB_UPDATE_PARAM);
+    mirroredParams.remove(DISTRIB_FROM_COLLECTION);
+    mirroredParams.remove(DISTRIB_INPLACE_PREVVERSION);
+    mirroredParams.remove(COMMIT_END_POINT);
+    mirroredParams.remove(DISTRIB_FROM_SHARD);
+    mirroredParams.remove(DISTRIB_FROM_PARENT);
+    mirroredParams.remove(DISTRIB_FROM);
+    // prevent circular mirroring
+    mirroredParams.set(SERVER_SHOULD_MIRROR, Boolean.FALSE.toString());
+    return mirroredParams;
   }
 
   public static class NoOpUpdateRequestProcessor extends UpdateRequestProcessor {

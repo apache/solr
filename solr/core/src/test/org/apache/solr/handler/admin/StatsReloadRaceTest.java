@@ -21,7 +21,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.RetryUtil;
@@ -59,8 +58,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       h.getCoreContainer()
           .getMultiCoreHandler()
           .handleRequest(
-              req(
-                  CommonParams.QT,
+              reqWithPath(
                   "/admin/cores",
                   CoreAdminParams.ACTION,
                   CoreAdminParams.CoreAdminAction.RELOAD.toString(),

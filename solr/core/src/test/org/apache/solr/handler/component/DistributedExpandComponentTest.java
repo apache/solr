@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.BeforeClass;
 
 /**
@@ -57,6 +58,7 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         "4"); // NOTE: using 0 to explicitly confim we don't assume null
   }
 
+  @SuppressWarnings("try")
   private void _test(
       final String group, final String aaa, final String bbb, final String ccc, final String ddd)
       throws Exception {
@@ -248,11 +250,12 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
         "fq", "{!collapse cost=1000 field=" + group + "}", "{!collapse cost=200 field=test_i}");
     query(baseParams);
 
-    ignoreException("missing expand field");
-    SolrException e = expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertTrue(e.getMessage().contains("missing expand field"));
-    resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("missing expand field")) {
+      SolrException e =
+          expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(e.getMessage().contains("missing expand field"));
+    }
 
     // Since none of these queries will match any doc w/null in the group field, it shouldn't matter
     // what nullPolicy is used...

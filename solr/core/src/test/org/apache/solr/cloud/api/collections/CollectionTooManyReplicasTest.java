@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -112,12 +111,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     waitForState(
         "Expected to see all replicas active",
         collectionName,
-        c -> {
-          for (Replica r : c.getReplicas()) {
-            if (r.getState() != Replica.State.ACTIVE) return false;
-          }
-          return true;
-        });
+        docCollection ->
+            docCollection.replicaStream().allMatch(r -> r.getState() == Replica.State.ACTIVE));
   }
 
   @Test
@@ -258,10 +253,10 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   private List<String> getAllNodeNames(String collectionName) {
-    DocCollection state = getCollectionState(collectionName);
-    return state.getReplicas().stream()
+    return getCollectionState(collectionName)
+        .replicaStream()
         .map(Replica::getNodeName)
         .distinct()
-        .collect(Collectors.toList());
+        .toList();
   }
 }

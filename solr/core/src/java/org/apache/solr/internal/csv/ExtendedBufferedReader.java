@@ -23,11 +23,11 @@ import java.io.Reader;
 /**
  * ExtendedBufferedReader
  *
- * <p>A special reader decorater which supports more sophisticated access to the underlying reader
+ * <p>A special reader decorator which supports more sophisticated access to the underlying reader
  * object.
  *
  * <p>In particular the reader supports a look-ahead option, which allows you to see the next char
- * returned by next(). Furthermore the skip-method supports skipping until (but excluding) a given
+ * returned by next(). Furthermore, the skip-method supports skipping until (but excluding) a given
  * char. Similar functionality is supported by the reader as well.
  */
 class ExtendedBufferedReader extends BufferedReader {
@@ -98,7 +98,7 @@ class ExtendedBufferedReader extends BufferedReader {
   }
 
   /**
-   * Non-blocking reading of len chars into buffer buf starting at bufferposition off.
+   * Non-blocking reading of len chars into buffer buf starting at buffer position off.
    *
    * <p>performs an iterative read on the underlying stream as long as the following conditions
    * hold: - less than len chars have been read - end of stream has not been reached - next read is
@@ -215,7 +215,7 @@ class ExtendedBufferedReader extends BufferedReader {
    *
    * <p>ATTENTION: invalidates the line-counter !!!!!
    *
-   * @return nof skiped chars
+   * @return nof skipped chars
    */
   @Override
   public long skip(long n) throws IllegalArgumentException, IOException {
@@ -235,14 +235,14 @@ class ExtendedBufferedReader extends BufferedReader {
     }
 
     // skip and reread the lookahead-char
-    long skiped = 0;
+    long skipped = 0;
     if (n > 1) {
-      skiped = super.skip(n - 1);
+      skipped = super.skip(n - 1);
     }
     lookaheadChar = super.read();
-    // fixme uh: we should check the skiped sequence for line-terminations...
+    // fixme uh: we should check the skipped sequence for line-terminations...
     lineCounter = Integer.MIN_VALUE;
-    return skiped + 1;
+    return skipped + 1;
   }
 
   /**
@@ -269,7 +269,7 @@ class ExtendedBufferedReader extends BufferedReader {
   /**
    * Returns the next char in the stream without consuming it.
    *
-   * <p>Remember the next char read by read(..) will always be identical to lookAhead().
+   * <p>Remember the next char read by read() will always be identical to lookAhead().
    *
    * @return the next char (without consuming it) or END_OF_STREAM
    */
@@ -295,7 +295,7 @@ class ExtendedBufferedReader extends BufferedReader {
 
   @Override
   public boolean markSupported() {
-    /* note uh: marking is not supported, cause we cannot
+    /* note uh: marking is not supported, because we cannot
      *          see into the future...
      */
     return false;

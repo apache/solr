@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.solr.languagemodels.model.ExceptionThrowingChatModel",
+  "name": "exception-throwing-model",
+  "params": {
+  }
+}

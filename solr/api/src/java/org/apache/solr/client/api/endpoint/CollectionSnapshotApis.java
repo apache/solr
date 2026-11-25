@@ -53,9 +53,10 @@ public interface CollectionSnapshotApis {
         throws Exception;
   }
 
-  @Path("/collections/{collName}/snapshots/{snapshotName}")
+  @Path("/collections/{collName}/snapshots")
   interface Delete {
     @DELETE
+    @Path("/{snapshotName}")
     @Operation(
         summary = "Delete an existing collection-snapshot by name.",
         tags = {"collection-snapshots"})

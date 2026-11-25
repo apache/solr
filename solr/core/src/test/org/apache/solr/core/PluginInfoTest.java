@@ -17,8 +17,8 @@
 package org.apache.solr.core;
 
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.DOMUtilTestBase;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Test;
 import org.w3c.dom.Node;
 
@@ -61,10 +61,10 @@ public class PluginInfoTest extends DOMUtilTestBase {
 
   // This is in fact a DOMUtil test, but it is here for completeness
   @Test
+  @SuppressWarnings("try")
   public void testNameRequired() throws Exception {
     Node nodeWithNoName = getNode("<plugin></plugin>", "plugin");
-    try {
-      SolrTestCaseJ4.ignoreException("missing mandatory attribute");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("missing mandatory attribute")) {
       RuntimeException thrown =
           expectThrows(
               RuntimeException.class,
@@ -72,8 +72,6 @@ public class PluginInfoTest extends DOMUtilTestBase {
                 PluginInfo pi = new PluginInfo(nodeWithNoName, "Node with No name", true, false);
               });
       assertTrue(thrown.getMessage().contains("missing mandatory attribute"));
-    } finally {
-      SolrTestCaseJ4.resetExceptionIgnores();
     }
 
     Node nodeWithAName = getNode("<plugin name=\"myName\" />", "plugin");
@@ -82,10 +80,10 @@ public class PluginInfoTest extends DOMUtilTestBase {
   }
 
   @Test
+  @SuppressWarnings("try")
   public void testClassRequired() throws Exception {
     Node nodeWithNoClass = getNode("<plugin></plugin>", "plugin");
-    try {
-      SolrTestCaseJ4.ignoreException("missing mandatory attribute");
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("missing mandatory attribute")) {
       RuntimeException thrown =
           expectThrows(
               RuntimeException.class,
@@ -93,8 +91,6 @@ public class PluginInfoTest extends DOMUtilTestBase {
                 PluginInfo pi = new PluginInfo(nodeWithNoClass, "Node with No Class", false, true);
               });
       assertTrue(thrown.getMessage().contains("missing mandatory attribute"));
-    } finally {
-      SolrTestCaseJ4.resetExceptionIgnores();
     }
 
     Node nodeWithAClass = getNode("<plugin class=\"myName\" />", "plugin");

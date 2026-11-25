@@ -27,6 +27,8 @@ import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.servlet.SolrRequestParsers;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -352,6 +354,45 @@ public class SolrParamTest extends SolrTestCase {
     assertNull(defaults.get("asagdsaga"));
   }
 
+  @Test
+  public void testFirstParamHasQuestionMark() {
+
+    final ModifiableSolrParams in = getDummySolrParams();
+    String queryString = in.toQueryString();
+    assertEquals('?', queryString.charAt(0));
+
+    MultiMapSolrParams out = SolrRequestParsers.parseQueryString(queryString.substring(1));
+    assertEquals(in, out);
+  }
+
+  @Test
+  public void testIfToStringCanBeParsed() {
+
+    final ModifiableSolrParams in = getDummySolrParams();
+    String queryString = in.toString();
+
+    assertEquals("first=1st&second=2nd&third=3rd", queryString);
+    MultiMapSolrParams out = SolrRequestParsers.parseQueryString(queryString);
+    assertEquals(in, out);
+  }
+
+  @Test
+  public void testToStringWithEmptySolrParams() {
+
+    ModifiableSolrParams in = new ModifiableSolrParams();
+    String queryString = in.toString();
+    assertEquals("", queryString);
+    MultiMapSolrParams out = SolrRequestParsers.parseQueryString(queryString);
+    assertEquals(in, out);
+  }
+
+  private ModifiableSolrParams getDummySolrParams() {
+    return params(
+        "first", "1st",
+        "second", "2nd",
+        "third", "3rd");
+  }
+
   public static int getReturnCode(Runnable runnable) {
     try {
       runnable.run();
@@ -375,5 +416,26 @@ public class SolrParamTest extends SolrTestCase {
   static void assertIterSize(String msg, int expectedSize, SolrParams p) {
     List<String> keys = iterToList(p.getParameterNamesIterator());
     assertEquals(msg + " " + keys.toString(), expectedSize, keys.size());
+  }
+
+  public void testOfNamesAndValues() {
+    assertFalse(SolrParams.of(new String[0]).iterator().hasNext());
+
+    SolrParams p = SolrParams.of("a", "1", "b", "2", "a", "3");
+    assertFalse(p instanceof ModifiableSolrParams);
+    assertArrayEquals(new String[] {"1", "3"}, p.getParams("a"));
+    assertEquals("2", p.get("b"));
+
+    // Not modifiable, even through the backing map
+    assertTrue(p instanceof MultiMapSolrParams);
+    Map<String, String[]> map = ((MultiMapSolrParams) p).getMap();
+    expectThrows(UnsupportedOperationException.class, () -> map.put("c", new String[] {"4"}));
+    expectThrows(UnsupportedOperationException.class, () -> map.remove("a"));
+
+    expectThrows(IllegalArgumentException.class, () -> SolrParams.of("a", "1", "b"));
+
+    assertEquals("", SolrParams.of("a", (String) null).get("a"));
+    assertEquals("1", SolrParams.of((String) null, "1").get(""));
+    assertEquals("", SolrParams.of("a", "1", "b", null).get("b"));
   }
 }

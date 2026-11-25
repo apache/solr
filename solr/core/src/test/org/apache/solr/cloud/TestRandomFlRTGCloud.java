@@ -203,7 +203,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs =
         Arrays.asList(
-            "child" // way too complicated to check with this test, see SOLR-9379 instead
+            "child", // way too complicated to check with this test, see SOLR-9379 instead
+            "hl" // presently can only highlight via reading data from the index.
             );
 
     for (String buggy : knownBugs) {
@@ -417,7 +418,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     // NOTE: not using SolrClient.getById or getByIds because we want to force choice of "id" vs
     // "ids" params
-    final ModifiableSolrParams params = params("qt", "/get");
+    final ModifiableSolrParams params = params();
 
     // random fq -- nothing fancy, secondary concern for our test
     final Integer FQ_MAX = usually() ? null : random().nextInt();
@@ -481,7 +482,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     final Object rsp; // only here for an assertion message
 
-    var qr = new QueryRequest(params);
+    var qr = new QueryRequest("/get", params);
     final SolrDocumentList docs =
         switch (wt) {
           case "javabin" -> { // the most common case

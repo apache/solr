@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -25,12 +24,15 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.Test;
 
 /** Test properties in configuration files. */
+@SuppressWarnings("deprecation") // the embedded base class is deprecated, not this test
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
 
   @Test
+  @SuppressWarnings("try")
   public void testProperties() throws Exception {
 
     UpdateRequest up = new UpdateRequest();
@@ -49,10 +51,10 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     up.add(doc);
     up.process(getSolrCore0());
 
-    SolrTestCaseJ4.ignoreException("unknown field");
-
     // You can't add it to core1
-    expectThrows(Exception.class, () -> up.process(getSolrCore1()));
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("unknown field")) {
+      expectThrows(Exception.class, () -> up.process(getSolrCore1()));
+    }
 
     // Add to core1
     doc.setField("id", "BBB");
@@ -62,9 +64,9 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     up.process(getSolrCore1());
 
     // You can't add it to core1
-    SolrTestCaseJ4.ignoreException("core0");
-    expectThrows(Exception.class, () -> up.process(getSolrCore0()));
-    SolrTestCaseJ4.resetExceptionIgnores();
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex("core0")) {
+      expectThrows(Exception.class, () -> up.process(getSolrCore0()));
+    }
 
     // now Make sure AAA is in 0 and BBB in 1
     SolrQuery q = new SolrQuery();

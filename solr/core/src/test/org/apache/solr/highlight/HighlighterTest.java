@@ -41,6 +41,7 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryCommand;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1397,7 +1398,14 @@ public class HighlighterTest extends SolrTestCaseJ4 {
       SolrQueryResponse resp = new SolrQueryResponse();
       ResponseBuilder rb = new ResponseBuilder(req, resp, List.of(hlComp));
       rb.setHighlightQuery(query);
-      rb.setResults(req.getSearcher().getDocListAndSet(query, null, 0, 1));
+      rb.setResults(
+          new QueryCommand()
+              .setQuery(query)
+              .setOffset(0)
+              .setLen(1)
+              .setNeedDocSet(true)
+              .search(req.getSearcher())
+              .getDocListAndSet());
       // highlight:
       hlComp.prepare(rb);
       hlComp.process(rb);

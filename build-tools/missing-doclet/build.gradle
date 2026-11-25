@@ -20,9 +20,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
 }
 
-repositories {
-  mavenCentral()
-}
+apply from: file("../build-infra/declare-repositories.gradle")
 
 group = "org.apache.solr.tools"
 description = 'Doclet-based javadoc validation'

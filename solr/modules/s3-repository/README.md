@@ -40,7 +40,7 @@ This plugin uses the [default AWS credentials provider chain](https://docs.aws.a
 To run / test locally, first spin up S3Mock:
 
     mkdir /tmp/s3
-    docker run -p 9090:9090 --env initialBuckets=TEST_BUCKET -v /tmp/s3:/s3mockroot -t adobe/s3mock
+    docker run -p 9090:9090 --env COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS=TEST_BUCKET -v /tmp/s3:/s3mockroot -t adobe/s3mock:5.1.0
 
 Add this to your `solr.xml`:
 

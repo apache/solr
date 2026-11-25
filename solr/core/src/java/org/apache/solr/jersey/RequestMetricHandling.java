@@ -113,7 +113,7 @@ public class RequestMetricHandling {
 
       // Increment the timeout count if responseHeader indicates a timeout
       if (responseContext.hasEntity()
-          && SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
+          && responseContext.getEntity() instanceof SolrJerseyResponse) {
         final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
         if (Boolean.TRUE.equals(response.responseHeader.partialResults)) {
           metrics.numTimeouts.inc();
@@ -121,8 +121,13 @@ public class RequestMetricHandling {
       } else {
         log.debug("Skipping partialResults check because entity was not SolrJerseyResponse");
       }
+      // Jersey can re-invoke response filters a second time when an exception occurs while
+      // building the first response (e.g. via CatchAllExceptionMapper), so guard against
+      // double-stopping the same timer.
       final var timer = (AttributedLongTimer.MetricTimer) requestContext.getProperty(TIMER);
+      if (timer == null) return;
       timer.stop();
+      requestContext.setProperty(TIMER, null);
     }
   }
 }

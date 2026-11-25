@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.ContentWriterUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -48,7 +48,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
@@ -413,8 +412,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         }
         upd.append("</update>");
 
-        ContentStreamUpdateRequest req = withBasicAuth(new ContentStreamUpdateRequest("/update"));
-        req.addContentStream(new ContentStreamBase.StringStream(upd.toString(), "text/xml"));
+        ContentWriterUpdateRequest req = withBasicAuth(new ContentWriterUpdateRequest("/update"));
+        req.addContentWithType(upd.toString(), "text/xml");
         cluster.getSolrClient().request(req, collection);
         upd.setLength("<update>".length());
       }

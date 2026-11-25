@@ -94,7 +94,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
 
     boolean first = true;
     for (String fname : doc.getFieldNames()) {
-      if (returnFields != null && !returnFields.wantsField(fname)) {
+      if (returnFields != null && !returnFields.returnsField(fname)) {
         continue;
       }
 
@@ -116,8 +116,8 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
         indent();
       }
       writeKey("_childDocuments_", true);
-      writeArrayOpener(doc.getChildDocumentCount());
       List<SolrDocument> childDocs = doc.getChildDocuments();
+      writeArrayOpener(childDocs.size());
       for (int i = 0; i < childDocs.size(); i++) {
         writeSolrDocument(null, childDocs.get(i), null, i);
       }

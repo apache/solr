@@ -62,7 +62,7 @@ class SolrEnumerator implements Enumerator<Object> {
   @Override
   public Object current() {
     if (fields.size() == 1) {
-      return this.getter(current, fields.get(0));
+      return this.getter(current, fields.getFirst());
     } else {
       // Build an array with all fields in this row
       Object[] row = new Object[fields.size()];
@@ -76,7 +76,6 @@ class SolrEnumerator implements Enumerator<Object> {
 
   private Object getter(Tuple tuple, Map.Entry<String, Class<?>> field) {
     Object val = tuple.get(field.getKey());
-
     if (val == null) {
       return null;
     }

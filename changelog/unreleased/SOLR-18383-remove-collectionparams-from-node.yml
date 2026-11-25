@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove the deprecated `fromNode` request parameter of the MOVEREPLICA Collections API command; use `sourceNode` instead.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18383
+    url: https://issues.apache.org/jira/browse/SOLR-18383

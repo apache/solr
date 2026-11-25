@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Map<String, Object> props = new HashMap<>();
     String nodeName = "127.0.0.1:10000_solr";
     props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
-    props.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
+    props.put(ZkStateReader.BASE_URL_PROP, URLUtil.getBaseUrlForNodeName(nodeName, "http"));
     props.put(ZkStateReader.CORE_NAME_PROP, "core1");
     props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
 
@@ -68,8 +69,10 @@ public class SliceStateTest extends SolrTestCaseJ4 {
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length);
     ClusterState loadedClusterState =
-        ClusterState.createFromJson(-1, bytes, liveNodes, Instant.now(), null);
+        ClusterState.createFromCollectionMap(-1, stateMap, liveNodes, Instant.now(), null);
 
     assertSame(
         "Default state not set to active",

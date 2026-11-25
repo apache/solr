@@ -116,8 +116,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops =
-        CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
+    List<CommandOperation> ops = ApiBag.readCommands(req.getContentStreams(), rsp.getValues());
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
@@ -316,6 +315,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
                 @Override
+                @SuppressWarnings(
+                    "ReferenceEquality") // detecting whether the plugin instance was reloaded
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authentication plugin is modified since the last call.
                   // invalidate the cached commandSchema
@@ -336,6 +337,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
           apis.add(
               new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
                 @Override
+                @SuppressWarnings(
+                    "ReferenceEquality") // detecting whether the plugin instance was reloaded
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authorization plugin is modified since the last call.
                   // invalidate cached commandSchema

@@ -126,7 +126,7 @@ public class TaggerTest extends TaggerTestCase {
     String doc = "london business school"; // just one tag
     SolrQueryRequest req =
         reqDoc(doc, "indent", "on", "omitHeader", "on", "matchText", "" + matchText);
-    String rspStr = h.query(req);
+    String rspStr = h.query(HANDLER, req);
     req.close();
     return rspStr;
   }
@@ -320,7 +320,7 @@ public class TaggerTest extends TaggerTestCase {
     // SOLR-14396: Ensure tagger handler doesn't fail on empty collections
     SolrQueryRequest req =
         reqDoc("anything", "indent", "on", "omitHeader", "on", "matchText", "false");
-    String rspStr = h.query(req);
+    String rspStr = h.query(HANDLER, req);
     req.close();
 
     String expected =

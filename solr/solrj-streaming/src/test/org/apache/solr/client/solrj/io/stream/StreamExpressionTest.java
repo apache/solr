@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPOutputStream;
@@ -58,8 +59,13 @@ import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Assume;
@@ -266,7 +272,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr", "search(myCollection, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
       solrParams.add("myCollection.shards", buf.toString());
@@ -310,9 +315,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add("expr", "sort(search(" + COLLECTIONORALIAS + "), by=\"a_i asc\")");
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(5, tuples.size());
@@ -336,6 +345,28 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertLong(tuples.get(4), "a_i", 4);
       assertDouble(tuples.get(4), "a_f", 4);
       assertString(tuples.get(4), "a_s", "hello4");
+
+      // SOLR-18332: the legacy 'qt' parameter must continue to select the /export-capable
+      // path server-side (SearchFacadeStream). 'partitionKeys' is only accepted on that path,
+      // so this also exercises that guard.
+      solrParams = new ModifiableSolrParams();
+      solrParams.add(
+          "expr",
+          "sort(search("
+              + COLLECTIONORALIAS
+              + ", q=\"*:*\", fl=\"id,a_i\", sort=\"a_i asc\", partitionKeys=\"id\", qt=\"/export\"), by=\"a_i asc\")");
+      solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
+      solrStream.setStreamContext(streamContext);
+      tuples = getTuples(solrStream);
+      assertEquals(5, tuples.size());
+      assertOrder(tuples, 0, 1, 2, 3, 4);
+      assertLong(tuples.get(0), "a_i", 0);
+      assertLong(tuples.get(4), "a_i", 4);
 
     } finally {
       solrClientCache.close();
@@ -370,11 +401,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
           "sql(" + COLLECTIONORALIAS + ", stmt=\"select id from collection1 order by a_i asc\")");
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(5, tuples.size());
@@ -382,15 +417,236 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       // Test with using the default collection
       solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add("expr", "sql(stmt=\"select id from collection1 order by a_i asc\")");
-      solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 1, 2, 3, 4);
 
     } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testCloudSolrStreamWithRouteParam() throws Exception {
+    final String routeCollection = "routeCollection";
+    CollectionAdminRequest.createCollectionWithImplicitRouter(routeCollection, "conf", "a,b,c", 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(routeCollection, 3, 3);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      new UpdateRequest()
+          .add(id, "0", "a_i", "0")
+          .add(id, "1", "a_i", "1")
+          .add(id, "2", "a_i", "2")
+          .withRoute("a")
+          .process(cluster.getSolrClient(), routeCollection);
+      new UpdateRequest()
+          .add(id, "3", "a_i", "3")
+          .add(id, "4", "a_i", "4")
+          .withRoute("b")
+          .process(cluster.getSolrClient(), routeCollection);
+      new UpdateRequest()
+          .add(id, "5", "a_i", "5")
+          .withRoute("c")
+          .commit(cluster.getSolrClient(), routeCollection);
+
+      CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+
+      assertEquals(Set.of("a"), routedSliceNames(routeCollection, cloudSolrClient, "a"));
+      assertEquals(Set.of("a", "c"), routedSliceNames(routeCollection, cloudSolrClient, "a,c"));
+      assertEquals(
+          3,
+          CloudSolrStream.getSlices(
+                  routeCollection, cloudSolrClient, true, new ModifiableSolrParams())
+              .size());
+
+      StreamFactory factory =
+          new StreamFactory()
+              .withDefaultSolrConnection(solrConnection)
+              .withCollectionUseThisConnection(routeCollection, solrConnection);
+
+      assertRouteQuery(routeCollection, factory, streamContext, "a", 1, new int[] {0, 1, 2});
+      assertRouteQuery(routeCollection, factory, streamContext, "a,c", 2, new int[] {0, 1, 2, 5});
+      assertRouteQuery(
+          routeCollection, factory, streamContext, null, 3, new int[] {0, 1, 2, 3, 4, 5});
+    } finally {
+      CollectionAdminRequest.deleteCollection(routeCollection).process(cluster.getSolrClient());
+      solrClientCache.close();
+    }
+  }
+
+  private Set<String> routedSliceNames(
+      String collection, CloudSolrClient cloudSolrClient, String routeKey) throws IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(ShardParams._ROUTE_, routeKey);
+    return CloudSolrStream.getSlices(collection, cloudSolrClient, true, params).stream()
+        .map(Slice::getName)
+        .collect(Collectors.toSet());
+  }
+
+  private void assertRouteQuery(
+      String collection,
+      StreamFactory factory,
+      StreamContext streamContext,
+      String routeKey,
+      int expectedStreamCount,
+      int[] expectedIds)
+      throws Exception {
+    CloudSolrStream stream = routeStream(collection, factory, streamContext, routeKey);
+    List<Tuple> tuples = getTuples(stream);
+    assertEquals(expectedStreamCount, stream.children().size());
+    assertEquals(expectedIds.length, tuples.size());
+    assertOrderOf(tuples, "a_i", expectedIds);
+  }
+
+  private CloudSolrStream routeStream(
+      String collection, StreamFactory factory, StreamContext streamContext, String routeKey)
+      throws IOException {
+    String routeClause = routeKey == null ? "" : ", _route_=\"" + routeKey + "\"";
+    StreamExpression expression =
+        StreamExpressionParser.parse(
+            "search("
+                + collection
+                + ", q=*:*, fl=\"id,a_i\", sort=\"a_i asc\""
+                + routeClause
+                + ")");
+    CloudSolrStream stream = new CloudSolrStream(expression, factory);
+    stream.setStreamContext(streamContext);
+    return stream;
+  }
+
+  @Test
+  public void testCloudSolrStreamWithCompositeIdRoute() throws Exception {
+    new UpdateRequest()
+        .add(id, "user1!0", "a_i", "0")
+        .add(id, "user1!1", "a_i", "1")
+        .add(id, "user1!2", "a_i", "2")
+        .add(id, "user2!3", "a_i", "3")
+        .add(id, "user2!4", "a_i", "4")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    String realCollection =
+        cloudSolrClient.getClusterStateProvider().resolveAlias(COLLECTIONORALIAS).get(0);
+    DocCollection docCollection = cloudSolrClient.getClusterState().getCollection(realCollection);
+    assertEquals(
+        "This test requires the compositeId router",
+        CompositeIdRouter.NAME,
+        docCollection.getRouter().getName());
+
+    ModifiableSolrParams routeParams = new ModifiableSolrParams();
+    routeParams.add(ShardParams._ROUTE_, "user1!");
+    Set<String> expected =
+        docCollection.getRouter().getSearchSlices("user1!", routeParams, docCollection).stream()
+            .map(Slice::getName)
+            .collect(Collectors.toSet());
+    Set<String> routedSliceNames =
+        CloudSolrStream.getSlices(COLLECTIONORALIAS, cloudSolrClient, true, routeParams).stream()
+            .map(Slice::getName)
+            .collect(Collectors.toSet());
+    assertEquals(
+        "getSlices should match the compositeId router's slice selection",
+        expected,
+        routedSliceNames);
+
+    StreamFactory factory =
+        new StreamFactory()
+            .withDefaultSolrConnection(solrConnection)
+            .withCollectionUseThisConnection(COLLECTIONORALIAS, solrConnection);
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      StreamExpression expression =
+          StreamExpressionParser.parse(
+              "search("
+                  + COLLECTIONORALIAS
+                  + ", q=*:*, fq=\"id:user1!*\", fl=\"id,a_i\", sort=\"a_i asc\", _route_=\"user1!\")");
+      CloudSolrStream stream = new CloudSolrStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(stream);
+      assertEquals(
+          "search() should open one SolrStream per routed slice",
+          routedSliceNames.size(),
+          stream.children().size());
+      assertEquals(3, tuples.size());
+      assertOrderOf(tuples, "a_i", 0, 1, 2);
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testCloudSolrStreamWithEmptyRoute() throws Exception {
+    new UpdateRequest()
+        .add(id, "0", "a_i", "0")
+        .add(id, "1", "a_i", "1")
+        .add(id, "2", "a_i", "2")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    String realCollection =
+        cloudSolrClient.getClusterStateProvider().resolveAlias(COLLECTIONORALIAS).get(0);
+    DocCollection docCollection = cloudSolrClient.getClusterState().getCollection(realCollection);
+    int activeSliceCount = docCollection.getActiveSlices().size();
+
+    ModifiableSolrParams emptyRouteParams = new ModifiableSolrParams();
+    emptyRouteParams.add(ShardParams._ROUTE_, "");
+    List<Slice> slices =
+        CloudSolrStream.getSlices(COLLECTIONORALIAS, cloudSolrClient, true, emptyRouteParams);
+    assertEquals(
+        "Empty _route_ should fall back to all active slices", activeSliceCount, slices.size());
+  }
+
+  @Test
+  public void testCloudSolrStreamWithInvalidRoute() throws Exception {
+    final String routeCollection = "invalidRouteCollection";
+    CollectionAdminRequest.createCollectionWithImplicitRouter(routeCollection, "conf", "a,b", 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(routeCollection, 2, 2);
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+    try {
+      new UpdateRequest()
+          .add(id, "0", "a_i", "0")
+          .withRoute("a")
+          .commit(cluster.getSolrClient(), routeCollection);
+
+      CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+      ModifiableSolrParams badRouteParams = new ModifiableSolrParams();
+      badRouteParams.add(ShardParams._ROUTE_, "doesNotExist");
+
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  CloudSolrStream.getSlices(
+                      routeCollection, cloudSolrClient, true, badRouteParams));
+      assertTrue(
+          "Error should mention the missing shard", ex.getMessage().contains("doesNotExist"));
+
+      StreamFactory factory =
+          new StreamFactory()
+              .withDefaultSolrConnection(solrConnection)
+              .withCollectionUseThisConnection(routeCollection, solrConnection);
+      expectThrows(
+          IOException.class,
+          () -> getTuples(routeStream(routeCollection, factory, streamContext, "doesNotExist")));
+    } finally {
+      CollectionAdminRequest.deleteCollection(routeCollection).process(cluster.getSolrClient());
       solrClientCache.close();
     }
   }
@@ -507,15 +763,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
           .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-      String url =
-          cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+      String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       List<Tuple> tuples;
       TupleStream stream;
 
       // Basic test
       ModifiableSolrParams sParams = new ModifiableSolrParams();
       sParams.set("expr", "merge(" + "${q1}," + "${q2}," + "on=${mySort})");
-      sParams.set(CommonParams.QT, "/stream");
       sParams.set(
           "q1",
           "search("
@@ -525,7 +779,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           "q2",
           "search(" + COLLECTIONORALIAS + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
       sParams.set("mySort", "a_f asc");
-      stream = new SolrStream(url, sParams);
+      stream = new SolrStream(url, COLLECTIONORALIAS, "/stream", sParams);
       tuples = getTuples(stream);
 
       assertEquals(4, tuples.size());
@@ -533,7 +787,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       // Basic test desc
       sParams.set("mySort", "a_f desc");
-      stream = new SolrStream(url, sParams);
+      stream = new SolrStream(url, COLLECTIONORALIAS, "/stream", sParams);
       tuples = getTuples(stream);
 
       assertEquals(4, tuples.size());
@@ -546,7 +800,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               + COLLECTIONORALIAS
               + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
       sParams.set("mySort", "\"a_f asc, a_s asc\"");
-      stream = new SolrStream(url, sParams);
+      stream = new SolrStream(url, COLLECTIONORALIAS, "/stream", sParams);
       tuples = getTuples(stream);
 
       assertEquals(5, tuples.size());
@@ -586,7 +840,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_i asc\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", path=\"/export\", sort=\"a_i asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -614,7 +868,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s asc\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", path=\"/export\", sort=\"a_s asc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -627,7 +881,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s desc\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", path=\"/export\", sort=\"a_s desc\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -751,21 +1005,21 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       // Exercise the /stream handler
-      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params());
       sParams.add(
           "expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"1\", fl=\"id, a_i\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+          new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assertEquals(1, tuples4.size());
       // Assert no x-axis
       assertNull(tuples4.get(0).get("x"));
 
-      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params());
       sParams.add("expr", "random(" + COLLECTIONORALIAS + ")");
       jetty = cluster.getJettySolrRunner(0);
-      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples4 = getTuples(solrStream);
       assertEquals(500, tuples4.size());
       @SuppressWarnings({"rawtypes"})
@@ -798,7 +1052,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     try {
       context.setSolrClientCache(cache);
-      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params());
       sParams.add(
           "expr",
           "knnSearch("
@@ -806,49 +1060,49 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream =
-          new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+          new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       List<Tuple> tuples = getTuples(solrStream);
       assertEquals(3, tuples.size());
       assertOrder(tuples, 2, 3, 4);
 
-      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params());
       sParams.add(
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\", mindf=\"0\")");
-      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(2, tuples.size());
       assertOrder(tuples, 2, 3);
 
-      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params());
       sParams.add(
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
-      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(0, tuples.size());
 
-      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params());
       sParams.add(
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
-      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(0, tuples.size());
 
-      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params());
       sParams.add(
           "expr",
           "knnSearch("
               + COLLECTIONORALIAS
               + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
-      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString(), "collection1", "/stream", sParams);
       tuples = getTuples(solrStream);
       assertEquals(0, tuples.size());
 
@@ -1048,10 +1302,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add("expr", expr);
       solrParams.add("myCollection.shards", buf.toString());
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       tuples = getTuples(solrStream);
       assertEquals(1, tuples.size());
 
@@ -1080,9 +1338,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       try {
         ModifiableSolrParams solrParamsBad = new ModifiableSolrParams();
-        solrParamsBad.add("qt", "/stream");
         solrParamsBad.add("expr", expr);
-        solrStream = new SolrStream(shardUrls.get(0), solrParamsBad);
+        solrStream =
+            new SolrStream(
+                URLUtil.extractBaseUrl(shardUrls.get(0)),
+                URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+                "/stream",
+                solrParamsBad);
         tuples = getTuples(solrStream);
         throw new Exception("Exception should have been thrown above");
       } catch (IOException e) {
@@ -1115,11 +1377,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String expr =
         "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", count(*))";
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -1145,9 +1405,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     paramsLoc = new ModifiableSolrParams();
     expr = "facet2D(collection1, x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -1174,9 +1433,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     expr =
         "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", sum(cases_i))";
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -1203,9 +1461,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     expr =
         "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", avg(cases_i))";
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -1232,9 +1489,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     expr =
         "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"2,2\")";
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -1294,11 +1550,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "                  sum(cnt), sum(saf)"
             + ")";
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -1331,6 +1585,60 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals("hello0", bucket);
     assertEquals(4, count, 0.0);
     assertEquals(saf, 18, 0);
+  }
+
+  @Test
+  public void testRollupStdMetric() throws Exception {
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    String expr =
+        "rollup("
+            + "  search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", path=\"/export\"),"
+            + "  over=\"a_s\", std(a_i), std(a_f), count(*)"
+            + ")";
+    paramsLoc.set("expr", expr);
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(3, tuples.size());
+
+    // hello0: a_i = [0, 1, 2, 14], a_f = [1, 2, 5, 10]
+    Tuple tuple = tuples.get(0);
+    assertEquals("hello0", tuple.getString("a_s"));
+    assertEquals(6.5511, tuple.getDouble("std(a_i)"), 0.001);
+    assertEquals(4.0415, tuple.getDouble("std(a_f)"), 0.001);
+    assertEquals(4, tuple.getDouble("count(*)"), 0.0);
+
+    // hello3: a_i = [3, 10, 12, 13], a_f = [3, 6, 8, 9]
+    tuple = tuples.get(1);
+    assertEquals("hello3", tuple.getString("a_s"));
+    assertEquals(4.5092, tuple.getDouble("std(a_i)"), 0.001);
+    assertEquals(2.6458, tuple.getDouble("std(a_f)"), 0.001);
+    assertEquals(4, tuple.getDouble("count(*)"), 0.0);
+
+    // hello4: a_i = [4, 11], a_f = [4, 7]
+    tuple = tuples.get(2);
+    assertEquals("hello4", tuple.getString("a_s"));
+    assertEquals(4.9497, tuple.getDouble("std(a_i)"), 0.001);
+    assertEquals(2.1213, tuple.getDouble("std(a_f)"), 0.001);
+    assertEquals(2, tuple.getDouble("count(*)"), 0.0);
   }
 
   @Test
@@ -2177,11 +2485,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
           "search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", rows=50, sort=\"a_i asc\")");
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(10, tuples.size());
@@ -2190,22 +2502,30 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       // Test with export handler, different code path.
 
       solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
-          "search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", qt=\"/export\")");
-      solrStream = new SolrStream(shardUrls.get(0), solrParams);
+          "search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", path=\"/export\")");
+      solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(10, tuples.size());
       assertOrder(tuples, 0, 1, 2, 3, 4, 10, 11, 12, 13, 14);
 
       solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
           "facet(\"collection1, collection2\", q=\"*:*\", buckets=\"a_s\", bucketSorts=\"count(*) asc\", count(*))");
-      solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(1, tuples.size());
@@ -2223,9 +2543,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
               + "count(*))";
 
       solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add("expr", expr);
-      solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(1, tuples.size());
@@ -2236,11 +2560,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       // Test parallel
 
       solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add(
           "expr",
-          "parallel(collection1, sort=\"a_i asc\", workers=2, search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", qt=\"/export\", partitionKeys=\"a_s\"))");
-      solrStream = new SolrStream(shardUrls.get(0), solrParams);
+          "parallel(collection1, sort=\"a_i asc\", workers=2, search(\"collection1, collection2\", q=\"*:*\", fl=\"id, a_i\", sort=\"a_i asc\", path=\"/export\", partitionKeys=\"a_s\"))");
+      solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       solrStream.setStreamContext(streamContext);
       tuples = getTuples(solrStream);
       assertEquals(10, tuples.size());
@@ -2889,11 +3217,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String expr = "echo(hello world)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -2905,9 +3231,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     expr = "echo(\"hello world\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -2918,9 +3243,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     expr = "echo(\"hello, world\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -2931,9 +3255,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     expr = "echo(\"hello, \\\"t\\\" world\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -2948,9 +3271,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + ", workers=2, sort=\"echo asc\", echo(\"hello, \\\"t\\\" world\"))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -2965,9 +3287,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + " yiuyiuyi yiuyiuuyiu yiyiuyiyiu iyiuyiuyiuiuyiu yiuyiuyi yiuyiy yiuiyiuiuy\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -2992,11 +3313,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + ", q=\\\"*:*\\\", fl=id, sort=\\\"id desc\\\")\"), echo as expr_s))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -3097,11 +3416,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "count(*), sum(price_f), max(price_f), min(price_f), avg(price_f), std(price_f), per(price_f, 50), countDist(id))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -3170,9 +3487,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "count(*), sum(price_f), max(price_f), min(price_f), avg(price_f), std(price_f), per(price_f, 50))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -3225,9 +3541,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "count(*), sum(price_f), max(price_f), min(price_f), avg(price_f), std(price_f), per(price_f, 50))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -3280,9 +3595,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "count(*), sum(price_f), max(price_f), min(price_f), avg(price_f), std(price_f), per(price_f, 50))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -3344,9 +3658,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "count(*), sum(price_f), max(price_f), min(price_f), avg(price_f), std(price_f), per(price_f, 50))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -3523,9 +3836,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "count(*), sum(price_f), max(price_f), min(price_f), avg(price_f), std(price_f), per(price_f, 50))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    solrStream = new SolrStream(url, paramsLoc);
+    solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     solrStream.setStreamContext(context);
     tuples = getTuples(solrStream);
@@ -3586,11 +3898,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String cat = "tuple(results=" + expr + ", sum=add(1,1))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -3618,11 +3928,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -3645,11 +3953,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     ModifiableSolrParams paramsLoc2 = new ModifiableSolrParams();
     paramsLoc2.set("expr", expr2);
-    paramsLoc2.set("qt", "/stream");
 
-    String url2 =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream2 = new SolrStream(url2, paramsLoc2);
+    String url2 = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream2 = new SolrStream(url2, COLLECTIONORALIAS, "/stream", paramsLoc2);
 
     StreamContext context2 = new StreamContext();
     solrStream2.setStreamContext(context2);
@@ -4043,10 +4349,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       }
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("qt", "/stream");
       solrParams.add("expr", significantTerms);
       solrParams.add("myCollection.shards", buf.toString());
-      SolrStream solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      SolrStream solrStream =
+          new SolrStream(
+              URLUtil.extractBaseUrl(shardUrls.get(0)),
+              URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+              "/stream",
+              solrParams);
       tuples = getTuples(solrStream);
       assertEquals(2, tuples.size());
 
@@ -4062,9 +4372,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       try {
         ModifiableSolrParams solrParamsBad = new ModifiableSolrParams();
-        solrParamsBad.add("qt", "/stream");
         solrParamsBad.add("expr", significantTerms);
-        solrStream = new SolrStream(shardUrls.get(0), solrParamsBad);
+        solrStream =
+            new SolrStream(
+                URLUtil.extractBaseUrl(shardUrls.get(0)),
+                URLUtil.extractCoreFromCoreUrl(shardUrls.get(0)),
+                "/stream",
+                solrParamsBad);
         tuples = getTuples(solrStream);
         throw new Exception("Exception should have been thrown above");
       } catch (IOException e) {
@@ -4163,11 +4477,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     final String catStream = "cat(\"topLevel1.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4186,11 +4498,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     final String catStream = "cat(\"topLevel1.txt.gz\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4209,11 +4519,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     final String catStream = "cat(\"topLevel-empty.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4227,11 +4535,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     final String catStream = "cat(\"topLevel1.txt,topLevel-empty.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4251,11 +4557,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     final String catStream = "cat(\"topLevel1.txt\", maxLines=2)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4274,11 +4578,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     final String catStream = "cat(\"directory1\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4308,11 +4610,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
             + "secondLevel2.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", catStream);
-    paramsLoc.set("qt", "/stream");
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + FILESTREAM_COLLECTION;
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
 
-    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    SolrStream solrStream = new SolrStream(url, FILESTREAM_COLLECTION, "/stream", paramsLoc);
 
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
@@ -4336,11 +4636,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   private void assertSuccess(String expr, StreamContext streamContext) throws IOException {
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
 
-    String url =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    TupleStream solrStream = new SolrStream(url, COLLECTIONORALIAS, "/stream", paramsLoc);
     solrStream.setStreamContext(streamContext);
     getTuples(solrStream);
   }

@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -419,9 +420,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   /** test how various permutations of useDocValuesAsStored and maxCharsForDocValues interact */
+  @SuppressWarnings("try")
   public void testUseDocValuesAsStored() {
-    ignoreException("when useDocValuesAsStored=true \\(length=");
-
     // first things first...
     // unlike most field types, SortableTextField should default to useDocValuesAsStored==false
     // (check a handful that should have the default behavior)
@@ -489,12 +489,16 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
 
           final String doc = adoc("id", docid, name, "apple pear orange");
-          SolrException ex =
-              expectThrows(
-                  SolrException.class,
-                  () -> {
-                    assertU(doc);
-                  });
+          SolrException ex;
+          try (ErrorLogMuter ignored =
+              ErrorLogMuter.regex("when useDocValuesAsStored=true \\(length=")) {
+            ex =
+                expectThrows(
+                    SolrException.class,
+                    () -> {
+                      assertU(doc);
+                    });
+          }
           for (String expect :
               Arrays.asList(
                   "field " + name,

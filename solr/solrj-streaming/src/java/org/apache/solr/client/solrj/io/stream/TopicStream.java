@@ -420,8 +420,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     params.set("rows", 1);
     for (Replica replica : replicas) {
       if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
-        String coreUrl = replica.getCoreUrl();
-        SolrStream solrStream = new SolrStream(coreUrl, params);
+        SolrStream solrStream = new SolrStream(replica.getBaseUrl(), params, replica.getCoreName());
 
         if (streamContext != null) {
           StreamContext localContext = new StreamContext();
@@ -534,8 +533,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       }
 
       Replica rep = shuffler.get(random.nextInt(shuffler.size()));
-      String url = rep.getCoreUrl();
-      SolrStream solrStream = new SolrStream(url, localParams);
+      SolrStream solrStream = new SolrStream(rep.getBaseUrl(), localParams, rep.getCoreName());
       solrStream.setSlice(slice.getName());
       solrStream.setCheckpoint(checkpoint);
       solrStream.setTrace(true);

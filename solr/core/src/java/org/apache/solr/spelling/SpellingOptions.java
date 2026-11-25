@@ -16,7 +16,7 @@
  */
 package org.apache.solr.spelling;
 
-import java.util.Collection;
+import java.util.List;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.solr.common.params.SolrParams;
@@ -24,8 +24,11 @@ import org.apache.solr.common.params.SolrParams;
 /** */
 public class SpellingOptions {
 
-  /** The tokens to spell check */
-  public Collection<Token> tokens;
+  /**
+   * The terms to spell check, analyzed once. Several {@link SolrSpellChecker}s may read them --
+   * e.g. via {@link ConjunctionSolrSpellChecker} -- and each reads this same list.
+   */
+  public List<SpellCheckToken> tokens;
 
   /** An optional {@link org.apache.lucene.index.IndexReader} */
   public IndexReader reader;
@@ -52,24 +55,24 @@ public class SpellingOptions {
   public SpellingOptions() {}
 
   // A couple of convenience ones
-  public SpellingOptions(Collection<Token> tokens, int count) {
+  public SpellingOptions(List<SpellCheckToken> tokens, int count) {
     this.tokens = tokens;
     this.count = count;
   }
 
-  public SpellingOptions(Collection<Token> tokens, IndexReader reader) {
+  public SpellingOptions(List<SpellCheckToken> tokens, IndexReader reader) {
     this.tokens = tokens;
     this.reader = reader;
   }
 
-  public SpellingOptions(Collection<Token> tokens, IndexReader reader, int count) {
+  public SpellingOptions(List<SpellCheckToken> tokens, IndexReader reader, int count) {
     this.tokens = tokens;
     this.reader = reader;
     this.count = count;
   }
 
   public SpellingOptions(
-      Collection<Token> tokens,
+      List<SpellCheckToken> tokens,
       IndexReader reader,
       int count,
       SuggestMode suggestMode,
@@ -86,7 +89,7 @@ public class SpellingOptions {
   }
 
   public SpellingOptions(
-      Collection<Token> tokens,
+      List<SpellCheckToken> tokens,
       IndexReader reader,
       int count,
       int alternativeTermCount,

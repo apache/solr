@@ -18,22 +18,34 @@ package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.solr.common.params.CombinerParams;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.mockito.Mockito;
 
 public class MockResponseBuilder extends ResponseBuilder {
 
+  // real params, so every read (get/getBool/getFloat/iterator) behaves like production
+  private final ModifiableSolrParams params;
+
   private MockResponseBuilder(
-      SolrQueryRequest request, SolrQueryResponse response, List<SearchComponent> components) {
+      SolrQueryRequest request,
+      SolrQueryResponse response,
+      List<SearchComponent> components,
+      ModifiableSolrParams params) {
     super(request, response, components);
+    this.params = params;
   }
 
   public static MockResponseBuilder create() {
@@ -42,28 +54,42 @@ public class MockResponseBuilder extends ResponseBuilder {
     SolrQueryRequest request = Mockito.mock(SolrQueryRequest.class);
     SolrQueryResponse response = Mockito.mock(SolrQueryResponse.class);
     IndexSchema indexSchema = Mockito.mock(IndexSchema.class);
-    SolrParams params = Mockito.mock(SolrParams.class);
+    ModifiableSolrParams params = new ModifiableSolrParams();
 
     // SchemaField must be concrete due to field access
     SchemaField uniqueIdField = new SchemaField("id", new StrField());
 
     // we need this because QueryComponent adds a property to it.
-    NamedList<Object> responseHeader = new NamedList<>();
+    SimpleOrderedMap<Object> responseHeader = new SimpleOrderedMap<>();
 
     // the mock implementations
     Mockito.when(request.getSchema()).thenReturn(indexSchema);
     Mockito.when(indexSchema.getUniqueKeyField()).thenReturn(uniqueIdField);
-    Mockito.when(params.getBool(ShardParams.SHARDS_INFO)).thenReturn(false);
     Mockito.when(request.getParams()).thenReturn(params);
     Mockito.when(response.getResponseHeader()).thenReturn(responseHeader);
     Mockito.when(response.getReturnFields()).thenCallRealMethod();
 
     List<SearchComponent> components = new ArrayList<>();
-    return new MockResponseBuilder(request, response, components);
+    return new MockResponseBuilder(request, response, components, params);
   }
 
   public MockResponseBuilder withSortSpec(SortSpec sortSpec) {
     this.setSortSpec(sortSpec);
+    return this;
+  }
+
+  public MockResponseBuilder withCombinerQueries(String... combinerQueries) {
+    params.set(CombinerParams.COMBINER_QUERY, combinerQueries);
+    SolrCore core = Mockito.mock(SolrCore.class);
+    Mockito.when(core.getCoreContainer()).thenReturn(Mockito.mock(CoreContainer.class));
+    Mockito.when(req.getCore()).thenReturn(core);
+    Mockito.when(rsp.getReturnFields()).thenReturn(Mockito.mock(ReturnFields.class));
+    return this;
+  }
+
+  public MockResponseBuilder withShardsTolerant() {
+    params.set(ShardParams.SHARDS_TOLERANT, "true");
+    params.set(CommonParams.PARTIAL_RESULTS, "true");
     return this;
   }
 }

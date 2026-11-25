@@ -33,8 +33,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
@@ -55,6 +53,9 @@ import org.slf4j.LoggerFactory;
 /** Used for distributing commands from a shard leader to its replicas. */
 public class SolrCmdDistributor implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** Cause chains are shallow in practice; the cap only guards against a cyclic chain. */
+  private static final int MAX_CAUSE_DEPTH = 100;
 
   private StreamingSolrClients clients;
   private boolean finished = false; // see finish()
@@ -173,8 +174,7 @@ public class SolrCmdDistributor implements Closeable {
             err.req.node.getMaxRetries(),
             err.req.cmd,
             err.req.uReq.getParams(),
-            err.statusCode,
-            err.e);
+            err.statusCode);
       } else {
         SolrCmdDistributor.log.error(
             "FROMLEADER request to {} failed - retrying ... retries: {}/{}. {} params: {} rsp: {}",
@@ -183,8 +183,7 @@ public class SolrCmdDistributor implements Closeable {
             err.req.node.getMaxRetries(),
             err.req.cmd,
             err.req.uReq.getParams(),
-            err.statusCode,
-            err.e);
+            err.statusCode);
       }
       submit(err.req, false);
     }
@@ -481,10 +480,10 @@ public class SolrCmdDistributor implements Closeable {
     public int statusCode = -1;
 
     /**
-     * NOTE: This is the request that happened to be executed when this error was <b>triggered</b>
-     * the error, but because of how {@link StreamingSolrClients} uses {@link
-     * ConcurrentUpdateBaseSolrClient} it might not actaully be the request that <b>caused</b> the
-     * error -- multiple requests are merged &amp; processed as a sequential batch.
+     * The request this error is recorded against. When a {@link StreamingSolrClients} stream fails,
+     * the error is recorded once against each request that was merged into the stream, because a
+     * stream-level failure cannot be narrowed down to the single request whose update the remote
+     * node rejected.
      */
     public Req req;
 
@@ -572,23 +571,30 @@ public class SolrCmdDistributor implements Closeable {
       }
 
       // if it's a connect exception, lets try again
-      if (err.e instanceof SolrServerException) {
-        if (isRetriableException(((SolrServerException) err.e).getRootCause())) {
-          return true;
-        }
-      } else {
-        if (isRetriableException(err.e)) {
+      return isRetriableException(err.e);
+    }
+
+    /**
+     * Inspects the whole cause chain, because a retriable failure is not always the outermost or
+     * the deepest exception. The async client reports a connection failure wrapped in an
+     * ExecutionException, and Jetty's ClientConnector wraps the underlying failure in a
+     * SocketException of its own, so neither the top-level type nor the root cause alone identifies
+     * every retriable case.
+     *
+     * @return true if Solr should retry in case of hitting this exception false otherwise
+     */
+    private boolean isRetriableException(Throwable t) {
+      // Bounded: a cause chain can be cyclic, as the TODO on SolrException.getRootCause notes.
+      // Real chains are a handful of frames deep.
+      int depth = 0;
+      for (Throwable cause = t;
+          cause != null && depth++ < MAX_CAUSE_DEPTH;
+          cause = cause.getCause()) {
+        if (cause instanceof SocketException || cause instanceof SocketTimeoutException) {
           return true;
         }
       }
       return false;
-    }
-
-    /**
-     * @return true if Solr should retry in case of hitting this exception false otherwise
-     */
-    private boolean isRetriableException(Throwable t) {
-      return t instanceof SocketException || t instanceof SocketTimeoutException;
     }
 
     @Override
@@ -644,6 +650,18 @@ public class SolrCmdDistributor implements Closeable {
 
     private ZkStateReader zkStateReader;
 
+    private static boolean hasConnectExceptionInChain(Throwable t) {
+      int depth = 0;
+      for (Throwable cause = t;
+          cause != null && depth++ < MAX_CAUSE_DEPTH;
+          cause = cause.getCause()) {
+        if (cause instanceof ConnectException) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     public ForwardNode(
         ZkCoreNodeProps nodeProps,
         ZkStateReader zkStateReader,
@@ -664,10 +682,7 @@ public class SolrCmdDistributor implements Closeable {
       }
 
       // if it's a connect exception, lets try again
-      if (err.e instanceof SolrServerException
-          && ((SolrServerException) err.e).getRootCause() instanceof ConnectException) {
-        doRetry = true;
-      } else if (err.e instanceof ConnectException) {
+      if (hasConnectExceptionInChain(err.e)) {
         doRetry = true;
       }
       if (doRetry) {

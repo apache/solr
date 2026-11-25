@@ -33,6 +33,7 @@
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="allowUrls">${solr.security.allow.urls:}</str>
+  <str name="allowZkHosts">${solr.security.allow.zk.hosts:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
   <int name="indexSearcherExecutorThreads">${solr.searchThreads:0}</int>
 
@@ -41,7 +42,7 @@
     <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
 
-    <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
+    <int name="zkClientTimeout">${solr.zookeeper.client.timeout:30000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>

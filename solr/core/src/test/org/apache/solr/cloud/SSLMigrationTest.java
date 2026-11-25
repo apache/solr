@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -116,8 +118,8 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
             "val",
             value);
     SolrParams params = new MapSolrParams(m);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, params);
 
     LBSolrClient.Endpoint[] urls =
         getReplicas().stream()

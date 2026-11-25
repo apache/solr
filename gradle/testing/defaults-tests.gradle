@@ -47,6 +47,9 @@ allprojects {
               description: "Number of forked test JVMs",
               includeInReproLine: false],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
+          [propName: 'tests.exclude', value: null,
+              description: "Comma-separated test class patterns to exclude (same syntax as --tests), e.g. org.apache.solr.cloud.*",
+              includeInReproLine: false],
           // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
               value: {->
@@ -55,6 +58,9 @@ allprojects {
           // Other settings.
           [propName: 'tests.neverUpToDate', value: true,
               description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
+          // The coverage flag is acted upon in settings.gradle and gradle/testing/coverage.gradle.kts;
+          // it is registered here so that it is always listed by 'gradlew testOpts'.
+          [propName: 'tests.coverage', value: false, description: "Enables jacoco test coverage.", includeInReproLine: false],
       ]
 
       // Resolves test option's value.
@@ -113,6 +119,13 @@ allprojects {
       maxHeapSize = resolvedTestOption("tests.heapsize")
 
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
+
+      def excludePatterns = resolvedTestOption("tests.exclude")
+      if (excludePatterns) {
+        filter {
+          excludePatterns.split(',').each { excludeTestsMatching(it.trim()) }
+        }
+      }
 
       jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
 

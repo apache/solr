@@ -23,11 +23,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -322,8 +324,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", "collection1");
-      QueryRequest request = new QueryRequest(params);
-      request.setPath("/admin/collections");
+      var request =
+          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
       client.request(request);
 

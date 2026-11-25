@@ -19,11 +19,9 @@ package org.apache.solr.client.solrj.request;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.util.ContentStream;
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -43,20 +41,38 @@ public abstract class RequestWriter {
   }
 
   /**
-   * To be implemented by subclasses to serialize update requests into the appropriate format.
-   *
-   * <p>If this method returns null, {@link
-   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is then
-   * invoked to get content.
+   * A {@code multipart/form-data} body made of several named parts; build it from {@link
+   * #getParts}.
    */
-  public abstract ContentWriter getContentWriter(SolrRequest<?> req);
+  public interface MultipartContentWriter extends ContentWriter {
 
-  /**
-   * @deprecated Use {@link #getContentWriter(SolrRequest)}.
-   */
-  @Deprecated
-  public abstract Collection<ContentStream> getContentStreams(SolrRequest<?> req)
-      throws IOException;
+    List<NamedPart> getParts();
+
+    @Override
+    default void write(OutputStream os) throws IOException {
+      throw new UnsupportedOperationException(
+          "Multipart content is written per-part via getParts(), not write(OutputStream)");
+    }
+
+    @Override
+    default String getContentType() {
+      return "multipart/form-data";
+    }
+  }
+
+  /** One named part of a {@link MultipartContentWriter}'s body. */
+  public static final class NamedPart {
+    public final String name;
+    public final ContentWriter writer;
+
+    public NamedPart(String name, ContentWriter writer) {
+      this.name = name;
+      this.writer = writer;
+    }
+  }
+
+  /** To be implemented by subclasses to serialize update requests into the appropriate format. */
+  public abstract ContentWriter getContentWriter(SolrRequest<?> req);
 
   protected boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments())

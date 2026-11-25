@@ -39,6 +39,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -297,7 +298,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testDefaultsAndAppends() {
     // all defaults
     assertQ(
-        req("indent", "true", "q", "*:*", "rows", "0", "facet", "true", "qt", "/search-facet-def"),
+        reqWithPath(
+            "/search-facet-def", "indent", "true", "q", "*:*", "rows", "0", "facet", "true"),
         // only one default facet.field
         "//lst[@name='facet_fields']/lst[@name='foo_s']",
         "count(//lst[@name='facet_fields']/lst[@name='foo_s'])=1",
@@ -309,7 +311,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
     // override default & pre-pend to appends
     assertQ(
-        req(
+        reqWithPath(
+            "/search-facet-def",
             "indent",
             "true",
             "q",
@@ -318,8 +321,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "0",
             "facet",
             "true",
-            "qt",
-            "/search-facet-def",
             "facet.field",
             "bar_s",
             "facet.query",
@@ -341,7 +342,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     for (String ff : new String[] {"facet.field", "bogus"}) {
       for (String fq : new String[] {"facet.query", "bogus"}) {
         assertQ(
-            req(
+            reqWithPath(
+                "/search-facet-invariants",
                 "indent",
                 "true",
                 "q",
@@ -350,8 +352,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 "0",
                 "facet",
                 "true",
-                "qt",
-                "/search-facet-invariants",
                 ff,
                 "bar_s",
                 fq,
@@ -4547,10 +4547,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     assertTrue(ex.getMessage().contains("Interval Faceting can't be used with group.facet"));
   }
 
+  @SuppressWarnings("try")
   public void testRangeFacetingBadRequest() {
     String field = "range_facet_l";
-    ignoreException(".");
-    try {
+    try (ErrorLogMuter ignored = ErrorLogMuter.regex(".")) {
       for (FacetRangeMethod method : FacetRangeMethod.values()) {
         assertQEx(
             "Test facet.range bad requests",
@@ -4724,8 +4724,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 "foo"),
             ErrorCode.BAD_REQUEST);
       }
-    } finally {
-      resetExceptionIgnores();
     }
   }
 

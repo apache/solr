@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -296,17 +297,16 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
-    String nodeName = response._getStr("success[0]/key");
-    String corename = response._getStr(asList("success", nodeName, "core"), null);
+    String successKey = response._getStr("success[0]/key"); // "nodeName/coreNodeName"
+    String corename = response._getStr(asList("success", successKey, "core"), null);
+    String nodeName = successKey.substring(0, successKey.indexOf('/'));
 
-    try (SolrClient coreClient =
-        getHttpSolrClient(cluster.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
-      assertEquals(
-          collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
-      assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
-      assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
-    }
+    SolrClient coreClient = cluster.getJetty(nodeName).getSolrClient();
+    CoreAdminResponse status = CoreAdminRequest.getStatus(corename, coreClient);
+    assertEquals(
+        collectionName, status._get(asList("status", corename, "cloud", "collection"), null));
+    assertNotNull(status._get(asList("status", corename, "cloud", "shard"), null));
+    assertNotNull(status._get(asList("status", corename, "cloud", "replica"), null));
   }
 
   @Test
@@ -409,13 +409,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expected all shards to be active and parent shard to be removed",
         collectionName,
-        (n, c) -> {
-          if (c.getSlice("shard1").getState() == Slice.State.ACTIVE) return false;
-          for (Replica r : c.getReplicas()) {
-            if (r.isActive(n) == false) return false;
-          }
-          return true;
-        });
+        (n, collectionState) ->
+            collectionState.getSlice("shard1").getState() != Slice.State.ACTIVE
+                && collectionState.replicaStream().allMatch(r -> r.isActive(n)));
 
     // Test splitting using split.key
     response =
@@ -455,7 +451,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 = testCollection.getReplicas().iterator().next();
+    Replica replica1 = testCollection.replicaStream().findFirst().orElseThrow();
     final var coreStatus = getCoreStatus(replica1);
 
     assertEquals(Path.of(coreStatus.dataDir).toString(), dataDir.toString());
@@ -501,7 +497,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional =
-        docCollection.getReplicas().stream()
+        docCollection
+            .replicaStream()
             .filter(replica -> replicaName.equals(replica.getCoreName()))
             .findAny();
     if (optional.isPresent()) {
@@ -879,6 +876,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         });
     // Ensure field, etc. data not provided
     assertNull(segmentData.segments.get("_0").fields);
+  }
+
+  @Test
+  public void testV2CollectionStatusForNonExistentCollectionReturns404() {
+    var req = new CollectionsApi.GetCollectionStatus("doesNotExist");
+    final RemoteSolrException ex =
+        expectThrows(RemoteSolrException.class, () -> req.process(cluster.getSolrClient()));
+    assertEquals(404, ex.code());
   }
 
   private static final int NUM_DOCS = 10;
@@ -1334,8 +1339,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState(
         "Expecting 'preferredleader' property to be balanced across all shards",
         collection,
-        c -> {
-          for (Slice slice : c) {
+        collectionState -> {
+          for (Slice slice : collectionState) {
             int count = 0;
             for (Replica replica : slice) {
               if ("true".equals(replica.getProperty("preferredleader"))) count += 1;

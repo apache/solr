@@ -139,7 +139,7 @@ public class LukeResponse extends SolrResponseBase {
         } else if ("docs".equals(entry.getKey())) {
           docs = ((Number) entry.getValue()).longValue();
         } else if ("distinct".equals(entry.getKey())) {
-          distinct = (Integer) entry.getValue();
+          distinct = ((Number) entry.getValue()).intValue();
         } else if ("cacheableFaceting".equals(entry.getKey())) {
           cacheableFaceting = (Boolean) entry.getValue();
         } else if ("topTerms".equals(entry.getKey())) {
@@ -290,7 +290,8 @@ public class LukeResponse extends SolrResponseBase {
 
   public Integer getMaxDoc() {
     if (indexInfo == null) return null;
-    return (Integer) indexInfo.get("maxDoc");
+    Object v = indexInfo.get("maxDoc");
+    return v == null ? null : ((Number) v).intValue();
   }
 
   public Long getDeletedDocs() {
@@ -299,7 +300,8 @@ public class LukeResponse extends SolrResponseBase {
 
   public Integer getNumTerms() {
     if (indexInfo == null) return null;
-    return (Integer) indexInfo.get("numTerms");
+    Object v = indexInfo.get("numTerms");
+    return v == null ? null : ((Number) v).intValue();
   }
 
   public Map<String, FieldTypeInfo> getFieldTypeInfo() {

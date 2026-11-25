@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.spelling.suggest.SuggesterParams;
@@ -92,28 +93,37 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
 
     // Build the suggest dictionary
     if (random().nextBoolean()) { // build all the suggesters in one go
-      query(buildRequest("", true, requestHandlerName, buildAll, "true"));
+      query(requestHandlerName, buildRequest("", true, requestHandlerName, buildAll, "true"));
     } else { // build suggesters individually
-      query(buildRequest("", true, requestHandlerName, build, "true", dictionaryName, docDictName));
       query(
+          requestHandlerName,
+          buildRequest("", true, requestHandlerName, build, "true", dictionaryName, docDictName));
+      query(
+          requestHandlerName,
           buildRequest(
               "", true, requestHandlerName, build, "true", dictionaryName, docExprDictName));
     }
 
     // Test Basic Functionality
     query(
+        requestHandlerName,
         buildRequest(
             "exampel", false, requestHandlerName, dictionaryName, docDictName, count, "2"));
     query(
+        requestHandlerName,
         buildRequest(
             "Yet", false, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
     query(
+        requestHandlerName,
         buildRequest(
             "blah", true, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
-    query(buildRequest("blah", true, requestHandlerName, dictionaryName, docDictName, count, "2"));
+    query(
+        requestHandlerName,
+        buildRequest("blah", true, requestHandlerName, dictionaryName, docDictName, count, "2"));
 
     // Test multiSuggester
     query(
+        requestHandlerName,
         buildRequest(
             "exampel",
             false,
@@ -126,9 +136,9 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
             "2"));
   }
 
-  private Object[] buildRequest(
+  private SolrParams buildRequest(
       String q, boolean useSuggestQ, String handlerName, String... addlParams) {
-    List<Object> params = new ArrayList<>();
+    List<String> params = new ArrayList<>();
 
     if (useSuggestQ) {
       params.add("suggest.q");
@@ -137,15 +147,12 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     }
     params.add(q);
 
-    params.add("qt");
-    params.add(handlerName);
-
     params.add("shards.qt");
     params.add(handlerName);
 
     if (addlParams != null) {
       params.addAll(Arrays.asList(addlParams));
     }
-    return params.toArray(new Object[0]);
+    return params(params.toArray(new String[0]));
   }
 }

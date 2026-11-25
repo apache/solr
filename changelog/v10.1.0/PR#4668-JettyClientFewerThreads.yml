@@ -1,0 +1,9 @@
+title: >
+  HttpJettySolrClient defaults would often create 32 threads, likely under-utilizing them. and it would cap threads to 256.
+  Now it does neither by default but Executor customization (and other saturation controls) remain.
+type: changed
+authors:
+  - name: David Smiley
+links:
+  - name: PR#4668
+    url: https://github.com/apache/solr/pull/4668

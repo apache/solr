@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,7 +75,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
@@ -279,94 +279,6 @@ public class SolrPluginUtils {
     return debugInterests;
   }
 
-  /**
-   * Returns a NamedList containing many "standard" pieces of debugging information.
-   *
-   * <ul>
-   *   <li>rawquerystring - the 'q' param exactly as specified by the client
-   *   <li>querystring - the 'q' param after any preprocessing done by the plugin
-   *   <li>parsedquery - the main query executed formated by the Solr QueryParsing utils class
-   *       (which knows about field types)
-   *   <li>parsedquery_toString - the main query executed formatted by its own toString method (in
-   *       case it has internal state Solr doesn't know about)
-   *   <li>explain - the list of score explanations for each document in results against query.
-   *   <li>otherQuery - the query string specified in 'explainOther' query param.
-   *   <li>explainOther - the list of score explanations for each document in results against
-   *       'otherQuery'
-   * </ul>
-   *
-   * @param req the request we are dealing with
-   * @param userQuery the users query as a string, after any basic preprocessing has been done
-   * @param query the query built from the userQuery (and perhaps other clauses) that identifies the
-   *     main result set of the response.
-   * @param results the main result set of the response
-   * @return The debug info
-   * @throws java.io.IOException if there was an IO error
-   */
-  @Deprecated // move to DebugComponent
-  public static NamedList<Object> doStandardDebug(
-      SolrQueryRequest req,
-      String userQuery,
-      Query query,
-      DocList results,
-      boolean dbgQuery,
-      boolean dbgResults)
-      throws IOException {
-    NamedList<Object> dbg = new SimpleOrderedMap<>();
-    doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
-    doStandardResultsDebug(req, query, results, dbgResults, dbg);
-    return dbg;
-  }
-
-  @Deprecated // move to DebugComponent
-  public static void doStandardQueryDebug(
-      SolrQueryRequest req,
-      String userQuery,
-      Query query,
-      boolean dbgQuery,
-      NamedList<Object> dbg) {
-    if (dbgQuery) {
-      /* userQuery may have been pre-processed .. expose that */
-      dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
-      dbg.add("querystring", userQuery);
-
-      /* QueryParsing.toString isn't perfect, use it to see converted
-       * values, use regular toString to see any attributes of the
-       * underlying Query it may have missed.
-       */
-      dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
-      dbg.add("parsedquery_toString", query.toString());
-    }
-  }
-
-  @Deprecated
-  public static void doStandardResultsDebug(
-      SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
-      throws IOException {
-    if (dbgResults) {
-      SolrIndexSearcher searcher = req.getSearcher();
-      IndexSchema schema = searcher.getSchema();
-      boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
-
-      if (results != null) {
-        NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);
-        dbg.add(
-            "explain",
-            explainStruct ? explanationsToNamedLists(explain) : explanationsToStrings(explain));
-      }
-
-      String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
-      if (otherQueryS != null && otherQueryS.length() > 0) {
-        DocList otherResults = doSimpleQuery(otherQueryS, req, 0, 10);
-        dbg.add("otherQuery", otherQueryS);
-        NamedList<Explanation> explainO = getExplanations(query, otherResults, searcher, schema);
-        dbg.add(
-            "explainOther",
-            explainStruct ? explanationsToNamedLists(explainO) : explanationsToStrings(explainO));
-      }
-    }
-  }
-
   public static NamedList<Object> explanationToNamedList(Explanation e) {
     NamedList<Object> out = new SimpleOrderedMap<>();
 
@@ -422,42 +334,13 @@ public class SolrPluginUtils {
     return explainList;
   }
 
-  private static NamedList<String> explanationsToStrings(NamedList<Explanation> explanations) {
+  public static NamedList<String> explanationsToStrings(NamedList<Explanation> explanations) {
 
     NamedList<String> out = new SimpleOrderedMap<>();
     for (Map.Entry<String, Explanation> entry : explanations) {
       out.add(entry.getKey(), "\n" + entry.getValue().toString());
     }
     return out;
-  }
-
-  /** Executes a basic query */
-  @Deprecated
-  public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
-      throws IOException {
-    List<String> commands = StrUtils.splitSmart(sreq, ';');
-
-    String qs = commands.size() >= 1 ? commands.get(0) : "";
-    try {
-      Query query = QParser.getParser(qs, req).getQuery();
-
-      // If the first non-query, non-filter command is a simple sort on an indexed field, then
-      // we can use the Lucene sort ability.
-      Sort sort = null;
-      if (commands.size() >= 2) {
-        sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
-      }
-
-      return new QueryCommand()
-          .setQuery(query)
-          .setSort(sort)
-          .setOffset(start)
-          .setLen(limit)
-          .search(req.getSearcher())
-          .getDocList();
-    } catch (SyntaxError e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
-    }
   }
 
   private static final Pattern whitespacePattern = Pattern.compile("\\s+");
@@ -825,7 +708,7 @@ public class SolrPluginUtils {
           ShardDoc sdoc = resultIds.get(id);
           if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
             int idx = sdoc.positionInResponse;
-            destArr[idx] = new NamedList.NamedListEntry<>(id, val);
+            destArr[idx] = new AbstractMap.SimpleEntry<>(id, val);
           }
         });
   }

@@ -225,7 +225,7 @@ public class KafkaCrossDcConf extends CrossDcConf {
   private final Map<String, Object> properties;
 
   public KafkaCrossDcConf(Map<String, Object> properties) {
-    List<String> nullValueKeys = new ArrayList<String>();
+    List<String> nullValueKeys = new ArrayList<>();
     properties.forEach(
         (k, v) -> {
           if (v == null) {
@@ -275,7 +275,7 @@ public class KafkaCrossDcConf extends CrossDcConf {
         (key, v) -> {
           try {
             int intVal = Integer.parseInt((String) v);
-            integerProperties.put(key.toString(), intVal);
+            integerProperties.put(key, intVal);
           } catch (NumberFormatException ignored) {
 
           }
@@ -295,8 +295,17 @@ public class KafkaCrossDcConf extends CrossDcConf {
     }
     zkPropsUnprocessed.forEach(
         (key, val) -> {
-          if (properties.get(key) == null) {
-            properties.put((String) key, val);
+          String strKey = (String) key;
+          String targetKey = strKey;
+          if (strKey.startsWith(ConfUtil.KAFKA_ENV_PREFIX)) {
+            targetKey = ConfUtil.normalizeKafkaEnvKey(strKey);
+          } else if (strKey.startsWith(ConfUtil.KAFKA_PROP_PREFIX)) {
+            targetKey = ConfUtil.normalizeKafkaSysPropKey(strKey);
+          }
+          // A JVM system property or env var pass-through override always takes precedence
+          // over the same property coming from ZooKeeper's /crossdc.properties.
+          if (properties.get(targetKey) == null) {
+            properties.put(targetKey, val);
           }
         });
   }
@@ -312,7 +321,7 @@ public class KafkaCrossDcConf extends CrossDcConf {
         sb.append(configProperty.getKey()).append("=").append(printablePropertyValue).append(",");
       }
     }
-    if (sb.length() > 0) {
+    if (!sb.isEmpty()) {
       sb.setLength(sb.length() - 1);
     }
 

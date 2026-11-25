@@ -20,14 +20,13 @@ import java.util.List;
 import org.apache.curator.framework.AuthInfo;
 
 /**
- * Deprecated in favor of a combination of {@link DigestZkCredentialsProvider} and {@link
+ * Current implementation delegates to {@link DigestZkCredentialsProvider} with an injected {@link
  * VMParamsZkCredentialsInjector}.
  *
- * <pre>
- * Current implementation delegates to {@link DigestZkCredentialsProvider} with an injected {@link VMParamsZkCredentialsInjector}
- * </pre>
+ * @deprecated Use a combination of {@link DigestZkCredentialsProvider} and {@link
+ *     VMParamsZkCredentialsInjector} instead.
  */
-@Deprecated
+@Deprecated(since = "10.0")
 public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
     extends DefaultZkCredentialsProvider {
 

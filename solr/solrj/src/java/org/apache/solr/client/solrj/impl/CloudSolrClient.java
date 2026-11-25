@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +42,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.RequestNotSentException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -79,7 +77,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -198,7 +196,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * @deprecated problematic as a 'get' method, since one implementation will do a remote request
    *     each time this is called, potentially return lots of data that isn't even needed.
    */
-  @Deprecated
+  @Deprecated(since = "10.1")
   public ClusterState getClusterState() {
     // The future of "ClusterState" isn't clear.  Could make it more of a cache instead of a
     // snapshot, so we un-deprecate. Or we avoid it and maybe make the ClusterStateProvider as that
@@ -206,9 +204,14 @@ public abstract class CloudSolrClient extends SolrClient {
     return getClusterStateProvider().getClusterState();
   }
 
-  /** Is this a communication error? We will retry if so. */
+  /**
+   * Is this a communication error? We will retry if so. The whole cause chain is inspected, since a
+   * transport may report the underlying failure wrapped at any depth.
+   */
   protected boolean wasCommError(Throwable t) {
-    return t instanceof SocketException || t instanceof UnknownHostException;
+    return SolrException.hasCause(t, SocketException.class)
+        || SolrException.hasCause(t, UnknownHostException.class)
+        || SolrException.hasCause(t, RequestNotSentException.class);
   }
 
   @Override
@@ -234,51 +237,6 @@ public abstract class CloudSolrClient extends SolrClient {
   /** Gets whether direct updates are sent in parallel */
   public boolean isParallelUpdates() {
     return parallelUpdates;
-  }
-
-  /**
-   * Connect to the zookeeper ensemble. This is an optional method that may be used to force a
-   * connection before any other requests are sent.
-   *
-   * @deprecated Call {@link ClusterStateProvider#getLiveNodes()} instead.
-   */
-  @Deprecated
-  public void connect() {
-    getClusterStateProvider().connect();
-  }
-
-  /**
-   * Connect to a cluster. If the cluster is not ready, retry connection up to a given timeout.
-   *
-   * @param duration the timeout
-   * @param timeUnit the units of the timeout
-   * @throws TimeoutException if the cluster is not ready after the timeout
-   * @throws InterruptedException if the wait is interrupted
-   */
-  @Deprecated
-  public void connect(long duration, TimeUnit timeUnit)
-      throws TimeoutException, InterruptedException {
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Waiting for {} {} for cluster at {} to be ready",
-          duration,
-          timeUnit,
-          getClusterStateProvider());
-    }
-    long timeout = System.nanoTime() + timeUnit.toNanos(duration);
-    while (System.nanoTime() < timeout) {
-      try {
-        connect();
-        if (log.isInfoEnabled()) {
-          log.info("Cluster at {} ready", getClusterStateProvider());
-        }
-        return;
-      } catch (RuntimeException e) {
-        // not ready yet, then...
-      }
-      TimeUnit.MILLISECONDS.sleep(250);
-    }
-    throw new TimeoutException("Timed out waiting for cluster");
   }
 
   @SuppressWarnings({"unchecked"})
@@ -353,7 +311,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
     }
 
-    final NamedList<Throwable> exceptions = new NamedList<>();
+    final NamedList<Throwable> exceptions = new SimpleOrderedMap<>();
     final NamedList<NamedList<?>> shardResponses =
         new NamedList<>(routes.size() + 1); // +1 for deleteQuery
 
@@ -454,13 +412,8 @@ public abstract class CloudSolrClient extends SolrClient {
 
     long end = System.nanoTime();
 
-    @SuppressWarnings({"rawtypes"})
-    RouteResponse rr =
-        condenseResponse(
-            shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
-    rr.setRouteResponses(shardResponses);
-    rr.setRoutes(routes);
-    return rr;
+    return condenseResponse(
+        shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
   }
 
   protected RouteException getRouteException(
@@ -527,11 +480,22 @@ public abstract class CloudSolrClient extends SolrClient {
     return urlMap;
   }
 
-  protected <T extends RouteResponse<?>> T condenseResponse(
-      NamedList<?> response, int timeMillis, Supplier<T> supplier) {
-    T condensed = supplier.get();
+  /**
+   * Key in the merged {@code responseHeader} of a routed update request: the achieved replication
+   * factor of each route, keyed by route URL.
+   */
+  public static final String REPFACT_BY_ROUTE = "rfByRoute";
+
+  /**
+   * Merges the per-route responses of a routed update request into a single response. The merged
+   * {@code responseHeader} carries the lowest achieved replication factor as {@link
+   * UpdateRequest#REPFACT} and each route's own value under {@link #REPFACT_BY_ROUTE}.
+   */
+  public SimpleOrderedMap<Object> condenseResponse(NamedList<?> response, int timeMillis) {
+    SimpleOrderedMap<Object> condensed = new SimpleOrderedMap<>();
     int status = 0;
     Integer rf = null;
+    SimpleOrderedMap<Integer> rfByRoute = null;
 
     // TolerantUpdateProcessor
     List<SimpleOrderedMap<String>> toleratedErrors = null;
@@ -551,6 +515,8 @@ public abstract class CloudSolrClient extends SolrClient {
       Object rfObj = header.get(UpdateRequest.REPFACT);
       if (rfObj != null && rfObj instanceof Integer routeRf) {
         if (rf == null || routeRf < rf) rf = routeRf;
+        if (rfByRoute == null) rfByRoute = new SimpleOrderedMap<>();
+        rfByRoute.put(response.getName(i), routeRf);
       }
 
       @SuppressWarnings("unchecked")
@@ -589,6 +555,7 @@ public abstract class CloudSolrClient extends SolrClient {
     cheader.add("status", status);
     cheader.add("QTime", timeMillis);
     if (rf != null) cheader.add(UpdateRequest.REPFACT, rf);
+    if (rfByRoute != null) cheader.add(REPFACT_BY_ROUTE, rfByRoute);
     if (null != toleratedErrors) {
       cheader.add("maxErrors", ToleratedUpdateError.getUserFriendlyMaxErrors(maxToleratedErrors));
       cheader.add("errors", toleratedErrors);
@@ -622,11 +589,6 @@ public abstract class CloudSolrClient extends SolrClient {
     }
     condensed.add("responseHeader", cheader);
     return condensed;
-  }
-
-  @SuppressWarnings({"rawtypes"})
-  public RouteResponse condenseResponse(NamedList<?> response, int timeMillis) {
-    return condenseResponse(response, timeMillis, RouteResponse::new);
   }
 
   @Override
@@ -680,12 +642,17 @@ public abstract class CloudSolrClient extends SolrClient {
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
+      Set<String> missingInputCollections = new HashSet<>();
+      Set<String> requestedCollectionNames =
+          resolveAliases(inputCollections, missingInputCollections);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
-        DocCollection coll = getDocCollection(requestedCollection, null);
+        DocCollection coll =
+            missingInputCollections.contains(requestedCollection)
+                ? null
+                : getDocCollection(requestedCollection, null);
         if (coll == null) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
@@ -723,7 +690,11 @@ public abstract class CloudSolrClient extends SolrClient {
       resp = sendRequest(request, inputCollections);
       // to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from
       // there
-      Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
+      Object o = null;
+      if (resp != null && resp.size() > 0) {
+        final int stateVersionIdx = resp.indexOf(STATE_VERSION, resp.size() - 1);
+        o = stateVersionIdx == -1 ? null : resp.getVal(stateVersionIdx);
+      }
       if (o != null && o instanceof Map<?, ?> invalidStates) {
         // remove this because no one else needs this and tests would fail if they are comparing
         // responses
@@ -758,17 +729,13 @@ public abstract class CloudSolrClient extends SolrClient {
               ? ((SolrException) rootCause).code()
               : SolrException.ErrorCode.UNKNOWN.code;
 
-      final boolean wasCommError = wasCommError(rootCause);
+      final boolean wasCommError = wasCommError(exc);
 
-      if (wasCommError
-          || (exc instanceof RouteException
-              && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
-      // TODO there are other reasons for 404. We need to change the solr response format from HTML
-      // to structured data to know that
-      ) {
-        // it was a communication error. it is likely that
-        // the node to which the request to be sent is down . So , expire the state
-        // so that the next attempt would fetch the fresh state
+      // 503 emitted on node shutdown and by shard-handler when no replicas available
+      if (wasCommError || errorCode == 503) {
+        // if it was a communication error it is likely that
+        // the node to which the request to be sent is down . So expire the state
+        // so that the next attempt will fetch the fresh state
         // just re-read state for all of them, if it has not been retried
         // in retryExpiryTime time
         if (requestedCollections != null) {
@@ -979,13 +946,13 @@ public abstract class CloudSolrClient extends SolrClient {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
-        final var chosenNodeUrl = Utils.getBaseUrlForNodeName(liveNodesList.get(0), urlScheme);
+        final var chosenNodeUrl = URLUtil.getBaseUrlForNodeName(liveNodesList.get(0), urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(chosenNodeUrl));
       }
 
     } else if (!request.requiresCollection()) {
       for (String liveNode : liveNodes) {
-        final var nodeBaseUrl = Utils.getBaseUrlForNodeName(liveNode, urlScheme);
+        final var nodeBaseUrl = URLUtil.getBaseUrlForNodeName(liveNode, urlScheme);
         requestEndpoints.add(new LBSolrClient.Endpoint(nodeBaseUrl));
       }
     } else { // API call to a particular collection / core / alias (i.e.
@@ -1003,7 +970,7 @@ public abstract class CloudSolrClient extends SolrClient {
         String joinedInputCollections = StrUtils.join(inputCollections, ',');
         final var endpoints =
             preferredNodes.stream()
-                .map(nodeName -> Utils.getBaseUrlForNodeName(nodeName, urlScheme))
+                .map(nodeName -> URLUtil.getBaseUrlForNodeName(nodeName, urlScheme))
                 .map(nodeUrl -> new LBSolrClient.Endpoint(nodeUrl, joinedInputCollections))
                 .collect(Collectors.toList());
         if (!endpoints.isEmpty()) {
@@ -1094,12 +1061,20 @@ public abstract class CloudSolrClient extends SolrClient {
    * collection existence.
    */
   private Set<String> resolveAliases(List<String> inputCollections) {
+    return resolveAliases(inputCollections, null);
+  }
+
+  private Set<String> resolveAliases(
+      List<String> inputCollections, Set<String> missingInputCollections) {
     if (inputCollections.isEmpty()) {
       return Set.of();
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
       if (getDocCollection(collectionName, -1) == null) {
+        if (missingInputCollections != null) {
+          missingInputCollections.add(collectionName);
+        }
         // perhaps it's an alias
         uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
@@ -1277,14 +1252,15 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   /**
-   * Walks the NamedList response after performing an update request looking for the replication
-   * factor that was achieved in each shard involved in the request. For single doc updates, there
+   * Reads the replication factor that was achieved in each shard involved in a routed update
+   * request, from {@link #REPFACT_BY_ROUTE} in the response header. For single doc updates, there
    * will be only one shard in the return value.
    */
   public Map<String, Integer> getShardReplicationFactor(String collection, NamedList<?> resp) {
     Map<String, Integer> results = new HashMap<>();
-    if (resp instanceof RouteResponse) {
-      NamedList<NamedList<?>> routes = ((RouteResponse<?>) resp).getRouteResponses();
+    NamedList<?> header = (NamedList<?>) resp.get("responseHeader");
+    Object rfByRoute = header == null ? null : header.get(REPFACT_BY_ROUTE);
+    if (rfByRoute instanceof NamedList<?> routes) {
       DocCollection coll = getDocCollection(collection, null);
       Map<String, String> leaders = new HashMap<>();
       for (Slice slice : coll.getActiveSlices()) {
@@ -1297,13 +1273,9 @@ public abstract class CloudSolrClient extends SolrClient {
         }
       }
 
-      Iterator<Map.Entry<String, NamedList<?>>> routeIter = routes.iterator();
-      while (routeIter.hasNext()) {
-        Map.Entry<String, NamedList<?>> next = routeIter.next();
+      for (Map.Entry<String, ?> next : routes) {
         String host = next.getKey();
-        NamedList<?> hostResp = next.getValue();
-        Integer rf =
-            (Integer) ((NamedList<?>) hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
+        Integer rf = (Integer) next.getValue();
         if (rf != null) {
           String shard = leaders.get(host);
           if (shard == null) {
@@ -1367,37 +1339,6 @@ public abstract class CloudSolrClient extends SolrClient {
       this.solrUrls = solrUrls;
     }
 
-    /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
-     * instances.
-     *
-     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
-     *
-     * <pre>
-     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
-     * </pre>
-     *
-     * Usage example when Solr data is stored in a ZooKeeper chroot:
-     *
-     * <pre>
-     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
-     *  </pre>
-     *
-     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
-     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
-     *     java.util.Optional.empty()} if no ZK chroot is used.
-     * @deprecated Use a connectionString constructor and/or prefer HTTP URLs instead.
-     */
-    @Deprecated(since = "10.1") // sort of 10.0 but accidentally removed
-    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
-      this.zkHosts = zkHosts;
-      if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
-    }
-
     /** for an expert use-case */
     public Builder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
@@ -1434,6 +1375,37 @@ public abstract class CloudSolrClient extends SolrClient {
       } else {
         this.solrUrls = connection.quorumItems();
       }
+    }
+
+    /**
+     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
+     * instances.
+     *
+     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
+     *
+     * <pre>
+     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
+     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
+     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
+     * </pre>
+     *
+     * Usage example when Solr data is stored in a ZooKeeper chroot:
+     *
+     * <pre>
+     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
+     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
+     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
+     *  </pre>
+     *
+     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
+     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
+     *     java.util.Optional.empty()} if no ZK chroot is used.
+     * @deprecated Use a connectionString constructor and/or prefer HTTP URLs instead.
+     */
+    @Deprecated(since = "10.1") // sort of 10.0 but accidentally removed
+    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
+      this.zkHosts = zkHosts;
+      if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
     /** Whether to use the default ZK ACLs when building a ZK Client. */
@@ -1592,12 +1564,6 @@ public abstract class CloudSolrClient extends SolrClient {
       return this;
     }
 
-    @Deprecated(since = "9.10")
-    public Builder withInternalClientBuilder(
-        HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {
-      return withHttpClientBuilder(internalClientBuilder);
-    }
-
     /**
      * Sets the Zk connection timeout
      *
@@ -1720,28 +1686,6 @@ public abstract class CloudSolrClient extends SolrClient {
       } finally {
         evictLock.unlock();
       }
-    }
-  }
-
-  @SuppressWarnings({"rawtypes"})
-  public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList<Object> {
-    private NamedList<NamedList<?>> routeResponses;
-    private Map<String, T> routes;
-
-    public void setRouteResponses(NamedList<NamedList<?>> routeResponses) {
-      this.routeResponses = routeResponses;
-    }
-
-    public NamedList<NamedList<?>> getRouteResponses() {
-      return routeResponses;
-    }
-
-    public void setRoutes(Map<String, T> routes) {
-      this.routes = routes;
-    }
-
-    public Map<String, T> getRoutes() {
-      return routes;
     }
   }
 

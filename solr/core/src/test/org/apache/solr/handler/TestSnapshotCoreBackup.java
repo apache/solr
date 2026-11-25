@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -29,9 +32,12 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 
@@ -367,6 +373,101 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
       simpleBackupCheck(backupDir.resolve("snapshot." + name), 1, oneDocSegmentFile);
     }
     admin.close();
+  }
+
+  /**
+   * Backups run asynchronously, so the status reported to /replication?command=details must
+   * describe a snapshot that is still running -- not stay silent (or keep describing the previously
+   * completed snapshot) until it finishes.
+   *
+   * <p>Rather than racing a live backup by polling "details", this collects every status the
+   * handler would have published and asserts on the whole sequence, which is deterministic.
+   */
+  public void testBackupReportsProgressWhileRunning() throws Exception {
+    for (int i = 0; i < 50; i++) {
+      assertU(adoc("id", String.valueOf(i)));
+    }
+    assertU(commit());
+
+    final Path backupDir = createTempDir();
+    h.getCoreContainer().getAllowPaths().add(backupDir);
+
+    // this is what /replication?command=backup does, minus the http plumbing
+    final List<NamedList<?>> reports = new CopyOnWriteArrayList<>();
+    ReplicationHandler.doSnapShoot(
+        0, 0, backupDir.toString(), null, null, "progress_backup", h.getCore(), reports::add);
+
+    final TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    NamedList<?> last = null;
+    while (!timeOut.hasTimedOut()) {
+      if (!reports.isEmpty()) {
+        last = reports.get(reports.size() - 1);
+        assertNull("Backup failed: " + last, last.get("exception"));
+        if ("success".equals(last.get("status"))) {
+          break;
+        }
+      }
+      timeOut.sleep(20);
+    }
+    assertNotNull("No backup status was ever reported", last);
+    assertEquals(
+        "Backup did not succeed before the TimeOut elapsed: " + last,
+        "success",
+        last.get("status"));
+    // the backup is over, so no further reports can arrive and 'reports' is now stable
+    final int totalFileCount = ((Number) last.get("fileCount")).intValue();
+    assertTrue(
+        "Test needs a backup of more than one file, got " + totalFileCount, 1 < totalFileCount);
+
+    // the very first status is published before the index commit is resolved, so it names no files
+    final NamedList<?> waiting = reports.get(0);
+    assertEquals(
+        "backup should first report itself as waiting: " + waiting,
+        SnapShooter.WAITING_FOR_COMMIT_STATUS,
+        waiting.get("status"));
+    assertNull("no file list is known yet: " + waiting, waiting.get("fileCount"));
+    assertNull("no file list is known yet: " + waiting, waiting.get("finishedFileCount"));
+
+    final List<NamedList<?>> running = reports.subList(1, reports.size() - 1);
+    assertFalse("Backup was never reported as running", running.isEmpty());
+
+    int previousFinished = -1;
+    for (NamedList<?> report : running) {
+      assertEquals(
+          "not reported as running: " + report, SnapShooter.RUNNING_STATUS, report.get("status"));
+
+      final int finished = ((Number) report.get("finishedFileCount")).intValue();
+      assertTrue(
+          "finishedFileCount went backwards: " + previousFinished + " -> " + finished,
+          previousFinished <= finished);
+      previousFinished = finished;
+    }
+
+    // every in-progress status must identify the backup it is about
+    for (NamedList<?> report : reports.subList(0, reports.size() - 1)) {
+      assertNotNull("in-progress report has no startTime: " + report, report.get("startTime"));
+      assertEquals(
+          "in-progress report names the wrong snapshot: " + report,
+          "progress_backup",
+          report.get("snapshotName"));
+      assertEquals(
+          "in-progress report has the wrong directoryName: " + report,
+          "snapshot.progress_backup",
+          report.get("directoryName"));
+    }
+
+    // by the last report before completion, every file must be accounted for
+    final NamedList<?> lastRunning = running.get(running.size() - 1);
+    assertEquals(
+        "last running report disagrees with the completed backup: " + lastRunning,
+        totalFileCount,
+        ((Number) lastRunning.get("fileCount")).intValue());
+    assertEquals(
+        "last running report did not finish every file: " + lastRunning,
+        totalFileCount,
+        ((Number) lastRunning.get("finishedFileCount")).intValue());
+
+    simpleBackupCheck(backupDir.resolve("snapshot.progress_backup"), 50);
   }
 
   /**

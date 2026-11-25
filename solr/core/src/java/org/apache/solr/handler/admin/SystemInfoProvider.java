@@ -286,6 +286,8 @@ public class SystemInfoProvider {
   }
 
   /** Get Security Info */
+  // Identity against the internal singleton is intentionally stricter than equals().
+  @SuppressWarnings("ReferenceEquality")
   public NodeSystemResponse.Security getSecurityInfo() {
     NodeSystemResponse.Security info = new NodeSystemResponse.Security();
 
@@ -336,8 +338,7 @@ public class SystemInfoProvider {
     String implVersion = p.getImplementationVersion();
     // non-null mostly for testing
     info.solrSpecVersion = specVersion == null ? SolrVersion.LATEST_STRING : specVersion;
-    info.solrImplVersion =
-        implVersion == null ? SolrVersion.LATEST.getPrereleaseVersion() : implVersion;
+    info.solrImplVersion = implVersion == null ? SolrVersion.LATEST_STRING : implVersion;
 
     info.luceneSpecVersion = Version.LATEST.toString();
     info.luceneImplVersion = Version.getPackageImplementationVersion();

@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Removed the deprecated zkHost-based StreamFactory connection API (withCollectionZkHost, withDefaultZkHost, getDefaultZkHost, getCollectionZkHost); use the CloudSolrClientConnection-based withCollectionUseThisConnection, withDefaultSolrConnection, getDefaultSolrConnection and buildSolrConnection instead.
+type: removed
+authors:
+  - name: Serhiy Bzhezytskyy
+links:
+  - name: SOLR-18375
+    url: https://issues.apache.org/jira/browse/SOLR-18375

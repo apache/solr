@@ -1,0 +1,8 @@
+title: Pure negative (NOT) expressions in the "lucene" (default) QParser no longer need an explicit *:* to work.
+type: fixed
+authors:
+  - name: Abhishek Umarjikar
+    nick: abumarjikar
+links:
+  - name: SOLR-18256
+    url: https://issues.apache.org/jira/browse/SOLR-18256

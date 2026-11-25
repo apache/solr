@@ -1,0 +1,9 @@
+title: Skip null per-leaf bitsets in /export instead of throwing NPE.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-8291
+    url: https://issues.apache.org/jira/browse/SOLR-8291
+  - name: SOLR-13217
+    url: https://issues.apache.org/jira/browse/SOLR-13217
