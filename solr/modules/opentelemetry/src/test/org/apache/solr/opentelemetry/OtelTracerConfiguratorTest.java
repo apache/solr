@@ -16,10 +16,9 @@
  */
 package org.apache.solr.opentelemetry;
 
-import java.util.List;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,10 +35,11 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
             "OTELNOTHERE", "foo",
             "OTEL_K1", "env-k1",
             "OTEL_K2", "env-k2");
+    System.clearProperty("otel.service.name");
+    System.clearProperty("otel.resource.attributes");
     System.setProperty("otelnothere", "bar");
     System.setProperty("otel.k1", "prop-k1");
     System.setProperty("otel.k3", "prop-k3");
-    System.setProperty("solr.host.advertise", "my.solr.host");
     instance = new OtelTracerConfigurator(currentEnv);
   }
 
@@ -76,12 +76,51 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testResourceAttributes() throws Exception {
-    System.setProperty("otel.resource.attributes", "foo=bar,ILLEGAL-LACKS-VALUE,");
+  public void testServiceNameDefault() {
     instance.prepareConfiguration(new NamedList<>());
-    assertEquals(
-        List.of("host.name=my.solr.host", "foo=bar"),
-        List.of(EnvUtils.getProperty("otel.resource.attributes").split(",")));
+    assertEquals("solr", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  /** The SDK ranks OTEL_SERVICE_NAME above this attribute, so the default must stand down. */
+  @Test
+  public void testServiceNameFromResourceAttributes() {
+    System.setProperty("otel.resource.attributes", "service.name=search,foo=bar");
+    instance.prepareConfiguration(new NamedList<>());
+    assertNull(instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  /** The SDK drops an empty attribute, so it does not count as a configured service name. */
+  @Test
+  public void testEmptyServiceNameAttributeKeepsDefault() {
+    System.setProperty("otel.resource.attributes", "service.name=,foo=bar");
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("solr", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  @Test
+  public void testServiceNamePropertyOutranksResourceAttribute() {
+    System.setProperty("otel.service.name", "configured");
+    System.setProperty("otel.resource.attributes", "service.name=search");
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("configured", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  /** Solr's own exporter reads OTEL_METRICS_EXPORTER, so only the SDK may see it as none. */
+  @Test
+  public void testSdkExportsNoMetricsOrLogs() {
+    System.setProperty("otel.metrics.exporter", "otlp");
+    System.setProperty("otel.logs.exporter", "otlp");
+    System.setProperty("otel.traces.exporter", "none");
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("otlp", instance.getEnvOrSysprop("OTEL_METRICS_EXPORTER"));
+    assertEquals("otlp", instance.getEnvOrSysprop("OTEL_LOGS_EXPORTER"));
+
+    try (OpenTelemetrySdk sdk = (OpenTelemetrySdk) instance.createOpenTelemetry()) {
+      String meterProvider = sdk.getSdkMeterProvider().toString();
+      assertTrue(meterProvider, meterProvider.contains("metricReaders=[]"));
+      String loggerProvider = sdk.getSdkLoggerProvider().toString();
+      assertFalse(loggerProvider, loggerProvider.contains("Otlp"));
+    }
   }
 
   @Test
