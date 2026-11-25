@@ -76,6 +76,7 @@ NOTE: An <<opentelemetry-java-agent,OpenTelemetry Java agent>> resolves the trac
 
 The SDK's optional resource detectors, which add `host.*`, `os.*`, `process.*` and `container.id`, are not shipped.
 To use them, add the `io.opentelemetry.instrumentation:opentelemetry-resources` JAR to the module's lib directory.
+A custom `AutoConfigurationCustomizerProvider` that changes the resource affects traces only; use a `ResourceProvider` to reach metrics too.
 
 == Integration Options
 
