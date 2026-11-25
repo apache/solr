@@ -1197,7 +1197,7 @@ IF "%FG%"=="1" (
   CALL :wait_for_solr_ready
   IF NOT "!ERRORLEVEL!"=="0" (
       echo Still not seeing Solr running on port %SOLR_PORT_LISTEN% after !SOLR_START_WAIT! seconds^^!
-      powershell -Command "Get-Content -Tail 30 '!SOLR_LOGS_DIR!\solr.log'"
+      powershell -NoProfile -Command "Get-Content -Tail 30 '!SOLR_LOGS_DIR!\solr.log'"
       exit /b 1
   )
   echo Started Solr server on port %SOLR_PORT_LISTEN%. Happy searching^^!

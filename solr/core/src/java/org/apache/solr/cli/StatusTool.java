@@ -212,7 +212,6 @@ public class StatusTool extends ToolBase {
 
       // URL provided, do not consult local processes, as the URL may be remote
       if (maxWaitSecs > 0) {
-        // Used by Windows start script when starting Solr
         try {
           waitForSolrUpAndPrintStatus(solrUrl);
           runtime.exit(0);
