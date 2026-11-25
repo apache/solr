@@ -266,8 +266,8 @@ tasks.named('test') {
 }
 
 // Shared configuration for the CATS suites. outputName keeps each variant's SOLR_HOMEs, port-block
-// counter and failure snapshots apart; picocli selects the CLI implementation, or null to take
-// whatever bin/solr defaults to.
+// counter and failure snapshots apart. The picocli argument sets SOLR_PICOCLI to pick the CLI
+// implementation; null keeps bin/solr's default.
 def configureCatsTestTask(Test task, String outputName, String picocli) {
   task.dependsOn installFullDist
 
