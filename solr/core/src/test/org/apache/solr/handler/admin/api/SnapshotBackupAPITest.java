@@ -17,10 +17,11 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import jakarta.inject.Inject;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.solr.SolrTestCase;
@@ -78,6 +79,44 @@ public class SnapshotBackupAPITest extends SolrTestCase {
     assertEquals(11, TrackingSnapshotBackupAPI.numberBackupsToKeep.get());
   }
 
+  @Test
+  public void testBackupFailureThrowsInsteadOfReportingErrorOnResponse() {
+    final var backupRequestBody = new ReplicationBackupRequestBody();
+    backupRequestBody.name = "test";
+    backupRequestBody.numberToKeep = 1;
+
+    final var thrown =
+        expectThrows(
+            SolrException.class,
+            () ->
+                new FailingSnapshotBackupAPI(solrCore, replicationHandlerConfig)
+                    .createBackup(backupRequestBody));
+    assertEquals(500, thrown.code());
+    assertThat(thrown.getMessage(), containsString("disk is full"));
+  }
+
+  private static class FailingSnapshotBackupAPI extends SnapshotBackupAPI {
+
+    public FailingSnapshotBackupAPI(
+        SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
+      super(solrCore, replicationHandlerConfig);
+    }
+
+    @Override
+    protected void doSnapShoot(
+        int numberToKeep,
+        int numberBackupsToKeep,
+        String location,
+        String repoName,
+        String commitName,
+        String name,
+        SolrCore solrCore,
+        Consumer<NamedList<?>> resultConsumer)
+        throws IOException {
+      throw new IOException("disk is full");
+    }
+  }
+
   private void resetMocks() {
     solrCore = mock(SolrCore.class);
     replicationHandlerConfig = mock(ReplicationHandlerConfig.class);
@@ -89,7 +128,6 @@ public class SnapshotBackupAPITest extends SolrTestCase {
     private static final AtomicInteger numberToKeep = new AtomicInteger();
     private static final AtomicInteger numberBackupsToKeep = new AtomicInteger();
 
-    @Inject
     public TrackingSnapshotBackupAPI(
         SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
       super(solrCore, replicationHandlerConfig);
