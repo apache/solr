@@ -115,6 +115,24 @@ public class TestOtelResourceAttributes extends SolrTestCase {
     assertNull(resource.getAttribute(AttributeKey.stringKey("")));
   }
 
+  /**
+   * Values are percent-encoded; a plus sign and a malformed sequence are literal, as in the SDK.
+   */
+  @Test
+  public void valuesArePercentDecoded() {
+    System.setProperty(
+        "otel.resource.attributes",
+        "service.instance.id=node%3A8983,list=a%2Cb,plus=a+b,accent=%C3%A9,broken=50%");
+    Resource resource = initialize(nodeConfig("h", 8983));
+    assertEquals("node:8983", resource.getAttribute(SERVICE_INSTANCE_ID));
+    assertEquals("a,b", resource.getAttribute(AttributeKey.stringKey("list")));
+    assertEquals("a+b", resource.getAttribute(AttributeKey.stringKey("plus")));
+    assertEquals("\u00e9", resource.getAttribute(AttributeKey.stringKey("accent")));
+    assertEquals("50%", resource.getAttribute(AttributeKey.stringKey("broken")));
+    // Republished for the SDK to read, so it must stay encoded
+    assertTrue(System.getProperty("otel.resource.attributes").contains("list=a%2Cb"));
+  }
+
   /** Attributes supplied through {@code <tracerConfig>} survive Solr's defaults. */
   @Test
   public void tracerConfigAttributesAreHonoured() {

@@ -30,6 +30,8 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import java.lang.invoke.MethodHandles;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -213,13 +215,23 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    */
   private static Resource resourceFromConfig(Map<String, String> env) {
     AttributesBuilder attrs = Attributes.builder();
-    parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env)).forEach(attrs::put);
+    parseResourceAttributes(getConfig("OTEL_RESOURCE_ATTRIBUTES", env))
+        .forEach((key, value) -> attrs.put(key, percentDecode(value)));
     // OTEL_SERVICE_NAME wins over a service.name given among the resource attributes, per spec.
     String serviceName = getConfig("OTEL_SERVICE_NAME", env);
     if (serviceName != null) {
       attrs.put(SERVICE_NAME, serviceName);
     }
     return withSolrDefaults(Resource.getDefault().merge(Resource.create(attrs.build())));
+  }
+
+  /** Values are percent-encoded per W3C Baggage; like the SDK, a '+' stays a plus sign. */
+  private static String percentDecode(String value) {
+    try {
+      return URLDecoder.decode(value.replace("+", "%2B"), StandardCharsets.UTF_8);
+    } catch (IllegalArgumentException e) {
+      return value;
+    }
   }
 
   /** Fills in Solr's node identity and service name for whatever the configuration left unset. */
