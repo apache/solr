@@ -35,7 +35,7 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 | `SolrTestCaseJ4`
 | Adds the single-core `TestHarness` to `SolrTestCase`: `initCore`, `assertQ`, `assertU`, SSL randomization. The base of most Solr tests, directly or via `SolrCloudTestCase`.
 | as `SolrTestCase`
-| Deprecated. Not in new tests.
+| Deprecated. Do not use in new tests.
 
 | BATS, `solr/packaging/test/*.bats`
 | The original bash `bin/solr` tests. `./gradlew integrationTests`.
@@ -67,13 +67,13 @@ The rule: *write the cheapest kind of test that can actually catch the bug.*
 
 Every test that extends `SolrTestCase` runs under randomizedtesting's `RandomizedRunner`, inherited from `LuceneTestCase`. One master seed per run drives every `random()` call, so a failure is reproducible from the seed the runner prints.
 
-The framework already varies Lucene codec and postings format, directory implementation, merge policy, locale, time zone, and the order of test methods — so no test may depend on method order, on the default locale, or on the default time zone. SSL is randomized too, but only for `SolrTestCaseJ4` subclasses, which is where `@RandomizeSSL` sits; opt out with `@SuppressSSL`.
+The framework already varies Lucene codec and postings format, directory implementation, merge policy, locale, time zone, and the order of test methods — so no test may depend on method order, the default locale, or on the default time zone. SSL is randomized too, but only for `SolrTestCaseJ4` subclasses; opt out with `@SuppressSSL`.
 
 What to use:
 
 * `random()` — the per-test `Random`. Never `new Random()` or `Math.random()`: an unseeded source makes the failure unreproducible.
 * `atLeast(n)` — `n * RANDOM_MULTIPLIER`, plus up to 50% random fudge. The normal way to size a loop.
-* `rarely()` / `usually()` — take an unusual branch about 1% of the time (5% in nightly runs).
+* `rarely()` / `usually()` — `rarely()` is true about 1% of the time (8% in nightly runs), `usually()` the rest. Use them to take an unusual branch now and then.
 * `TestUtil.randomSimpleString(random())` and its neighbours for field values.
 
 `RANDOM_MULTIPLIER` is 2 in a nightly run and 1 otherwise, so `atLeast` and `rarely` scale themselves; read `TEST_NIGHTLY` directly only to skip or resize work those two cannot express.
@@ -102,7 +102,7 @@ Don't:
 * Don't redeclare `@ThreadLeakFilters` without repeating the inherited filters — the annotation is not additive. `AdminUiTestBase` shows the correct form.
 * Don't leak tracked objects. `ObjectReleaseTracker` is asserted empty only when the suite passed, so `ObjectTracker found N object(s) that were not released` means your test left a `SolrCore`, `SolrIndexSearcher`, `Directory` or similar open.
 
-Annotations:
+== Annotations for filtering / classifying tests
 
 These are Lucene annotations wired up as randomizedtesting *test groups*, disabled by default, so annotating a test with one stops it running in ordinary builds and in PR CI:
 
@@ -110,7 +110,9 @@ These are Lucene annotations wired up as randomizedtesting *test groups*, disabl
 * `@AwaitsFix(bugUrl = "...")` — known-broken, and the required bug URL is what keeps it discoverable. Prefer it to `@Ignore`, which is plain JUnit and invisible to group filters; use `@Ignore` only where nothing is broken, such as an abstract base the runner would otherwise pick up.
 * `@LuceneTestCase.Monster(value)` — needs unusual disk or RAM.
 
-There is no `@Slow`, and `@BadApple` is gone: slow is `@Nightly`, broken is `@AwaitsFix`. Read solr-source-code.adoc's guidance on frequently-failing tests before disabling anything.
+Non-existent/historical: `@Slow`, `@BadApple`.
+
+Read solr-source-code.adoc's guidance on frequently-failing tests before disabling anything.
 
 == Containers for external services
 
