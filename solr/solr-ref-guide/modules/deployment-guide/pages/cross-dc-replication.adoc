@@ -138,6 +138,8 @@ Optional configuration properties:
 `solr.crossdc.mirrorCommits` _<boolean>_:: If `true` then standalone commit requests will be mirrored, otherwise they will be processed only locally.
 `solr.crossdc.expandDbq` _<enum>_ :: If set to `expand` (default) then Delete-By-Query will be expanded before mirroring into series of Delete-By-Id, which may help with correct processing of out-of-order requests on the consumer side.
 If set to `none` then Delete-By-Query requests will be mirrored as-is.
+`solr.crossdc.dbq_rows` _<integer>_:: Page size used when `solr.crossdc.expandDbq` is `expand`: the number of matching document ids fetched per query page, which is also the maximum number of ids in each mirrored Delete-By-Id request. Default is `1000`.
+This can only be set as a Java system property.
 
 Additional configuration specific to the Kafka client library can be passed through using either
 environment variables starting with `SOLR_CROSSDC_KAFKA_` or system properties starting with
@@ -218,7 +220,11 @@ Setting the `solr.crossdc.enabled` system property or xref:collection-management
 == Limitations
 
 - When `solr.crossdc.expandDbq` property is set to `expand` (default) then Delete-By-Query converts to a series of Delete-By-Id, which can be much less efficient for queries matching large numbers of documents.
+The matching documents are fetched in pages of `solr.crossdc.dbq_rows` ids, and each page is deleted locally and mirrored as a separate Delete-By-Id request, so a single Delete-By-Query results in several mirrored requests and the deletion is not atomic.
 Setting this property to `none` results in forwarding a real Delete-By-Query - this reduces the amount of data to mirror but may cause different results due to the potential re-ordering of failed & re-submitted requests between Consumer and the target Solr.
+- When `solr.crossdc.expandDbq` is set to `expand` (default), the matching documents are found by a search, so a Delete-By-Query only affects documents that are visible to searchers on the source cluster.
+Documents that were added but not yet made visible by a commit that opens a new searcher are neither deleted on the source cluster nor on the target cluster, whereas a regular Delete-By-Query would delete them.
+To avoid this, commit before sending a Delete-By-Query, or set this property to `none`.
 - When `solr.crossdc.collapseUpdates` is set to `all` then multiple requests containing a mix of add and delete ops will be collapsed into a single outgoing request.
 This will cause the original ordering of add / delete ops to be lost (because Solr processing of an update request always processes all add ops first, and only then the delete ops), which may affect the final outcome when some of the ops refer to the same document ids.
 - When the Kafka topic used for mirroring has multiple partitions the CrossDC Producer and Consumer guarantee strict ordering of updates ONLY within the same collection.

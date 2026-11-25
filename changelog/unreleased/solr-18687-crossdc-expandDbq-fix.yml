@@ -1,0 +1,9 @@
+title: >
+  CrossDC fix broken expandDbq=expand by using regular CloudSolrClient for DBQ expansion.
+  Mirror a page of id-s in one request instead of individual id-s.
+type: fixed
+authors:
+  - name: Andrzej Białecki
+links:
+  - name: SOLR-18687
+    url: https://issues.apache.org/jira/browse/SOLR-18687
