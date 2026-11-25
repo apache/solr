@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocsCollector;
 import org.apache.solr.schema.SchemaField;
 
 /**
@@ -258,5 +260,9 @@ public class QueryCommand {
 
   public void setMaxHitsAllowed(int maxHitsAllowed) {
     this.maxHitsAllowed = maxHitsAllowed;
+  }
+
+  public TopDocsCollector<? extends ScoreDoc> buildCustomTopDocsCollector(int len) {
+    return null;
   }
 }
