@@ -40,6 +40,48 @@ teardown() {
   refute_output --partial 'forcefully killing'
 }
 
+@test "SOLR-11966 stop ZooKeeper hosts after other SolrCloud nodes" {
+  solr start
+  solr start -p "${SOLR2_PORT}" -z "localhost:${ZK_PORT}"
+
+  run wait_for 30 1 node_has_zookeeper_role \
+    "http://localhost:${SOLR_PORT}/api/cluster/node-roles/node/localhost:${SOLR_PORT}_solr?indent=false" on
+  assert_success
+  assert_output --partial '"data":"on"'
+  assert_output --partial '"overseer":"allowed"'
+  assert_output --partial '"zookeeper":"on"'
+
+  run wait_for 30 1 node_has_zookeeper_role \
+    "http://localhost:${SOLR2_PORT}/api/cluster/node-roles/node/localhost:${SOLR2_PORT}_solr?indent=false" off
+  assert_success
+  assert_output --partial '"zookeeper":"off"'
+
+  run env SOLR_STOP_WAIT=30 solr stop --all
+  assert_success
+  assert_output --regexp "Sending stop command.*port ${SOLR2_PORT} .*Sending stop command.*port ${SOLR_PORT} "
+  refute_output --partial 'forcefully killing'
+  solr assert --not-started "http://localhost:${SOLR_PORT}" --timeout 5000
+  solr assert --not-started "http://localhost:${SOLR2_PORT}" --timeout 5000
+}
+
+node_has_zookeeper_role() {
+  curl -fsS "$1" | grep -F "\"zookeeper\":\"$2\""
+}
+
+@test "embedded ZooKeeper preserves custom node roles" {
+  export SOLR_NODE_ROLES=data:off
+  export SOLR_OPTS=-Dsolr.node.roles=data:on,overseer:disallowed
+  run solr start --jvm-opts '-Dsolr.node.roles=data:on,overseer:preferred,zookeeper:off'
+  assert_success
+
+  run wait_for 30 1 node_has_zookeeper_role \
+    "http://localhost:${SOLR_PORT}/api/cluster/node-roles/node/localhost:${SOLR_PORT}_solr?indent=false" on
+  assert_success
+  assert_output --partial '"data":"on"'
+  assert_output --partial '"overseer":"preferred"'
+  assert_output --partial '"zookeeper":"on"'
+}
+
 @test "stop command for single port" {
 
   solr start

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 
 public class NodeRoles {
@@ -57,6 +58,10 @@ public class NodeRoles {
         roles.put(r, r.modeWhenRoleIsAbsent());
       }
     }
+    // Overrides any parsed zookeeper mode with reality; invalid modes are still rejected above.
+    roles.put(
+        Role.ZOOKEEPER,
+        EnvUtils.getPropertyAsBool(ZkContainer.ZK_SERVER_ENABLED_PROP, false) ? MODE_ON : MODE_OFF);
     nodeRoles = Collections.unmodifiableMap(roles);
   }
 
@@ -100,6 +105,18 @@ public class NodeRoles {
       @Override
       public String modeWhenRoleIsAbsent() {
         return MODE_DISALLOWED;
+      }
+    },
+
+    ZOOKEEPER("zookeeper") {
+      @Override
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ON, MODE_OFF);
+      }
+
+      @Override
+      public String modeWhenRoleIsAbsent() {
+        return MODE_OFF;
       }
     },
 

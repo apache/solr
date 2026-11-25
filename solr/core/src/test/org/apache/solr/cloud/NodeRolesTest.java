@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -42,11 +43,17 @@ public class NodeRolesTest extends SolrCloudTestCase {
   public void testRoleIntegration() throws Exception {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     testSupportedRolesAPI();
+    validateNodeRoles(j0.getNodeName(), "node-roles/zookeeper/off");
 
     // Start a dedicated overseer node
     JettySolrRunner j1 = startNodeWithRoles("overseer:preferred,data:off");
     validateNodeRoles(
-        j1.getNodeName(), "node-roles/overseer/preferred", j1.getNodeName(), "node-roles/data/off");
+        j1.getNodeName(),
+        "node-roles/overseer/preferred",
+        j1.getNodeName(),
+        "node-roles/data/off",
+        j1.getNodeName(),
+        "node-roles/zookeeper/off");
 
     V2Response rsp;
     OverseerRolesTest.waitForNewOverseer(20, j1.getNodeName(), true);
@@ -123,6 +130,9 @@ public class NodeRolesTest extends SolrCloudTestCase {
 
     assertTrue(l.containsKey("data"));
     assertTrue(l.containsKey("overseer"));
+    assertEquals(
+        Set.of("off", "on"),
+        Set.copyOf((List<String>) rsp._get("supported-roles/zookeeper/modes")));
   }
 
   private JettySolrRunner startNodeWithRoles(String roles) throws Exception {
