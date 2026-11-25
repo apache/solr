@@ -25,6 +25,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1077,7 +1079,13 @@ public class JavaBinCodec implements PushWriter {
     } else {
       // double pass logic for large strings, see SOLR-7971
       CharBuffer cb = CharBuffer.wrap(s);
-      CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+      // Replace malformed input (unpaired surrogates) as String.getBytes() does. Otherwise, the
+      // encoder reports an error without consuming the input.
+      CharsetEncoder encoder =
+          StandardCharsets.UTF_8
+              .newEncoder()
+              .onMalformedInput(CodingErrorAction.REPLACE)
+              .onUnmappableCharacter(CodingErrorAction.REPLACE);
       if (bytes == null || bytes.length < 8192) bytes = new byte[8192];
       ByteBuffer scratch = ByteBuffer.wrap(bytes);
 
@@ -1085,13 +1093,15 @@ public class JavaBinCodec implements PushWriter {
       int sz = 0;
       cb.rewind();
       encoder.reset();
-      boolean endOfInput = false;
-      while (!endOfInput) {
-        endOfInput = !cb.hasRemaining();
+      CoderResult result;
+      do {
+        // The whole input is in the char buffer, so we always pass endOfInput=true and keep
+        // encoding until there is no more overflow of the scratch buffer.
+        // Without it, a string that ends in a lone high surrogate hangs
         scratch.clear();
-        encoder.encode(cb, scratch, endOfInput);
+        result = encoder.encode(cb, scratch, true);
         sz += scratch.position();
-      }
+      } while (result.isOverflow());
       scratch.clear();
       encoder.flush(scratch);
       sz += scratch.position();
@@ -1100,15 +1110,13 @@ public class JavaBinCodec implements PushWriter {
       writeTag(STR, sz);
       cb.rewind();
       encoder.reset();
-      endOfInput = false;
-      while (!endOfInput) {
-        endOfInput = !cb.hasRemaining();
+      do {
         scratch.clear();
-        encoder.encode(cb, scratch, endOfInput);
+        result = encoder.encode(cb, scratch, true);
         if (scratch.position() > 0) {
           daos.write(bytes, 0, scratch.position());
         }
-      }
+      } while (result.isOverflow());
       scratch.clear();
       encoder.flush(scratch);
       if (scratch.position() > 0) {

@@ -99,6 +99,47 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * Malformed input must not make the encoder loop forever. This test inserts an unpaired
+   * (malformed) surrogate in the middle of a string and runs it through marshal/unmarshal.
+   */
+  @Test
+  public void testUnpairedSurrogate() throws Exception {
+
+    // Cover both short and long strings (long string is encoded with a streaming CharsetEncoder)
+    int[] lengths = {100, 65536 * 10};
+    for (int length : lengths) {
+
+      // Put the lone surrogate either in the middle of the string or at the last position
+      // The last position corner case to make sure the encoder does not treat it as incomplete
+      int[] positions = {length / 2, length - 1};
+
+      for (int position : positions) {
+        doTestUnpairedSurrogate(length, position);
+      }
+    }
+  }
+
+  private void doTestUnpairedSurrogate(int length, int position) throws Exception {
+    char surrogate = '\uD800';
+    StringBuilder sb = new StringBuilder(TestUtil.randomSimpleString(random(), length, length));
+    sb.setCharAt(position, surrogate);
+    String s = sb.toString();
+
+    // Unpaired surrogates can't be encoded in UTF-8, expect the same replacement as the JDK
+    String expected = new String(s.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    try (JavaBinCodec writer = new JavaBinCodec()) {
+      writer.marshal(s, os);
+    }
+    try (JavaBinCodec reader = new JavaBinCodec();
+        ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
+      Object result = reader.unmarshal(is);
+      assertEquals(expected, result);
+    }
+  }
+
   @Test
   public void testReadAsCharSeq() throws Exception {
     List<Object> types = new ArrayList<>();
