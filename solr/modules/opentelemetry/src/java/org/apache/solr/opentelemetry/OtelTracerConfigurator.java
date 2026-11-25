@@ -60,6 +60,9 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
     // deliberately build() and not initialize(); the latter sets GlobalOpenTelemetry, which is
     // OpenTelemetryConfigurator's job
     return AutoConfiguredOpenTelemetrySdk.builder()
+        // Solr owns the meter providers, and honours OTEL_METRICS_EXPORTER in its own OTLP exporter
+        .addPropertiesCustomizer(
+            config -> Map.of("otel.metrics.exporter", "none", "otel.logs.exporter", "none"))
         // Hand the resolved resource back to Solr so its metrics carry the same one as these traces
         .addResourceCustomizer(
             (resource, config) -> {
@@ -90,7 +93,6 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
 
-    // Solr owns the meter providers, and honours OTEL_METRICS_EXPORTER in its own OTLP exporter.
     String logsExporter = getEnvOrSysprop("OTEL_LOGS_EXPORTER");
     if (logsExporter != null && !Objects.equals(logsExporter, "none")) {
       log.warn(
@@ -105,8 +107,6 @@ public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
           "Solr only exports metrics over OTLP. Ignoring OTEL_METRICS_EXPORTER={}",
           metricsExporter);
     }
-    System.setProperty("otel.metrics.exporter", "none");
-    System.setProperty("otel.logs.exporter", "none");
   }
 
   /**

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.opentelemetry;
 
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
@@ -94,6 +95,24 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.setProperty("otel.resource.attributes", "service.name=search");
     instance.prepareConfiguration(new NamedList<>());
     assertEquals("configured", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
+  /** Solr's own exporter reads OTEL_METRICS_EXPORTER, so only the SDK may see it as none. */
+  @Test
+  public void testSdkExportsNoMetricsOrLogs() {
+    System.setProperty("otel.metrics.exporter", "otlp");
+    System.setProperty("otel.logs.exporter", "otlp");
+    System.setProperty("otel.traces.exporter", "none");
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("otlp", instance.getEnvOrSysprop("OTEL_METRICS_EXPORTER"));
+    assertEquals("otlp", instance.getEnvOrSysprop("OTEL_LOGS_EXPORTER"));
+
+    try (OpenTelemetrySdk sdk = (OpenTelemetrySdk) instance.createOpenTelemetry()) {
+      String meterProvider = sdk.getSdkMeterProvider().toString();
+      assertTrue(meterProvider, meterProvider.contains("metricReaders=[]"));
+      String loggerProvider = sdk.getSdkLoggerProvider().toString();
+      assertFalse(loggerProvider, loggerProvider.contains("Otlp"));
+    }
   }
 
   @Test

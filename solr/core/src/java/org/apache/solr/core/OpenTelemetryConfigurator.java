@@ -67,13 +67,6 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
   /** What the SDK uses for {@code service.name} when nothing configures it. */
   private static final String UNKNOWN_SERVICE = "unknown_service:java";
 
-  /**
-   * {@code OTEL_METRICS_EXPORTER} as configured, captured before the {@code opentelemetry} module
-   * overwrites the system property with {@code none}.
-   */
-  private static final String CONFIGURED_METRICS_EXPORTER =
-      getConfig("OTEL_METRICS_EXPORTER", System.getenv());
-
   private static volatile boolean loaded = false;
 
   /**
@@ -205,14 +198,6 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
    */
   public static Resource getTelemetryResource() {
     return telemetryResource;
-  }
-
-  /**
-   * The {@code OTEL_METRICS_EXPORTER} the operator configured, or {@code null}. Solr's own OTLP
-   * metric exporter honours it; see {@code org.apache.solr.metrics.otel.MetricExporterFactory}.
-   */
-  public static String getConfiguredMetricsExporter() {
-    return CONFIGURED_METRICS_EXPORTER;
   }
 
   private static void adoptConfiguredResource(OpenTelemetryConfigurator configurator) {

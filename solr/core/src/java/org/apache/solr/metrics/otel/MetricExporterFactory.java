@@ -19,7 +19,6 @@ package org.apache.solr.metrics.otel;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.util.Locale;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.core.OpenTelemetryConfigurator;
 
 /**
  * Configuration of Solr's OTLP metric exporter. Each setting is resolved from its Solr-specific
@@ -49,8 +48,7 @@ public interface MetricExporterFactory {
   private static boolean resolveEnabled() {
     String solrEnabled = EnvUtils.getProperty("solr.metrics.otlpExporterEnabled");
     if (solrEnabled != null) return Boolean.parseBoolean(solrEnabled);
-    // As configured, not as the opentelemetry module later overwrote the system property.
-    String configured = OpenTelemetryConfigurator.getConfiguredMetricsExporter();
+    String configured = otelConfig("OTEL_METRICS_EXPORTER");
     return configured != null && configured.contains("otlp");
   }
 
