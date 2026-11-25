@@ -45,7 +45,7 @@ public class ExampleTest extends SolrCatsTestCase {
 
   @BeforeClass
   public static void startSolr() {
-    // The two nodes live for the whole class and are stopped automatically; the
+    // The three nodes live for the whole class and are stopped automatically; the
     // example data lands under SOLR_HOME, which the next class wipes.
     classCli.run(
         "solr start -e cloud --no-prompt --jvm-opts \"-Dcustom.prop=helloworld\""
@@ -54,8 +54,7 @@ public class ExampleTest extends SolrCatsTestCase {
         "solr assert --started http://localhost:${SOLR_PORT}"
             + " --cloud http://localhost:${SOLR_PORT} --timeout 60000");
     classCli.run(
-        "solr assert --started http://localhost:${SOLR2_PORT}"
-            + " --cloud http://localhost:${SOLR2_PORT} --timeout 60000");
+        "solr assert --cloud-nodes 3 --solr-url http://localhost:${SOLR_PORT} --timeout 60000");
   }
 
   @Test
@@ -63,15 +62,14 @@ public class ExampleTest extends SolrCatsTestCase {
     run(
         "solr assert --started http://localhost:${SOLR_PORT}"
             + " --cloud http://localhost:${SOLR_PORT} --timeout 10000");
-    run(
-        "solr assert --started http://localhost:${SOLR2_PORT}"
-            + " --cloud http://localhost:${SOLR2_PORT} --timeout 10000");
+    run("solr assert --cloud-nodes 3 --solr-url http://localhost:${SOLR_PORT} --timeout 10000");
   }
 
   @Test
   public void startECloudWorksWithJvmOpts() {
     http("/solr/admin/info/properties").assertContains("helloworld");
-    http(ports().solr2(), "/solr/admin/info/properties").assertContains("helloworld");
+    // The example spaces its embedded-ZooKeeper nodes 100 ports apart.
+    http(ports().solr() + 100, "/solr/admin/info/properties").assertContains("helloworld");
   }
 
   @Test

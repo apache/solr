@@ -22,7 +22,6 @@
 = bin/solr package uninstall
 :page-toclevels: 2
 
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 

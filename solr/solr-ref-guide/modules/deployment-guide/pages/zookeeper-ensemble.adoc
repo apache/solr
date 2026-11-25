@@ -373,6 +373,36 @@ If one happens to be down, Solr will automatically be able to send its request t
 ZooKeeper version 3.5 and later supports dynamic reconfiguration of server addresses and roles.
 But note that Solr will only be able to talk to the servers listed in the static ZooKeeper connect string.
 
+=== Retiring an Ensemble Member
+
+The v2 API exposes the current ZooKeeper membership through any SolrCloud node:
+
+[source,bash]
+----
+curl http://localhost:8983/api/cluster/zookeeper/members
+----
+
+The response includes `version` (a hexadecimal configuration version) and `members`, with each member's `id`, `host`, `clientPort`, `quorumPort`, `electionPort`, and `role`.
+`clientPort` can be absent for configurations that omit client addresses.
+Reading membership requires `zk-read` permission.
+
+To retire a member, remove its ID using the version returned by GET:
+
+[source,bash]
+----
+curl -X DELETE 'http://localhost:8983/api/cluster/zookeeper/members/5?version=100000000'
+----
+
+Removal requires `zk-edit` permission and ZooKeeper dynamic reconfiguration must be enabled.
+The response contains the updated membership and version.
+A stale version returns HTTP 409; fetch the current membership before deciding whether to retry.
+ZooKeeper requires a working quorum to commit the change.
+Crashing or stopping a process does not retire its member automatically.
+
+Removal changes ZooKeeper membership only: it does not stop Solr or remove its collection replicas.
+After a successful response, stop the retired process and update startup connection strings to use the surviving members.
+An embedded quorum node started again with the quorum role can rejoin the ensemble.
+
 === Using a chroot
 
 If your ensemble is or will be shared among other systems besides Solr, you should consider defining application-specific _znodes_, or a hierarchical namespace that will only include Solr's files.
@@ -545,6 +575,128 @@ set SOLR_OPTS=%SOLR_OPTS% -Djute.maxbuffer=0x200000
 ----
 ====
 ======
+
+[[embedded-zookeeper-ensemble]]
+== Embedded ZooKeeper Ensemble (Experimental)
+
+WARNING: This feature is *experimental / alpha* and is not suitable for production use.
+The configuration interface may change without notice in future Solr releases.
+
+Normally, Solr's embedded ZooKeeper runs in "standalone" mode and cannot tolerate node failures.
+Starting in Solr 10.1, it is possible to run Solr nodes where each node's embedded ZooKeeper participates in a multi-node quorum (ensemble).
+This allows a self-contained SolrCloud cluster without a separate ZooKeeper deployment — useful for development, testing, or small low-stakes clusters.
+
+=== How It Works
+
+Each Solr node that has the `zookeeper_quorum` xref:node-roles.adoc[node role] set to `on` will start an embedded `ZooKeeperServerEmbedded` instance on startup.
+Solr identifies which host in the ZK connection string it corresponds to (by matching host+port) and assigns it a ZooKeeper `myid`.
+
+Port scheme used by each node:
+
+|===
+|Port |Formula |Example (Solr on 8983)
+
+|Solr HTTP
+|`solr_port`
+|8983
+
+|ZK client
+|`solr_port + 1000`
+|9983
+
+|ZK quorum peer
+|`solr_port + 1010`
+|9993
+
+|ZK leader election
+|`solr_port + 1020`
+|10003
+|===
+
+All three port offsets can be overridden with system properties — see <<embedded-zk-ports,Configuring Embedded ZK Ports>> below.
+
+=== Starting a 3-Node Embedded ZK Ensemble
+
+The ZK connection string must list all nodes' ZK client ports (`solr_port + 1000`), and every node must use `zookeeper_quorum:on`.
+When several nodes are listed in the connection string like this, they cold-bootstrap the ensemble together: a leader can only be elected once a majority of the listed nodes is up, so a node started ahead of its peers simply waits for them (its log repeats `still waiting for a quorum` while it does).
+If you'd rather bring nodes up one at a time, on their own schedule, see <<Starting with a Single Node and Growing the Ensemble>> below instead.
+
+NOTE: On a single machine, each node needs distinct ports. Because each node also binds `solr_port+1000` (ZK client), `solr_port+1010` (quorum peer) and `solr_port+1020` (leader election), space Solr ports *more than 1020 apart* to avoid collisions.
+When nodes share the same working directory, also set `solr.zookeeper.server.datadir` to a distinct path per node to avoid ZooKeeper data directory conflicts.
+
+[source,bash]
+----
+export LH="localhost"
+ZK_HOST="$LH:21000,$LH:31000,$LH:41000"
+ROLES="data:on,overseer:allowed,zookeeper_quorum:on"
+
+bin/solr start -p 20000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_1
+bin/solr start -p 30000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_2
+bin/solr start -p 40000 -z "$ZK_HOST" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_3
+----
+
+=== Starting with a Single Node and Growing the Ensemble
+
+A `zookeeper_quorum` node can also be started entirely on its own, with a connection string that names only itself.
+It comes up as a complete, working single-member ensemble (not ZooKeeper's "standalone" mode: Solr configures the embedded server with `standaloneEnabled=false`, so even a lone member runs ZooKeeper's distributed stack and can be reconfigured later).
+Further nodes can then join whenever they are started: each new node lists the existing members plus itself in its connection string, starts its own embedded server, syncs with the leader, and is added to the ensemble via ZooKeeper's dynamic reconfiguration -- no restart of the existing nodes is needed.
+
+[source,bash]
+----
+export LH="localhost"
+ROLES="data:on,overseer:allowed,zookeeper_quorum:on"
+
+# A fully usable one-node SolrCloud, right away:
+bin/solr start -p 20000 -z "$LH:21000" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_1
+
+# ...later, grow it to two members:
+bin/solr start -p 30000 -z "$LH:21000,$LH:31000" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_2
+
+# ...and later still, to three:
+bin/solr start -p 40000 -z "$LH:21000,$LH:31000,$LH:41000" -Dsolr.node.roles="$ROLES" -Dsolr.zookeeper.server.datadir=zoo_home_3
+----
+
+A joining node's connection string must include its own address (that is how Solr determines the node's ZooKeeper `myid`) as well as at least one current member.
+Restarting a node that is already a member reconnects it to its existing seat rather than adding it again.
+
+NOTE: A two-member ensemble has no fault tolerance -- both members are needed for a majority -- so treat it as a stepping stone to three (or another odd number) rather than a place to stop.
+A running node's ZooKeeper client follows ensemble changes on its own, so it can fail over to members that joined after it started. Its connection string still matters at startup, though: a node can only start if at least one host it lists is up, so update `-z` on each node as the ensemble grows. Until you do, its ZK Status page flags the mismatch.
+
+[[embedded-zk-ports]]
+=== Configuring Embedded ZK Ports
+
+By default the three ZooKeeper ports are derived from the Solr port.
+Each can be overridden with a system property:
+
+[cols="2,1,2"]
+|===
+|System property |Default |Description
+
+|`solr.zookeeper.server.client.port.offset`
+|`1000`
+|Offset from Solr port to ZK client port
+
+|`solr.zookeeper.server.quorum.port.offset`
+|`1010`
+|Offset from Solr port to ZK quorum peer port
+
+|`solr.zookeeper.server.election.port.offset`
+|`1020`
+|Offset from Solr port to ZK leader election port
+|===
+
+The client port offset also applies to the standalone embedded ZooKeeper (`solr.zookeeper.server.enabled`) when its `zoo.cfg` does not set `clientPort`.
+
+=== Known Limitations
+
+* A node's `-z` connection string is not updated when the ensemble grows. The running node follows the new members anyway, but on restart it can only connect through the hosts it lists, so keep `-z` current on every node (the ZK Status page warns when it is out of date).
+* Quorum loss and recovery (majority of nodes down simultaneously) is not yet fully reliable.
+* The hostname in the ZK connection string must exactly match Solr's configured host (`solr.host` / `-Dhost`). Using `localhost` on some nodes and `127.0.0.1` on others will not work.
+* Runs best with the Java security manager disabled (`solr.security.manager.enabled=false`).
+* The JVM's default locale must format numbers with ASCII digits. ZooKeeper writes the ports in its ensemble configuration using the default locale, so under a locale with native digits (for example `as-IN` or `bn-BD`) that configuration cannot be read back, and joining or restarting nodes fails. Set `-Duser.language=en` (or another locale with ASCII digits) if your system default is affected.
+* Ensemble membership changes are not authenticated. To let nodes join a running ensemble, Solr enables ZooKeeper's dynamic reconfiguration and sets `zookeeper.skipACL=yes` for the whole JVM, so anyone who can reach a node's ZK client port (`solr_port + 1000`) can add or remove voting members -- and a member they control can win leadership and then read or rewrite all cluster state, including `security.json`. Any node started with the `zookeeper_quorum` role that can reach an existing member will also add itself automatically. Keep the ZK client, quorum and election ports reachable only from the Solr nodes themselves, on a trusted network.
+* Every join changes the size of the majority the ensemble needs. Growing from one member to two leaves *less* fault tolerance than one (both are then needed), and a node that joins by mistake becomes a voter that can stall writes until it is removed. Plan joins deliberately and aim for an odd number of members.
+* With dynamic reconfiguration on, ZooKeeper keeps the authoritative member list in its own data and conf directories (`zoo.cfg.dynamic.*`), not in `-z`. Those directories must persist across restarts: a node whose ZK data is wiped comes back as a stranger rather than reclaiming its seat.
 
 == Securing the ZooKeeper Connection
 

@@ -71,7 +71,7 @@ public class StartCommand implements Callable<Integer> {
   @CommandLine.Option(
       names = {"-z", "--zk-host"},
       description =
-          "Zookeeper connection string; default is to start an embedded ZooKeeper on PORT+10000")
+          "Zookeeper connection string; default is to start an embedded ZooKeeper on PORT+1000")
   String zkHost;
 
   @CommandLine.Option(

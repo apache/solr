@@ -43,6 +43,7 @@ public interface PermissionNameProvider {
     CORE_READ_PERM("core-admin-read", null),
     CORE_EDIT_PERM("core-admin-edit", null),
     ZK_READ_PERM("zk-read", null),
+    ZK_EDIT_PERM("zk-edit", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),

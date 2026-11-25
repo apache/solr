@@ -21,7 +21,7 @@ setup_file() {
   common_clean_setup
   solr start -e cloud --no-prompt --jvm-opts "-Dcustom.prop=helloworld"
   solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 60000
-  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 60000
+  solr assert --cloud-nodes 3 --solr-url http://localhost:${SOLR_PORT} --timeout 60000
 }
 
 teardown_file() {
@@ -40,14 +40,15 @@ teardown() {
 
 @test "start -e cloud works with --no-prompt" {
   solr assert --started http://localhost:${SOLR_PORT} --cloud http://localhost:${SOLR_PORT} --timeout 10000
-  solr assert --started http://localhost:${SOLR2_PORT} --cloud http://localhost:${SOLR2_PORT} --timeout 10000
+  solr assert --cloud-nodes 3 --solr-url http://localhost:${SOLR_PORT} --timeout 10000
 }
 
 @test "start -e cloud works with --jvm-opts" {
   run curl "http://localhost:${SOLR_PORT}/solr/admin/info/properties"
   assert_output --partial 'helloworld'
 
-  run curl "http://localhost:${SOLR2_PORT}/solr/admin/info/properties"
+  # The example spaces its embedded-ZooKeeper nodes 100 ports apart.
+  run curl "http://localhost:$((SOLR_PORT + 100))/solr/admin/info/properties"
   assert_output --partial 'helloworld'
 }
 

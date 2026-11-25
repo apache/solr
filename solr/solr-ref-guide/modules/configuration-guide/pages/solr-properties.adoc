@@ -132,7 +132,19 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.zookeeper.server.datadir|zkServerDataDir|Defaults to solr.home/zoo_data dir.|Where to store ZooKeeper data when running embedded ZooKeeper.
 
+|solr.zookeeper.server.client.port.offset||1000|Port offset from the Solr port to the embedded ZooKeeper client port. In quorum mode all nodes in the ensemble must use the same offset; the standalone embedded ZooKeeper uses it when its `zoo.cfg` doesn't set `clientPort`.
+
+|solr.zookeeper.server.election.port.offset||1020|Port offset from the Solr port to the embedded ZooKeeper leader election port when running in quorum mode. All nodes in the ensemble must use the same offset.
+
 |solr.zookeeper.server.enabled|zk.run|false|Controls whether embedded ZooKeeper is started. Set by the start script.
+
+|solr.zookeeper.server.join.probe.timeout.ms||1500|How long, in milliseconds, a node with the `zookeeper_quorum` role waits at startup to reach the other members in its connection string, to decide whether there is a running ensemble to join. Raise it on high-latency networks.
+
+|solr.zookeeper.server.join.timeout.ms||15000|How long, in milliseconds, a node with the `zookeeper_quorum` role keeps trying to join a running embedded ZooKeeper ensemble: to connect to it and to have the ensemble accept it as a member.
+
+|solr.zookeeper.server.quorum.port.offset||1010|Port offset from the Solr port to the embedded ZooKeeper quorum peer port when running in quorum mode. All nodes in the ensemble must use the same offset.
+
+|solr.zookeeper.server.quorum.wait.log.interval.ms||30000|How often, in milliseconds, a node with the `zookeeper_quorum` role logs that it is still waiting for a quorum to form.
 
 |===
 

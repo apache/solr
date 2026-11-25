@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import java.lang.Thread.State;
+import java.util.Arrays;
 
 /** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrIgnoredThreadsFilter implements ThreadFilter {
@@ -85,6 +86,26 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
 
     // JVM JFR (Java Flight Recorder) periodic tasks thread
     if (threadName.equals("JFR Periodic Tasks")) {
+      return true;
+    }
+
+    // ZK's QuorumCnxManager spawns WorkerSender/WorkerReceiver threads that may briefly
+    // outlive ZooKeeperServerEmbedded.close() (which is asynchronous). ZkContainer.close()
+    // waits up to 5s for them, but suppress any stragglers here as a safety net.
+    if (threadName.startsWith("WorkerSender") || threadName.startsWith("WorkerReceiver")) {
+      return true;
+    }
+
+    // ZooKeeper's LearnerHandler leaks its Sender thread, parked in take(), when the leader shuts
+    // down: an interrupt drops its "proposal of death" packet. A ZK server that was never closed is
+    // still caught through its other threads.
+    if (threadName.startsWith("Sender-/")
+        && t.getState() == State.WAITING
+        && Arrays.stream(t.getStackTrace())
+            .anyMatch(
+                f ->
+                    "org.apache.zookeeper.server.quorum.LearnerHandler".equals(f.getClassName())
+                        && "sendPackets".equals(f.getMethodName()))) {
       return true;
     }
 

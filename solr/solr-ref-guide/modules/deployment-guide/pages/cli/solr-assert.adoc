@@ -22,15 +22,15 @@
 = bin/solr assert
 :page-toclevels: 2
 
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
 ....
-bin/solr assert [-hv] [--exitcode] [--message=message] [--same-user=directory]
-                [--timeout=ms] [-u=<credentials>] [--root | --not-root]
-                [--started=url | --not-started=url] [--exists=directory |
-                --not-exists=directory] [--cloud=url | --not-cloud=url]
+bin/solr assert [-hv] [--exitcode] [--cloud-nodes=N] [--message=message]
+                [--same-user=directory] [--solr-url=<solrUrl>] [--timeout=ms]
+                [-u=<credentials>] [--root | --not-root] [--started=url |
+                --not-started=url] [--exists=directory | --not-exists=directory]
+                [--cloud=url | --not-cloud=url]
 ....
 
 // end::picocli-generated-man-section-synopsis[]
@@ -47,6 +47,9 @@ Asserts various conditions and exits with an error code if there are failures, e
 
 *--cloud*=_url_::
   Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.
+
+*--cloud-nodes*=_N_::
+  Asserts that at least <N> Solr nodes are live in the SolrCloud cluster reachable via --solr-url. Default timeout is 1000ms.
 
 *--exists*=_directory_::
   Asserts that directory <directory> exists.
@@ -78,6 +81,9 @@ Asserts various conditions and exits with an error code if there are failures, e
 *--same-user*=_directory_::
   Asserts that we run as same user that owns <directory>.
 
+*--solr-url*=_<solrUrl>_::
+  Solr URL to use for --cloud-nodes; defaults to the configured local Solr URL.
+
 *--started*=_url_::
   Asserts that Solr is running on a certain URL. Default timeout is 1000ms.
 
@@ -101,5 +107,9 @@ Asserts various conditions and exits with an error code if there are failures, e
 [%hardbreaks]
   # Assert we are not running as root
   bin/solr assert --not-root
+
+[%hardbreaks]
+  # Assert at least 3 SolrCloud nodes are live before continuing
+  bin/solr assert --cloud-nodes 3 --solr-url http://localhost:8983 --timeout 60000
 
 // end::picocli-generated-man-section-footer[]

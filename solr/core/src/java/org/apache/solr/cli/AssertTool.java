@@ -30,6 +30,8 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -51,7 +53,10 @@ import org.slf4j.LoggerFactory;
       "  bin/solr assert --started http://localhost:8983 --timeout 5000",
       "",
       "  # Assert we are not running as root",
-      "  bin/solr assert --not-root"
+      "  bin/solr assert --not-root",
+      "",
+      "  # Assert at least 3 SolrCloud nodes are live before continuing",
+      "  bin/solr assert --cloud-nodes 3 --solr-url http://localhost:8983 --timeout 60000"
     })
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -205,6 +210,35 @@ public class AssertTool extends ToolBase {
    *     field.
    */
   @Deprecated
+  private static final Option CLOUD_NODES_OPTION =
+      Option.builder()
+          .desc(
+              "Asserts that at least <N> Solr nodes are live in the SolrCloud cluster reachable via"
+                  + " --solr-url. Default timeout is 1000ms.")
+          .longOpt("cloud-nodes")
+          .hasArg()
+          .type(Integer.class)
+          .argName("N")
+          .get();
+
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
+  private static final Option SOLR_URL_OPTION =
+      Option.builder()
+          .longOpt("solr-url")
+          .hasArg()
+          .argName("url")
+          .desc("Solr URL to use for --cloud-nodes; defaults to the configured local Solr URL.")
+          .get();
+
+  /**
+   * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
+   *     field.
+   */
+  @Deprecated
   private static final Option MESSAGE_OPTION =
       Option.builder()
           .desc("Exception message to be used in place of the default error message.")
@@ -266,6 +300,9 @@ public class AssertTool extends ToolBase {
 
     /** Asserts that Solr on the given URL is NOT running in cloud mode. */
     record NotCloudMode(String url) implements Assertion {}
+
+    /** Asserts that at least {@code expectedNodes} nodes are live in the SolrCloud cluster. */
+    record CloudNodes(String url, int expectedNodes) implements Assertion {}
   }
 
   /**
@@ -362,6 +399,20 @@ public class AssertTool extends ToolBase {
   private CloudOptions cloudOptions;
 
   @picocli.CommandLine.Option(
+      names = "--cloud-nodes",
+      paramLabel = "N",
+      description =
+          "Asserts that at least <N> Solr nodes are live in the SolrCloud cluster reachable via"
+              + " --solr-url. Default timeout is 1000ms.")
+  private Integer cloudNodesOpt;
+
+  @picocli.CommandLine.Option(
+      names = "--solr-url",
+      paramLabel = "<solrUrl>",
+      description = "Solr URL to use for --cloud-nodes; defaults to the configured local Solr URL.")
+  private String solrUrlOpt;
+
+  @picocli.CommandLine.Option(
       names = "--message",
       paramLabel = "message",
       description = "Exception message to be used in place of the default error message.")
@@ -402,6 +453,8 @@ public class AssertTool extends ToolBase {
         .addOption(SAME_USER_OPTION)
         .addOptionGroup(DIRECTORY_OPTION)
         .addOptionGroup(CLOUD_OPTION)
+        .addOption(CLOUD_NODES_OPTION)
+        .addOption(SOLR_URL_OPTION)
         .addOption(MESSAGE_OPTION)
         .addOption(TIMEOUT_OPTION)
         .addOption(EXIT_CODE_OPTION)
@@ -480,6 +533,14 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
       assertions.add(new Assertion.NotCloudMode(cli.getOptionValue(IS_NOT_CLOUD_OPTION)));
     }
+    if (cli.hasOption(CLOUD_NODES_OPTION)) {
+      String solrUrl =
+          CLIUtils.getCliOptionOrPropValue(
+              cli, SOLR_URL_OPTION, "solr.url", CLIUtils.getDefaultSolrUrl());
+      assertions.add(
+          new Assertion.CloudNodes(
+              solrUrl, Integer.parseInt(cli.getOptionValue(CLOUD_NODES_OPTION))));
+    }
     return runAssert(
         new AssertParams(
             cli.getOptionValue(MESSAGE_OPTION),
@@ -517,6 +578,8 @@ public class AssertTool extends ToolBase {
                 assertSolrRunningInCloudMode(CLIUtils.normalizeSolrUrl(url), credentials);
             case Assertion.NotCloudMode(String url) ->
                 assertSolrNotRunningInCloudMode(CLIUtils.normalizeSolrUrl(url), credentials);
+            case Assertion.CloudNodes(String url, int expectedNodes) ->
+                assertCloudNodes(CLIUtils.normalizeSolrUrl(url), expectedNodes, credentials);
           };
     }
     return ret;
@@ -607,6 +670,68 @@ public class AssertTool extends ToolBase {
       return exitOrException("Solr is not running in standalone mode on " + url);
     }
     return 0;
+  }
+
+  /**
+   * Polls the cluster's live nodes through the given Solr URL until at least {@code expectedNodes}
+   * are live, or {@link #timeoutMs} elapses.
+   */
+  public int assertCloudNodes(String url, int expectedNodes, String credentials) throws Exception {
+    if (expectedNodes < 1) {
+      throw new IllegalArgumentException("--cloud-nodes must be a positive integer");
+    }
+    long timeoutNanos =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
+    int numLiveNodes = 0;
+    Exception lastFailure = null;
+    do {
+      long requestTimeoutMs =
+          Math.max(1, TimeUnit.NANOSECONDS.toMillis(timeoutNanos - System.nanoTime()));
+      try (SolrClient solrClient =
+          new HttpJettySolrClient.Builder(url)
+              .withOptionalBasicAuthCredentials(credentials)
+              .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+              .withConnectionTimeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
+              .withIdleTimeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
+              .withRequestTimeout(requestTimeoutMs, TimeUnit.MILLISECONDS)
+              .build()) {
+        var response = new ClusterApi.ListClusterNodes().process(solrClient);
+        numLiveNodes = response.nodes != null ? response.nodes.size() : 0;
+        lastFailure = null;
+        if (numLiveNodes >= expectedNodes) {
+          return 0;
+        }
+      } catch (Exception exc) {
+        if (CLIUtils.exceptionIsAuthRelated(exc)) {
+          throw exc;
+        }
+        lastFailure = exc;
+      }
+      long remainingNanos = timeoutNanos - System.nanoTime();
+      if (remainingNanos <= 0) {
+        break;
+      }
+      try {
+        TimeUnit.NANOSECONDS.sleep(Math.min(remainingNanos, TimeUnit.SECONDS.toNanos(2)));
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    } while (System.nanoTime() < timeoutNanos);
+    if (lastFailure != null) {
+      return exitOrException(
+          "Failed to check live nodes via Solr " + url + " due to: " + lastFailure);
+    }
+    return exitOrException(
+        "Only "
+            + numLiveNodes
+            + " of "
+            + expectedNodes
+            + " expected Solr nodes are live in the cluster at "
+            + url
+            + " after "
+            + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+            + " seconds");
   }
 
   public int sameUser(String directory) throws Exception {
@@ -720,6 +845,10 @@ public class AssertTool extends ToolBase {
     }
     if (cloudOptions != null && cloudOptions.notCloudUrl != null) {
       assertions.add(new Assertion.NotCloudMode(cloudOptions.notCloudUrl));
+    }
+    if (cloudNodesOpt != null) {
+      String solrUrl = solrUrlOpt != null ? solrUrlOpt : CLIUtils.getDefaultSolrUrl();
+      assertions.add(new Assertion.CloudNodes(solrUrl, cloudNodesOpt));
     }
 
     try {

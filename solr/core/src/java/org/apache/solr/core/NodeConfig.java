@@ -239,7 +239,11 @@ public class NodeConfig {
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
 
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (StrUtils.isNotNullOrEmpty(zkHost)) {
+    NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
+    boolean zookeeperQuorumNode =
+        NodeRoles.MODE_ON.equals(nodeRoles.getRoleMode(NodeRoles.Role.ZOOKEEPER_QUORUM));
+
+    if (StrUtils.isNotNullOrEmpty(zkHost) && !zookeeperQuorumNode) {
       int startUpZkTimeOutMillis =
           EnvUtils.getPropertyAsInteger("solr.zookeeper.client.timeout", 30_000);
 

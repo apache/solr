@@ -22,7 +22,6 @@
 = bin/solr start
 :page-toclevels: 2
 
-
 // tag::picocli-generated-man-section-synopsis[]
 == Synopsis
 
@@ -101,7 +100,7 @@ Starts Solr
   Don't prompt for input; accept all defaults when running examples
 
 *-z*, *--zk-host*=_<zkHost>_::
-  Zookeeper connection string; default is to start an embedded ZooKeeper on PORT+10000
+  Zookeeper connection string; default is to start an embedded ZooKeeper on PORT+1000
 
 // end::picocli-generated-man-section-options[]
 
