@@ -24,6 +24,8 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +40,13 @@ import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -195,6 +200,66 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     var message = new ZkNodeProps(Map.of("operation", "reload", "name", "collection1"));
     var context = TraceUtils.extractTraceContext(message);
     assertFalse(Span.fromContext(context).getSpanContext().isValid());
+  }
+
+  @Test
+  public void testTraceContextNotPersistedInZk() throws Exception {
+    String traceId = "0af7651916cd43dd8448eb211c80319c";
+    String traceparent = "00-" + traceId + "-b7ad6b7169203331-01";
+    String implicit = "traceZkImplicit";
+    String split = "traceZkSplit";
+    String alias = "traceZkAlias";
+    sendWithTraceparent(
+        traceparent, CollectionAdminRequest.createCollection(split, "config", 1, 1));
+    String replica =
+        cluster
+            .getSolrClient()
+            .getClusterState()
+            .getCollection(split)
+            .getLeader("shard1")
+            .getName();
+    sendWithTraceparent(
+        traceparent,
+        CollectionAdminRequest.createCollectionWithImplicitRouter(implicit, "config", "s1", 1),
+        CollectionAdminRequest.createShard(implicit, "s2"),
+        CollectionAdminRequest.addReplicaToShard(implicit, "s1"),
+        CollectionAdminRequest.addReplicaProperty(
+            split, "shard1", replica, "preferredLeader", "true"),
+        CollectionAdminRequest.balanceReplicaProperty(split, "preferredLeader"),
+        CollectionAdminRequest.splitShard(split).setShardName("shard1"),
+        CollectionAdminRequest.createAlias(alias, split),
+        CollectionAdminRequest.setAliasProperty(alias).addProperty("p", "v"),
+        CollectionAdminRequest.createCategoryRoutedAlias(
+            "traceZkRouted",
+            "cat",
+            20,
+            CollectionAdminRequest.createCollection("_unused_", "config", 1, 1)));
+
+    SolrZkClient zkClient = cluster.getZkClient();
+    List<String> leaks = new ArrayList<>();
+    ZkMaintenanceUtils.traverseZkTree(
+        zkClient,
+        "/",
+        ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE,
+        path -> {
+          try {
+            byte[] data = zkClient.getData(path, null, null);
+            if (data != null && new String(data, StandardCharsets.UTF_8).contains(traceId)) {
+              leaks.add(path);
+            }
+          } catch (KeeperException.NoNodeException e) {
+            // node removed during the scan
+          }
+        });
+    assertEquals(List.of(), leaks);
+  }
+
+  private static void sendWithTraceparent(String traceparent, CollectionAdminRequest<?>... requests)
+      throws Exception {
+    for (var request : requests) {
+      request.addHeader("traceparent", traceparent);
+      assertEquals(0, request.process(cluster.getSolrClient()).getStatus());
+    }
   }
 
   private void verifyCollectionCreation(String collection) throws Exception {
