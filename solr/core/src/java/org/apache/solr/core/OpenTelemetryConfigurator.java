@@ -285,15 +285,18 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
 
   /**
    * Parses the comma separated {@code key=value} form of {@code OTEL_RESOURCE_ATTRIBUTES}, skipping
-   * entries that lack a value.
+   * entries that lack a key or a value, as the SDK does.
    */
   protected static Map<String, String> parseResourceAttributes(String commaSeparated) {
     Map<String, String> parsed = new LinkedHashMap<>();
     if (commaSeparated == null) return parsed;
     for (String entry : commaSeparated.split(",")) {
       int eq = entry.indexOf('=');
-      if (eq > 0) {
-        parsed.put(entry.substring(0, eq).strip(), entry.substring(eq + 1).strip());
+      if (eq < 0) continue;
+      String key = entry.substring(0, eq).strip();
+      String value = entry.substring(eq + 1).strip();
+      if (!key.isEmpty() && !value.isEmpty()) {
+        parsed.put(key, value);
       }
     }
     return parsed;

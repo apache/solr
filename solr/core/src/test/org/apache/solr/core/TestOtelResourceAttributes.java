@@ -104,6 +104,17 @@ public class TestOtelResourceAttributes extends SolrTestCase {
     assertEquals("solr", resource.getAttribute(SERVICE_NAME));
   }
 
+  /** The SDK drops an attribute with an empty value, so it must not displace a default. */
+  @Test
+  public void emptyValuesAreSkipped() {
+    System.setProperty("otel.resource.attributes", "service.instance.id=,service.name= ,=x,foo=");
+    Resource resource = initialize(nodeConfig("solr-host-1", 8983));
+    assertEquals("solr-host-1:8983", resource.getAttribute(SERVICE_INSTANCE_ID));
+    assertEquals("solr", resource.getAttribute(SERVICE_NAME));
+    assertNull(resource.getAttribute(AttributeKey.stringKey("foo")));
+    assertNull(resource.getAttribute(AttributeKey.stringKey("")));
+  }
+
   /** Attributes supplied through {@code <tracerConfig>} survive Solr's defaults. */
   @Test
   public void tracerConfigAttributesAreHonoured() {

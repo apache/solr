@@ -89,6 +89,14 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     assertNull(instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
   }
 
+  /** The SDK drops an empty attribute, so it does not count as a configured service name. */
+  @Test
+  public void testEmptyServiceNameAttributeKeepsDefault() {
+    System.setProperty("otel.resource.attributes", "service.name=,foo=bar");
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals("solr", instance.getCurrentOtelConfig().get("OTEL_SERVICE_NAME"));
+  }
+
   @Test
   public void testServiceNamePropertyOutranksResourceAttribute() {
     System.setProperty("otel.service.name", "configured");
