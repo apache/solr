@@ -522,7 +522,7 @@ function wait_for_solr_ready() {
     grep -q '^FAILED' "$SOLR_STATE_FILE" 2>/dev/null && break
     sleep 0.5
   done
-  echo -e "Solr did not start on port $SOLR_PORT_LISTEN within $SOLR_START_WAIT seconds!"
+  echo -e "Still not seeing Solr running on port $SOLR_PORT_LISTEN after $SOLR_START_WAIT seconds!"
   tail -30 "$SOLR_LOGS_DIR/solr.log"
   return 1
 } # end wait_for_solr_ready function
