@@ -17,6 +17,7 @@
 package org.apache.solr.metrics.otel;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Before;
@@ -82,6 +83,39 @@ public class MetricExporterFactoryTest extends SolrTestCase {
     assertEquals(15000, invoke("resolveInterval"));
     System.setProperty("solr.metrics.otlpExporterInterval", "5000");
     assertEquals(5000, invoke("resolveInterval"));
+  }
+
+  @Test
+  public void testIntervalUnits() throws Exception {
+    for (Map.Entry<String, Integer> e :
+        Map.of("250ms", 250, "30s", 30_000, " 2 m ", 120_000, "1h", 3_600_000, "1d", 86_400_000)
+            .entrySet()) {
+      System.setProperty("otel.metric.export.interval", e.getKey());
+      assertEquals(e.getKey(), e.getValue(), invoke("resolveInterval"));
+    }
+  }
+
+  /** A bad interval must not stop the node from starting. */
+  @Test
+  public void testInvalidIntervalFallsBackToDefault() throws Exception {
+    for (String invalid : new String[] {"abc", "30x", "0", "-5", "s", "99999999999999999999"}) {
+      System.setProperty("otel.metric.export.interval", invalid);
+      assertEquals(invalid, 60000, invoke("resolveInterval"));
+    }
+  }
+
+  /** The SDK reads a blank variable as unset. */
+  @Test
+  public void testBlankOtelValuesAreUnset() throws Exception {
+    System.setProperty("otel.metric.export.interval", "");
+    System.setProperty("otel.exporter.otlp.protocol", " ");
+    System.setProperty("otel.exporter.otlp.endpoint", "");
+    System.setProperty("otel.exporter.otlp.metrics.endpoint", "");
+    System.setProperty("otel.metrics.exporter", "");
+    assertEquals(60000, invoke("resolveInterval"));
+    assertEquals("http", invoke("resolveProtocol"));
+    assertEquals("http://localhost:4318/v1/metrics", httpEndpoint());
+    assertEquals(false, invoke("resolveEnabled"));
   }
 
   @Test

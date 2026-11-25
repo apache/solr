@@ -18,7 +18,9 @@ package org.apache.solr.metrics.otel;
 
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.util.EnvUtils;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration of Solr's OTLP metric exporter. Each setting is resolved from its Solr-specific
@@ -26,6 +28,8 @@ import org.apache.solr.common.util.EnvUtils;
  * otel.*} system property), then from a default.
  */
 public interface MetricExporterFactory {
+
+  int DEFAULT_INTERVAL_MS = 60000;
 
   Boolean OTLP_EXPORTER_ENABLED = resolveEnabled();
 
@@ -64,9 +68,40 @@ public interface MetricExporterFactory {
 
   private static int resolveInterval() {
     String solrInterval = EnvUtils.getProperty("solr.metrics.otlpExporterInterval");
-    if (solrInterval != null) return Integer.parseInt(solrInterval);
+    if (solrInterval != null) {
+      return parseInterval("solr.metrics.otlpExporterInterval", solrInterval);
+    }
     String otelInterval = otelConfig("OTEL_METRIC_EXPORT_INTERVAL");
-    return otelInterval != null ? Integer.parseInt(otelInterval) : 60000;
+    return otelInterval != null
+        ? parseInterval("OTEL_METRIC_EXPORT_INTERVAL", otelInterval)
+        : DEFAULT_INTERVAL_MS;
+  }
+
+  /** Milliseconds, or as the OTEL SDK also accepts, a number with a ms, s, m, h or d suffix. */
+  private static int parseInterval(String name, String value) {
+    String trimmed = value.strip();
+    int digits = 0;
+    while (digits < trimmed.length() && Character.isDigit(trimmed.charAt(digits))) digits++;
+    TimeUnit unit =
+        switch (trimmed.substring(digits).strip()) {
+          case "", "ms" -> TimeUnit.MILLISECONDS;
+          case "s" -> TimeUnit.SECONDS;
+          case "m" -> TimeUnit.MINUTES;
+          case "h" -> TimeUnit.HOURS;
+          case "d" -> TimeUnit.DAYS;
+          default -> null;
+        };
+    try {
+      if (unit != null) {
+        int millis = Math.toIntExact(unit.toMillis(Long.parseLong(trimmed.substring(0, digits))));
+        if (millis > 0) return millis;
+      }
+    } catch (NumberFormatException | ArithmeticException e) {
+      // falls through to the default
+    }
+    LoggerFactory.getLogger(MetricExporterFactory.class)
+        .warn("Ignoring invalid {}={}, using {} ms", name, value, DEFAULT_INTERVAL_MS);
+    return DEFAULT_INTERVAL_MS;
   }
 
   /**
@@ -86,9 +121,13 @@ public interface MetricExporterFactory {
     return http ? "http://localhost:4318/v1/metrics" : "http://localhost:4317";
   }
 
-  /** Standard OTEL configuration, as a system property if present, else an environment variable. */
+  /**
+   * Standard OTEL configuration, as a system property if present, else an environment variable. A
+   * blank value counts as unset, as it does for the SDK.
+   */
   private static String otelConfig(String envName) {
-    String fromProperty = System.getProperty(envName.toLowerCase(Locale.ROOT).replace('_', '.'));
-    return fromProperty != null ? fromProperty : System.getenv(envName);
+    String value = System.getProperty(envName.toLowerCase(Locale.ROOT).replace('_', '.'));
+    if (value == null) value = System.getenv(envName);
+    return value == null || value.isBlank() ? null : value;
   }
 }
