@@ -12,7 +12,7 @@ We run a number of jobs on Jenkins, each validating an overlapping set of concer
 * `Solr-Artifacts-*` - daily jobs that run `./gradlew assemble` to ensure that build artifacts (except docker images) can be created successfully
 * `Solr-Lint-*` - daily jobs that run static analysis (i.e. `precommit` and `check -x test`) on a branch
 * `Solr-Test-*` - "hourly" jobs that run all (non-integration) tests (i.e. `./gradlew test`)
-* `Solr-TestIntegration-*` - daily jobs that run project integration tests (i.e. `./gradlew integrationTests`)
+* `Solr-TestIntegration-*` - daily jobs that run project integration tests (i.e. `./gradlew integrationTests`, an alias for the CATS suites' `catsTests`)
 * `Solr-Docker-Nightly-*` - daily jobs that `./gradlew testDocker dockerPush` to validate docker image packaging.  Snapshot images are pushed to hub.docker.com
 * `Solr-reference-guide-*` - daily jobs that build the Solr reference guide via `./gradlew checkSite` and push the resulting artifact to the staging/preview site `nightlies.apache.org`
 * `Solr-Smoketest-*` - daily jobs that produce a snapshot release (via the `assembleRelease` task) and run the release smoketester

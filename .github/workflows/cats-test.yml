@@ -1,5 +1,5 @@
 # CATS — Cross-platform Automated Testing System: the JUnit-based harness that drives bin/solr and
-# bin\solr.cmd. Named after BATS, which it replaces.
+# bin\solr.cmd. Named after BATS, which it replaced.
 
 name: Solr CATS Tests
 

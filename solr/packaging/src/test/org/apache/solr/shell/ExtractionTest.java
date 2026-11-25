@@ -95,7 +95,7 @@ public class ExtractionTest extends SolrCatsTestCase {
     // locally instead: the subject is the post tool's web mode, not the website, and depending on
     // the network and on whatever the site says today buys nothing. The server is stopped for us
     // when the test ends.
-    copyResource("website/index.html", "website/index.html");
+    copyResource("website/index.html");
     int webPort = serveHttp("website");
 
     // Change to --recursive 1 to crawl multiple pages, but may be too slow.

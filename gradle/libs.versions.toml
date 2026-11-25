@@ -50,14 +50,6 @@ asciidoctor-mathjax = "0.0.9"
 asciidoctor-tabs = "1.0.0-beta.6"
 azagniotov-langdetect = "12.5.2"
 barfuin-jacocolog = "4.0.2"
-# @keep bats-assert version used in packaging
-bats-assert = "2.0.0"
-# @keep bats-core version used in packaging
-bats-core = "1.8.2"
-# @keep bats-file version used in packaging
-bats-file = "0.3.0"
-# @keep bats-support version used in packaging
-bats-support = "0.2.0"
 bc-jose4j = "0.9.6"
 benmanes-caffeine = "3.2.4"
 benmanes-versions = "0.61.0"
