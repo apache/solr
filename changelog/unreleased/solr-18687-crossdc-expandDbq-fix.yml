@@ -1,5 +1,6 @@
 title: >
-  CrossDC fix broken expandDbq=expand.
+  CrossDC fix broken expandDbq=expand by using regular CloudSolrClient for DBQ expansion.
+  Mirror a page of id-s in one request instead of individual id-s.
 type: fixed
 authors:
   - name: Andrzej Białecki
