@@ -58,12 +58,8 @@ public class ModulesTest extends SolrCatsTestCase {
 
     env("SOLR_INCLUDE", solrIncludeFile.toString());
     run("solr start");
-    copyResource(
-        "analysis_extras_config/conf/solrconfig.xml", "analysis_extras_config/conf/solrconfig.xml");
-    Path conf =
-        copyResource(
-                "analysis_extras_config/conf/schema.xml", "analysis_extras_config/conf/schema.xml")
-            .getParent();
+    copyResource("analysis_extras_config/conf/solrconfig.xml");
+    Path conf = copyResource("analysis_extras_config/conf/schema.xml").getParent();
     run("solr create -c COLL_NAME -d \"" + conf + "\"")
         .assertContains("Created collection 'COLL_NAME'");
 
