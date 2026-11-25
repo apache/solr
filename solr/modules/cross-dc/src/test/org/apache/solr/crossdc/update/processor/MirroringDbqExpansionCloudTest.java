@@ -37,6 +37,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -193,12 +194,13 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
   }
 
   /**
-   * Test factory that builds a real {@link MirroringUpdateProcessor} with the DBQ expansion mode
-   * taken from {@link CrossDcConf#EXPAND_DBQ}, but records mirrored requests in memory instead of
-   * sending them to Kafka.
+   * Test factory that builds a real {@link MirroringUpdateProcessor} the same way as {@link
+   * MirroringUpdateRequestProcessorFactory}, with the DBQ expansion mode taken from {@link
+   * CrossDcConf#EXPAND_DBQ}, but records mirrored requests in memory instead of sending them to
+   * Kafka.
    */
   public static class RecordingMirroringProcessorFactory extends UpdateRequestProcessorFactory
-      implements SolrCoreAware {
+      implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
 
     /** Requests passed to the mirroring handler. */
     public static final List<UpdateRequest> MIRRORED = new CopyOnWriteArrayList<>();
@@ -221,13 +223,13 @@ public class MirroringDbqExpansionCloudTest extends SolrCloudTestCase {
     @Override
     public UpdateRequestProcessor getInstance(
         SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(
+          req, MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR);
       boolean doMirroring =
           req.getParams()
               .getBool(MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR, true);
-      ModifiableSolrParams mirrorParams = new ModifiableSolrParams();
-      mirrorParams.set("collection", req.getCore().getCoreDescriptor().getCollectionName());
-      mirrorParams.set(
-          MirroringUpdateRequestProcessorFactory.SERVER_SHOULD_MIRROR, Boolean.FALSE.toString());
+      ModifiableSolrParams mirrorParams =
+          doMirroring ? MirroringUpdateRequestProcessorFactory.createMirroredParams(req) : null;
       return new MirroringUpdateProcessor(
           next,
           doMirroring,

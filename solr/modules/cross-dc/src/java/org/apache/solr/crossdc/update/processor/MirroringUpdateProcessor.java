@@ -307,10 +307,9 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
   }
 
   /**
-   * Deletes the documents found by an expanded DBQ and mirrors the deletes as one delete-by-id
-   * request. The expanded deletes are sent with mirroring disabled and instead their collected id-s
-   * are mirrored from here, because the processor of a delete-by-id request mirrors only when the
-   * request reaches the shard leader directly, which a cloud client can't guarantee.
+   * Deletes one page of documents found by an expanded DBQ and mirrors the deletes as one
+   * delete-by-id request. The local deletes are sent with mirroring disabled, so that each page
+   * produces a single mirrored request instead of one per document from the shard leaders.
    */
   private void processDBQResults(
       SolrClient client, String collection, String uniqueField, QueryResponse rsp)
