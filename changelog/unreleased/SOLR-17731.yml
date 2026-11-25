@@ -1,0 +1,14 @@
+title: >-
+  Fix v2 alias detail and collection snapshot creation requests returning HTTP 405.
+  Alias listings now return the same per-alias structure as the detail view,
+  including a collections array and properties; the Admin UI supports this format.
+  Align snapshot responses and error handling with v2 conventions, and migrate
+  the snapshot CLI to these APIs. The CLI explains when a snapshot is already absent
+  and returns a nonzero exit status for other deletion errors.
+  Fix asynchronous collection snapshot creation while preserving v1 response formats.
+type: fixed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17731
+    url: https://issues.apache.org/jira/browse/SOLR-17731

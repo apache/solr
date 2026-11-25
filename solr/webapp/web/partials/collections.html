@@ -189,7 +189,7 @@ limitations under the License.
               <dl class="clearfix">
                 <dt><span>Collections:</span></dt>
                 <dd>
-                  <span ng-repeat="coll in (collection.collections | splitByComma)">
+                  <span ng-repeat="coll in collection.collections">
                     <a href="#~collections/{{coll}}">{{coll}}</a>{{$last ? '' : ', '}}
                   </span>
                 </dd>

@@ -41,6 +41,30 @@ public class CreateCollectionTest extends SolrCatsTestCase {
     run("solr create -c coll_default")
         .assertContains("Created collection 'coll_default'")
         .assertContains("assuming solr url is http://localhost:${SOLR_PORT}");
+    http("/solr/coll_default/schema/fieldtypes")
+        .assertStatus(200)
+        .assertContains("\"name\":\"text_general\"")
+        .assertNotContains("\"name\":\"text_fr\"");
+  }
+
+  @Test
+  public void acceptDOptionWithMultilingualConfig() {
+    assertTrue(configExists("_multilingual"));
+    run("solr create -c coll_multilingual -d _multilingual"
+            + " --solr-url http://localhost:${SOLR_PORT}")
+        .assertContains("Created collection 'coll_multilingual'");
+    http("/solr/coll_multilingual/schema/fieldtypes")
+        .assertStatus(200)
+        .assertContains("\"name\":\"text_fr\"")
+        .assertContains("\"name\":\"text_en\"");
+    httpPost(
+            "/solr/coll_multilingual/update?commit=true",
+            "application/json",
+            "[{\"id\":\"fr-1\",\"title_txt_fr\":\"Les maisons\"}]")
+        .assertStatus(200);
+    http("/solr/coll_multilingual/select?q=title_txt_fr:maison")
+        .assertStatus(200)
+        .assertContains("\"numFound\":1");
   }
 
   @Test

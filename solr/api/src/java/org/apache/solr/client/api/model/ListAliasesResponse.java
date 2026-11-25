@@ -19,10 +19,8 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
+/** Response listing details for all collection aliases. */
 public class ListAliasesResponse extends SolrJerseyResponse {
   @JsonProperty("aliases")
-  public Map<String, String> aliases;
-
-  @JsonProperty("properties")
-  public Map<String, Map<String, String>> properties;
+  public Map<String, GetAliasByNameResponse> aliases;
 }

@@ -21,11 +21,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
 /** The Response for the v2 "list collection snapshots" API */
-public class ListCollectionSnapshotsResponse extends AsyncJerseyResponse {
+public class ListCollectionSnapshotsResponse extends SolrJerseyResponse {
 
-  // TODO In practice, map values are of the CollectionSnapshotMetaData type, but that cannot be
-  // used here until the class is made into more of a POJO and can join the 'api' module here
   @Schema(description = "The snapshots for the collection.")
   @JsonProperty("snapshots")
-  public Map<String, Object> snapshots;
+  public Map<String, CollectionSnapshotMetadata> snapshots;
 }

@@ -282,7 +282,9 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   private void doClusterDelete(String filePath) {
     FileStore.FileType type = fileStore.getType(filePath, true);
-    if (type == FileStore.FileType.NOFILE) {
+    // A registered file may have no copy on any live node; deleting it must still clear the
+    // registration.
+    if (type == FileStore.FileType.NOFILE && !isRegisteredInZk(filePath)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + filePath);
     }
@@ -302,6 +304,20 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }
+    }
+  }
+
+  private boolean isRegisteredInZk(String filePath) {
+    try {
+      return coreContainer
+          .getZkController()
+          .getZkClient()
+          .exists(DistribFileStore.ZK_PACKAGESTORE + filePath);
+    } catch (KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
