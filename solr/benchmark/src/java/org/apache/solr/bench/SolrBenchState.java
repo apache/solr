@@ -266,6 +266,11 @@ public class SolrBenchState {
 
   /** Starts the benchmark nodes with an explicit search worker count. */
   public void startSolr(int nodeCount, int searchThreads) {
+    startSolr(nodeCount, searchThreads, "src/resources/configs/cloud-minimal/conf");
+  }
+
+  /** Starts benchmark nodes with an explicit search worker count and config directory. */
+  public void startSolr(int nodeCount, int searchThreads, String configDir) {
     if (searchThreads < 0) {
       throw new IllegalArgumentException("searchThreads must be non-negative");
     }
@@ -294,7 +299,7 @@ public class SolrBenchState {
                           + searchThreads
                           + "</int>"))
               .formatZkServer(false)
-              .addConfig("conf", getFile("src/resources/configs/cloud-minimal/conf"))
+              .addConfig("conf", getFile(configDir))
               .configure();
     } catch (Exception e) {
       if (Files.exists(miniClusterBaseDir)) {
