@@ -232,7 +232,7 @@ public class CollApiCmds {
 
       try (var scope = localContext.makeCurrent()) {
         assert scope != null; // prevent javac warning about scope being unused
-        command.call(adminCmdContext, message, results);
+        command.call(adminCmdContext, TraceUtils.removeTraceContext(message), results);
       } finally {
         if (localSpan != null) {
           localSpan.end();

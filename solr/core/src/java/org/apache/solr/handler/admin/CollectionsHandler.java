@@ -362,8 +362,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (StrUtils.isNotBlank(adminCmdContext.getCallingLockId())) {
         additionalProps.put(CALLING_LOCK_ID_HEADER, adminCmdContext.getCallingLockId());
       }
-      // ModifyCollectionCmd waits for every message key to show up in the collection state
-      if (adminCmdContext.getAction() != MODIFYCOLLECTION) {
+      // Older Overseers pass these keys on: MODIFYCOLLECTION waits for each in the collection
+      // state, CREATEALIAS stores them as alias properties
+      if (adminCmdContext.getAction() != MODIFYCOLLECTION
+          && adminCmdContext.getAction() != CREATEALIAS) {
         TraceUtils.injectTraceContext(additionalProps);
       }
       m = m.plus(additionalProps);

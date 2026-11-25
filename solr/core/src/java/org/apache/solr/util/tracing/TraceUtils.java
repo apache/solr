@@ -182,6 +182,14 @@ public class TraceUtils {
     return getTextMapPropagator().extract(Context.current(), message, MESSAGE_GETTER);
   }
 
+  /** Returns the message without the keys added by {@link #injectTraceContext(Map)}. */
+  public static ZkNodeProps removeTraceContext(ZkNodeProps message) {
+    Map<String, Object> props = message.shallowCopy();
+    return props.keySet().removeIf(k -> k.startsWith(MESSAGE_TRACE_PREFIX))
+        ? new ZkNodeProps(props)
+        : message;
+  }
+
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {
     Tracer tracer = getTracer(request);
     SpanBuilder spanBuilder =
