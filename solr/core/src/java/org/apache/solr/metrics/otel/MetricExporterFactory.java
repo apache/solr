@@ -58,8 +58,8 @@ public interface MetricExporterFactory {
     String otelProtocol = otelConfig("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
     if (otelProtocol == null) otelProtocol = otelConfig("OTEL_EXPORTER_OTLP_PROTOCOL");
     if (otelProtocol == null) return "http";
-    // The OTEL spec spells the HTTP transports http/protobuf and http/json
-    return otelProtocol.startsWith("http") ? "http" : otelProtocol;
+    // Solr's http is protobuf; any other encoding is left for the exporter factory to reject
+    return otelProtocol.equals("http/protobuf") ? "http" : otelProtocol;
   }
 
   private static int resolveInterval() {

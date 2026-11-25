@@ -66,8 +66,11 @@ public class MetricExporterFactoryTest extends SolrTestCase {
     assertEquals("http", invoke("resolveProtocol"));
     System.setProperty("otel.exporter.otlp.protocol", "grpc");
     assertEquals("grpc", invoke("resolveProtocol"));
-    System.setProperty("otel.exporter.otlp.metrics.protocol", "http/json");
+    System.setProperty("otel.exporter.otlp.metrics.protocol", "http/protobuf");
     assertEquals("http", invoke("resolveProtocol"));
+    // Solr sends protobuf only, so this must reach the exporter factory, which rejects it
+    System.setProperty("otel.exporter.otlp.metrics.protocol", "http/json");
+    assertEquals("http/json", invoke("resolveProtocol"));
     System.setProperty("solr.metrics.otlpExporterProtocol", "grpc");
     assertEquals("grpc", invoke("resolveProtocol"));
   }

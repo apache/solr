@@ -400,6 +400,8 @@ Where both are set, the Solr property wins.
 | `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, then `OTEL_EXPORTER_OTLP_ENDPOINT`
 |===
 
+Solr pushes OTLP as protobuf, so of the standard protocol values only `grpc` and `http/protobuf` are accepted.
+
 Which node the metrics came from is configured the same way; see xref:opentelemetry.adoc#resource-attributes[Resource Attributes].
 
 === OpenTelemetry Collector setup
