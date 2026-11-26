@@ -82,7 +82,7 @@ public abstract class ConfigSetService {
     configSetService.zkController = coreContainer.getZkController();
     // bootstrap conf in SolrCloud mode
     if (coreContainer.getZkController() != null) {
-      configSetService.bootstrapConfigSet(coreContainer);
+      configSetService.bootstrapDefaultConfigSets();
     }
     return configSetService;
   }
@@ -115,16 +115,10 @@ public abstract class ConfigSetService {
   }
 
   /**
-   * Called once at startup in SolrCloud mode. Does nothing by default; an implementation may call
-   * {@link #bootstrapDefaultConfigSets()}.
-   */
-  protected void bootstrapConfigSet(CoreContainer coreContainer) {}
-
-  /**
    * Uploads the {@code _default} ConfigSet if absent, and the one at {@code
    * solr.configset.bootstrap.confdir} if that system property is set.
    */
-  protected final void bootstrapDefaultConfigSets() {
+  private void bootstrapDefaultConfigSets() {
     try {
       // _default conf
       bootstrapDefaultConf();

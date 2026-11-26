@@ -189,7 +189,7 @@ You can use the xref:cli/solr-zk-upconfig.adoc[`bin/solr zk` command] or the xre
 If you build your own image with your own configsets, you can instead ship them in the image and have SolrCloud load them from the file system rather than ZooKeeper.
 In `solr.xml`, set `configSetService` to `org.apache.solr.core.FileSystemConfigSetService`, and set `configSetBaseDir` to a directory in the Solr installation (not under `/var/solr`, which is a writable volume) that contains the configsets.
 Since the installation is read-only, uploads via the `bin/solr zk` command or Configsets API don't apply; create collections by referencing the configset name.
-See xref:configuration-guide:config-sets.adoc#configsets-in-solrcloud-clusters[Configsets in SolrCloud Clusters].
+See xref:configuration-guide:config-sets.adoc#configsets-on-the-file-system[Configsets on the File System].
 
 === Creating Cores
 

@@ -93,7 +93,18 @@ If used, this attribute should be set to the FQN (Fully qualified name) of a cla
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
 The default is `org.apache.solr.cloud.ZkConfigSetService` in SolrCloud or `org.apache.solr.core.FileSystemConfigSetService` otherwise.
-The latter also works in SolrCloud; see xref:config-sets.adoc#configsets-in-solrcloud-clusters[Configsets in SolrCloud Clusters].
+The latter also works in SolrCloud; see xref:config-sets.adoc#configsets-on-the-file-system[Configsets on the File System].
+
+[[configsetbasedir]]
+`configSetBaseDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `$SOLR_HOME/configsets`
+|===
++
+The directory under which configsets can be found when using `FileSystemConfigSetService`.
+It isn't used by the SolrCloud default, `ZkConfigSetService`.
 
 `adminHandler`::
 +
@@ -313,15 +324,6 @@ When this attribute is set to `true`, Solr will not return any stack traces in t
 This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object.
 Sharing the IndexSchema Object makes loading the core faster.
 If you use this feature, make sure that no core-specific property is used in your Schema file.
-
-`configSetBaseDir`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `$SOLR_HOME/configsets`
-|===
-+
-The directory under which configsets for Solr cores can be found.
 
 [[global-maxbooleanclauses]]
 `maxBooleanClauses`::

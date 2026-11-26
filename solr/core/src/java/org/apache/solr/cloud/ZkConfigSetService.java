@@ -71,11 +71,6 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected void bootstrapConfigSet(CoreContainer coreContainer) {
-    bootstrapDefaultConfigSets();
-  }
-
-  @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
     // cd.getConfigSet() is resolved by ConfigSetService.loadConfigSet
     return new ZkSolrResourceLoader(

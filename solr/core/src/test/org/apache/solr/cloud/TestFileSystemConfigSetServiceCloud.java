@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.nio.file.Path;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -32,13 +31,12 @@ import org.junit.Test;
 /** {@link FileSystemConfigSetService} configured in solr.xml, used in SolrCloud. */
 public class TestFileSystemConfigSetServiceCloud extends SolrCloudTestCase {
 
-  private static final String CONFIG_NAME = "fsconf";
+  private static final String CONFIG_NAME = "cloud-minimal";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    Path configSetBaseDir = createTempDir("configsets").toAbsolutePath().normalize();
-    PathUtils.copyDirectory(
-        configset("cloud-minimal").getParent(), configSetBaseDir.resolve(CONFIG_NAME));
+    // read-only use of the test configsets, which include _default so it isn't bootstrapped
+    Path configSetBaseDir = configset(CONFIG_NAME).getParent().getParent();
     System.setProperty("configSetBaseDir", configSetBaseDir.toString());
 
     String solrXml =
