@@ -142,65 +142,72 @@ public class WithDescendantsQuery extends Query {
 
   /** Returns null if nothing matches. */
   private FixedBitSet matchWithDescendants(
-      LeafReaderContext context, Terms terms, DocIdSetIterator innerIter) throws IOException {
-    final int first = innerIter.nextDoc();
-    if (first == DocIdSetIterator.NO_MORE_DOCS) {
+      LeafReaderContext context, Terms pathTerms, DocIdSetIterator dbqDisi) throws IOException {
+    final int firstDoc = dbqDisi.nextDoc();
+    if (firstDoc == DocIdSetIterator.NO_MORE_DOCS) {
       return null;
     }
     final int maxDoc = context.reader().maxDoc();
-    final FixedBitSet matched = new FixedBitSet(maxDoc);
-    innerIter.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, matched, 0);
-    final BitSet roots = rootsFilter.getBitSet(context);
-    final FixedBitSet result = matched.clone();
+    final FixedBitSet matchedSet = new FixedBitSet(maxDoc);
+    dbqDisi.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, matchedSet, 0);
+    final BitSet rootSet = rootsFilter.getBitSet(context);
+    final FixedBitSet resultSet = matchedSet.clone();
 
-    if (roots != null && isSubset(matched, roots)) {
+    if (rootSet != null && isSubset(matchedSet, rootSet)) {
       // a root's descendants are all docs after the previous root
-      final DocIdSetIterator iter = new BitSetIterator(matched, 0);
-      for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
-        final int start = doc == 0 ? 0 : roots.prevSetBit(doc - 1) + 1;
-        if (start < doc) {
-          result.set(start, doc);
+      final DocIdSetIterator matchedDisi = new BitSetIterator(matchedSet, 0);
+      for (int doc = matchedDisi.nextDoc();
+          doc != DocIdSetIterator.NO_MORE_DOCS;
+          doc = matchedDisi.nextDoc()) {
+        final int prevRootDoc = doc == 0 ? 0 : rootSet.prevSetBit(doc - 1) + 1;
+        if (prevRootDoc < doc) {
+          resultSet.set(prevRootDoc, doc);
         }
       }
-      return result;
+      return resultSet;
     }
 
     // Group the (few) unique nest paths by depth
-    final TreeMap<Integer, List<BytesRef>> termsByDepth = new TreeMap<>();
-    final TermsEnum termsEnum = terms.iterator();
+    final TreeMap<Integer, List<BytesRef>> pathsByDepth = new TreeMap<>();
+    final TermsEnum termsEnum = pathTerms.iterator();
     for (BytesRef term = termsEnum.next(); term != null; term = termsEnum.next()) {
-      termsByDepth
+      pathsByDepth
           .computeIfAbsent(depthOf(term), k -> new ArrayList<>())
           .add(BytesRef.deepCopyOf(term));
     }
 
-    // Process from the deepest level up; "deeper" accumulates docs below the current depth.
-    final FixedBitSet deeper = new FixedBitSet(maxDoc);
-    final FixedBitSet atDepth = new FixedBitSet(maxDoc);
+    // Process from the deepest level up; "deeperSet" accumulates docs below the current depth.
+    final FixedBitSet deeperSet = new FixedBitSet(maxDoc);
+    final FixedBitSet atDepthSet = new FixedBitSet(maxDoc);
     PostingsEnum postings = null;
-    for (Map.Entry<Integer, List<BytesRef>> entry : termsByDepth.descendingMap().entrySet()) {
-      atDepth.clear();
+    for (Map.Entry<Integer, List<BytesRef>> entry : pathsByDepth.descendingMap().entrySet()) {
+      atDepthSet.clear();
       for (BytesRef term : entry.getValue()) {
         if (termsEnum.seekExact(term)) {
           postings = termsEnum.postings(postings, PostingsEnum.NONE);
-          atDepth.or(postings);
+          atDepthSet.or(postings);
         }
       }
-      // matched docs at this depth
-      final DocIdSetIterator iter = new FixedBitSetIntersectionIterator(atDepth, matched);
-      for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
-        addDescendants(doc, deeper, result);
+      // matchedSet docs at this depth
+      final DocIdSetIterator atDepthDisi =
+          new FixedBitSetIntersectionIterator(atDepthSet, matchedSet);
+      for (int doc = atDepthDisi.nextDoc();
+          doc != DocIdSetIterator.NO_MORE_DOCS;
+          doc = atDepthDisi.nextDoc()) {
+        addDescendants(doc, deeperSet, resultSet);
       }
-      deeper.or(atDepth);
+      deeperSet.or(atDepthSet);
     }
 
-    // remaining matched docs are roots (no nest path); "deeper" now holds all child docs
-    matched.andNot(deeper);
-    final DocIdSetIterator iter = new BitSetIterator(matched, 0);
-    for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
-      addDescendants(doc, deeper, result);
+    // remaining matchedSet docs are rootSet (no nest path); "deeperSet" now holds all child docs
+    matchedSet.andNot(deeperSet);
+    final DocIdSetIterator matchedDisi = new BitSetIterator(matchedSet, 0);
+    for (int doc = matchedDisi.nextDoc();
+        doc != DocIdSetIterator.NO_MORE_DOCS;
+        doc = matchedDisi.nextDoc()) {
+      addDescendants(doc, deeperSet, resultSet);
     }
-    return result;
+    return resultSet;
   }
 
   /** Is {@code a}, which must not be empty, a subset of {@code b}? */
