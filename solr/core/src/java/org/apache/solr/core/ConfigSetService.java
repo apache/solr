@@ -135,6 +135,10 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapDefaultConf() throws IOException {
+    String confDir = EnvUtils.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR);
+    if (confDir != null && confDir.isBlank()) {
+      return; // explicitly disabled
+    }
     if (this.checkConfigExists("_default") == false) {
       Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {

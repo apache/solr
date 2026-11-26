@@ -50,7 +50,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset. Use with "solr.configset.bootstrap.confdir".
 
-|solr.configset.default.confdir|solr.default.confdir|"_default"|Defines the default configuration directory for configsets.
+|solr.configset.default.confdir|solr.default.confdir|`$SOLR_INSTALL_DIR/server/solr/configsets/_default/conf`|Defines the directory of the `_default` configset, which SolrCloud uploads on startup if absent. Set to blank to disable that upload.
 
 |solr.configset.forbidden.file.types|solrConfigSetForbiddenFileTypes|jar,jnilib,dll,so,dylib,exe|Specifies file types that are forbidden in configsets.
 
