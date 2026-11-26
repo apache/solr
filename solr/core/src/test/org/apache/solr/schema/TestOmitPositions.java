@@ -68,4 +68,38 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
         req("fl", "id", "defType", "edismax", "qf", "nopositionstext", "q", "\"test test\""),
         SolrException.ErrorCode.BAD_REQUEST);
   }
+
+  /**
+   * pf/pf2/pf3 are implicit, best-effort boosts the user never typed. A phrase field that cannot
+   * support phrases must not fail the whole request; the boost should simply not apply to it.
+   */
+  public void testImplicitPhraseBoostIsSkipped() {
+    for (String pf : new String[] {"pf", "pf2", "pf3"}) {
+      assertQ(
+          pf + " on omitPositions field must not fail the request",
+          req(
+              "fl",
+              "id",
+              "defType",
+              "edismax",
+              "qf",
+              "nopositionstext",
+              pf,
+              "nopositionstext",
+              "q",
+              "this is a test"),
+          "//*[@numFound='2']");
+    }
+    // a valid phrase field alongside the bad one should still be applied
+    assertQ(
+        "pf mixing positional and non-positional fields",
+        req(
+            "fl", "id",
+            "defType", "edismax",
+            "qf", "text nopositionstext",
+            "pf", "text nopositionstext",
+            "q", "just another"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=1]");
+  }
 }
