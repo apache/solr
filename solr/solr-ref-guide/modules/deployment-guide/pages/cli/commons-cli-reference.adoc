@@ -604,7 +604,7 @@ Name of the collection or core to create.
 |Optional |Default: `_default`
 |===
 +
-The configuration directory.
+The configset: either the name of one under `server/solr/configsets` or a path to a configset directory.
 +
 See the section xref:solr-control-script-reference.adoc#configsets-and-solrcloud[Configsets and SolrCloud] for more details about this option when running in SolrCloud mode.
 +
