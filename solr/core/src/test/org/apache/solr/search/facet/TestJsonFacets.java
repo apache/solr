@@ -2595,6 +2595,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "{f1:{terms:{${terms} field:${cat_s}, numBuckets:true, prefix:B}}}"),
         "facets=={ 'count':6, " + "'f1':{ numBuckets:1, buckets:[{val:B, count:3}]} } ");
 
+    // prefix should lower numBuckets on a multi-valued field, where the docs with a matching value
+    // also have other values
+    client.testJQ(
+        params(
+            p,
+            "q",
+            "*:*",
+            "rows",
+            "0",
+            "facet",
+            "true",
+            "json.facet",
+            "{f1:{terms:{${terms} field:${multi_ss}, numBuckets:true, prefix:a}}}"),
+        "facets=={ 'count':6, " + "'f1':{ numBuckets:1, buckets:[{val:a, count:3}]} } ");
+
     // mincount should not lower numBuckets (since SOLR-10552)
     client.testJQ(
         params(
