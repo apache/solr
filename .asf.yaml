@@ -52,6 +52,17 @@ github:
   protected_tags:
     - "releases/*"
 
+  # Changes to main must go through a pull request (no approval required).
+  # See https://github.com/apache/infrastructure-asfyaml#rulesets
+  rulesets:
+    - name: "Require PR for main"
+      type: branch
+      branches:
+        includes:
+          - "main"
+      required_pull_request_reviews:
+        required_approving_review_count: 0
+
   autolink_jira:
     - SOLR
 
