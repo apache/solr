@@ -150,7 +150,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
     if (0 <= runIndex && 0 == numDistrib) {
       // by default, add distrib processor immediately before run
       DistributedUpdateProcessorFactory distrib = new DistributedUpdateProcessorFactory();
-      distrib.init(new SimpleOrderedMap<>());
+      distrib.init(SimpleOrderedMap.of());
       list.add(runIndex, distrib);
 
       log.debug("inserting DistributedUpdateProcessorFactory into {}", infomsg);

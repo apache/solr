@@ -137,13 +137,13 @@ public class SchemaDesigner extends JerseyResource
 
   public static SchemaSuggester newSchemaSuggester() {
     DefaultSchemaSuggester suggester = new DefaultSchemaSuggester();
-    suggester.init(new SimpleOrderedMap<>());
+    suggester.init(SimpleOrderedMap.of());
     return suggester;
   }
 
   public static SampleDocumentsLoader newSampleDocumentsLoader() {
     SampleDocumentsLoader loader = new DefaultSampleDocumentsLoader();
-    loader.init(new SimpleOrderedMap<>());
+    loader.init(SimpleOrderedMap.of());
     return loader;
   }
 

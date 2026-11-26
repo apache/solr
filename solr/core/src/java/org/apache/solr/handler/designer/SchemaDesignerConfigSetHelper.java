@@ -586,7 +586,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   ManagedIndexSchema loadLatestSchema(SolrConfig solrConfig) {
     ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
-    factory.init(new SimpleOrderedMap<>());
+    factory.init(SimpleOrderedMap.of());
     return factory.create(DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME, solrConfig, null);
   }
 

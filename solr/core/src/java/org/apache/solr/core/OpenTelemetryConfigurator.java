@@ -122,7 +122,7 @@ public abstract class OpenTelemetryConfigurator implements NamedListInitializedP
     try {
       OpenTelemetryConfigurator configurator =
           loader.newInstance(DEFAULT_CLASS_NAME, OpenTelemetryConfigurator.class);
-      configurator.init(new SimpleOrderedMap<>());
+      configurator.init(SimpleOrderedMap.of());
       log.info("OpenTelemetry loaded via auto configuration.");
       return configurator.createOpenTelemetry();
     } catch (SolrException e) {
