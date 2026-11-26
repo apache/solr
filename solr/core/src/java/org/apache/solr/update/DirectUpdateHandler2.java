@@ -41,6 +41,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
@@ -48,6 +50,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
@@ -69,6 +72,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrSearcherRequirementDetector;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
+import org.apache.solr.search.join.BlockJoinParentQParser;
+import org.apache.solr.search.join.WithDescendantsQuery;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -87,9 +92,16 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   protected final SolrCoreState solrCoreState;
 
+  /**
+   * Delete-by-query local-param to disable also deleting the nested descendants of matching docs.
+   * Defaults to true.
+   */
+  public static final String WITH_DESCENDANTS_PARAM = "withDescendants";
+
   // stats
   LongAdder addCommands = new LongAdder();
   LongAdder deleteByIdCommands = new LongAdder();
+
   LongAdder deleteByQueryCommands = new LongAdder();
   LongAdder numDocsPending = new LongAdder();
 
@@ -640,6 +652,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       QParser parser = QParser.getParser(cmd.getQuery(), cmd.req);
       q = parser.getQuery();
       q = QueryUtils.makeQueryable(q);
+      final boolean matchAll = q.getClass() == MatchAllDocsQuery.class;
 
       // Make sure not to delete newer versions
       if (ulog != null && cmd.getVersion() != 0 && cmd.getVersion() != -Long.MAX_VALUE) {
@@ -657,10 +670,51 @@ public class DirectUpdateHandler2 extends UpdateHandler
         q = bq.build();
       }
 
+      if (!matchAll) {
+        q = withDescendants(q, parser);
+      }
+
       return q;
 
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+  }
+
+  /**
+   * If the schema supports nested documents, expands the query to match the descendants of what it
+   * matches, so that a delete-by-query won't orphan child documents. Can be disabled via the {@link
+   * #WITH_DESCENDANTS_PARAM} local-param.
+   */
+  private Query withDescendants(Query q, QParser parser) {
+    final SolrParams localParams = parser.getLocalParams();
+    if (localParams != null && !localParams.getBool(WITH_DESCENDANTS_PARAM, true)) {
+      return q;
+    }
+    final IndexSchema schema = parser.getReq().getSchema();
+    final SchemaField nestPathField = schema.getFieldOrNull(IndexSchema.NEST_PATH_FIELD_NAME);
+    if (nestPathField == null || !schema.isUsableForChildDocs()) {
+      return q;
+    }
+    // same query as {!parent which=/} so the cached per-segment bitsets are shared.
+    // A null parser avoids the request's searcher, since some update requests are never closed.
+    final Query rootsQuery = nestPathField.getType().getFieldQuery(null, nestPathField, "/");
+    return new WithDescendantsQuery(q, getRootsFilter(rootsQuery));
+  }
+
+  /**
+   * Gets the roots filter from the registered searcher's cache. Avoids the request's searcher,
+   * since some update requests (e.g. log replay) are never closed.
+   */
+  private BitSetProducer getRootsFilter(Query rootsQuery) {
+    final RefCounted<SolrIndexSearcher> searcher = core.getRegisteredSearcher();
+    if (searcher == null) {
+      return new QueryBitSetProducer(rootsQuery);
+    }
+    try {
+      return BlockJoinParentQParser.getCachedBitSetProducer(searcher.get(), rootsQuery);
+    } finally {
+      searcher.decref();
     }
   }
 

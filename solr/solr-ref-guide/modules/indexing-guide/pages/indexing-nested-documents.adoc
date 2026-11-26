@@ -301,7 +301,12 @@ To delete an entire nested document tree, you can simply delete-by-ID using the 
 Delete-by-ID will not work with the `id` of a child document, since only root document IDs are considered.
 Instead, use delete-by-query (most efficient) or xref:partial-document-updates.adoc#atomic-updates[atomic updates] to remove the child document from its parent.
 
-If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is structured to ensure no descendent children remain of any documents that are being deleted.
+When the schema has `\_nest_path_`, delete-by-query also deletes all descendants of the documents it matches, at any depth.
+So the query need only match the documents to delete: root documents, child documents, or both.
+Documents lacking a nest path, such as <<indexing-anonymous-children,anonymous children>> or children indexed before `\_nest_path_` was added to the schema, are not found as descendants.
+
+To disable this, add the `withDescendants=false` local param to the query, e.g., `{!lucene withDescendants=false}category:obsolete`.
+Then, as for schemas without `\_nest_path_`, you *MUST* be careful to ensure that any deletion query is structured to ensure no descendent children remain of any documents that are being deleted.
 *_Doing otherwise will violate integrity assumptions that Solr expects._*
 
 When xref:deployment-guide:shard-management.adoc#splitshard[splitting shards], child documents get transmitted and routed independently.
