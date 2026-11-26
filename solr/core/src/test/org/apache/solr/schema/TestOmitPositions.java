@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.ErrorLogMuter;
+import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 
 public class TestOmitPositions extends SolrTestCaseJ4 {
@@ -54,20 +54,18 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.=1]");
   }
 
-  @SuppressWarnings("try")
-  public void testPositions() {
-    // no results should be found:
-    // lucene 3.x: silent failure
-    // lucene 4.x: illegal state exception, field was indexed without positions
-
-    try (ErrorLogMuter ignored = ErrorLogMuter.regex("was indexed without position data")) {
-      assertQ(
-          "phrase query: ",
-          req("fl", "id", "q", "nopositionstext:\"test test\""),
-          "//*[@numFound='0']");
-    } catch (Exception expected) {
-      assertTrue(expected.getCause() instanceof IllegalStateException);
-      // in lucene 4.0, queries don't silently fail
-    }
+  /**
+   * An explicit phrase against a field indexed without positions is a client/schema mismatch, not a
+   * server fault: it must be rejected with 400.
+   */
+  public void testExplicitPhraseIsBadRequest() {
+    assertQEx(
+        "lucene parser: explicit phrase on omitPositions field",
+        req("fl", "id", "q", "nopositionstext:\"test test\""),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "edismax: explicit phrase via qf on omitPositions field",
+        req("fl", "id", "defType", "edismax", "qf", "nopositionstext", "q", "\"test test\""),
+        SolrException.ErrorCode.BAD_REQUEST);
   }
 }

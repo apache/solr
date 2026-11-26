@@ -1487,6 +1487,8 @@ public class ExtendedDismaxQParser extends QParser {
         }
         return null;
 
+      } catch (PhraseNotSupportedException e) {
+        throw e;
       } catch (Exception e) {
         // an exception here is due to the field query not being compatible with the input text
         // for example, passing a string to a numeric field.
