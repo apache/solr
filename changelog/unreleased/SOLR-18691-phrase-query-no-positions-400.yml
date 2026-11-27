@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Phrase queries on fields indexed without positions now return HTTP 400 instead of 500, and edismax pf/pf2/pf3 boosts skip such fields instead of failing the request.
+type: fixed
+authors:
+  - name: Anshum Gupta
+links:
+  - name: SOLR-18691
+    url: https://issues.apache.org/jira/browse/SOLR-18691

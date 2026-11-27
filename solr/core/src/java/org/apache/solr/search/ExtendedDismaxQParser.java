@@ -55,6 +55,7 @@ import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ExtendedDismaxQParser.ExtendedSolrQueryParser.Alias;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -298,8 +299,9 @@ public class ExtendedDismaxQParser extends QParser {
       BooleanQuery.Builder query, List<Clause> clauses, ExtendedDismaxConfiguration config)
       throws SyntaxError {
 
-    // sloppy phrase queries for proximity
-    List<FieldParams> allPhraseFields = config.getAllPhraseFields();
+    // sloppy phrase queries for proximity; pf/pf2/pf3 are best-effort boosts, so skip fields that
+    // cannot support phrases
+    List<FieldParams> allPhraseFields = fieldsWithPositions(config.getAllPhraseFields());
 
     if (allPhraseFields.size() > 0) {
       // find non-field clauses
@@ -685,6 +687,21 @@ public class ExtendedDismaxQParser extends QParser {
     if (!isEmpty(phrase)) {
       mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
     }
+  }
+
+  /**
+   * @return the given fields minus those the schema says were indexed without positions
+   */
+  private List<FieldParams> fieldsWithPositions(List<FieldParams> fields) {
+    IndexSchema schema = req.getSchema();
+    List<FieldParams> result = new ArrayList<>(fields.size());
+    for (FieldParams fp : fields) {
+      SchemaField sf = schema.getFieldOrNull(fp.getField());
+      if (sf == null || !(sf.omitPositions() || sf.omitTermFreqAndPositions())) {
+        result.add(fp);
+      }
+    }
+    return result;
   }
 
   /**
@@ -1487,6 +1504,8 @@ public class ExtendedDismaxQParser extends QParser {
         }
         return null;
 
+      } catch (PhraseNotSupportedException e) {
+        throw e;
       } catch (Exception e) {
         // an exception here is due to the field query not being compatible with the input text
         // for example, passing a string to a numeric field.

@@ -18,6 +18,7 @@ package org.apache.solr.parser;
 
 import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.charstream.CharStream;
@@ -536,6 +538,48 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     setEnableGraphQueries(true); // reset back to default
     setSynonymQueryStyle(AS_SAME_TERM);
     return query;
+  }
+
+  /** Rejects a phrase query on a field that the schema says was indexed without positions. */
+  private void assertPhrasesSupported(String field) {
+    if (schema == null) {
+      return;
+    }
+    SchemaField sf = schema.getFieldOrNull(field);
+    if (sf != null && (sf.omitPositions() || sf.omitTermFreqAndPositions())) {
+      throw new PhraseNotSupportedException(field);
+    }
+  }
+
+  @Override
+  protected Query analyzePhrase(String field, TokenStream stream, int slop) throws IOException {
+    assertPhrasesSupported(field);
+    return super.analyzePhrase(field, stream, slop);
+  }
+
+  @Override
+  protected Query analyzeMultiPhrase(String field, TokenStream stream, int slop)
+      throws IOException {
+    assertPhrasesSupported(field);
+    return super.analyzeMultiPhrase(field, stream, slop);
+  }
+
+  @Override
+  protected Query analyzeGraphPhrase(TokenStream stream, String field, int slop)
+      throws IOException {
+    assertPhrasesSupported(field);
+    return super.analyzeGraphPhrase(stream, field, slop);
+  }
+
+  /** Thrown when a phrase query targets a field indexed without positions. */
+  public static class PhraseNotSupportedException extends SolrException {
+    public PhraseNotSupportedException(String field) {
+      super(
+          ErrorCode.BAD_REQUEST,
+          "Field '"
+              + field
+              + "' is indexed without positions; phrase queries are not supported on this field");
+    }
   }
 
   /**
