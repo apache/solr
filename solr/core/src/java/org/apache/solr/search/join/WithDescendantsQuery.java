@@ -151,21 +151,23 @@ public class WithDescendantsQuery extends Query {
     final FixedBitSet matchedSet = new FixedBitSet(maxDoc);
     dbqDisi.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, matchedSet, 0);
     final BitSet rootSet = rootsFilter.getBitSet(context);
-    final FixedBitSet resultSet = matchedSet.clone();
 
     if (rootSet != null && isSubset(matchedSet, rootSet)) {
-      // a root's descendants are all docs after the previous root
+      // a root's descendants are all docs after the previous root.
+      // Adding them to matchedSet in place is safe: they precede the doc being iterated.
       final DocIdSetIterator matchedDisi = new BitSetIterator(matchedSet, 0);
       for (int doc = matchedDisi.nextDoc();
           doc != DocIdSetIterator.NO_MORE_DOCS;
           doc = matchedDisi.nextDoc()) {
         final int prevRootDoc = doc == 0 ? 0 : rootSet.prevSetBit(doc - 1) + 1;
         if (prevRootDoc < doc) {
-          resultSet.set(prevRootDoc, doc);
+          matchedSet.set(prevRootDoc, doc);
         }
       }
-      return resultSet;
+      return matchedSet;
     }
+
+    final FixedBitSet resultSet = matchedSet.clone();
 
     // Group the (few) unique nest paths by depth
     final TreeMap<Integer, List<BytesRef>> pathsByDepth = new TreeMap<>();
