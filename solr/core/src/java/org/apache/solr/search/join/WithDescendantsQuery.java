@@ -46,7 +46,6 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.FixedBitSetIntersectionIterator;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 /**
@@ -214,8 +213,7 @@ public class WithDescendantsQuery extends Query {
     for (int i = 1; i < levels.size(); i++) {
       addDocs(termsEnum, levels.get(i), atDepthSet, startDoc, lastDoc);
       // matchedSet docs at this depth
-      final DocIdSetIterator atDepthDisi =
-          new FixedBitSetIntersectionIterator(atDepthSet, matchedSet);
+      final var atDepthDisi = new FixedBitSetIntersectionIterator(atDepthSet, matchedSet);
       for (int doc = atDepthDisi.advance(startDoc);
           doc != DocIdSetIterator.NO_MORE_DOCS;
           doc = atDepthDisi.nextDoc()) {
@@ -320,5 +318,71 @@ public class WithDescendantsQuery extends Query {
   @Override
   public int hashCode() {
     return 31 * (31 * classHash() + query.hashCode()) + rootsFilter.hashCode();
+  }
+
+  /**
+   * Iterates a conjunction of two {@link FixedBitSet}s of the same length, word by word, without
+   * allocating. Unlike a conjunction that iterates one set and checks the other per doc, the work
+   * is proportional to the number of words plus the size of the intersection. The bit sets must not
+   * be modified during iteration.
+   */
+  static final class FixedBitSetIntersectionIterator extends DocIdSetIterator {
+
+    private final long[] aBits;
+    private final long[] bBits;
+    private final int numWords;
+    private final int length;
+
+    private int doc = -1;
+    private int wordIndex = -1;
+    private long word; // the remaining intersected bits of the current word, after doc
+
+    FixedBitSetIntersectionIterator(FixedBitSet a, FixedBitSet b) {
+      if (a.length() != b.length()) {
+        throw new IllegalArgumentException("Lengths differ: " + a.length() + " and " + b.length());
+      }
+      this.aBits = a.getBits();
+      this.bBits = b.getBits();
+      this.length = a.length();
+      this.numWords = FixedBitSet.bits2words(length);
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() {
+      while (word == 0) {
+        if (++wordIndex >= numWords) {
+          return doc = NO_MORE_DOCS;
+        }
+        word = aBits[wordIndex] & bBits[wordIndex];
+      }
+      final int bit = Long.numberOfTrailingZeros(word);
+      word &= word - 1; // clear the lowest set bit
+      return doc = (wordIndex << 6) + bit;
+    }
+
+    @Override
+    public int advance(int target) {
+      if (target >= length) {
+        wordIndex = numWords;
+        word = 0;
+        return doc = NO_MORE_DOCS;
+      }
+      wordIndex = target >> 6;
+      // the shift is mod 64, thus this clears the bits below target in this word
+      word = aBits[wordIndex] & bBits[wordIndex] & (-1L << target);
+      return nextDoc();
+    }
+
+    @Override
+    public long cost() {
+      // could be Math.min(a.approximateCardinality(), b.approximateCardinality())
+      assert false;
+      return length;
+    }
   }
 }

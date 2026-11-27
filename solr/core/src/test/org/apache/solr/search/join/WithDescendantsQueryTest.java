@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.join;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,6 +54,7 @@ import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.schema.IndexSchema;
@@ -318,5 +321,92 @@ public class WithDescendantsQueryTest extends SolrTestCase {
     }
     assertEquals(ids.size(), searcher.count(wrapped));
     return ids;
+  }
+
+  @Test
+  public void testIntersectionIteratorNextDoc() {
+    final int iters = atLeast(100);
+    for (int i = 0; i < iters; i++) {
+      final int length = randomLength();
+      final FixedBitSet a = randomBitSet(length);
+      final FixedBitSet b = randomBitSet(length);
+      final FixedBitSet expected = a.clone();
+      expected.and(b);
+
+      final WithDescendantsQuery.FixedBitSetIntersectionIterator iter =
+          new WithDescendantsQuery.FixedBitSetIntersectionIterator(a, b);
+      assertEquals(-1, iter.docID());
+      int expectedDoc = -1;
+      while (true) {
+        expectedDoc = nextSetBit(expected, expectedDoc + 1);
+        assertEquals(expectedDoc, iter.nextDoc());
+        assertEquals(expectedDoc, iter.docID());
+        if (expectedDoc == NO_MORE_DOCS) {
+          break;
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testIntersectionIteratorAdvance() {
+    final int iters = atLeast(100);
+    for (int i = 0; i < iters; i++) {
+      final int length = randomLength();
+      final FixedBitSet a = randomBitSet(length);
+      final FixedBitSet b = randomBitSet(length);
+      final FixedBitSet expected = a.clone();
+      expected.and(b);
+
+      final WithDescendantsQuery.FixedBitSetIntersectionIterator iter =
+          new WithDescendantsQuery.FixedBitSetIntersectionIterator(a, b);
+      int doc = -1;
+      while (doc != NO_MORE_DOCS) {
+        final int expectedDoc;
+        if (random().nextBoolean()) {
+          expectedDoc = nextSetBit(expected, doc + 1);
+          doc = iter.nextDoc();
+        } else {
+          final int target = doc + 1 + random().nextInt(Math.max(1, length / 4 + 2));
+          expectedDoc = nextSetBit(expected, target);
+          doc = iter.advance(target);
+        }
+        assertEquals(expectedDoc, doc);
+        assertEquals(doc, iter.docID());
+      }
+    }
+  }
+
+  @Test
+  public void testIntersectionIteratorDifferentLengths() {
+    expectThrows(
+        IllegalArgumentException.class,
+        () ->
+            new WithDescendantsQuery.FixedBitSetIntersectionIterator(
+                new FixedBitSet(10), new FixedBitSet(11)));
+  }
+
+  /** Includes lengths at and around word boundaries. */
+  private static int randomLength() {
+    return switch (random().nextInt(4)) {
+      case 0 -> random().nextInt(3); // 0, 1, 2
+      case 1 -> 64 * (1 + random().nextInt(3)) + random().nextInt(3) - 1; // 63, 64, 65, ...
+      default -> random().nextInt(1000);
+    };
+  }
+
+  private static FixedBitSet randomBitSet(int length) {
+    final FixedBitSet bits = new FixedBitSet(length);
+    final double density = random().nextDouble();
+    for (int i = 0; i < length; i++) {
+      if (random().nextDouble() < density) {
+        bits.set(i);
+      }
+    }
+    return bits;
+  }
+
+  private static int nextSetBit(FixedBitSet bits, int from) {
+    return from >= bits.length() ? NO_MORE_DOCS : bits.nextSetBit(from);
   }
 }
