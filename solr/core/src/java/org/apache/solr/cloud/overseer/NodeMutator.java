@@ -17,11 +17,15 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,6 +36,8 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.client.ZKClientConfig;
+import org.apache.zookeeper.common.ZKConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +46,21 @@ public class NodeMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected SolrZkClient zkClient;
 
+  /** DOWNNODE message property: the collections the sending node has replicas in */
+  public static final String DOWN_NODE_COLLECTIONS_PROP = "collections";
+
+  private final boolean useListedCollectionsOnly;
+
   public NodeMutator(SolrCloudManager cloudManager) {
     zkClient = SliceMutator.getZkClient(cloudManager);
+    useListedCollectionsOnly =
+        cloudManager != null
+            && Boolean.parseBoolean(
+                String.valueOf(
+                    cloudManager
+                        .getClusterStateProvider()
+                        .getClusterProperty(
+                            ZkStateReader.USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE)));
   }
 
   public List<ZkWriteCommand> downNode(ClusterState clusterState, ZkNodeProps message) {
@@ -49,12 +68,46 @@ public class NodeMutator {
 
     log.debug("DownNode state invoked for node: {}", nodeName);
 
-    return clusterState
-        .collectionStream()
+    return collectionsToCheck(clusterState, message)
         .filter(entry -> !entry.isPerReplicaState())
         .map(docCollection -> computeCollectionUpdate(nodeName, docCollection, zkClient))
         .flatMap(Optional::stream)
         .toList();
+  }
+
+  /**
+   * The value of {@link #DOWN_NODE_COLLECTIONS_PROP} for a node's DOWNNODE message, or null when
+   * the list could push the message past jute.maxbuffer, which would lose it.
+   */
+  public static List<String> collectionsForDownNodeMessage(Collection<String> collections) {
+    // half of the limit, read the way ZooKeeper reads it, leaves room for the rest of the message
+    int maxBytes =
+        Integer.getInteger(ZKConfig.JUTE_MAXBUFFER, ZKClientConfig.CLIENT_MAX_PACKET_LENGTH_DEFAULT)
+            / 2;
+    // indented JSON adds 8 bytes to each name
+    long bytes =
+        collections.stream().mapToLong(c -> c.getBytes(StandardCharsets.UTF_8).length + 8).sum();
+    return bytes > maxBytes ? null : List.copyOf(collections);
+  }
+
+  /**
+   * The collections a DOWNNODE has to check: every collection, or with the cluster property on only
+   * those the message lists, since loading a collection can be a ZooKeeper round trip. The list is
+   * the node's view, so a replica in a collection it leaves out (one added to the node after the
+   * list was built, say) is not marked down.
+   */
+  private Stream<DocCollection> collectionsToCheck(ClusterState clusterState, ZkNodeProps message) {
+    Object collectionsFromNode = message.get(DOWN_NODE_COLLECTIONS_PROP);
+    if (!useListedCollectionsOnly || collectionsFromNode == null) {
+      return clusterState.collectionStream();
+    }
+    // Solr writes this message, so a value that isn't a collection is a bug: fail on the cast
+    // rather than hide it behind a fallback to every collection
+    return ((Collection<?>) collectionsFromNode)
+        .stream()
+            .map(String::valueOf)
+            .map(clusterState::getCollectionOrNull)
+            .filter(Objects::nonNull);
   }
 
   /**

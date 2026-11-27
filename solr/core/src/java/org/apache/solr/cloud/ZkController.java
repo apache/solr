@@ -73,6 +73,7 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
+import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
@@ -3098,6 +3099,7 @@ public class ZkController implements Closeable {
       distributedClusterStateUpdater.executeNodeDownStateUpdate(nodeName, zkStateReader);
     } else {
       try {
+        List<String> collectionsForOverseer = new ArrayList<>();
         for (String collName : replicasPerCollectionOnNode.keySet()) {
           DocCollection coll;
           if (collName != null
@@ -3110,6 +3112,8 @@ public class ZkController implements Closeable {
                     PerReplicaStatesOps.fetch(
                         coll.getZNode(), zkClient, coll.getPerReplicaStates()))
                 .persist(coll.getZNode(), zkClient);
+          } else {
+            collectionsForOverseer.add(collName);
           }
         }
 
@@ -3120,7 +3124,10 @@ public class ZkController implements Closeable {
             .offer(
                 m ->
                     m.put(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower())
-                        .put(ZkStateReader.NODE_NAME_PROP, nodeName));
+                        .put(ZkStateReader.NODE_NAME_PROP, nodeName)
+                        .putIfNotNull(
+                            NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
+                            NodeMutator.collectionsForDownNodeMessage(collectionsForOverseer)));
       } catch (IllegalStateException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");

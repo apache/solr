@@ -16,15 +16,24 @@
  */
 package org.apache.solr.cloud;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4Test;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.zookeeper.common.ZKConfig;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL // tests compare for http:
@@ -97,5 +106,103 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
       }
     }
     reader.close();
+  }
+
+  @Test
+  public void downNodeLoadsOnlyTheCollectionsTheMessageLists() {
+    // Collection1: replica1 on node1, replica2 on node2
+    // Collection2: replica4 on node2
+    // Collection3: replica5 on node1, replica6 on node2, replica7 on node3
+    ZkStateReader reader =
+        ClusterStateMockUtil.buildClusterState("csrr2rDcsr2csr1r2r3", 1, NODE1, NODE2, NODE3);
+    ClusterState clusterState = reader.getClusterState();
+    // collection1 is left out to show that the list, not a scan, decides what is loaded
+    ZkNodeProps listed =
+        new ZkNodeProps(
+            Map.of(
+                ZkStateReader.NODE_NAME_PROP,
+                NODE1,
+                NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
+                List.of("collection3", "collection2", "noSuchCollection")));
+
+    // the list is ignored unless the switch is on
+    assertEquals(2, new NodeMutator(null).downNode(clusterState, listed).size());
+
+    assumeWorkingMockito();
+    ClusterStateProvider clusterProps = mock(ClusterStateProvider.class);
+    when(clusterProps.getClusterProperty(ZkStateReader.USE_LISTED_COLLECTIONS_ONLY_FOR_DOWN_NODE))
+        .thenReturn("false", "true");
+    SolrCloudManager cloudManager = mock(SolrCloudManager.class);
+    when(cloudManager.getClusterStateProvider()).thenReturn(clusterProps);
+    assertEquals(2, new NodeMutator(cloudManager).downNode(clusterState, listed).size());
+
+    try {
+      NodeMutator nm = new NodeMutator(cloudManager);
+      int loadsBefore = loads(clusterState, "collection1");
+      List<ZkWriteCommand> writes = nm.downNode(clusterState, listed);
+      assertEquals(1, writes.size());
+      assertEquals("collection3", writes.get(0).name);
+      assertEquals(Replica.State.DOWN, writes.get(0).collection.getReplica("replica5").getState());
+      assertEquals(
+          Replica.State.ACTIVE, writes.get(0).collection.getReplica("replica6").getState());
+      assertEquals(loadsBefore, loads(clusterState, "collection1"));
+
+      // an empty list loads nothing
+      ZkNodeProps empty =
+          new ZkNodeProps(
+              Map.of(
+                  ZkStateReader.NODE_NAME_PROP,
+                  NODE1,
+                  NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
+                  List.of()));
+      assertTrue(nm.downNode(clusterState, empty).isEmpty());
+      assertEquals(loadsBefore, loads(clusterState, "collection1"));
+
+      // a message without the list still scans every collection
+      ZkNodeProps unlisted = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, NODE1);
+      assertEquals(2, nm.downNode(clusterState, unlisted).size());
+
+      // a message whose list isn't a list is rejected
+      ZkNodeProps notAList =
+          new ZkNodeProps(
+              ZkStateReader.NODE_NAME_PROP,
+              NODE1,
+              NodeMutator.DOWN_NODE_COLLECTIONS_PROP,
+              "collection3");
+      expectThrows(ClassCastException.class, () -> nm.downNode(clusterState, notAList));
+      // but not while the switch is off
+      assertEquals(2, new NodeMutator(null).downNode(clusterState, notAList).size());
+    } finally {
+      reader.close();
+    }
+  }
+
+  @Test
+  public void downNodeMessageLeavesOutAListTooLongToSend() {
+    assertEquals(
+        List.of("collection1", "collection2"),
+        NodeMutator.collectionsForDownNodeMessage(List.of("collection1", "collection2")));
+    assertEquals(List.of(), NodeMutator.collectionsForDownNodeMessage(List.of()));
+
+    String longName = "c".repeat(1024);
+    List<String> tooLong =
+        IntStream.range(0, 600).mapToObj(i -> longName + i).collect(Collectors.toList());
+    assertNull(NodeMutator.collectionsForDownNodeMessage(tooLong));
+    assertEquals(
+        tooLong.subList(0, 400),
+        NodeMutator.collectionsForDownNodeMessage(tooLong.subList(0, 400)));
+
+    // the cap is half of jute.maxbuffer, whether that is raised or lowered
+    System.setProperty(ZKConfig.JUTE_MAXBUFFER, "0x200000");
+    assertEquals(tooLong, NodeMutator.collectionsForDownNodeMessage(tooLong));
+    System.setProperty(ZKConfig.JUTE_MAXBUFFER, "204800");
+    assertNull(NodeMutator.collectionsForDownNodeMessage(tooLong.subList(0, 400)));
+    assertEquals(
+        tooLong.subList(0, 90), NodeMutator.collectionsForDownNodeMessage(tooLong.subList(0, 90)));
+    System.clearProperty(ZKConfig.JUTE_MAXBUFFER);
+  }
+
+  private static int loads(ClusterState clusterState, String collection) {
+    return clusterState.getCollectionRef(collection).getCount();
   }
 }

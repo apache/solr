@@ -1,0 +1,10 @@
+title: With the new cluster property useListedCollectionsOnlyForDownNode set to true, the Overseer
+  handles a node's DOWNNODE message by reading only the collections that node has replicas in, which
+  makes rolling restarts much faster on clusters with many collections.
+type: changed
+authors:
+  - name: Ian Springer
+    nick: ianspringer
+links:
+  - name: SOLR-18686
+    url: https://issues.apache.org/jira/browse/SOLR-18686

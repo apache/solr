@@ -275,7 +275,12 @@ curl -X DELETE 'http://localhost:8983/api/cluster/properties/urlScheme'
 |===
 +
 The name of the property.  Appears in the path of v2 requests.
-Supported properties names are `location`, `maxCoresPerNode`, `overseerEnabled`, `urlScheme`, and `defaultShardPreferences`.
+Supported properties names are `location`, `maxCoresPerNode`, `overseerEnabled`, `urlScheme`, `defaultShardPreferences`, and `useListedCollectionsOnlyForDownNode`.
++
+When `useListedCollectionsOnlyForDownNode` is `true`, the Overseer marks a stopping or starting node's replicas as down by reading only the collections that node reports having replicas in, instead of every collection in the cluster, which speeds up rolling restarts on clusters with many collections.
+It is `false` by default and has no effect when `overseerEnabled` is `false`.
+A replica in a collection the node didn't report, such as one added while the node was stopping, keeps its last published state.
+A node that doesn't report its collections (an older version, or a list larger than half of `jute.maxbuffer`) is handled by reading every collection.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
