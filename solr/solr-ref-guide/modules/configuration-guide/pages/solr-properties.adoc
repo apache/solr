@@ -36,6 +36,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
 
+|solr.backup.copyretrybackoffms||1000|Specifies the delay in milliseconds before the first retry of a failed backup/restore file copy, doubled for each further retry. See xref:deployment-guide:backup-restore.adoc#retrying-failed-file-copies[Retrying Failed File Copies].
+
+|solr.backup.maxcopyretries||2|Specifies how many times a failed copy of a single index file is retried during backup, restore and install-shard operations. Set to `0` to disable retries. See xref:deployment-guide:backup-restore.adoc#retrying-failed-file-copies[Retrying Failed File Copies].
+
 |solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
 |solr.cloud.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
