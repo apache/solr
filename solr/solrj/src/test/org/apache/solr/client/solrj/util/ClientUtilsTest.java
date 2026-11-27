@@ -16,9 +16,11 @@
  */
 package org.apache.solr.client.solrj.util;
 
+import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionSnapshotsApi;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -121,6 +123,28 @@ public class ClientUtilsTest extends SolrTestCase {
       final var url =
           ClientUtils.buildRequestUrl(request, "http://localhost:8983/solr", "unneededCollection");
       assertEquals("http://localhost:8983/solr/admin/info/health", url);
+    }
+  }
+
+  @Test
+  public void testV2UrlBuildingPreservesProxyPrefixes() throws Exception {
+    var request = new CollectionSnapshotsApi.ListSnapshots("someColl");
+    var basePaths =
+        Map.of(
+            "", "/api",
+            "/solr", "/api",
+            "/api", "/api",
+            "/solr-tenant/solr", "/solr-tenant/api",
+            "/solr/tenant/solr", "/solr/tenant/api",
+            "/solr-tenant/api", "/solr-tenant/api",
+            "/solr/tenant/api", "/solr/tenant/api",
+            "/solr-tenant", "/solr-tenant/api",
+            "/tenant/solr/core", "/tenant/api/core");
+    for (var basePath : basePaths.entrySet()) {
+      assertEquals(
+          basePath.getKey(),
+          "http://localhost:8983" + basePath.getValue() + "/collections/someColl/snapshots",
+          ClientUtils.buildRequestUrl(request, "http://localhost:8983" + basePath.getKey(), null));
     }
   }
 }
