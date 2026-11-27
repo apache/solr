@@ -43,6 +43,10 @@ public class CombinedQueryComponentTest extends BaseDistributedSearchTestCase {
   public CombinedQueryComponentTest() {
     super();
     fixShardCount(1);
+    // the control core fuses on its own; like any single core, it reports maxScore only for a
+    // request that returns scores, and its debug section is a single core's
+    handle.put("maxScore", SKIPVAL);
+    handle.put("debug", SKIP);
   }
 
   /**

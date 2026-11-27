@@ -27,8 +27,10 @@ This feature is currently unsupported for grouping and Cursors.
 
 [IMPORTANT]
 ====
-This feature works in both Standalone and SolrCloud modes and always performs distributed search execution.
-In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed using the *allowUrls* parameter, otherwise Solr returns HTTP 403. For example:
+This feature works in SolrCloud, Standalone (user-managed) and embedded Solr.
+In SolrCloud it always performs distributed search execution.
+Elsewhere a request is fused on the core that receives it, with the same result a distributed search over that one core gives, unless it names its shards with the `shards` parameter or sets `distrib=true`.
+Shard URLs of such a request must be explicitly allow-listed using the *allowUrls* parameter, otherwise Solr returns HTTP 403. For example:
 
 [source,bash]
 ----
