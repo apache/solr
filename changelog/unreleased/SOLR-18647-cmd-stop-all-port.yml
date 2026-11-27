@@ -1,5 +1,5 @@
 title: >
-  bin/solr.cmd stop --all now stops every node when SOLR_PORT is set, instead of only that port.
+  bin/solr.cmd stop --all now stops every node when SOLR_PORT_LISTEN is set, instead of only that port.
 type: fixed
 authors:
   - name: Jan Høydahl
