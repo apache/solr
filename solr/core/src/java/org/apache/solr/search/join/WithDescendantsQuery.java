@@ -19,7 +19,6 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.lucene.index.LeafReader;
@@ -68,17 +67,18 @@ import org.apache.solr.util.SolrDefaultScorerSupplier;
  *
  * Doc 3's descendants are doc 2 (doc 1 is not deeper); doc 5's are docs 0-4.
  *
- * <p>Per segment, there are two strategies:
+ * <p>Per segment:
  *
  * <ol>
- *   <li>If every matched document is a root, which is the common case, a root's descendants are
- *       simply all documents after the previous root. That's found with the given root documents
- *       filter, which should be cached so that its per-segment bitset is reused.
- *   <li>Otherwise, the (typically few) unique nest path terms are grouped by depth and processed
- *       from the deepest level up, accumulating the documents deeper than the current level. For
- *       each matched document at the current level, walk backwards while documents are deeper,
- *       marking them. The cost is proportional to the number of child documents in the segment plus
- *       the number of documents marked.
+ *   <li>A matched root's descendants are simply all documents after the previous root. That's found
+ *       with the given root documents filter, which should be cached so that its per-segment bitset
+ *       is reused. If every matched document is a root, which is the common case, that's all there
+ *       is to do.
+ *   <li>Otherwise, descendants of matched non-root documents are added first. The (typically few)
+ *       unique nest path terms are grouped by depth and processed from the deepest level up,
+ *       accumulating the documents deeper than the current level. For each matched document at the
+ *       current level, walk backwards while documents are deeper, marking them. The deepest level
+ *       has no descendants, so if there's only one level, nothing is read.
  * </ol>
  */
 public class WithDescendantsQuery extends Query {
@@ -152,25 +152,34 @@ public class WithDescendantsQuery extends Query {
     final FixedBitSet matchedSet = new FixedBitSet(maxDoc);
     dbqDisi.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, matchedSet, 0);
     final BitSet rootSet = rootsFilter.getBitSet(context);
-
-    if (rootSet != null && isSubset(matchedSet, rootSet)) {
-      // a root's descendants are all docs after the previous root.
-      // Adding them to matchedSet in place is safe: they precede the doc being iterated.
-      final DocIdSetIterator matchedDisi = new BitSetIterator(matchedSet, 0);
-      for (int doc = matchedDisi.nextDoc();
-          doc != DocIdSetIterator.NO_MORE_DOCS;
-          doc = matchedDisi.nextDoc()) {
-        final int prevRootDoc = doc == 0 ? 0 : rootSet.prevSetBit(doc - 1) + 1;
-        if (prevRootDoc < doc) {
-          matchedSet.set(prevRootDoc, doc);
-        }
-      }
+    if (rootSet == null) {
+      // Erroneous: this segment has docs with nest paths but no root docs, i.e. orphaned children.
+      // The index is already corrupt, so don't try to make sense of it.
+      assert false : "no root docs in a segment having nest paths";
       return matchedSet;
     }
 
-    // From here, descendants are added to matchedSet in place. That's safe since they precede the
-    // doc being iterated, and they are never roots nor at the depth being processed.
+    // Descendants are added to matchedSet in place below. That's safe since they precede the doc
+    // being iterated.
+    if (!isSubset(matchedSet, rootSet)) { // some matches aren't roots
+      addNonRootDescendants(pathTerms, matchedSet);
+    }
+    // a root's descendants are all docs after the previous root. Roots are never added above.
+    final DocIdSetIterator matchedRootDisi = matchedRoots(matchedSet, rootSet);
+    for (int doc = matchedRootDisi.nextDoc();
+        doc != DocIdSetIterator.NO_MORE_DOCS;
+        doc = matchedRootDisi.nextDoc()) {
+      final int prevRootDoc = doc == 0 ? 0 : rootSet.prevSetBit(doc - 1) + 1;
+      if (prevRootDoc < doc) {
+        matchedSet.set(prevRootDoc, doc);
+      }
+    }
+    return matchedSet;
+  }
 
+  /** Adds the descendants of the matched docs having a nest path (non-roots) to matchedSet. */
+  private static void addNonRootDescendants(Terms pathTerms, FixedBitSet matchedSet)
+      throws IOException {
     // Group the (few) unique nest paths by depth
     final TreeMap<Integer, List<BytesRef>> pathsByDepth = new TreeMap<>();
     final TermsEnum termsEnum = pathTerms.iterator();
@@ -179,19 +188,19 @@ public class WithDescendantsQuery extends Query {
           .computeIfAbsent(depthOf(term), k -> new ArrayList<>())
           .add(BytesRef.deepCopyOf(term));
     }
+    if (pathsByDepth.size() < 2) {
+      return; // the deepest level has no descendants
+    }
 
     // Process from the deepest level up; "deeperSet" accumulates docs below the current depth.
+    final List<List<BytesRef>> levels = new ArrayList<>(pathsByDepth.descendingMap().values());
+    final int maxDoc = matchedSet.length();
     final FixedBitSet deeperSet = new FixedBitSet(maxDoc);
+    addDocs(termsEnum, levels.get(0), deeperSet);
     final FixedBitSet atDepthSet = new FixedBitSet(maxDoc);
-    PostingsEnum postings = null;
-    for (Map.Entry<Integer, List<BytesRef>> entry : pathsByDepth.descendingMap().entrySet()) {
+    for (int i = 1; i < levels.size(); i++) {
       atDepthSet.clear();
-      for (BytesRef term : entry.getValue()) {
-        if (termsEnum.seekExact(term)) {
-          postings = termsEnum.postings(postings, PostingsEnum.NONE);
-          atDepthSet.or(postings);
-        }
-      }
+      addDocs(termsEnum, levels.get(i), atDepthSet);
       // matchedSet docs at this depth
       final DocIdSetIterator atDepthDisi =
           new FixedBitSetIntersectionIterator(atDepthSet, matchedSet);
@@ -200,19 +209,22 @@ public class WithDescendantsQuery extends Query {
           doc = atDepthDisi.nextDoc()) {
         addDescendants(doc, deeperSet, matchedSet);
       }
-      deeperSet.or(atDepthSet);
-    }
-
-    // finally the matched roots (no nest path); "deeperSet" now holds all child docs
-    if (rootSet != null) {
-      final DocIdSetIterator matchedRootDisi = matchedRoots(matchedSet, rootSet);
-      for (int doc = matchedRootDisi.nextDoc();
-          doc != DocIdSetIterator.NO_MORE_DOCS;
-          doc = matchedRootDisi.nextDoc()) {
-        addDescendants(doc, deeperSet, matchedSet);
+      if (i < levels.size() - 1) { // not needed after the shallowest level
+        deeperSet.or(atDepthSet);
       }
     }
-    return matchedSet;
+  }
+
+  /** Adds the docs of the given terms to the bit set. */
+  private static void addDocs(TermsEnum termsEnum, List<BytesRef> terms, FixedBitSet bitSet)
+      throws IOException {
+    PostingsEnum postings = null;
+    for (BytesRef term : terms) {
+      if (termsEnum.seekExact(term)) {
+        postings = termsEnum.postings(postings, PostingsEnum.NONE);
+        bitSet.or(postings);
+      }
+    }
   }
 
   private static DocIdSetIterator matchedRoots(FixedBitSet matchedSet, BitSet rootSet) {
@@ -220,7 +232,7 @@ public class WithDescendantsQuery extends Query {
       return new FixedBitSetIntersectionIterator(matchedSet, fixedRootSet);
     }
     // sparse
-    return new FilteredDocIdSetIterator(new BitSetIterator(rootSet, rootSet.cardinality())) {
+    return new FilteredDocIdSetIterator(new BitSetIterator(rootSet, rootSet.approximateCardinality())) {
       @Override
       protected boolean match(int doc) {
         return matchedSet.get(doc);
