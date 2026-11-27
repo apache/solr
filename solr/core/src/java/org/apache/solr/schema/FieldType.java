@@ -1203,6 +1203,14 @@ public abstract class FieldType extends FieldProperties {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Field type " + this + " is 'large'; can't support numerics");
     }
+
+    if (field.useRawVectorsAsStored() && !(this instanceof DenseVectorField)) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Invalid option on field type "
+              + this
+              + ": \"useRawVectorsAsStored\" is only supported for vector types.");
+    }
   }
 
   /**

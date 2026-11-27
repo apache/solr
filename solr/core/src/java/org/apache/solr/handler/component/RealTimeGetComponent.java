@@ -40,6 +40,8 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.KnnByteVectorField;
+import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
@@ -79,6 +81,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -355,6 +358,9 @@ public class RealTimeGetComponent extends SearchComponent {
         }
         docFetcher.decorateDocValueFields(
             doc, docid, docFetcher.getNonStoredDVsUsedAsStored(), reuseDvIters);
+
+        docFetcher.decorateRawVectorFields(doc, docid, rsp.getReturnFields());
+
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
@@ -876,7 +882,12 @@ public class RealTimeGetComponent extends SearchComponent {
       boolean fieldArrayListCreated = false;
       SchemaField sf = schema.getFieldOrNull(fname);
       if (sf != null) {
-        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) continue;
+        if (!shouldKeepFieldInInputDocument(sf, schema)) {
+          continue;
+        }
+        if (sf.getType() instanceof DenseVectorField) {
+          out.setField(fname, new ArrayList<>());
+        }
       }
       for (Object val : doc.getFieldValues(fname)) {
         if (val instanceof IndexableField f) {
@@ -903,6 +914,17 @@ public class RealTimeGetComponent extends SearchComponent {
       }
     }
     return out;
+  }
+
+  /**
+   * Returns whether a schema field should be kept when rebuilding a {@link SolrInputDocument} from
+   * the index. For instance, the value must be recoverable from doc values, a stored field, or
+   * Lucene's vector values when {@code useRawVectorsAsStored} is enabled. Copy-field targets are
+   * excluded because indexing regenerates them from their source fields.
+   */
+  private static boolean shouldKeepFieldInInputDocument(SchemaField field, IndexSchema schema) {
+    return (field.hasDocValues() || field.stored() || field.useRawVectorsAsStored())
+        && !schema.isCopyFieldTarget(field);
   }
 
   private static SolrDocument toSolrDoc(Document doc, IndexSchema schema) {
@@ -988,13 +1010,23 @@ public class RealTimeGetComponent extends SearchComponent {
     // TODO: do something more performant than this double conversion
     Document doc = DocumentBuilder.toDocument(sdoc, schema, forInPlaceUpdate, true);
 
+    Map<String, List<Number>> rawVectorFields = new HashMap<>();
+
     // copy the stored fields only
     Document out = new Document();
     for (IndexableField f : doc.getFields()) {
+      SchemaField schemaField = schema.getFieldOrNull(f.name());
+      if (shouldReadRawVectorValues(schemaField, schema)) {
+        List<Number> rawVectorValues = getRawVectorValues(f);
+        if (rawVectorValues != null) {
+          rawVectorFields.put(f.name(), rawVectorValues);
+          continue;
+        }
+      }
+
       if (f.fieldType().stored()) {
         out.add(f);
       } else if (f.fieldType().docValuesType() != DocValuesType.NONE) {
-        SchemaField schemaField = schema.getFieldOrNull(f.name());
         if (schemaField != null && !schemaField.stored() && schemaField.useDocValuesAsStored()) {
           out.add(f);
         }
@@ -1004,6 +1036,7 @@ public class RealTimeGetComponent extends SearchComponent {
     }
 
     SolrDocument solrDoc = toSolrDoc(out, schema);
+    rawVectorFields.forEach(solrDoc::setField);
 
     // add child docs
     for (SolrInputField solrInputField : sdoc) {
@@ -1025,6 +1058,41 @@ public class RealTimeGetComponent extends SearchComponent {
     }
 
     return solrDoc;
+  }
+
+  /**
+   * Returns whether the schema allows reading raw vector values for this field. The field must be
+   * defined in the schema and opt into {@code useRawVectorsAsStored}. Copy-field targets are
+   * excluded because indexing regenerates them from their source fields.
+   */
+  private static boolean shouldReadRawVectorValues(SchemaField field, IndexSchema schema) {
+    return field != null && field.useRawVectorsAsStored() && !schema.isCopyFieldTarget(field);
+  }
+
+  /**
+   * Converts a Lucene float or byte vector field to a list of numbers. For other Lucene field types
+   * returns {@code null}.
+   */
+  private static List<Number> getRawVectorValues(IndexableField field) {
+    if (field instanceof KnnFloatVectorField vectorField) {
+      float[] vector = vectorField.vectorValue();
+      List<Number> values = new ArrayList<>(vector.length);
+      for (float value : vector) {
+        values.add(value);
+      }
+      return values;
+    }
+
+    if (field instanceof KnnByteVectorField vectorField) {
+      byte[] vector = vectorField.vectorValue();
+      List<Number> values = new ArrayList<>(vector.length);
+      for (byte value : vector) {
+        values.add((int) value);
+      }
+      return values;
+    }
+
+    return null;
   }
 
   @Override

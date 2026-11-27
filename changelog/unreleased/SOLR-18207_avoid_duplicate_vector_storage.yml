@@ -1,0 +1,14 @@
+title: >
+  Add opt-in useRawVectorsAsStored support for dense vector fields,
+  allowing retrieval without duplicate stored-field storage when
+  stored=false. Supports FLOAT32 and BYTE encodings, single-valued
+  and multivalued fields, SearchHandler, RealTimeGetHandler, and preservation
+  of single-valued vectors during atomic updates.
+type: added
+authors:
+  - name: Andrea Gazzarini
+  - name: Alessandro Benedetti
+  - name: David Smiley
+links:
+  - name: SOLR-18207
+    url: https://issues.apache.org/jira/browse/SOLR-18207
