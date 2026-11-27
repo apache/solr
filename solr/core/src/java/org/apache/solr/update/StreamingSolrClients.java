@@ -99,9 +99,13 @@ public class StreamingSolrClients {
     return client;
   }
 
-  public synchronized void blockUntilFinished() throws IOException {
+  public synchronized void blockUntilFinished() {
     for (ConcurrentUpdateBaseSolrClient client : solrClients.values()) {
-      client.blockUntilFinished();
+      try {
+        client.blockUntilFinished();
+      } catch (IOException e) {
+        client.handleError(e);
+      }
     }
   }
 
