@@ -289,6 +289,7 @@ def configureCatsTestTask(Test task, String outputName, String picocli) {
   def catsTestOutput = file("$buildDir/$outputName")
   task.inputs.dir(distDir)
   task.environment SOLR_TIP: distDir.toString()
+  task.systemProperty 'tests.jsclient.disabled', String.valueOf(!gradle.ext.withJsClient)
   task.environment CATS_OUTPUT_DIR: catsTestOutput.toString()
   if (picocli != null) {
     task.environment SOLR_PICOCLI: picocli

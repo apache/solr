@@ -40,6 +40,9 @@ public class AdminConsoleUrlsTest extends SolrCatsTestCase {
 
   @Test
   public void assertAdminConsoleStaticAssetsAreRevalidatedAndVersioned() {
+    assumeFalse(
+        "js-client bundle is absent with -PdisableJsClient=true",
+        Boolean.getBoolean("tests.jsclient.disabled"));
     run("solr start");
 
     http("/solr/libs/solr/index.js")
