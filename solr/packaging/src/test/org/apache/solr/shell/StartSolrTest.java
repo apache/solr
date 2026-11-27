@@ -37,7 +37,6 @@ import org.junit.Test;
 public class StartSolrTest extends SolrCatsTestCase {
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18647")
   public void solr11740CheckSolrStopConnection() {
     run("solr start");
     run("solr start --user-managed -p ${SOLR2_PORT}");

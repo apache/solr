@@ -91,7 +91,6 @@ public class NoPidFileTest extends SolrCatsTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18647")
   public void stopAllReportsWhenItStoppedNothing() {
     run("solr stop --all").assertContains("No Solr nodes found to stop.");
   }
