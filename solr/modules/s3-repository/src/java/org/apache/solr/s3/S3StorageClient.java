@@ -413,7 +413,7 @@ public class S3StorageClient {
    * @param path to file in S3.
    * @return OutputStream for file.
    */
-  OutputStream pushStream(String path) throws S3Exception {
+  S3OutputStream pushStream(String path) throws S3Exception {
     path = sanitizedFilePath(path);
 
     if (!parentDirectoryExist(path)) {

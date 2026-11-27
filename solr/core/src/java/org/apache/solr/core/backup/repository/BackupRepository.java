@@ -271,7 +271,8 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @param sourceDir The source directory hosting the file to be copied.
    * @param sourceFileName The name of the file to be copied
    * @param destDir The destination backup location.
-   * @throws IOException in case of errors
+   * @throws IOException in case of errors. Implementations must not leave a partially written file
+   *     or object at the destination when the copy fails.
    * @throws CorruptIndexException in case checksum of the file does not match with precomputed
    *     checksum stored at the end of the file
    * @since 8.3.0
@@ -288,7 +289,8 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    *
    * @param sourceRepo The source URI hosting the file to be copied.
    * @param dest The destination where the file should be copied.
-   * @throws IOException in case of errors.
+   * @throws IOException in case of errors. Implementations must not leave a partially written file
+   *     at the destination when the copy fails.
    * @since 8.3.0
    */
   default void copyIndexFileTo(
