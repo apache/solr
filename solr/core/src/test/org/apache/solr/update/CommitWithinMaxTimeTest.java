@@ -65,9 +65,9 @@ public class CommitWithinMaxTimeTest extends SolrTestCaseJ4 {
 
     assertU(add(doc("id", "1"), "commitWithin", Long.toString(COMMIT_WITHIN_MS)));
 
-    new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+    new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME)
         .waitFor(
-            "No hard commit within 30s although autoCommit maxTime is "
+            "No hard commit within 10s although autoCommit maxTime is "
                 + MAX_TIME_MS
                 + "ms; commitWithin of "
                 + COMMIT_WITHIN_MS
