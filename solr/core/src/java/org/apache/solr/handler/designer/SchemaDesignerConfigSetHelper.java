@@ -67,7 +67,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -584,7 +583,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   ManagedIndexSchema loadLatestSchema(SolrConfig solrConfig) {
     ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
-    factory.init(new NamedList<>());
+    factory.init(SimpleOrderedMap.of());
     return factory.create(DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME, solrConfig, null);
   }
 
