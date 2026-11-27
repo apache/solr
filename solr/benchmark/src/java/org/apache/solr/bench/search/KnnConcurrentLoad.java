@@ -51,7 +51,7 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
-/** Measures KNN request latency with different shared search-pool settings and client loads. */
+/** Measures query latency with different shared search-pool settings and client loads. */
 @Fork(1)
 @BenchmarkMode(Mode.SampleTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -78,8 +78,11 @@ public class KnnConcurrentLoad {
     @Param({"false", "true"})
     boolean multiThreaded;
 
+    @Param({"knn", "term", "range", "matchAll"})
+    String queryShape;
+
     private List<String> queries;
-    private String knnResultSha256;
+    private String resultSha256;
     private int segmentCount;
     private long tasksBeforeIteration;
 
@@ -103,7 +106,7 @@ public class KnnConcurrentLoad {
       solrBenchState.startSolr(1, searchThreads, CONFIG_DIR);
       solrBenchState.createCollection(COLLECTION, 1, 1);
       index(solrBenchState);
-      queries = createQueries(numDocs);
+      queries = createQueries(numDocs, queryShape);
       validateQueries(solrBenchState);
       segmentCount = readSegmentCount(solrBenchState);
       int expectedSegments = numDocs / BATCH_SIZE;
@@ -113,18 +116,20 @@ public class KnnConcurrentLoad {
       }
 
       log(
-          "KNN benchmark setup: docs="
+          "Search benchmark setup: docs="
               + numDocs
               + ", batchSize="
               + BATCH_SIZE
+              + ", queryShape="
+              + queryShape
               + ", searchThreads="
               + searchThreads
               + ", multiThreaded="
               + multiThreaded
               + ", segmentCount="
               + segmentCount
-              + ", knnResultSha256="
-              + knnResultSha256);
+              + ", resultSha256="
+              + resultSha256);
       solrBenchState.dumpCoreInfo();
     }
 
@@ -145,6 +150,8 @@ public class KnnConcurrentLoad {
         SolrInputDocument document = new SolrInputDocument();
         document.addField("id", Integer.toString(docId));
         document.addField(VECTOR_FIELD, vectorFor(docId));
+        document.addField("term_s", "bucket" + (docId % 32));
+        document.addField("rank_i", docId % 1_000);
         batch.add(document);
         if (batch.size() == BATCH_SIZE) {
           addBatch(solrBenchState, batch);
@@ -167,10 +174,10 @@ public class KnnConcurrentLoad {
       solrBenchState.client.requestWithBaseUrl(solrBenchState.nodes.get(0), update, COLLECTION);
     }
 
-    private List<String> createQueries(int numDocs) {
+    private List<String> createQueries(int numDocs, String queryShape) {
       List<String> queries = new ArrayList<>(QUERY_COUNT);
       for (int queryId = 0; queryId < QUERY_COUNT; queryId++) {
-        queries.add(knnQuery(numDocs + queryId));
+        queries.add(queryFor(queryShape, numDocs + queryId, queryId));
       }
       return List.copyOf(queries);
     }
@@ -193,7 +200,7 @@ public class KnnConcurrentLoad {
           digest.update((byte) '\n');
         }
       }
-      knnResultSha256 = HexFormat.of().formatHex(digest.digest());
+      resultSha256 = HexFormat.of().formatHex(digest.digest());
     }
 
     private static int readSegmentCount(SolrBenchState solrBenchState) throws Exception {
@@ -234,7 +241,7 @@ public class KnnConcurrentLoad {
   }
 
   @Benchmark
-  public void knnQuery(
+  public void searchQuery(
       SolrBenchState solrBenchState,
       SearchState searchState,
       ClientState clientState,
@@ -243,6 +250,19 @@ public class KnnConcurrentLoad {
     QueryResponse response =
         runQuery(solrBenchState, clientState.nextQuery(searchState), searchState.multiThreaded);
     blackhole.consume(response);
+  }
+
+  private static String queryFor(String queryShape, int vectorId, int queryId) {
+    return switch (queryShape) {
+      case "knn" -> knnQuery(vectorId);
+      case "term" -> "{!term f=term_s}bucket" + (queryId % 32);
+      case "range" -> {
+        int lower = (queryId % 4) * 250;
+        yield "rank_i:[" + lower + " TO " + (lower + 249) + "]";
+      }
+      case "matchAll" -> "*:*";
+      default -> throw new IllegalArgumentException("Unknown query shape: " + queryShape);
+    };
   }
 
   private static QueryResponse runQuery(

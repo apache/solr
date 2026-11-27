@@ -406,11 +406,12 @@ JMH is highly configurable, and users are encouraged to look through the samples
 for exposure around what options are available. A good tutorial for learning JMH basics is
 found [here](http://tutorials.jenkov.com/java-performance/jmh.html#return-value-from-benchmark-method)
 
-### KNN concurrent-load benchmark
+### Search query concurrent-load benchmark
 
-`KnnConcurrentLoad.knnQuery` measures KNN request latency with a fixed vector corpus. It logs the
-actual segment count, a hash of the KNN results, and shared search-pool task counts per iteration.
-Run it with `-t 1`, `-t 2`, or `-t 4` to vary concurrent clients.
+`KnnConcurrentLoad.searchQuery` compares KNN, selective term, range, and match-all query latency on
+the same fixed corpus. It logs the actual segment count, a hash of the results, and shared
+search-pool task counts per iteration. Set `queryShape` to `knn`, `term`, `range`, or `matchAll`,
+then run with `-t 1`, `-t 2`, or `-t 4` to vary concurrent clients.
 
 Compare these settings:
 
@@ -420,10 +421,10 @@ Compare these settings:
 | 4 | `false` | `-p searchThreads=4 -p multiThreaded=false` |
 | 4 | `true` | `-p searchThreads=4 -p multiThreaded=true` |
 
-For example, this runs the pool-enabled, single-threaded-request case with four clients:
+For example, this runs the pool-enabled, single-threaded term-query case with four clients:
 
 ```zsh
-./jmh.sh KnnConcurrentLoad.knnQuery -p numDocs=500000 -p searchThreads=4 -p multiThreaded=false -t 4
+./jmh.sh KnnConcurrentLoad.searchQuery -p queryShape=term -p numDocs=500000 -p searchThreads=4 -p multiThreaded=false -t 4
 ```
 
 Repeat with `-t 1` and `-t 2`. Keep the document count, JMH settings, and client count the same
