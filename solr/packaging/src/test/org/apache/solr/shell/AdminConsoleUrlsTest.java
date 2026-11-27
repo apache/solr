@@ -17,8 +17,6 @@
 
 package org.apache.solr.shell;
 
-import static org.junit.Assume.assumeFalse;
-
 import org.junit.Test;
 
 /**
@@ -42,8 +40,9 @@ public class AdminConsoleUrlsTest extends SolrCatsTestCase {
 
   @Test
   public void assertAdminConsoleStaticAssetsAreRevalidatedAndVersioned() {
-    // The js-client bundle is absent with -PdisableJsClient=true
-    assumeFalse(Boolean.getBoolean("tests.jsclient.disabled"));
+    assumeFalse(
+        "js-client bundle is absent with -PdisableJsClient=true",
+        Boolean.getBoolean("tests.jsclient.disabled"));
     run("solr start");
 
     http("/solr/libs/solr/index.js")
