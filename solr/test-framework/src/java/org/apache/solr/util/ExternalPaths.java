@@ -50,10 +50,6 @@ public class ExternalPaths {
   public static Path DEFAULT_CONFIGSET =
       SOURCE_HOME == null ? null : SOURCE_HOME.resolve("server/solr/configsets/_default/conf");
 
-  /** Path to the bundled configset containing language-specific analysis. */
-  public static Path MULTILINGUAL_CONFIGSET =
-      SOURCE_HOME == null ? null : SOURCE_HOME.resolve("server/solr/configsets/_multilingual/conf");
-
   /**
    * @see #SOURCE_HOME
    */
