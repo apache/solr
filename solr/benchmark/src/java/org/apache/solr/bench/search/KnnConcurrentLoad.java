@@ -78,7 +78,7 @@ public class KnnConcurrentLoad {
     @Param({"false", "true"})
     boolean multiThreaded;
 
-    @Param({"knn", "term", "range", "matchAll"})
+    @Param({"knn", "knnTermFilter", "knnRangeFilter", "term", "range", "matchAll"})
     String queryShape;
 
     private List<String> queries;
@@ -190,7 +190,7 @@ public class KnnConcurrentLoad {
         QueryResponse response = runQuery(solrBenchState, query, multiThreaded);
         if (response.getResults().size() != TOP_K) {
           throw new IllegalStateException(
-              "Expected " + TOP_K + " KNN results, got " + response.getResults().size());
+              "Expected " + TOP_K + " results, got " + response.getResults().size());
         }
         for (SolrDocument document : response.getResults()) {
           digest.update(document.getFieldValue("id").toString().getBytes(StandardCharsets.UTF_8));
@@ -255,6 +255,12 @@ public class KnnConcurrentLoad {
   private static String queryFor(String queryShape, int vectorId, int queryId) {
     return switch (queryShape) {
       case "knn" -> knnQuery(vectorId);
+      case "knnTermFilter" ->
+          knnQuery(vectorId, " preFilter='term_s:bucket" + (queryId % 32) + "'");
+      case "knnRangeFilter" -> {
+        int lower = (queryId % 4) * 250;
+        yield knnQuery(vectorId, " preFilter='rank_i:[" + lower + " TO " + (lower + 249) + "]'");
+      }
       case "term" -> "{!term f=term_s}bucket" + (queryId % 32);
       case "range" -> {
         int lower = (queryId % 4) * 250;
@@ -281,11 +287,16 @@ public class KnnConcurrentLoad {
   }
 
   private static String knnQuery(int queryId) {
+    return knnQuery(queryId, "");
+  }
+
+  private static String knnQuery(int queryId, String localParams) {
     StringBuilder query =
         new StringBuilder("{!knn f=")
             .append(VECTOR_FIELD)
             .append(" topK=")
             .append(TOP_K)
+            .append(localParams)
             .append("}[");
     for (int dimension = 0; dimension < 8; dimension++) {
       if (dimension > 0) {

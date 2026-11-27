@@ -408,10 +408,11 @@ found [here](http://tutorials.jenkov.com/java-performance/jmh.html#return-value-
 
 ### Search query concurrent-load benchmark
 
-`KnnConcurrentLoad.searchQuery` compares KNN, selective term, range, and match-all query latency on
-the same fixed corpus. It logs the actual segment count, a hash of the results, and shared
-search-pool task counts per iteration. Set `queryShape` to `knn`, `term`, `range`, or `matchAll`,
-then run with `-t 1`, `-t 2`, or `-t 4` to vary concurrent clients.
+`KnnConcurrentLoad.searchQuery` compares KNN, KNN with term/range pre-filters, selective term,
+range, and match-all query latency on the same fixed corpus. It logs the actual segment count, a
+hash of the results, and shared search-pool task counts per iteration. Set `queryShape` to `knn`,
+`knnTermFilter`, `knnRangeFilter`, `term`, `range`, or `matchAll`, then run with `-t 1`, `-t 2`, or
+`-t 4` to vary concurrent clients.
 
 Compare these settings:
 
