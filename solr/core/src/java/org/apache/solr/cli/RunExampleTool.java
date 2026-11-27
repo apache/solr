@@ -1601,7 +1601,9 @@ public class RunExampleTool extends ToolBase {
     }
     if (jvmOpts != null && !jvmOpts.isEmpty()) {
       command.add("--jvm-opts");
-      command.add(jvmOpts);
+      // cmd.exe splits an unquoted argument at '=', so solr.cmd would see only part of the opts
+      boolean quote = isWindows && !(jvmOpts.startsWith("\"") && jvmOpts.endsWith("\""));
+      command.add(quote ? "\"" + jvmOpts + "\"" : jvmOpts);
     }
 
     String cmdStr = String.join(" ", command);
