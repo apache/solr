@@ -17,6 +17,8 @@
 
 package org.apache.solr.shell;
 
+import static org.junit.Assume.assumeFalse;
+
 import org.junit.Test;
 
 /**
@@ -40,14 +42,13 @@ public class AdminConsoleUrlsTest extends SolrCatsTestCase {
 
   @Test
   public void assertAdminConsoleStaticAssetsAreRevalidatedAndVersioned() {
+    // The js-client bundle is absent with -PdisableJsClient=true
+    assumeFalse(Boolean.getBoolean("tests.jsclient.disabled"));
     run("solr start");
 
-    // The js-client bundle is absent with -PdisableJsClient=true
-    if (!Boolean.getBoolean("tests.jsclient.disabled")) {
-      http("/solr/libs/solr/index.js")
-          .assertStatus(200)
-          .assertHeaderContains("Cache-Control: no-cache");
-    }
+    http("/solr/libs/solr/index.js")
+        .assertStatus(200)
+        .assertHeaderContains("Cache-Control: no-cache");
 
     http("/solr/").assertStatus(200).assertNotMatches("(src|href)=\"[^\"]+\\.(js|css)\"");
   }
