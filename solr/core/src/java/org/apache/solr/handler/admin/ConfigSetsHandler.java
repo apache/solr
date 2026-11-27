@@ -51,6 +51,7 @@ import org.apache.solr.security.PermissionNameProvider;
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
   // TODO refactor into o.a.s.handler.configsets package to live alongside actual API logic
   public static final String DEFAULT_CONFIGSET_NAME = "_default";
+  public static final String MULTILINGUAL_CONFIGSET_NAME = "_multilingual";
   public static final String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED";
   protected final CoreContainer coreContainer;
   public static long CONFIG_SET_TIMEOUT = 300 * 1000;

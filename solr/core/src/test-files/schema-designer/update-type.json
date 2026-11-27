@@ -35,7 +35,7 @@
       },
       {
         "name": "keywordMarker",
-        "protected": "protwords.txt"
+        "protected": "lang/protwords_en.txt"
       },
       {
         "name": "porterStem"
@@ -51,7 +51,7 @@
         "name": "synonymGraph",
         "expand": "true",
         "ignoreCase": "true",
-        "synonyms": "synonyms.txt"
+        "synonyms": "lang/synonyms_en.txt"
       },
       {
         "name": "stop",
@@ -66,7 +66,7 @@
       },
       {
         "name": "keywordMarker",
-        "protected": "protwords.txt"
+        "protected": "lang/protwords_en.txt"
       },
       {
         "name": "porterStem"

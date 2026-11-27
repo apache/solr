@@ -28,6 +28,9 @@
 #
 # In --local-solr mode Prometheus uses prometheus/prometheus-local.yml which scrapes
 # host.docker.internal:8983.  Edit that file to add further nodes or change the port.
+#
+# Prometheus scrapes both collection routes: the nodes directly as job "solr", and the
+# OTel collector they push to as job "solr-otlp".
 
 set -euo pipefail
 
@@ -92,7 +95,7 @@ if $LOCAL_MODE; then
     export SOLR_URL="http://host.docker.internal:8983/solr"
   fi
 
-  SERVICES="prometheus grafana alertmanager"
+  SERVICES="prometheus grafana alertmanager otel-collector aspire-dashboard"
   if $WITH_TRAFFICGEN; then
     SERVICES="$SERVICES trafficgen"
   fi
@@ -102,7 +105,10 @@ if $LOCAL_MODE; then
 
   echo ""
   echo "Monitoring stack started in local-Solr mode."
-  echo "Prometheus is scraping your local Solr via host.docker.internal"
+  echo "Prometheus is scraping your local Solr via host.docker.internal, as job 'solr'."
+  echo "For the 'solr-otlp' job too, start it with:"
+  echo "  SOLR_MODULES=opentelemetry SOLR_METRICS_OTLP_EXPORTER_ENABLED=true bin/solr start"
+  echo "(the collector listens on localhost:4318, Solr's default OTLP/HTTP endpoint)"
   if $WITH_TRAFFICGEN; then
     echo "Traffic generator is running against: $SOLR_URL"
   fi
@@ -111,6 +117,8 @@ if $LOCAL_MODE; then
   echo "  Grafana:    http://localhost:3000  (view without login; admin/admin to edit)"
   echo "  Prometheus: http://localhost:9090"
   echo "  Alertmanager: http://localhost:9093"
+  echo "  Collector:  http://localhost:9464/metrics  (what Solr pushed; :9465 untranslated)"
+  echo "  Aspire:     http://localhost:18888  (raw view of pushed metrics and traces)"
   echo ""
   echo "Tip: edit prometheus/prometheus-local.yml to add further nodes or change the port."
 else
@@ -125,6 +133,8 @@ else
   echo "  Grafana:      http://localhost:3000  (view without login; admin/admin to edit)"
   echo "  Prometheus:   http://localhost:9090"
   echo "  Alertmanager: http://localhost:9093"
+  echo "  Collector:    http://localhost:9464/metrics  (what Solr pushed; :9465 untranslated)"
+  echo "  Aspire:       http://localhost:18888  (raw view of pushed metrics and traces)"
   echo ""
   echo "Tip: Prometheus may show scrape errors for the first 30-60 seconds while Solr starts."
 fi

@@ -1,0 +1,124 @@
+= CATS: Solr's shell tests
+:toc: left
+:toclevels: 2
+
+CATS (Cross-platform Automated Testing System) is how Solr tests `bin/solr` and `bin\solr.cmd`. A test is a Java class that runs real `solr` commands against an unpacked distribution, through `bash` on Unix and `cmd.exe` on Windows. The same test covers both platforms, so script, quoting and packaging bugs show up on the OS where they actually happen.
+
+CATS replaced the BATS suites that used to live in `solr/packaging/test/` (SOLR-18642); they were removed in SOLR-18645.
+
+* Suites: `solr/packaging/src/test/org/apache/solr/shell/`
+* Base class: `SolrCatsTestCase` (in `solr/test-framework`, package `org.apache.solr.shell`)
+* Harness internals: package `org.apache.solr.cats`, same module
+
+
+== Running
+
+[source,bash]
+----
+./gradlew -p solr/packaging catsTests                     # all suites (builds the distribution first)
+./gradlew -p solr/packaging catsTests --tests "*ZkTest"   # one suite
+./gradlew -p solr/test-framework test --tests "org.apache.solr.cats.*"  # the harness' own unit tests
+----
+
+`catsTestsPicocli` and `catsTestsCommonsCli` run the suites against a specific CLI implementation. To run a suite from the IDE, build a distribution with `./gradlew -p solr/packaging dev` and point the test at it with `SOLR_TIP` or `-Dsolr.cli.solr.tip=<dir>`.
+
+CATS is not part of `check`. CI runs it on Linux and Windows for PRs that touch `solr/bin`, `solr/packaging` or the CLI (`.github/workflows/cats-test.yml`).
+
+== A first test
+
+[source,java]
+----
+package org.apache.solr.shell;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class MyFeatureTest extends SolrCatsTestCase {
+
+  @BeforeClass
+  public static void startSolr() {
+    // Lives for the whole class and is stopped automatically.
+    classCli.run("solr start");
+  }
+
+  @Test
+  public void createsCollection() {
+    run("solr create -c films")
+        .assertContains("Created collection 'films'")
+        .assertContains("assuming solr url is http://localhost:${SOLR_PORT}");
+    assertTrue(collectionExists("films"));
+  }
+
+  @Test
+  public void rejectsUnknownOption() {
+    runFail("solr create -c films --no-such-option").assertContains("no-such-option");
+  }
+
+  @Test
+  public void uploadsAConfigFile() {
+    write("myfile.txt", "hello");
+    run("solr zk cp myfile.txt zk:/myfile.txt -z localhost:${ZK_PORT}");
+    run("solr zk ls / -z localhost:${ZK_PORT}").assertContains("myfile.txt");
+  }
+}
+----
+
+Things to know:
+
+* `solr` resolves to `bin/solr` or `bin\solr.cmd`, because the distribution's `bin` is on `PATH`.
+* Each test class gets its own `SOLR_HOME`, its own block of ports and its own work directory, so classes run in parallel. Paths in the DSL are relative to the work directory.
+* `classCli` is the session for the whole class; use it in `@BeforeClass`.Inside a test, the bare `run(...)` and friends use that test's own session.Nodes a test starts are stopped when it ends, and nodes the class starts are stopped when the class ends.A leftover process fails the class.
+* `+${SOLR_PORT}+`, `+${ZK_PORT}+` etc. are resolved by the harness itself, in both commands and expected text. A typo in a variable name fails immediately instead of expanding to an empty string.
+
+== The DSL
+
+`SolrCatsTestCase` gives you a small vocabulary. Use it instead of shell tools, so the test works on both shells.
+
+=== Running commands
+
+[cols="1,2", options="header"]
+|===
+| method | does
+
+| `run(line)` | runs and asserts exit code 0
+| `runFail(line)` | asserts a non-zero exit code
+| `tryRun(line)` | asserts nothing; check the result yourself
+| `run(List.of(...))` | takes ready-split arguments and quotes each one for the current shell
+| `runWithStdin(input, line)` | feeds `input` on stdin
+| `runInBackground(line)` | for long-running commands
+| `run(Duration, line)` | overrides the timeout for one command
+|===
+
+Each returns a `CommandResult`, whose assertions can be chained: `assertContains`, `assertNotContains`, `assertMatches`, `assertExact`, `assertLine`, `assertLineCount`, `assertExitCode`. For custom checks use `output()`, `lines()`, `linesMatching(regex)`, `firstMatch(regex)` or `fields(lineIndex)`.
+
+=== Environment, files and HTTP
+
+* Environment: `env(name, value)`, `unset(name)`, `env(name)`, `addPath(dir)`, `cd(dir)`
+* Files: `write`, `append`, `read`, `touch`, `mkdirs`, `copy`, `move`, `rm`, `exists`, `fileContains`, `list(dir, glob)`, `copyResource`, `workDir()`
+* HTTP: `http(pathAndQuery)` (GETs the first node), `http(port, path)`, `httpPost`, `httpPut`, `https(...)`, with user/password overloads for auth tests
+* Waiting: `awaitOrFail(what, timeout, interval, condition)`. Never sleep.
+
+=== Solr-specific helpers
+
+* Ports, enough for up to three nodes per class: `ports().solr()`, `ports().solr2()`, `ports().solr3()` and `ports().zk()` in Java, exported to commands as `+${SOLR_PORT}+`, `+${SOLR2_PORT}+`, `+${SOLR3_PORT}+` and `+${ZK_PORT}+`. Stop ports are `ports().stop()`, `ports().stop2()` and `ports().stop3()`. A second node joins the first with `+-z localhost:${ZK_PORT}+`.
+* `collectionExists`, `configExists`, `deleteAllCollections`, `shutdownAll`, `dumpSolrLog`
+* `forCli(commonsCliText, picocliText)` picks the expected wording when the two CLI implementations differ only in text. `@EnabledOnCli("picocli")` skips a test or class that only applies to one of them.
+
+=== What the harness refuses
+
+A command line that only works on one shell is rejected, and the error message names the replacement:
+
+* Unix tools such as `grep`, `sed`, `awk`, `cat`, `ls`, `curl`, `jq`, `sleep`, `kill`, `rm`: use the assertions, file helpers, `http(...)` or `awaitOrFail` above.
+* `|`, `&&`, `||`, `;`: make two `run()` calls, or pass data along with `runWithStdin`.
+* `$(...)` and backticks: compute the value in Java.
+* Single quotes: use double quotes or `run(List.of(...))`.
+* `/tmp/`, `/dev/null`: use a path under `workDir()`.
+* `FOO=bar solr ...` and `%FOO%`: use `env("FOO", "bar")` and `+${FOO}+`.
+
+When a test really does only make sense on one shell, annotate it `@EnabledOnShell(BASH)` (or `CMD`). It is then skipped on the other shell, and shell-specific syntax is allowed.
+
+== When a test fails
+
+The failure message gives the path to a snapshot of the test's `SOLR_HOME` under `solr/packaging/build/`. Start with `transcript.log` in there: it is a shell session you can paste, with every command, its output, exit status and timing, plus HTTP calls written as the equivalent `curl`. `dumpSolrLog()` prints the node log to the test output.
+
+Ports are randomized per run; set `CATS_PORT_BASE` (or `-Dcats.port.base=<n>`) to pin them, e.g. when replaying a failure. Other settings: `cats.timeout` (default 300 seconds per command) and `cats.shell` (`bash` or `cmd`).

@@ -44,7 +44,7 @@ public class DeleteCollectionSnapshotAPITest extends MockV2APITest {
   @Test
   public void testConstructsValidOverseerMessage() throws Exception {
     when(mockClusterState.hasCollection("myCollName")).thenReturn(true);
-    when(mockSolrZkClient.exists(anyString())).thenReturn(false);
+    when(mockSolrZkClient.exists(anyString())).thenReturn(true);
 
     api.deleteCollectionSnapshot("myCollName", "mySnapshotName", false, null);
 

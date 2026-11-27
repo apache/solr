@@ -257,7 +257,9 @@ public class ZkCpTool extends ToolBase {
       zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recursive);
 
     } catch (Exception e) {
-      log.error("Could not complete the zk operation for reason: ", e);
+      if (isVerbose() || !isZkConnectTimeout(e)) {
+        log.error("Could not complete the zk operation for reason: ", e);
+      }
       throw (e);
     }
   }

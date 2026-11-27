@@ -1711,7 +1711,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
       ConfigSetAdminResponse.List response = list.process(solrClient);
       Collection<String> actualConfigSets = response.getConfigSets();
-      assertEquals(1, actualConfigSets.size()); // only the _default configset
+      assertEquals(Set.of("_default", "_multilingual"), Set.copyOf(actualConfigSets));
 
       // test multiple
       Set<String> configSets = new HashSet<String>();
@@ -1722,7 +1722,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       }
       response = list.process(solrClient);
       actualConfigSets = response.getConfigSets();
-      assertEquals(configSets.size() + 1, actualConfigSets.size());
+      assertEquals(configSets.size() + 2, actualConfigSets.size());
       assertTrue(actualConfigSets.containsAll(configSets));
     } finally {
       zkClient.close();
