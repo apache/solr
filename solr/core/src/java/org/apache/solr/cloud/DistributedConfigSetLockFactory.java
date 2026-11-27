@@ -19,12 +19,10 @@ package org.apache.solr.cloud;
 
 public interface DistributedConfigSetLockFactory {
   /**
-   * Create a new lock of the specified type (read or write) entering the "competition" for actually
-   * getting the lock for the {@code configSetName}
+   * Create a new lock of the specified type (read or write) for the {@code configSetName}
    *
-   * <p>Upon return from this call, the lock <b>has not been acquired</b> but the it had entered the
-   * lock acquiring "competition", and the caller can decide to wait until the lock is granted by
-   * calling {@link DistributedLock#waitUntilAcquired()}.<br>
+   * <p>Upon return, the lock <b>has not been acquired</b>. It enters the competition in {@link
+   * DistributedLock#waitUntilAcquired()}.<br>
    * Separating the lock creation from lock acquisition allows a more deterministic release of the
    * locks when/if they can't be acquired.
    *

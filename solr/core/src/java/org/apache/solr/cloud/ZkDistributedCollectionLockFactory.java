@@ -36,8 +36,9 @@ import org.apache.zookeeper.KeeperException;
 public class ZkDistributedCollectionLockFactory extends ZkDistributedLockFactory
     implements DistributedCollectionLockFactory {
 
-  public ZkDistributedCollectionLockFactory(SolrZkClient zkClient, String rootPath) {
-    super(zkClient, rootPath);
+  public ZkDistributedCollectionLockFactory(
+      SolrZkClient zkClient, String rootPath, String nodeName) {
+    super(zkClient, rootPath, nodeName);
   }
 
   @Override

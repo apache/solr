@@ -93,6 +93,7 @@ org.apache.commons:commons-lang3:3.20.0=jarValidation,runtimeClasspath,runtimeLi
 org.apache.commons:commons-math3:3.6.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.apache.curator:curator-client:5.9.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 org.apache.curator:curator-framework:5.9.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+org.apache.curator:curator-recipes:5.9.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.apache.curator:curator-test:5.9.0=jarValidation,testRuntimeClasspath
 org.apache.kafka:kafka-clients:4.3.1=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 org.apache.logging.log4j:log4j-1.2-api:2.26.1=solrPlatformLibs

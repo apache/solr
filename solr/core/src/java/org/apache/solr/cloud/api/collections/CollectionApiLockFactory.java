@@ -52,10 +52,10 @@ public class CollectionApiLockFactory {
    * executing concurrently with an operation on one of the shards of the collection). See
    * documentation linked to SOLR-14840 regarding Collection API locking.
    *
-   * @return a lock that once {@link DistributedMultiLock#isAcquired()} guarantees the corresponding
-   *     Collection API command can execute safely. The returned lock <b>MUST</b> be {@link
-   *     DistributedMultiLock#release()} no matter what once no longer needed as otherwise it would
-   *     prevent other threads from locking.
+   * @return a lock that once {@link DistributedMultiLock#waitUntilAcquired()} returns guarantees
+   *     the corresponding Collection API command can execute safely. The returned lock <b>MUST</b>
+   *     be {@link DistributedMultiLock#release()} no matter what once no longer needed as otherwise
+   *     it would prevent other threads from locking.
    */
   DistributedMultiLock createCollectionApiLock(
       AdminCmdContext adminCmdContext, String collName, String shardId, String replicaName) {

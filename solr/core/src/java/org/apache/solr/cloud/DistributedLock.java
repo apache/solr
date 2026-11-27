@@ -17,13 +17,14 @@
 
 package org.apache.solr.cloud;
 
-/** A lock that can be used across cluster nodes. */
+/**
+ * A lock that can be used across cluster nodes. {@link #waitUntilAcquired()} and {@link #release()}
+ * must be called on the same thread.
+ */
 public interface DistributedLock {
   void waitUntilAcquired();
 
   void release();
-
-  boolean isAcquired();
 
   String getLockId();
 

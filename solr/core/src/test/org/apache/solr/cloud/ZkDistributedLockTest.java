@@ -17,18 +17,19 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.ThreadBoundLock.TIMEOUT_MS;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ZkDistributedLockTest extends SolrTestCaseJ4 {
@@ -38,8 +39,37 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
   private final String REPLICA_NAME = "lockReplica";
 
   private static final String CONFIG_SET_NAME = "lockConfigSet";
+  private static final String COLLECTION_ROOT = "/lockTestCollectionRoot";
+  private static final String CONFIG_SET_ROOT = "/lockTestConfigSetRoot";
 
-  static final int TIMEOUT = 10000;
+  private final List<ThreadBoundLock> boundLocks = new ArrayList<>();
+
+  private ZkTestServer server;
+  private SolrZkClient zkClient;
+
+  @Before
+  public void startZk() throws Exception {
+    server = new ZkTestServer(createTempDir("zkData"));
+    server.run();
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(server.getZkHost())
+            .withTimeout(TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .build();
+  }
+
+  @After
+  public void stopZk() throws Exception {
+    boundLocks.forEach(ThreadBoundLock::close);
+    zkClient.close();
+    server.shutdown();
+  }
+
+  private ThreadBoundLock bind(DistributedLock lock) {
+    ThreadBoundLock bound = new ThreadBoundLock(lock::waitUntilAcquired, lock::release);
+    boundLocks.add(bound);
+    return bound;
+  }
 
   /**
    * Tests the obtaining of a single read or write lock at a specific hierarchical level, for
@@ -53,29 +83,17 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testSingleLocks() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(server.getZkAddress())
-              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        DistributedCollectionLockFactory collLockFactory =
-            new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
+    DistributedCollectionLockFactory collLockFactory =
+        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
 
-        monothreadedCollectionTests(collLockFactory);
-        multithreadedCollectionTests(collLockFactory);
+    monothreadedCollectionTests(collLockFactory);
+    multithreadedCollectionTests(collLockFactory);
 
-        DistributedConfigSetLockFactory configSetLockFactory =
-            new ZkDistributedConfigSetLockFactory(zkClient, "/lockTestConfigSetRoot");
+    DistributedConfigSetLockFactory configSetLockFactory =
+        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT, "testNode");
 
-        monothreadedConfigSetTests(configSetLockFactory);
-        multithreadedConfigSetTests(configSetLockFactory);
-      }
-    } finally {
-      server.shutdown();
-    }
+    monothreadedConfigSetTests(configSetLockFactory);
+    multithreadedConfigSetTests(configSetLockFactory);
   }
 
   /**
@@ -84,225 +102,205 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testLockDirsAreContainers() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(server.getZkHost())
-              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        String collRoot = "/lockTestCollectionRoot";
-        DistributedCollectionLockFactory collLockFactory =
-            new ZkDistributedCollectionLockFactory(zkClient, collRoot);
-        DistributedLock replicaLock =
-            collLockFactory.createLock(
-                true,
-                CollectionParams.LockLevel.REPLICA,
-                COLLECTION_NAME,
-                SHARD_NAME,
-                REPLICA_NAME,
-                null);
-        replicaLock.release();
-        DistributedLock shardLock =
-            collLockFactory.createLock(
-                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
-        shardLock.release();
-        DistributedLock collLock =
-            collLockFactory.createLock(
-                true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-        collLock.release();
-        assertLockDirsAreContainers(server, replicaLock, collRoot);
-        assertLockDirsAreContainers(server, shardLock, collRoot);
-        assertLockDirsAreContainers(server, collLock, collRoot);
+    DistributedCollectionLockFactory collLockFactory =
+        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
+    DistributedLock replicaLock =
+        collLockFactory.createLock(
+            true,
+            CollectionParams.LockLevel.REPLICA,
+            COLLECTION_NAME,
+            SHARD_NAME,
+            REPLICA_NAME,
+            null);
+    replicaLock.waitUntilAcquired();
+    String replicaLockId = replicaLock.getLockId();
+    replicaLock.release();
+    DistributedLock shardLock =
+        collLockFactory.createLock(
+            true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+    shardLock.waitUntilAcquired();
+    String shardLockId = shardLock.getLockId();
+    shardLock.release();
+    DistributedLock collLock =
+        collLockFactory.createLock(
+            true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
+    collLock.waitUntilAcquired();
+    String collLockId = collLock.getLockId();
+    collLock.release();
+    assertLockDirsAreContainers(server, replicaLockId, COLLECTION_ROOT);
+    assertLockDirsAreContainers(server, shardLockId, COLLECTION_ROOT);
+    assertLockDirsAreContainers(server, collLockId, COLLECTION_ROOT);
 
-        String configSetRoot = "/lockTestConfigSetRoot";
-        DistributedConfigSetLockFactory configSetLockFactory =
-            new ZkDistributedConfigSetLockFactory(zkClient, configSetRoot);
-        DistributedLock configSetLock = configSetLockFactory.createLock(true, CONFIG_SET_NAME);
-        configSetLock.release();
-        assertLockDirsAreContainers(server, configSetLock, configSetRoot);
+    DistributedConfigSetLockFactory configSetLockFactory =
+        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT, "testNode");
+    DistributedLock configSetLock = configSetLockFactory.createLock(true, CONFIG_SET_NAME);
+    configSetLock.waitUntilAcquired();
+    String configSetLockId = configSetLock.getLockId();
+    configSetLock.release();
+    assertLockDirsAreContainers(server, configSetLockId, CONFIG_SET_ROOT);
 
-        // Simulate ZooKeeper removing the empty containers
-        zkClient.clean(parent(parent(collLock.getLockId())));
-        DistributedLock lock =
-            collLockFactory.createLock(
-                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
-        assertTrue(lock.isAcquired());
-        lock.release();
-      }
-    } finally {
-      server.shutdown();
-    }
+    // Simulate ZooKeeper removing the empty containers
+    zkClient.clean(parent(parent(collLockId)));
+    DistributedLock lock =
+        collLockFactory.createLock(
+            true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+    lock.waitUntilAcquired();
+    lock.release();
+  }
+
+  /** Lock nodes record the Solr node that holds them. */
+  @Test
+  public void testLockNodeHoldsNodeName() throws Exception {
+    DistributedLock collLock = collectionLock(collectionLockFactory(), true, null);
+    collLock.waitUntilAcquired();
+    assertEquals(
+        "testNode",
+        new String(zkClient.getData(collLock.getLockId(), null, null), StandardCharsets.UTF_8));
+    collLock.release();
+
+    DistributedLock configSetLock =
+        new ZkDistributedConfigSetLockFactory(zkClient, CONFIG_SET_ROOT, "testNode")
+            .createLock(false, CONFIG_SET_NAME);
+    configSetLock.waitUntilAcquired();
+    assertEquals(
+        "testNode",
+        new String(
+            zkClient.getData(configSetLock.getLockId(), null, null), StandardCharsets.UTF_8));
+    configSetLock.release();
   }
 
   /** Lock dirs left as persistent nodes by older versions get removed, live locks are kept. */
   @Test
   public void testDeleteEmptyLockDirs() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(server.getZkAddress())
-              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
-        String root = "/lockTestCollectionRoot";
-        ZkDistributedCollectionLockFactory factory =
-            new ZkDistributedCollectionLockFactory(zkClient, root);
-        String collLockDir =
-            lockDir(
-                factory.createLock(
-                    true,
-                    CollectionParams.LockLevel.COLLECTION,
-                    COLLECTION_NAME,
-                    null,
-                    null,
-                    null));
-        String replicaLockDir =
-            lockDir(
-                factory.createLock(
-                    true,
-                    CollectionParams.LockLevel.REPLICA,
-                    COLLECTION_NAME,
-                    SHARD_NAME,
-                    REPLICA_NAME,
-                    null));
-        String shardLockDir =
-            lockDir(
-                factory.createLock(
-                    true,
-                    CollectionParams.LockLevel.SHARD,
-                    COLLECTION_NAME,
-                    SHARD_NAME,
-                    null,
-                    null));
-        String otherCollLockDir =
-            lockDir(
-                factory.createLock(
-                    true, CollectionParams.LockLevel.COLLECTION, "otherColl", null, null, null));
-        String coll = parent(collLockDir);
-        zkClient.clean(root);
-        for (String dir : List.of(collLockDir, shardLockDir, replicaLockDir, otherCollLockDir)) {
-          zkClient.makePath(dir, false);
-        }
-
-        DistributedLock shardLock =
+    ZkDistributedCollectionLockFactory factory =
+        new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
+    String collLockDir =
+        lockDir(
             factory.createLock(
-                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
-
-        factory.deleteEmptyLockDirs(COLLECTION_NAME);
-        assertFalse(zkClient.exists(collLockDir));
-        assertFalse(zkClient.exists(replicaLockDir));
-        assertTrue(zkClient.exists(shardLock.getLockId()));
-        assertTrue(shardLock.isAcquired());
-
-        shardLock.release();
-        factory.deleteEmptyLockDirs(COLLECTION_NAME);
-        assertFalse(zkClient.exists(coll));
-        assertTrue(zkClient.exists(otherCollLockDir));
-      }
-    } finally {
-      server.shutdown();
-    }
-  }
-
-  /** A parent lock dir removed while the lock path is being created must not fail the lock. */
-  @Test
-  public void testParentRemovedWhileCreatingLockPath() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      String root = "/lockTestCollectionRoot";
-      AtomicReference<String> shardLockDir = new AtomicReference<>();
-      AtomicBoolean removed = new AtomicBoolean();
-      try (SolrZkClient zkClient =
-          new SolrZkClient(
-              new SolrZkClient.Builder()
-                  .withUrl(server.getZkAddress())
-                  .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)) {
-            @Override
-            public String create(String path, byte[] data, CreateMode createMode)
-                throws KeeperException, InterruptedException {
-              if (path.equals(shardLockDir.get()) && removed.compareAndSet(false, true)) {
-                delete(parent(path), -1);
-              }
-              return super.create(path, data, createMode);
-            }
-          }) {
-        ZkDistributedCollectionLockFactory factory =
-            new ZkDistributedCollectionLockFactory(zkClient, root);
-        shardLockDir.set(
-            lockDir(
-                factory.createLock(
-                    true,
-                    CollectionParams.LockLevel.SHARD,
-                    COLLECTION_NAME,
-                    SHARD_NAME,
-                    null,
-                    null)));
-        zkClient.clean(root);
-
-        DistributedLock lock =
+                true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null));
+    String replicaLockDir =
+        lockDir(
             factory.createLock(
-                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
-        assertTrue(removed.get());
-        assertTrue(lock.isAcquired());
-        lock.release();
-      }
-    } finally {
-      server.shutdown();
+                true,
+                CollectionParams.LockLevel.REPLICA,
+                COLLECTION_NAME,
+                SHARD_NAME,
+                REPLICA_NAME,
+                null));
+    String shardLockDir =
+        lockDir(
+            factory.createLock(
+                true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null));
+    String otherCollLockDir =
+        lockDir(
+            factory.createLock(
+                true, CollectionParams.LockLevel.COLLECTION, "otherColl", null, null, null));
+    String coll = parent(collLockDir);
+    zkClient.clean(COLLECTION_ROOT);
+    for (String dir : List.of(collLockDir, shardLockDir, replicaLockDir, otherCollLockDir)) {
+      zkClient.makePath(dir, false);
     }
+
+    DistributedLock shardLock =
+        factory.createLock(
+            true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
+    shardLock.waitUntilAcquired();
+
+    factory.deleteEmptyLockDirs(COLLECTION_NAME);
+    assertFalse(zkClient.exists(collLockDir));
+    assertFalse(zkClient.exists(replicaLockDir));
+    assertTrue(zkClient.exists(shardLock.getLockId()));
+
+    shardLock.release();
+    factory.deleteEmptyLockDirs(COLLECTION_NAME);
+    assertFalse(zkClient.exists(coll));
+    assertTrue(zkClient.exists(otherCollLockDir));
   }
 
-  /** Lock creation gives up once the lock dir keeps disappearing on every attempt. */
+  private DistributedCollectionLockFactory collectionLockFactory() {
+    return new ZkDistributedCollectionLockFactory(zkClient, COLLECTION_ROOT, "testNode");
+  }
+
+  private DistributedLock collectionLock(
+      DistributedCollectionLockFactory factory, boolean write, String callingLockId) {
+    return factory.createLock(
+        write, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, callingLockId);
+  }
+
+  private void assertWriteAcquirable(DistributedCollectionLockFactory factory) throws Exception {
+    ThreadBoundLock next = bind(collectionLock(factory, true, null));
+    next.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    next.release();
+  }
+
   @Test
-  public void testLockCreationGivesUpAfterMaxAttempts() throws Exception {
-    ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
-    try {
-      server.run();
-      AtomicInteger lockNodeCreates = new AtomicInteger();
-      try (SolrZkClient zkClient =
-          new SolrZkClient(
-              new SolrZkClient.Builder()
-                  .withUrl(server.getZkAddress())
-                  .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)) {
-            @Override
-            public String create(String path, byte[] data, CreateMode createMode)
-                throws KeeperException, InterruptedException {
-              if (createMode == CreateMode.EPHEMERAL_SEQUENTIAL
-                  && lockNodeCreates.incrementAndGet()
-                      <= ZkDistributedLockFactory.MAX_CREATE_ATTEMPTS) {
-                throw new KeeperException.NoNodeException(path);
-              }
-              return super.create(path, data, createMode);
-            }
-          }) {
-        ZkDistributedCollectionLockFactory factory =
-            new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
-        SolrException e =
-            expectThrows(
-                SolrException.class,
-                () ->
-                    factory.createLock(
-                        true,
-                        CollectionParams.LockLevel.COLLECTION,
-                        COLLECTION_NAME,
-                        null,
-                        null,
-                        null));
-        assertTrue(e.getCause() instanceof KeeperException.NoNodeException);
-        assertEquals(ZkDistributedLockFactory.MAX_CREATE_ATTEMPTS, lockNodeCreates.get());
-      }
-    } finally {
-      server.shutdown();
-    }
+  public void testInterruptedWaiterLeavesNoNode() throws Exception {
+    DistributedCollectionLockFactory factory = collectionLockFactory();
+    DistributedLock read = collectionLock(factory, false, null);
+    ThreadBoundLock readThread = bind(read);
+    readThread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    String readId = read.getLockId();
+
+    ThreadBoundLock waiter = bind(collectionLock(factory, true, null));
+    waiter.acquire();
+    ThreadBoundLock.waitForLockNodes(zkClient, readId, 2);
+
+    waiter.close();
+    ThreadBoundLock.waitForLockNodes(zkClient, readId, 1);
+
+    readThread.release();
   }
 
-  /** Asserts every node between the lock and {@code root} is a container. */
-  private static void assertLockDirsAreContainers(
-      ZkTestServer server, DistributedLock lock, String root) {
-    for (String dir = parent(lock.getLockId()); !dir.equals(root); dir = parent(dir)) {
+  @Test
+  public void testReleaseWithoutAcquireIsNoOp() throws Exception {
+    DistributedCollectionLockFactory factory = collectionLockFactory();
+    collectionLock(factory, true, null).release();
+    assertWriteAcquirable(factory);
+  }
+
+  @Test
+  public void testMirrorOfReleasedLockFails() throws Exception {
+    DistributedCollectionLockFactory factory = collectionLockFactory();
+    DistributedLock write = collectionLock(factory, true, null);
+    ThreadBoundLock writeThread = bind(write);
+    writeThread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    String releasedId = write.getLockId();
+    writeThread.release();
+
+    DistributedLock mirror = collectionLock(factory, false, releasedId);
+    SolrException e = expectThrows(SolrException.class, mirror::waitUntilAcquired);
+    assertTrue(e.getMessage(), e.getMessage().contains("Missing mirrored lock node"));
+  }
+
+  @Test
+  public void testReleaseOnOtherThreadFails() throws Exception {
+    DistributedCollectionLockFactory factory = collectionLockFactory();
+    DistributedLock write = collectionLock(factory, true, null);
+    ThreadBoundLock holder = bind(write);
+    holder.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+    SolrException e = expectThrows(SolrException.class, write::release);
+    assertTrue(e.getCause() instanceof IllegalMonitorStateException);
+
+    holder.release();
+    assertWriteAcquirable(factory);
+  }
+
+  @Test
+  public void testRepeatWaitThenSingleReleaseFrees() throws Exception {
+    DistributedCollectionLockFactory factory = collectionLockFactory();
+    DistributedLock write = collectionLock(factory, true, null);
+    write.waitUntilAcquired();
+    write.waitUntilAcquired();
+    write.release();
+    assertWriteAcquirable(factory);
+  }
+
+  /**
+   * Asserts every node from the lock node's parent up to and including {@code root} is a container.
+   */
+  private static void assertLockDirsAreContainers(ZkTestServer server, String lockId, String root) {
+    for (String dir = parent(lockId); dir.startsWith(root); dir = parent(dir)) {
       assertTrue(
           dir + " should be a container node",
           server.getZKDatabase().getDataTree().getContainers().contains(dir));
@@ -311,47 +309,56 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
 
   /** Releases the lock and returns the dir it was created in. */
   private static String lockDir(DistributedLock lock) {
+    lock.waitUntilAcquired();
+    String lockId = lock.getLockId();
     lock.release();
-    return parent(lock.getLockId());
+    return parent(lockId);
   }
 
   private static String parent(String path) {
     return path.substring(0, path.lastIndexOf('/'));
   }
 
-  private void monothreadedCollectionTests(DistributedCollectionLockFactory factory) {
+  private void monothreadedCollectionTests(DistributedCollectionLockFactory factory)
+      throws Exception {
     // Collection level locks
     DistributedLock collRL1 =
         factory.createLock(
             false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-    assertTrue("collRL1 should have been acquired", collRL1.isAcquired());
+    ThreadBoundLock collRL1Thread = bind(collRL1);
+    collRL1Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock collRL2 =
         factory.createLock(
             false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-    assertTrue("collRL1 should have been acquired", collRL2.isAcquired());
+    ThreadBoundLock collRL2Thread = bind(collRL2);
+    collRL2Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock collWL3 =
         factory.createLock(
             true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-    assertFalse(
-        "collWL3 should not have been acquired, due to collRL1 and collRL2", collWL3.isAcquired());
+    ThreadBoundLock collWL3Thread = bind(collWL3);
+    Future<?> collWL3Acquired =
+        collWL3Thread.acquireBlocked(
+            "collWL3 should not have been acquired, due to collRL1 and collRL2",
+            zkClient,
+            COLLECTION_ROOT,
+            1);
 
-    assertTrue(
-        "collRL2 should have been acquired, that should not have changed", collRL2.isAcquired());
-
-    collRL1.release();
-    collRL2.release();
-    assertTrue(
-        "collWL3 should have been acquired, collRL1 and collRL2 were released",
-        collWL3.isAcquired());
+    collRL1Thread.release();
+    collRL2Thread.release();
+    collWL3Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock collRL4 =
         factory.createLock(
             false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-    assertFalse(
-        "collRL4 should not have been acquired, due to collWL3 locking the collection",
-        collRL4.isAcquired());
+    ThreadBoundLock collRL4Thread = bind(collRL4);
+    Future<?> collRL4Acquired =
+        collRL4Thread.acquireBlocked(
+            "collRL4 should not have been acquired, due to collWL3 locking the collection",
+            zkClient,
+            COLLECTION_ROOT,
+            1);
 
     // Collection is write locked by collWL3 and collRL4 read lock waiting behind. Now moving to
     // request shard level locks. These are totally independent of the Collection level locks so
@@ -359,16 +366,19 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     DistributedLock shardWL5 =
         factory.createLock(
             true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
-    assertTrue(
-        "shardWL5 should have been acquired, there is no lock on that shard",
-        shardWL5.isAcquired());
+    ThreadBoundLock shardWL5Thread = bind(shardWL5);
+    shardWL5Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock shardWL6 =
         factory.createLock(
             true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null, null);
-    assertFalse(
-        "shardWL6 should not have been acquired, shardWL5 is locking that shard",
-        shardWL6.isAcquired());
+    ThreadBoundLock shardWL6Thread = bind(shardWL6);
+    Future<?> shardWL6Acquired =
+        shardWL6Thread.acquireBlocked(
+            "shardWL6 should not have been acquired, shardWL5 is locking that shard",
+            zkClient,
+            COLLECTION_ROOT,
+            1);
 
     // Get a lock on a Replica. Again this is independent of collection or shard level
     DistributedLock replicaRL7 =
@@ -379,7 +389,8 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
             SHARD_NAME,
             REPLICA_NAME,
             null);
-    assertTrue("replicaRL7 should have been acquired", replicaRL7.isAcquired());
+    ThreadBoundLock replicaRL7Thread = bind(replicaRL7);
+    replicaRL7Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock replicaWL8 =
         factory.createLock(
@@ -389,32 +400,26 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
             SHARD_NAME,
             REPLICA_NAME,
             null);
-    assertFalse(
-        "replicaWL8 should not have been acquired, replicaRL7 is read locking that replica",
-        replicaWL8.isAcquired());
+    ThreadBoundLock replicaWL8Thread = bind(replicaWL8);
+    Future<?> replicaWL8Acquired =
+        replicaWL8Thread.acquireBlocked(
+            "replicaWL8 should not have been acquired, replicaRL7 is read locking that replica",
+            zkClient,
+            COLLECTION_ROOT,
+            1);
 
-    replicaRL7.release();
-    assertTrue(
-        "replicaWL8 should have been acquired, as replicaRL7 got released",
-        replicaWL8.isAcquired());
+    replicaRL7Thread.release();
+    replicaWL8Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-    collWL3.release();
-    assertTrue("collRL4 should have been acquired given collWL3 released", collRL4.isAcquired());
-    shardWL5.release();
-    assertTrue(
-        "shardWL6 should have been acquired, now that shardWL5 was released",
-        shardWL6.isAcquired());
+    collWL3Thread.release();
+    collRL4Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    shardWL5Thread.release();
+    shardWL6Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-    replicaWL8.release();
-    try {
-      replicaWL8.isAcquired();
-      fail("isAcquired() called after release() on a lock should have thrown exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    replicaWL8Thread.release();
 
     // Releasing the collection lock used in the multithreaded phase
-    collRL4.release();
+    collRL4Thread.release();
   }
 
   private void multithreadedCollectionTests(DistributedCollectionLockFactory factory)
@@ -423,136 +428,80 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     DistributedLock readLock =
         factory.createLock(
             false, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-    assertTrue("readLock should have been acquired", readLock.isAcquired());
+    ThreadBoundLock readLockThread = bind(readLock);
+    readLockThread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     // And now creating a write lock, that can't be acquired just yet, because of the read lock
     DistributedLock writeLock =
         factory.createLock(
             true, CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
-    assertFalse("writeLock should not have been acquired", writeLock.isAcquired());
+    ThreadBoundLock writeLockThread = bind(writeLock);
+    Future<?> writeLockAcquired =
+        writeLockThread.acquireBlocked(
+            "writeLock should not have been acquired", zkClient, COLLECTION_ROOT, 1);
 
-    // Wait for acquisition of the write lock on another thread (and be notified via a latch)
-    final CountDownLatch latch = new CountDownLatch(1);
-    new Thread(
-            () -> {
-              writeLock.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
-              latch.countDown();
-            })
-        .start();
-
-    // Wait for the thread to start and to get blocked in waitUntilAcquired() (thread start could
-    // have been checked more reliably using another latch, and verifying the thread is in
-    // waitUntilAcquired done through that thread stacktrace, but that would be overkill compared to
-    // the very slight race condition of waiting 30ms, but a race that would not cause the test to
-    // fail since we're testing... that nothing happened yet).
-    Thread.sleep(30);
-
-    assertEquals(
-        "we should not have been notified that writeLock was acquired", 1, latch.getCount());
-    assertFalse("writeLock should not have been acquired", writeLock.isAcquired());
-
-    readLock.release();
-    assertTrue(
-        "writeLock should have been acquired now that readlock was released",
-        writeLock.isAcquired());
-
-    // Wait for the Zookeeper watch to fire + the thread to be unblocked and countdown the latch
-    // We'll wait up to 10 seconds here, so should be safe even if GC is extraordinarily high with a
-    // pause
-    int i = 0;
-    while (i < 1000 && latch.getCount() != 0) {
-      Thread.sleep(10);
-      i++;
-    }
-    assertEquals("we should have been notified that writeLock was acquired", 0, latch.getCount());
+    readLockThread.release();
+    writeLockAcquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    writeLockThread.release();
   }
 
-  private void monothreadedConfigSetTests(DistributedConfigSetLockFactory factory) {
+  private void monothreadedConfigSetTests(DistributedConfigSetLockFactory factory)
+      throws Exception {
     DistributedLock configSetRL1 = factory.createLock(false, CONFIG_SET_NAME);
-    assertTrue("configSetRL1 should have been acquired", configSetRL1.isAcquired());
+    ThreadBoundLock configSetRL1Thread = bind(configSetRL1);
+    configSetRL1Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock configSetRL2 = factory.createLock(false, CONFIG_SET_NAME);
-    assertTrue("configSetRL2 should have been acquired", configSetRL2.isAcquired());
+    ThreadBoundLock configSetRL2Thread = bind(configSetRL2);
+    configSetRL2Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock configSetWL1 = factory.createLock(true, CONFIG_SET_NAME);
-    assertFalse(
-        "configSetWL1 should not have been acquired due to configSetRL1 and configSetRL2",
-        configSetWL1.isAcquired());
+    ThreadBoundLock configSetWL1Thread = bind(configSetWL1);
+    Future<?> configSetWL1Acquired =
+        configSetWL1Thread.acquireBlocked(
+            "configSetWL1 should not have been acquired due to configSetRL1 and configSetRL2",
+            zkClient,
+            CONFIG_SET_ROOT,
+            1);
 
-    configSetRL1.release();
-    configSetRL2.release();
-    assertTrue(
-        "configSetWL1 should have been acquired, configSetRL1 and configSetRL2 were released",
-        configSetWL1.isAcquired());
+    configSetRL1Thread.release();
+    configSetRL2Thread.release();
+    configSetWL1Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     DistributedLock configSetRL3 = factory.createLock(false, CONFIG_SET_NAME);
-    assertFalse(
-        "configSetRL3 should not have been acquired due to configSetWL1",
-        configSetRL3.isAcquired());
+    ThreadBoundLock configSetRL3Thread = bind(configSetRL3);
+    Future<?> configSetRL3Acquired =
+        configSetRL3Thread.acquireBlocked(
+            "configSetRL3 should not have been acquired due to configSetWL1",
+            zkClient,
+            CONFIG_SET_ROOT,
+            1);
 
-    configSetWL1.release();
-    assertTrue(
-        "configSetRL3 should have been acquired, configSetWL1 was released",
-        configSetRL3.isAcquired());
+    configSetWL1Thread.release();
+    configSetRL3Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-    configSetRL3.release();
-
-    try {
-      configSetRL3.isAcquired();
-      fail("isAcquired() called after release() on a lock should have thrown exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    configSetRL3Thread.release();
   }
 
   private void multithreadedConfigSetTests(DistributedConfigSetLockFactory factory)
       throws Exception {
     // Acquiring right away a read lock
     DistributedLock configSetRL1 = factory.createLock(false, CONFIG_SET_NAME);
-    assertTrue("configSetRL1 should have been acquired", configSetRL1.isAcquired());
+    ThreadBoundLock configSetRL1Thread = bind(configSetRL1);
+    configSetRL1Thread.acquire().get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
     // And now creating a write lock, that can't be acquired just yet, because of the read lock
     DistributedLock configSetWL1 = factory.createLock(true, CONFIG_SET_NAME);
-    assertFalse(
-        "configSetWL1 should not have been acquired due to configSetRL1",
-        configSetWL1.isAcquired());
+    ThreadBoundLock configSetWL1Thread = bind(configSetWL1);
+    Future<?> configSetWL1Acquired =
+        configSetWL1Thread.acquireBlocked(
+            "configSetWL1 should not have been acquired due to configSetRL1",
+            zkClient,
+            CONFIG_SET_ROOT,
+            1);
 
-    // Wait for acquisition of the write lock on another thread (and be notified via a latch)
-    final CountDownLatch latch = new CountDownLatch(1);
-    new Thread(
-            () -> {
-              configSetWL1.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
-              latch.countDown();
-            })
-        .start();
-
-    // Wait for the thread to start and to get blocked in waitUntilAcquired() (thread start could
-    // have been checked more reliably using another latch, and verifying the thread is in
-    // waitUntilAcquired done through that thread stacktrace, but that would be overkill compared to
-    // the very slight race condition of waiting 30ms, but a race that would not cause the test to
-    // fail since we're testing... that nothing happened yet).
-    Thread.sleep(30);
-
-    assertEquals(
-        "we should not have been notified that configSetWL1 was acquired", 1, latch.getCount());
-    assertFalse("configSetWL1 should not have been acquired", configSetWL1.isAcquired());
-
-    configSetRL1.release();
-    assertTrue(
-        "configSetWL1 should have been acquired now that configSetRL1 was released",
-        configSetWL1.isAcquired());
-
-    // Wait for the Zookeeper watch to fire + the thread to be unblocked and countdown the latch.
-    // We'll wait up to 10 seconds here, so should be safe even if GC is extraordinarily high with a
-    // pause
-    int i = 0;
-    while (i < 1000 && latch.getCount() != 0) {
-      Thread.sleep(10);
-      i++;
-    }
-    assertEquals(
-        "we should have been notified that configSetWL1 was acquired", 0, latch.getCount());
+    configSetRL1Thread.release();
+    configSetWL1Acquired.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    configSetWL1Thread.release();
   }
 }

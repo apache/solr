@@ -25,6 +25,19 @@ This page highlights the most important changes including new features and chang
 Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
 For example, if you are currently using Solr 10.1, you should review changes made in all subsequent 10.x releases in addition to the 11.0-specific changes on this page.
 
+=== Rolling Upgrades
+
+If the Overseer is disabled (cluster property `overseerEnabled` or `SOLR_CLOUD_OVERSEER_ENABLED` set to `false`), Collection and ConfigSet API locks now use a different ZooKeeper node format than they did in Solr 10 and previous versions.
+10.x and 11 nodes don't see each other's locks, so while both versions are running, two conflicting commands on the same collection or configset can run at the same time without an error.
+
+If the Overseer is disabled, either:
+
+* Upgrade all nodes with a full cluster restart, or
+* Pause Collection and ConfigSet API operations, do a rolling restart, and resume them once every node is on 11.
+Replica state changes during the rolling restart are fine.
+
+Clusters running with the Overseer are not affected.
+
 == API Changes
 
 === V2 alias and collection snapshot responses

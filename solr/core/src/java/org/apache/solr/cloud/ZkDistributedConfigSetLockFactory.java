@@ -32,8 +32,9 @@ import org.apache.solr.common.cloud.SolrZkClient;
 public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
     implements DistributedConfigSetLockFactory {
 
-  public ZkDistributedConfigSetLockFactory(SolrZkClient zkClient, String rootPath) {
-    super(zkClient, rootPath);
+  public ZkDistributedConfigSetLockFactory(
+      SolrZkClient zkClient, String rootPath, String nodeName) {
+    super(zkClient, rootPath, nodeName);
   }
 
   @Override

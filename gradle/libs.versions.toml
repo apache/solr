@@ -216,6 +216,7 @@ apache-commons-math3 = { module = "org.apache.commons:commons-math3", version.re
 apache-commons-text = { module = "org.apache.commons:commons-text", version.ref = "apache-commons-text" }
 apache-curator-client = { module = "org.apache.curator:curator-client", version.ref = "apache-curator" }
 apache-curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "apache-curator" }
+apache-curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "apache-curator" }
 apache-curator-test = { module = "org.apache.curator:curator-test", version.ref = "apache-curator" }
 apache-httpcomponents-httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "apache-httpcomponents-httpclient" }
 apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version.ref = "apache-httpcomponents-httpcore" }
