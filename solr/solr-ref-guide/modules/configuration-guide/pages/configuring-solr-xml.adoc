@@ -79,6 +79,7 @@ Unless the `-DzkHost` or `-Dsolr.zookeeper.server.enabled=true` are specified at
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`.
 The tables below list the child nodes of each XML element in `solr.xml`.
 
+[[configsetservice]]
 `configSetService`::
 +
 [%autowidth,frame=none]
@@ -91,7 +92,19 @@ This attribute does not need to be set.
 If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
-If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
+The default is `org.apache.solr.cloud.ZkConfigSetService` in SolrCloud or `org.apache.solr.core.FileSystemConfigSetService` otherwise.
+The latter also works in SolrCloud; see xref:config-sets.adoc#configsets-on-the-file-system[Configsets on the File System].
+
+[[configsetbasedir]]
+`configSetBaseDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `$SOLR_HOME/configsets`
+|===
++
+The directory under which configsets can be found when using `FileSystemConfigSetService`.
+It isn't used by the SolrCloud default, `ZkConfigSetService`.
 
 `adminHandler`::
 +
@@ -311,15 +324,6 @@ When this attribute is set to `true`, Solr will not return any stack traces in t
 This attribute, when set to `true`, ensures that the multiple cores pointing to the same Schema resource file will be referring to the same IndexSchema Object.
 Sharing the IndexSchema Object makes loading the core faster.
 If you use this feature, make sure that no core-specific property is used in your Schema file.
-
-`configSetBaseDir`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `$SOLR_HOME/configsets`
-|===
-+
-The directory under which configsets for Solr cores can be found.
 
 [[global-maxbooleanclauses]]
 `maxBooleanClauses`::

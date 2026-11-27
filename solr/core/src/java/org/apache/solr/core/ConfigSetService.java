@@ -79,9 +79,10 @@ public abstract class ConfigSetService {
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
     ConfigSetService configSetService = instantiate(coreContainer);
+    configSetService.zkController = coreContainer.getZkController();
     // bootstrap conf in SolrCloud mode
     if (coreContainer.getZkController() != null) {
-      configSetService.bootstrapConfigSet(coreContainer);
+      configSetService.bootstrapDefaultConfigSets();
     }
     return configSetService;
   }
@@ -113,8 +114,11 @@ public abstract class ConfigSetService {
     }
   }
 
-  private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf and solr.configset.bootstrap.confdir if provided via system property
+  /**
+   * Uploads the {@code _default} ConfigSet if absent, and the one at {@code
+   * solr.configset.bootstrap.confdir} if that system property is set.
+   */
+  private void bootstrapDefaultConfigSets() {
     try {
       // _default conf
       bootstrapDefaultConf();
@@ -131,6 +135,10 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapDefaultConf() throws IOException {
+    String confDir = EnvUtils.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR);
+    if (confDir != null && confDir.isBlank()) {
+      return; // explicitly disabled
+    }
     if (this.checkConfigExists("_default") == false) {
       Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
@@ -226,6 +234,7 @@ public abstract class ConfigSetService {
    * @return a ConfigSet
    */
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
+    resolveCloudConfigSetName(dcore);
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
@@ -253,7 +262,21 @@ public abstract class ConfigSetService {
     }
   }
 
+  /**
+   * For a SolrCloud core lacking a configSet name, sets it to its collection's configName. Not
+   * persisted; re-resolved on each load (e.g. reload).
+   */
+  private void resolveCloudConfigSetName(CoreDescriptor cd) {
+    if (cd.getConfigSet() == null && cd.getCloudDescriptor() != null && zkController != null) {
+      cd.setConfigSet(
+          zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName());
+    }
+  }
+
   protected final SolrResourceLoader parentLoader;
+
+  /** Set by {@link #createConfigSetService(CoreContainer)}; null when not in SolrCloud mode. */
+  private ZkController zkController;
 
   /** Optional cache of schemas, key'ed by a bunch of concatenated things */
   private final Cache<String, IndexSchema> schemaCache;

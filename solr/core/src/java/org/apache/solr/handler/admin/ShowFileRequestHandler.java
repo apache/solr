@@ -137,7 +137,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       throws InterruptedException, KeeperException, IOException {
 
     CoreContainer coreContainer = req.getCoreContainer();
-    if (coreContainer.isZooKeeperAware()) {
+    // TODO use ConfigSetService API instead of coding two implementations here.
+    //  Albeit ConfigSetService doesn't support cores with an instanceDir local config.
+    //  Maybe we drop support for that here, or we add such support.
+    if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       showFromZooKeeper(req, rsp, coreContainer);
     } else {
       showFromFileSystem(req, rsp);
@@ -172,12 +175,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
         List<String> fchildren = zkClient.getChildren(adminFile + "/" + f, null);
         if (fchildren.size() > 0) {
           fileInfo.add("directory", true);
-        } else {
-          // TODO? content type
-          fileInfo.add("size", f.length());
         }
-        // TODO: ?
-        // fileInfo.add( "modified", new Date( f.lastModified() ) );
+        // TODO: "size" (of file)?  "modified" (timestamp)?
       }
       rsp.add("files", files);
     } else {

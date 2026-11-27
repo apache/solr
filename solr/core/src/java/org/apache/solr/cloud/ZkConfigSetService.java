@@ -72,16 +72,7 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-    // Currently, cd.getConfigSet() is always null. Except that it's explicitly set by
-    // {@link org.apache.solr.core.SyntheticSolrCore}.
-    // Should we consider setting it for all cores as a part of CoreDescriptor creation/loading
-    // process?
-    if (cd.getConfigSet() == null) {
-      String configSetName =
-          zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName();
-      cd.setConfigSet(configSetName);
-    }
-
+    // cd.getConfigSet() is resolved by ConfigSetService.loadConfigSet
     return new ZkSolrResourceLoader(
         cd.getInstanceDir(), cd.getConfigSet(), parentLoader.getClassLoader(), zkController);
   }

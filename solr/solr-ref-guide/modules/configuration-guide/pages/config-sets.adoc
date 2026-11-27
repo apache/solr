@@ -26,9 +26,10 @@ These example configsets are named `_default` and `sample_techproducts_configs`.
 
 == Configsets in SolrCloud Clusters
 
-In SolrCloud, it's critical to understand that configsets are stored in ZooKeeper _and not_ in the file system.
-Solr's `_default` configset is uploaded to ZooKeeper on initialization.
+In SolrCloud, it's critical to understand that by default, configsets are stored in ZooKeeper _and not_ in the file system.
+Solr's `_default` configset is uploaded to ZooKeeper on initialization, unless the `solr.configset.default.confdir` property is set to blank.
 This and a couple of example configsets remain on the file system but Solr does not use them unless they are used with a new collection.
+Alternatively, configsets can be <<Configsets on the File System,stored on the file system>>.
 
 When you create a collection in SolrCloud, you can specify a named configset.
 If you don't, then the `_default` will be copied and given a unique name for use by the new collection.
@@ -59,6 +60,15 @@ However, users can impose stricter or looser limits on their systems by providin
 
 - System Property: `-Dsolr.configset.forbidden.file.types`
 - Environment Variable: `SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES`
+
+=== Configsets on the File System
+
+Instead of ZooKeeper, SolrCloud can read configsets from each node's file system by setting xref:configuring-solr-xml.adoc#configsetservice[`configSetService`] in `solr.xml` to `org.apache.solr.core.FileSystemConfigSetService`.
+This suits deployments, such as custom Docker images, that ship plugins and configsets together as a tested unit.
+Configsets are read from xref:configuring-solr-xml.adoc#configsetbasedir[`configSetBaseDir`], which should have the same contents on every node.
+Uploads and other changes are written only to the local node's directory, if it's writable.
+As with ZooKeeper, Solr's `_default` configset is copied there on startup if absent, so a read-only directory must already include it, or else the upload must be disabled via `solr.configset.default.confdir`.
+For a read-only setup in Solr's Docker image, point `configSetBaseDir` at a directory in the Solr installation such as `/opt/solr/server/solr/configsets`; see xref:deployment-guide:solr-in-docker.adoc[].
 
 == Configsets in User-Managed Clusters or Standalone Installations
 
