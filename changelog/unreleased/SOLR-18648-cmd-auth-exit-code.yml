@@ -1,0 +1,11 @@
+title: >
+  bin/solr.cmd auth now returns a non-zero exit code when the command fails.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18648
+    url: https://issues.apache.org/jira/browse/SOLR-18648
+  - name: PR#5397
+    url: https://github.com/apache/solr/pull/5397
