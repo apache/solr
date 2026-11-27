@@ -31,6 +31,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -167,7 +168,8 @@ public class WithDescendantsQuery extends Query {
       return matchedSet;
     }
 
-    final FixedBitSet resultSet = matchedSet.clone();
+    // From here, descendants are added to matchedSet in place. That's safe since they precede the
+    // doc being iterated, and they are never roots nor at the depth being processed.
 
     // Group the (few) unique nest paths by depth
     final TreeMap<Integer, List<BytesRef>> pathsByDepth = new TreeMap<>();
@@ -196,20 +198,34 @@ public class WithDescendantsQuery extends Query {
       for (int doc = atDepthDisi.nextDoc();
           doc != DocIdSetIterator.NO_MORE_DOCS;
           doc = atDepthDisi.nextDoc()) {
-        addDescendants(doc, deeperSet, resultSet);
+        addDescendants(doc, deeperSet, matchedSet);
       }
       deeperSet.or(atDepthSet);
     }
 
-    // remaining matchedSet docs are rootSet (no nest path); "deeperSet" now holds all child docs
-    matchedSet.andNot(deeperSet);
-    final DocIdSetIterator matchedDisi = new BitSetIterator(matchedSet, 0);
-    for (int doc = matchedDisi.nextDoc();
-        doc != DocIdSetIterator.NO_MORE_DOCS;
-        doc = matchedDisi.nextDoc()) {
-      addDescendants(doc, deeperSet, resultSet);
+    // finally the matched roots (no nest path); "deeperSet" now holds all child docs
+    if (rootSet != null) {
+      final DocIdSetIterator matchedRootDisi = matchedRoots(matchedSet, rootSet);
+      for (int doc = matchedRootDisi.nextDoc();
+          doc != DocIdSetIterator.NO_MORE_DOCS;
+          doc = matchedRootDisi.nextDoc()) {
+        addDescendants(doc, deeperSet, matchedSet);
+      }
     }
-    return resultSet;
+    return matchedSet;
+  }
+
+  private static DocIdSetIterator matchedRoots(FixedBitSet matchedSet, BitSet rootSet) {
+    if (rootSet instanceof FixedBitSet fixedRootSet) {
+      return new FixedBitSetIntersectionIterator(matchedSet, fixedRootSet);
+    }
+    // sparse
+    return new FilteredDocIdSetIterator(new BitSetIterator(rootSet, rootSet.cardinality())) {
+      @Override
+      protected boolean match(int doc) {
+        return matchedSet.get(doc);
+      }
+    };
   }
 
   /** Is {@code a}, which must not be empty, a subset of {@code b}? */
