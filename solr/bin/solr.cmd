@@ -18,7 +18,12 @@
 
 @REM Make sure to keep line endings as CRLF for .cmd files
 
-IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
+IF "%OS%"=="Windows_NT" setlocal disabledelayedexpansion enableextensions
+
+@REM Keep the caller's own SOLR_* settings, before this script changes any, for the nodes of an example
+for /f "tokens=1* delims==" %%a in ('set SOLR_ 2^>nul') do set "CALLER_%%a=%%b"
+
+setlocal enabledelayedexpansion
 
 @REM What version of Java is required to run this version of Solr.
 set REQUIRED_JAVA_VERSION=21

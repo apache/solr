@@ -116,6 +116,9 @@ public class RunExampleTool extends ToolBase {
                   + "Example: --script-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
           .build();
 
+  /** Prefix under which bin\solr.cmd saves the caller's own SOLR_* variables. */
+  private static final String CALLER_ENV_PREFIX = "CALLER_";
+
   /**
    * @deprecated Only used by the commons-cli parser; the picocli path declares this as an annotated
    *     field.
@@ -1619,16 +1622,19 @@ public class RunExampleTool extends ToolBase {
     startCmd.addArguments(command.subList(1, command.size()).toArray(String[]::new), false);
 
     if (isWindows) {
-      // On Windows, the execution doesn't return, so we have to execute async
-      // and when calling the script, it seems to be inheriting the environment that launched this
-      // app, so we have to prune out env vars that may cause issues
+      // On Windows, the execution doesn't return, so we have to execute async. This process runs
+      // inside bin\solr.cmd, whose SOLR_* variables are its own working state, so the node gets
+      // the caller's SOLR_* settings instead, which solr.cmd saved as CALLER_SOLR_* on entry.
       Map<String, String> startEnv = new HashMap<>();
       Map<String, String> procEnv = EnvironmentUtils.getProcEnvironment();
       if (procEnv != null) {
         for (Map.Entry<String, String> entry : procEnv.entrySet()) {
           String envVar = entry.getKey();
           String envVarVal = entry.getValue();
-          if (envVarVal != null && !"EXAMPLE".equals(envVar) && !envVar.startsWith("SOLR_")) {
+          if (envVarVal == null || "EXAMPLE".equals(envVar)) continue;
+          if (envVar.startsWith(CALLER_ENV_PREFIX + "SOLR_")) {
+            startEnv.put(envVar.substring(CALLER_ENV_PREFIX.length()), envVarVal);
+          } else if (!envVar.startsWith("SOLR_") && !envVar.startsWith(CALLER_ENV_PREFIX)) {
             startEnv.put(envVar, envVarVal);
           }
         }
