@@ -209,6 +209,11 @@ The string "score" can be used to indicate that the score of each document for t
 The wildcard character `*` selects all the fields in the document which are either `stored="true"` or `docValues="true"` and `useDocValuesAsStored="true"` (which is the default when docValues are enabled).
 Combine the wildcard character with field name to make a glob pattern for matching multiple field names.
 
+Prefix a field name or glob pattern with `-` to exclude it.
+A field list made up only of exclusions returns every field except those excluded, so `fl=-title` is the same as `+fl=*,-title+`.
+Exclusions subtract only from the fields selected by `+*+` or a glob pattern.
+A field named explicitly is always returned, and exclusions have no effect when the field list names fields but contains no `*` or glob pattern.
+
 You can also add pseudo-fields, functions and transformers to the field list request.
 
 This table shows some basic examples of how to use `fl`:
@@ -224,6 +229,9 @@ This table shows some basic examples of how to use `fl`:
 |id score |Return the id field and the score.
 |* |Return all the `stored` fields in each document, as well as any `docValues` fields that have `useDocValuesAsStored="true"`. This is the default value of the fl parameter.
 |* score |Return all the fields in each document, along with each field's score.
+|-title |Return every field except `title`.
+|`+*,-attr_* score+` |Return all fields except those starting with `attr_`, along with the score.
+|id,na*,-name_exact |Return the id field and the fields matching `na*`, except `name_exact`.
 |*,dv_field_name |Return all the `stored` fields in each document, and any `docValues` fields that have `useDocValuesAsStored="true"` and the docValues from dv_field_name even if it has `useDocValuesAsStored="false"`
 |===
 

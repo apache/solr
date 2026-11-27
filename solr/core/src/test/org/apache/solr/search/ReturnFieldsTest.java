@@ -218,6 +218,46 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExclusions() {
+    // exclusion alone means "everything but"
+    ReturnFields rf = new SolrReturnFields(req("fl", "-aaa"));
+    assertFalse(rf.returnsAllFields());
+    assertFalse(rf.returnsField("aaa"));
+    assertTrue(rf.returnsField("bbb"));
+    assertFalse(rf.loadsField("aaa"));
+    assertTrue(rf.loadsField("bbb"));
+    assertNull(rf.getLuceneFieldNames());
+
+    // same as with an explicit "*", and with globs and multiple exclusions
+    rf = new SolrReturnFields(req("fl", "*,-aaa, -attr_*,-bbb-ccc"));
+    assertFalse(rf.returnsField("aaa"));
+    assertFalse(rf.returnsField("attr_x"));
+    assertFalse(rf.returnsField("bbb-ccc"));
+    assertTrue(rf.returnsField("id"));
+    assertTrue(rf.returnsField("aaa2"));
+
+    // exclusions only subtract from globs; explicit fields are still returned
+    rf = new SolrReturnFields(req("fl", "id,aaa*,-aaab,-aaac*"));
+    assertTrue(rf.returnsField("id"));
+    assertTrue(rf.returnsField("aaa"));
+    assertFalse(rf.returnsField("aaab"));
+    assertFalse(rf.returnsField("aaacd"));
+    assertFalse(rf.returnsField("zzz"));
+
+    // pseudo-fields still work alongside exclusions
+    rf = new SolrReturnFields(req("fl", "*,score,-aaa"));
+    assertTrue(rf.returnsScore());
+    assertTrue(rf.returnsField("score"));
+    assertFalse(rf.returnsField("aaa"));
+    assertTrue(rf.returnsField("bbb"));
+
+    // a leading minus that isn't an exclusion is still a function
+    rf = new SolrReturnFields(req("fl", "id,-1"));
+    assertTrue(rf.returnsField("id"));
+    assertNotNull(rf.getTransformer());
+  }
+
+  @Test
   public void testManyParameters() {
     ReturnFields rf =
         new SolrReturnFields(req("fl", "id name", "fl", "test subject", "fl", "score"));
