@@ -179,6 +179,18 @@ public class S3OutputStream extends OutputStream {
     closed = true;
   }
 
+  /** Discards everything written so far; no object is created at the key. */
+  public void abort() {
+    if (closed) {
+      return;
+    }
+    if (multiPartUpload != null) {
+      multiPartUpload.abort();
+      multiPartUpload = null;
+    }
+    closed = true;
+  }
+
   private MultipartUpload newMultipartUpload() throws IOException {
     try {
       return new MultipartUpload(
