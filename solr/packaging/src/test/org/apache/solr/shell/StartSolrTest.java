@@ -66,7 +66,7 @@ public class StartSolrTest extends SolrCatsTestCase {
   public void stopCommandForSinglePort() {
     run("solr start");
     // The second node joins the first node's ZooKeeper rather than running one of its own: both
-    // read the class's SOLR_HOME, so both would bind the one clientPort its zoo.cfg names.
+    // inherit SOLR_ZOOKEEPER_EMBEDDED_PORT, so both would bind the one ZooKeeper port.
     run("solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}");
     run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
     run("solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000");

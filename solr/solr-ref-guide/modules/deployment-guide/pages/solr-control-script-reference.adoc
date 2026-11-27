@@ -64,7 +64,6 @@ NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zook
 When starting Solr in SolrCloud mode, if you do not define `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` nor specify the `-z` option, then Solr will launch an embedded ZooKeeper server listening on the Solr port + 1000.
 For example, if Solr is running on port 8983, then the embedded ZooKeeper will listen on port 9983.
 To use a different port, set `SOLR_ZOOKEEPER_EMBEDDED_PORT` in `solr.in.sh`/`solr.in.cmd` (or the `-Dsolr.zookeeper.embedded.port` system property).
-The `-e` examples do not use this setting; they always place ZooKeeper at the Solr port + 1000.
 
 [IMPORTANT]
 ====

@@ -61,10 +61,9 @@ public class SecureExampleTest extends SolrCatsTestCase {
     globalInclude = touch("global-solr.in.sh");
     env("SOLR_INCLUDE", globalInclude.toString());
     env("SOLR_STOP_WAIT", "15");
-    // The example gives each node a SOLR_HOME of its own under ${SOLR_HOME}/node<n>/solr, with a
-    // copy of the distribution's zoo.cfg, so it never sees the clientPort the harness wrote and
-    // RunExampleTool's own derivation stands. Until SOLR-7596 lets the port be passed, ZK_PORT has
-    // to name what the example actually started.
+    // The example aims node 2 at the Solr port + 1000, so node 1 must not inherit the harness's
+    // embedded ZooKeeper port. TODO: drop once the examples own their ports (SOLR-16124).
+    env("SOLR_ZOOKEEPER_EMBEDDED_PORT", "");
     env("ZK_PORT", Integer.toString(ports().solr() + 1000));
   }
 
