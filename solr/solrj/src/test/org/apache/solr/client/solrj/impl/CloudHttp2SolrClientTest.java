@@ -384,6 +384,71 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testShardReplicationFactors() throws Exception {
+    final String collection = "replication_factor_collection";
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(client);
+    cluster.waitForActiveCollection(collection, 2, 2);
+
+    DocCollection col =
+        client.getClusterStateProvider().getClusterState().getCollection(collection);
+    String shard1Url = col.getSlice("shard1").getLeader().getCoreUrl();
+    String shard2Url = col.getSlice("shard2").getLeader().getCoreUrl();
+    NamedList<NamedList<?>> routeResponses = new NamedList<>();
+    routeResponses.add(
+        shard1Url, routeResponseWithHeader(Map.of("status", 0, UpdateRequest.REPFACT, 2)));
+    routeResponses.add(
+        shard2Url, routeResponseWithHeader(Map.of("status", 0, UpdateRequest.REPFACT, 3)));
+
+    RouteResponse<?> response = client.condenseResponse(routeResponses, 7);
+    response.setRouteResponses(routeResponses);
+    NamedList<?> header = (NamedList<?>) response.get("responseHeader");
+    assertEquals(2, header.get(UpdateRequest.REPFACT));
+    assertEquals(
+        Map.of("shard1", 2, "shard2", 3), client.getShardReplicationFactor(collection, response));
+    assertEquals(2, client.getMinAchievedReplicationFactor(collection, response));
+
+    // without the condensed header value, the minimum is derived from the routes
+    RouteResponse<?> uncondensed = new RouteResponse<>();
+    uncondensed.add("responseHeader", new NamedList<>(Map.of("status", 0)));
+    uncondensed.setRouteResponses(routeResponses);
+    assertEquals(2, client.getMinAchievedReplicationFactor(collection, uncondensed));
+  }
+
+  @Test
+  public void testShardReplicationFactorsWithoutRouteFactors() throws Exception {
+    final String collection = "replication_factor_collection_no_rf";
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(collection, "conf", 1, 1).process(client);
+    cluster.waitForActiveCollection(collection, 1, 1);
+
+    DocCollection col =
+        client.getClusterStateProvider().getClusterState().getCollection(collection);
+    String shard1Url = col.getSlice("shard1").getLeader().getCoreUrl();
+    NamedList<NamedList<?>> routeResponses = new NamedList<>();
+    routeResponses.add(shard1Url, routeResponseWithHeader(Map.of("status", 0)));
+
+    RouteResponse<?> response = client.condenseResponse(routeResponses, 7);
+    response.setRouteResponses(routeResponses);
+    NamedList<?> header = (NamedList<?>) response.get("responseHeader");
+    assertNull(header.get(UpdateRequest.REPFACT));
+    assertEquals(Map.of(), client.getShardReplicationFactor(collection, response));
+    assertEquals(-1, client.getMinAchievedReplicationFactor(collection, response));
+
+    // a response that is not a RouteResponse has no routes to walk
+    NamedList<Object> plain = new NamedList<>();
+    plain.add("responseHeader", new NamedList<>(Map.of("status", 0)));
+    assertEquals(Map.of(), client.getShardReplicationFactor(collection, plain));
+    assertEquals(-1, client.getMinAchievedReplicationFactor(collection, plain));
+  }
+
+  private static NamedList<?> routeResponseWithHeader(Map<String, ?> header) {
+    NamedList<Object> routeResponse = new NamedList<>();
+    routeResponse.add("responseHeader", new NamedList<>(header));
+    return routeResponse;
+  }
+
+  @Test
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
         .process(cluster.getSolrClient());
