@@ -192,6 +192,9 @@ public class WithDescendantsQuery extends Query {
       return; // the deepest level has no descendants
     }
 
+    // Fairly expensive since we visit the postings of all nested children, regardless of how few
+    //  docs are in matchedSet.
+
     // Process from the deepest level up; "deeperSet" accumulates docs below the current depth.
     final List<List<BytesRef>> levels = new ArrayList<>(pathsByDepth.descendingMap().values());
     final int maxDoc = matchedSet.length();
@@ -227,17 +230,11 @@ public class WithDescendantsQuery extends Query {
     }
   }
 
-  private static DocIdSetIterator matchedRoots(FixedBitSet matchedSet, BitSet rootSet) {
-    if (rootSet instanceof FixedBitSet fixedRootSet) {
-      return new FixedBitSetIntersectionIterator(matchedSet, fixedRootSet);
+  /** Marks the contiguous docs preceding {@code doc} that are deeper than it. */
+  private static void addDescendants(int doc, FixedBitSet deeper, FixedBitSet result) {
+    for (int d = doc - 1; d >= 0 && deeper.get(d); d--) {
+      result.set(d);
     }
-    // sparse
-    return new FilteredDocIdSetIterator(new BitSetIterator(rootSet, rootSet.approximateCardinality())) {
-      @Override
-      protected boolean match(int doc) {
-        return matchedSet.get(doc);
-      }
-    };
   }
 
   /** Is {@code a}, which must not be empty, a subset of {@code b}? */
@@ -263,11 +260,18 @@ public class WithDescendantsQuery extends Query {
     return true;
   }
 
-  /** Marks the contiguous docs preceding {@code doc} that are deeper than it. */
-  private static void addDescendants(int doc, FixedBitSet deeper, FixedBitSet result) {
-    for (int d = doc - 1; d >= 0 && deeper.get(d); d--) {
-      result.set(d);
+  private static DocIdSetIterator matchedRoots(FixedBitSet matchedSet, BitSet rootSet) {
+    if (rootSet instanceof FixedBitSet fixedRootSet) {
+      return new FixedBitSetIntersectionIterator(matchedSet, fixedRootSet);
     }
+    // sparse
+    return new FilteredDocIdSetIterator(
+        new BitSetIterator(rootSet, rootSet.approximateCardinality())) {
+      @Override
+      protected boolean match(int doc) {
+        return matchedSet.get(doc);
+      }
+    };
   }
 
   private static int depthOf(BytesRef term) {
