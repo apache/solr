@@ -1,0 +1,477 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.solr.handler.admin.api;
+
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.api.model.CreatePermissionResponse;
+import org.apache.solr.client.api.model.GetUserRolesResponse;
+import org.apache.solr.client.api.model.ListPermissionsResponse;
+import org.apache.solr.client.api.model.ListUserRolesResponse;
+import org.apache.solr.client.api.model.ListUsersResponse;
+import org.apache.solr.client.api.model.PermissionDetails;
+import org.apache.solr.client.solrj.RemoteSolrException;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.request.AuthenticationApi;
+import org.apache.solr.client.solrj.request.AuthorizationApi;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.SecurityJson;
+import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+/** HTTP tests for user, role, and permission APIs with Basic Authentication in standalone mode. */
+public class SecurityV2ApiStandaloneTest extends SolrTestCase {
+
+  private static final String SCHEME = "basic";
+
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
+  private static Path solrHome;
+
+  @BeforeClass
+  public static void setupSolr() throws Exception {
+    solrHome = createTempDir();
+    Files.writeString(
+        solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
+    solrTestRule.startSolr(solrHome);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testIndexlessPermissionsAreAddressable() throws Exception {
+    Map<String, Object> conf = (Map<String, Object>) Utils.fromJSONString(SecurityJson.SIMPLE);
+    Map<String, Object> authz = (Map<String, Object>) conf.get("authorization");
+    List<Object> permissions = new ArrayList<>((List<Object>) authz.get("permissions"));
+    permissions.add(Map.of("name", "read", "role", "guest"));
+    authz.put("permissions", permissions);
+    Files.writeString(
+        solrHome.resolve("security.json"), Utils.toJSONString(conf), StandardCharsets.UTF_8);
+
+    ListPermissionsResponse listed =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    assertEquals(List.of(1, 2), listed.permissions.stream().map(p -> p.index).toList());
+
+    var update = authed(new AuthorizationApi.UpdatePermission(2));
+    update.setRole(List.of("guest", "dev"));
+    update.process(solrTestRule.getAdminClient());
+    PermissionDetails updated =
+        authed(new AuthorizationApi.ListPermissions())
+            .process(solrTestRule.getAdminClient())
+            .permissions
+            .get(1);
+    assertEquals("read", updated.name);
+    assertThat(updated.role, containsInAnyOrder("guest", "dev"));
+
+    authed(new AuthorizationApi.DeletePermission(2)).process(solrTestRule.getAdminClient());
+    ListPermissionsResponse afterDelete =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    assertEquals(List.of("all"), afterDelete.permissions.stream().map(p -> p.name).toList());
+
+    Files.writeString(
+        solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testNonPositiveIndexIsNotAddressable() throws Exception {
+    Map<String, Object> conf = (Map<String, Object>) Utils.fromJSONString(SecurityJson.SIMPLE);
+    Map<String, Object> authz = (Map<String, Object>) conf.get("authorization");
+    authz.put(
+        "permissions",
+        List.of(
+            Map.of("name", "all", "role", "admin", "index", 1),
+            Map.of("name", "read", "role", "guest", "index", "x"),
+            Map.of("name", "update", "role", "guest", "index", -1)));
+    Files.writeString(
+        solrHome.resolve("security.json"), Utils.toJSONString(conf), StandardCharsets.UTF_8);
+    List<Map<String, Object>> before = storedPermissions();
+
+    var update = authed(new AuthorizationApi.UpdatePermission(-1));
+    update.setRole(List.of("dev"));
+    assertEquals(
+        404,
+        expectThrows(RemoteSolrException.class, () -> update.process(solrTestRule.getAdminClient()))
+            .code());
+    var delete = authed(new AuthorizationApi.DeletePermission(-1));
+    assertEquals(
+        404,
+        expectThrows(RemoteSolrException.class, () -> delete.process(solrTestRule.getAdminClient()))
+            .code());
+    assertEquals(before, storedPermissions());
+
+    Files.writeString(
+        solrHome.resolve("security.json"), SecurityJson.SIMPLE, StandardCharsets.UTF_8);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Map<String, Object>> storedPermissions() throws Exception {
+    Map<String, Object> authz =
+        (Map<String, Object>)
+            authed(new GenericSolrRequest(METHOD.GET, "/admin/authorization"))
+                .process(solrTestRule.getAdminClient())
+                .getResponse()
+                .get("authorization");
+    return (List<Map<String, Object>>) authz.get("permissions");
+  }
+
+  private static <T extends SolrRequest<?>> T authed(T request) {
+    request.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
+    return request;
+  }
+
+  @Test
+  public void testUsersLifecycle() throws Exception {
+    ListUsersResponse users =
+        authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
+    assertThat(users.users, containsInAnyOrder(SecurityJson.USER));
+
+    var createTom = authed(new AuthenticationApi.CreateOrUpdateUser(SCHEME, "tom"));
+    createTom.setPassword("TomIsCool");
+    createTom.process(solrTestRule.getAdminClient());
+
+    users = authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
+    assertThat(users.users, containsInAnyOrder(SecurityJson.USER, "tom"));
+
+    final RemoteSolrException unauth =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                new AuthenticationApi.DeleteUser(SCHEME, "tom")
+                    .process(solrTestRule.getAdminClient()));
+    assertEquals(401, unauth.code());
+
+    final RemoteSolrException notFound =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                authed(new AuthenticationApi.DeleteUser(SCHEME, "does-not-exist"))
+                    .process(solrTestRule.getAdminClient()));
+    assertEquals(404, notFound.code());
+
+    authed(new AuthenticationApi.DeleteUser(SCHEME, "tom")).process(solrTestRule.getAdminClient());
+
+    users = authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
+    assertThat(users.users, containsInAnyOrder(SecurityJson.USER));
+
+    final RemoteSolrException conflict =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                authed(new AuthenticationApi.DeleteUser(SCHEME, SecurityJson.USER))
+                    .process(solrTestRule.getAdminClient()));
+    assertEquals(409, conflict.code());
+  }
+
+  @Test
+  public void testRolesLifecycle() throws Exception {
+    GetUserRolesResponse roles =
+        authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry"))
+            .process(solrTestRule.getAdminClient());
+    assertTrue(roles.roles.isEmpty());
+
+    ListUserRolesResponse initialList =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(solrTestRule.getAdminClient());
+    assertFalse(initialList.userRoles.containsKey("harry"));
+
+    var setRoles = authed(new AuthorizationApi.SetUserRoles(SCHEME, "harry"));
+    setRoles.setRoles(List.of("dev"));
+    setRoles.process(solrTestRule.getAdminClient());
+
+    roles =
+        authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry"))
+            .process(solrTestRule.getAdminClient());
+    assertThat(roles.roles, containsInAnyOrder("dev"));
+
+    ListUserRolesResponse afterSetList =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(solrTestRule.getAdminClient());
+    assertThat(afterSetList.userRoles.get("harry"), containsInAnyOrder("dev"));
+    assertThat(afterSetList.userRoles.get(SecurityJson.USER), containsInAnyOrder("admin"));
+
+    authed(new AuthorizationApi.DeleteUserRoles(SCHEME, "harry"))
+        .process(solrTestRule.getAdminClient());
+
+    roles =
+        authed(new AuthorizationApi.GetUserRoles(SCHEME, "harry"))
+            .process(solrTestRule.getAdminClient());
+    assertTrue(roles.roles.isEmpty());
+
+    ListUserRolesResponse afterDeleteList =
+        authed(new AuthorizationApi.ListUserRoles(SCHEME)).process(solrTestRule.getAdminClient());
+    assertFalse(afterDeleteList.userRoles.containsKey("harry"));
+  }
+
+  @Test
+  public void testPermissionsLifecycle() throws Exception {
+    ListPermissionsResponse initial =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    int initialCount = initial.permissions.size();
+
+    var create = authed(new AuthorizationApi.CreatePermission());
+    create.setName("read");
+    create.setRole(List.of("guest"));
+    CreatePermissionResponse createResponse = create.process(solrTestRule.getAdminClient());
+    assertNotNull(createResponse.index);
+    int newIndex = createResponse.index;
+
+    ListPermissionsResponse afterCreate =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    assertEquals(initialCount + 1, afterCreate.permissions.size());
+    assertThat(afterCreate.permissions.stream().map(p -> p.index).toList(), hasItem(newIndex));
+
+    var update = authed(new AuthorizationApi.UpdatePermission(newIndex));
+    update.setRole(List.of("guest", "dev"));
+    update.process(solrTestRule.getAdminClient());
+
+    ListPermissionsResponse afterUpdate =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    PermissionDetails updated =
+        afterUpdate.permissions.stream()
+            .filter(p -> Integer.valueOf(newIndex).equals(p.index))
+            .findFirst()
+            .orElseThrow();
+    assertThat(updated.role, containsInAnyOrder("guest", "dev"));
+
+    authed(new AuthorizationApi.DeletePermission(newIndex)).process(solrTestRule.getAdminClient());
+
+    ListPermissionsResponse afterDelete =
+        authed(new AuthorizationApi.ListPermissions()).process(solrTestRule.getAdminClient());
+    assertEquals(initialCount, afterDelete.permissions.size());
+
+    final RemoteSolrException notFound =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                authed(new AuthorizationApi.DeletePermission(newIndex))
+                    .process(solrTestRule.getAdminClient()));
+    assertEquals(404, notFound.code());
+  }
+
+  @Test
+  public void testOtherSchemeHasNoUsers() throws Exception {
+    var client = solrTestRule.getAdminClient();
+    var create = authed(new AuthenticationApi.CreateOrUpdateUser("jwt", "bob"));
+    create.setPassword("BobIsCool");
+    assertEquals(404, expectThrows(RemoteSolrException.class, () -> create.process(client)).code());
+  }
+
+  @Test
+  public void testUpdateRejectsBefore() throws Exception {
+    var update = authed(new AuthorizationApi.UpdatePermission(1));
+    update.setRole(List.of("admin"));
+    update.setBefore(1);
+    assertEquals(
+        400,
+        expectThrows(RemoteSolrException.class, () -> update.process(solrTestRule.getAdminClient()))
+            .code());
+  }
+
+  @Test
+  public void testCollectionNullStaysNarrow() throws Exception {
+    String path = "/null-collection/*";
+    var create =
+        authed(new GenericV2SolrRequest(METHOD.POST, "/cluster/security/authorization/permissions"))
+            .withContent(
+                ("{\"path\": [\"" + path + "\"], \"role\": [\"admin\"], \"collection\": null}")
+                    .getBytes(StandardCharsets.UTF_8),
+                "application/json");
+    create.process(solrTestRule.getAdminClient());
+    assertStoredCollectionIsNull(path);
+
+    PermissionDetails listed =
+        authed(new AuthorizationApi.ListPermissions())
+            .process(solrTestRule.getAdminClient())
+            .permissions
+            .stream()
+            .filter(p -> List.of(path).equals(p.path))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(List.of(), listed.collection);
+
+    var putBack = authed(new AuthorizationApi.UpdatePermission(listed.index));
+    putBack.setCollection(listed.collection);
+    putBack.setRole(listed.role);
+    putBack.process(solrTestRule.getAdminClient());
+    assertStoredCollectionIsNull(path);
+
+    authed(new AuthorizationApi.DeletePermission(listed.index))
+        .process(solrTestRule.getAdminClient());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testSolrJCreateWithoutCollectionMatchesAny() throws Exception {
+    String path = "/any-collection/*";
+    var create = authed(new AuthorizationApi.CreatePermission());
+    create.setPath(List.of(path));
+    create.setRole(List.of("admin"));
+    create.process(solrTestRule.getAdminClient());
+    Map<String, Object> stored = storedPermission(path);
+    assertFalse("collection narrowed in " + stored, stored.containsKey("collection"));
+
+    authed(new AuthorizationApi.DeletePermission(((Number) stored.get("index")).intValue()))
+        .process(solrTestRule.getAdminClient());
+  }
+
+  @Test
+  public void testCreateRejectsUnknownKey() throws Exception {
+    int countBefore = listPermissions().size();
+    RemoteSolrException e =
+        expectThrows(
+            RemoteSolrException.class,
+            () ->
+                sendPermission(
+                    METHOD.POST,
+                    "",
+                    "{\"name\": \"read\", \"role\": [\"dev\"], \"collections\": [\"c1\"]}"));
+    assertEquals(400, e.code());
+    assertThat(e.getMessage(), containsString("Unknown key, collections"));
+    assertEquals(countBefore, listPermissions().size());
+  }
+
+  @Test
+  public void testCreateIgnoresIndex() throws Exception {
+    String path = "/create-with-index/*";
+    List<PermissionDetails> before = listPermissions();
+    sendPermission(
+        METHOD.POST, "", "{\"path\": [\"" + path + "\"], \"role\": [\"admin\"], \"index\": 1}");
+    List<PermissionDetails> after = listPermissions();
+    assertEquals(before.size() + 1, after.size());
+    assertEquals(before.get(0).name, after.get(0).name);
+    assertEquals(before.get(0).path, after.get(0).path);
+
+    int index = ((Number) storedPermission(path).get("index")).intValue();
+    assertEquals(after.size(), index);
+    authed(new AuthorizationApi.DeletePermission(index)).process(solrTestRule.getAdminClient());
+  }
+
+  @Test
+  public void testUpdateRejectsUnknownKey() throws Exception {
+    String path = "/update-unknown-key/*";
+    int index = createPermission(path);
+    Map<String, Object> before = storedPermission(path);
+    RemoteSolrException e =
+        expectThrows(
+            RemoteSolrException.class,
+            () -> sendPermission(METHOD.PUT, "/" + index, "{\"methods\": [\"GET\"]}"));
+    assertEquals(400, e.code());
+    assertThat(e.getMessage(), containsString("Unknown key, methods"));
+    assertEquals(before, storedPermission(path));
+
+    authed(new AuthorizationApi.DeletePermission(index)).process(solrTestRule.getAdminClient());
+  }
+
+  @Test
+  public void testUpdateUsesPathIndexOverBodyIndex() throws Exception {
+    String pathA = "/path-index-a/*";
+    String pathB = "/path-index-b/*";
+    int indexA = createPermission(pathA);
+    int indexB = createPermission(pathB);
+    sendPermission(METHOD.PUT, "/" + indexA, "{\"role\": [\"dev\"], \"index\": " + indexB + "}");
+    assertEquals(List.of("dev"), storedPermission(pathA).get("role"));
+    assertEquals(List.of("admin"), storedPermission(pathB).get("role"));
+
+    authed(new AuthorizationApi.DeletePermission(indexB)).process(solrTestRule.getAdminClient());
+    authed(new AuthorizationApi.DeletePermission(indexA)).process(solrTestRule.getAdminClient());
+  }
+
+  private static void sendPermission(METHOD method, String suffix, String json) throws Exception {
+    authed(new GenericV2SolrRequest(method, "/cluster/security/authorization/permissions" + suffix))
+        .withContent(json.getBytes(StandardCharsets.UTF_8), "application/json")
+        .process(solrTestRule.getAdminClient());
+  }
+
+  private static int createPermission(String path) throws Exception {
+    var create = authed(new AuthorizationApi.CreatePermission());
+    create.setPath(List.of(path));
+    create.setRole(List.of("admin"));
+    return create.process(solrTestRule.getAdminClient()).index;
+  }
+
+  private static List<PermissionDetails> listPermissions() throws Exception {
+    return authed(new AuthorizationApi.ListPermissions())
+        .process(solrTestRule.getAdminClient())
+        .permissions;
+  }
+
+  private static void assertStoredCollectionIsNull(String path) throws Exception {
+    Map<String, Object> stored = storedPermission(path);
+    assertTrue("collection key missing in " + stored, stored.containsKey("collection"));
+    assertNull(stored.get("collection"));
+  }
+
+  private static Map<String, Object> storedPermission(String path) throws Exception {
+    return storedPermissions().stream()
+        .filter(p -> List.of(path).equals(p.get("path")))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  @Test
+  public void testConcurrentUserEdits() throws Exception {
+    int numEdits = 20;
+    CyclicBarrier barrier = new CyclicBarrier(numEdits);
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            numEdits, new SolrNamedThreadFactory("securityEdit"));
+    try {
+      List<Future<?>> futures = new ArrayList<>();
+      for (int i = 0; i < numEdits; i++) {
+        var create = authed(new AuthenticationApi.CreateOrUpdateUser(SCHEME, "user" + i));
+        create.setPassword("pass" + i);
+        futures.add(
+            executor.submit(
+                () -> {
+                  barrier.await(30, TimeUnit.SECONDS);
+                  return create.process(solrTestRule.getAdminClient());
+                }));
+      }
+      for (Future<?> future : futures) {
+        future.get();
+      }
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+
+    ListUsersResponse users =
+        authed(new AuthenticationApi.ListUsers(SCHEME)).process(solrTestRule.getAdminClient());
+    for (int i = 0; i < numEdits; i++) {
+      assertThat(users.users, hasItem("user" + i));
+      authed(new AuthenticationApi.DeleteUser(SCHEME, "user" + i))
+          .process(solrTestRule.getAdminClient());
+    }
+  }
+}

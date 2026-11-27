@@ -97,6 +97,11 @@ public class MultiAuthRuleBasedAuthorizationPlugin extends RuleBasedAuthorizatio
     pluginMap.put(scheme.toLowerCase(Locale.ROOT), pluginForScheme);
   }
 
+  /** Returns the plugin configured for the given scheme, or null. */
+  public RuleBasedAuthorizationPluginBase getPlugin(String scheme) {
+    return pluginMap.get(scheme.toLowerCase(Locale.ROOT));
+  }
+
   /**
    * Pulls roles from the Principal
    *
