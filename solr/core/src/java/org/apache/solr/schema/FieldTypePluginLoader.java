@@ -73,6 +73,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
 
     FieldType ft = loader.newInstance(className, FieldType.class);
     ft.setTypeName(name);
+    ft.setMetadata(SchemaMetadata.fromConfigNode(node, "fieldType '" + name + "'"));
 
     ConfigNode anode = node.child("analyzer", it -> "query".equals(it.attributes().get("type")));
     Analyzer queryAnalyzer = readAnalyzer(anode);

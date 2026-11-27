@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaMetadata;
 import org.apache.solr.schema.SimilarityFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -42,6 +43,16 @@ public class FieldTypeXmlAdapter {
       docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     } catch (ParserConfigurationException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+
+    for (Map.Entry<String, ?> entry : json.entrySet()) {
+      String hint = SchemaMetadata.attributeHint(List.of(entry.getKey()));
+      if (entry.getValue() instanceof Map
+          && !SchemaMetadata.META.equals(entry.getKey())
+          && !hint.isEmpty()) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid fieldType definition '" + entry.getKey() + "'" + hint);
+      }
     }
 
     Document doc = docBuilder.newDocument();
@@ -64,7 +75,49 @@ public class FieldTypeXmlAdapter {
     Element similarity = transformSimilarity(doc, json, "similarity");
     if (similarity != null) fieldType.appendChild(similarity);
 
+    Element meta = transformMeta(doc, json);
+    if (meta != null) fieldType.appendChild(meta);
+
     return fieldType;
+  }
+
+  /** Converts a JSON {@value SchemaMetadata#META} object into a typed {@code <meta>} element. */
+  protected static Element transformMeta(Document doc, Map<String, ?> json) {
+    Object jsonField = json.get(SchemaMetadata.META);
+    if (jsonField == null) return null;
+    SchemaMetadata metadata =
+        SchemaMetadata.fromObject(jsonField, "fieldType '" + json.get(IndexSchema.NAME) + "'");
+    if (metadata.isEmpty()) return null;
+    Element meta = doc.createElement(SchemaMetadata.META);
+    appendMetaEntries(doc, meta, metadata.getEntries());
+    return meta;
+  }
+
+  private static void appendMetaEntries(Document doc, Element parent, Map<String, Object> entries) {
+    for (Map.Entry<String, Object> entry : entries.entrySet()) {
+      Element child = metaValueElement(doc, entry.getValue());
+      child.setAttribute(CommonParams.NAME, entry.getKey());
+      parent.appendChild(child);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Element metaValueElement(Document doc, Object value) {
+    if (value instanceof Map) {
+      Element lst = doc.createElement("lst");
+      appendMetaEntries(doc, lst, (Map<String, Object>) value);
+      return lst;
+    }
+    if (value instanceof List) {
+      Element arr = doc.createElement("arr");
+      for (Object item : (List<Object>) value) {
+        arr.appendChild(metaValueElement(doc, item));
+      }
+      return arr;
+    }
+    Element element = doc.createElement(value == null ? "null" : classToXmlTag(value.getClass()));
+    if (value != null) element.setTextContent(value.toString());
+    return element;
   }
 
   @SuppressWarnings("unchecked")
@@ -98,8 +151,8 @@ public class FieldTypeXmlAdapter {
   }
 
   /**
-   * Convert types produced by noggit's ObjectBuilder (Boolean, Double, Long, String) to plugin
-   * param XML tags.
+   * Convert types produced by noggit's ObjectBuilder (Boolean, Double, Long, String), plus Integer
+   * and Float, to plugin param XML tags.
    */
   protected static String classToXmlTag(Class<?> clazz) {
     switch (clazz.getSimpleName()) {
@@ -107,6 +160,10 @@ public class FieldTypeXmlAdapter {
         return "bool";
       case "Double":
         return "double";
+      case "Float":
+        return "float";
+      case "Integer":
+        return "int";
       case "Long":
         return "long";
       case "String":

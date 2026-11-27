@@ -48,6 +48,9 @@ public final class SchemaField extends FieldProperties implements IndexableField
   /** Declared field property overrides */
   Map<String, Object> args = Map.of();
 
+  /** Descriptive metadata, kept out of {@link #args} */
+  SchemaMetadata metadata = SchemaMetadata.EMPTY;
+
   /**
    * Create a new SchemaField with the given name and type, using all the default properties from
    * the type.
@@ -63,6 +66,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   public SchemaField(SchemaField prototype, String name) {
     this(name, prototype.type, prototype.properties, prototype.defaultValue);
     args = prototype.args;
+    metadata = prototype.metadata;
   }
 
   /**
@@ -171,6 +175,11 @@ public final class SchemaField extends FieldProperties implements IndexableField
 
   public Map<String, ?> getArgs() {
     return Collections.unmodifiableMap(args);
+  }
+
+  /** Descriptive metadata of this field, never null. */
+  public SchemaMetadata getMetadata() {
+    return metadata;
   }
 
   // things that should be determined by field type, not set as options
@@ -298,14 +307,23 @@ public final class SchemaField extends FieldProperties implements IndexableField
     }
   }
 
+  /**
+   * Creates a field from declared properties. A {@value SchemaMetadata#META} property, if present,
+   * holds the field's metadata as a map (e.g. parsed JSON).
+   */
   static SchemaField create(String name, FieldType ft, Map<String, ?> props) {
+    Map<String, Object> args = new HashMap<>(props);
+    Object meta = args.remove(SchemaMetadata.META);
+    return create(name, ft, args, SchemaMetadata.fromObject(meta, "field '" + name + "'"));
+  }
 
-    String defaultValue = null;
-    if (props.containsKey(DEFAULT_VALUE)) {
-      defaultValue = (String) props.get(DEFAULT_VALUE);
-    }
+  /** Creates a field from declared properties and metadata. */
+  static SchemaField create(
+      String name, FieldType ft, Map<String, ?> props, SchemaMetadata metadata) {
+    String defaultValue = (String) props.get(DEFAULT_VALUE);
     SchemaField field = new SchemaField(name, ft, calcProps(name, ft, props), defaultValue);
     field.args = new HashMap<>(props);
+    field.metadata = metadata;
     return field;
   }
 
@@ -472,7 +490,8 @@ public final class SchemaField extends FieldProperties implements IndexableField
       for (Map.Entry<String, ?> arg : args.entrySet()) {
         String key = arg.getKey();
         Object value = arg.getValue();
-        if (key.equals(DEFAULT_VALUE)) {
+        if (!propertyMap.containsKey(key)) {
+          // not a boolean field property, e.g. default, postingsFormat, docValuesFormat
           properties.add(key, value);
         } else {
           boolean boolVal =
@@ -480,6 +499,9 @@ public final class SchemaField extends FieldProperties implements IndexableField
           properties.add(key, boolVal);
         }
       }
+    }
+    if (!metadata.isEmpty()) {
+      properties.add(SchemaMetadata.META, metadata.toMap());
     }
     return properties;
   }

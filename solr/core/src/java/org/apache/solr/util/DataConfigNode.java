@@ -42,17 +42,20 @@ public class DataConfigNode implements ConfigNode {
   private final String name;
   private final Map<String, String> rawAttributes;
   private final Map<String, List<ConfigNode>> kids;
+  private final List<ConfigNode> children;
   private final String rawTextData;
 
   public DataConfigNode(ConfigNode root) {
     Map<String, List<ConfigNode>> kids = new LinkedHashMap<>();
+    List<ConfigNode> children = new ArrayList<>();
     name = root.name();
     rawAttributes = root.attributes();
     rawTextData = root.txt();
     root.forEachChild(
         it -> {
-          List<ConfigNode> nodes = kids.computeIfAbsent(it.name(), k -> new ArrayList<>());
-          nodes.add(new DataConfigNode(it));
+          ConfigNode child = new DataConfigNode(it);
+          children.add(child);
+          kids.computeIfAbsent(it.name(), k -> new ArrayList<>()).add(child);
           return Boolean.TRUE;
         });
     for (Map.Entry<String, List<ConfigNode>> e : kids.entrySet()) {
@@ -61,6 +64,7 @@ public class DataConfigNode implements ConfigNode {
       }
     }
     this.kids = Map.copyOf(kids);
+    this.children = List.copyOf(children);
   }
 
   private static String substituteVal(String s) {
@@ -135,11 +139,8 @@ public class DataConfigNode implements ConfigNode {
 
   @Override
   public void forEachChild(Function<ConfigNode, Boolean> fun) {
-    kids.forEach(
-        (s, configNodes) -> {
-          if (configNodes != null) {
-            configNodes.forEach(fun::apply);
-          }
-        });
+    // the callback's return value is ignored: ConfigNode.get(name) relies on child(name, null)
+    // returning the last matching element, e.g. an explicit section after an XInclude'd one
+    children.forEach(fun::apply);
   }
 }

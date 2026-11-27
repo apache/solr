@@ -83,6 +83,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SchemaMetadata;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.KeeperException;
@@ -362,6 +363,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
       if ("required".equals(attr)) {
         diff.put(attr, attrValue != null ? attrValue : false);
+      } else if (SchemaMetadata.META.equals(attr)) {
+        // field types do not pass metadata to their fields, so never drop it as "inherited"
+        if (attrValue != null) {
+          diff.put(attr, attrValue);
+        }
       } else {
         Object fromType = fromTypeProps.get(attr);
         if (fromType == null || !fromType.equals(attrValue)) {
@@ -950,7 +956,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
                       targetSchema.newDynamicField(
                           prototype.getName(),
                           prototype.getType().getTypeName(),
-                          prototype.getArgs()))
+                          argsWithMetadata(prototype)))
               .collect(Collectors.toList());
       if (!addDynFields.isEmpty()) {
         schema = schema.addDynamicFields(addDynFields, null, false);
@@ -1093,5 +1099,13 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     SolrResourceLoader loader = cc.getResourceLoader();
     return new ZkSolrResourceLoader(
         loader.getInstancePath(), configSet, loader.getClassLoader(), cc.getZkController());
+  }
+
+  private static Map<String, Object> argsWithMetadata(SchemaField field) {
+    Map<String, Object> args = new HashMap<>(field.getArgs());
+    if (!field.getMetadata().isEmpty()) {
+      args.put(SchemaMetadata.META, field.getMetadata());
+    }
+    return args;
   }
 }

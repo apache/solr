@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -99,7 +100,8 @@ public abstract class FieldProperties {
       }
     }
     if (failOnError && !isPropertyIgnored(name)) {
-      throw new IllegalArgumentException("Invalid field property: " + name);
+      throw new IllegalArgumentException(
+          "Invalid field property: " + name + SchemaMetadata.attributeHint(List.of(name)));
     } else {
       return 0;
     }
