@@ -23,12 +23,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cats.EnabledOnShell;
-import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -145,11 +141,8 @@ public class ZkTest extends SolrCatsTestCase {
         Duration.ofSeconds(10),
         Duration.ofSeconds(1),
         () -> http("/api/configsets").body().contains("techproducts2"));
-    var response =
-        (Map<?, ?>) Utils.fromJSONString(http("/api/configsets").assertStatus(200).body());
-    assertEquals(
-        Set.of("_default", "_multilingual", "techproducts2"),
-        Set.copyOf((List<?>) response.get("configSets")));
+    assertTrue(
+        http("/api/configsets").body().contains("\"configSets\":[\"_default\",\"techproducts2\"]"));
   }
 
   @Test

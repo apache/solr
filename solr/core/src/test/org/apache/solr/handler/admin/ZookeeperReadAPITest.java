@@ -59,7 +59,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
     final var configListRequest = new ZookeeperReadApi.ListNodes("/configs");
     final var configListResponse = configListRequest.process(client);
     assertEquals(
-        4, configListResponse.unknownProperties().get("/configs").get("_default").children);
+        6, configListResponse.unknownProperties().get("/configs").get("_default").children);
     assertEquals(2, configListResponse.unknownProperties().get("/configs").get("conf").children);
     assertEquals(0, configListResponse.stat.version);
 
@@ -125,10 +125,15 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
     // make sure all of the expected child nodes were found.
     final Map<String, ZooKeeperStat> childStatsByPath =
         listDefaultFilesResponse.unknownProperties().get("/configs/_default");
-    assertEquals(4, childStatsByPath.size());
+    assertEquals(6, childStatsByPath.size());
     assertThat(
         childStatsByPath.keySet(),
         containsInAnyOrder(
-            "solrconfig.xml", "synonyms.txt", "stopwords.txt", "managed-schema.xml"));
+            "protwords.txt",
+            "solrconfig.xml",
+            "synonyms.txt",
+            "stopwords.txt",
+            "managed-schema.xml",
+            "lang"));
   }
 }

@@ -449,7 +449,7 @@ limitations under the License.
                     ng-options="schema for schema in publishedSchemas"><option value=""></option></select><a ng-click="showHelp('copyFromHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
             <div id="copyFromHelp" class="help" ng-show="helpId === 'copyFromHelp'" escape-pressed="hideAll()">
               <div class="help">
-              <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes field guessing, general-purpose field types, and dynamic fields. Use the Language(s) selector in the schema editor to add language-specific text analysis from <b>_multilingual</b>. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/configuration-guide/config-sets.html">Configsets</a></div></p>
+              <p>Copy an existing Configset (schema, solrconfig.xml, and supporting files) as the starting point for your new schema. The <b>_default</b> Configset includes a schema with field guessing enabled, dynamic fields for common field types, and field types for analyzing text data for a number of common languages supported by Lucene. For more information about Configsets, see: <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/configuration-guide/config-sets.html">Configsets</a></div></p>
               </div>
             </div>
           </div>
@@ -582,7 +582,7 @@ limitations under the License.
               </select><a ng-click="showHelp('languagesHelp')"><img class="help-ico" src="img/ico/question-white.png"/></a>
               <div id="languagesHelp" class="help" ng-show="helpId === 'languagesHelp'" escape-pressed="hideAll()">
                 <div class="help">
-                  <p>Select the languages needed for your application. The designer adds missing language-specific field types and supporting files from <i>_multilingual</i>, preserves existing field-type definitions in the copied schema, and removes field types for unselected languages. For more information about text analysis and languages, see:
+                  <p>By default, schemas copied from the <i>_default</i> schema include field types (and associated files) for all built-in languages. Select the languages needed for your application and the designer will remove all the unnecessary field types for languages you don't need. For more information about text analysis and languages, see:
                   <div class="help-anchor">
                     <a target="_blank" href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-analysis.html#language-specific-factories">Language-Specific Factories</a>
                   </div>

@@ -25,20 +25,6 @@ This page highlights the most important changes including new features and chang
 Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
 For example, if you are currently using Solr 10.1, you should review changes made in all subsequent 10.x releases in addition to the 11.0-specific changes on this page.
 
-== Configuration Changes
-
-=== Language-Specific Fields Moved to `_multilingual`
-
-The shipped `_default` configset now contains general-purpose field types and dynamic fields, with generic stopword and synonym files.
-Language-specific text types, including `text_en` and its splitting variants, their dynamic fields, and language files have moved to the new `_multilingual` configset.
-The full distribution includes `_multilingual`; the slim distribution ships only `_default`.
-When creating a collection that needs types such as `text_en` or dynamic fields such as `*_txt_en` and `*_txt_fr`, select `_multilingual` explicitly, for example with `bin/solr create -c mycollection -d _multilingual`.
-The xref:indexing-guide:schema-designer.adoc[Schema Designer] can also add selected languages from `_multilingual` to a schema copied from `_default`.
-
-SolrCloud uploads both built-in configsets during initialization when they are available locally and absent from ZooKeeper.
-Existing configsets and indexed collections are not modified by this change.
-See xref:configuration-guide:config-sets.adoc[] for details.
-
 == API Changes
 
 === V2 alias and collection snapshot responses
@@ -51,7 +37,6 @@ V2 collection snapshot creation responses now include `collection` and `followAl
 The v2 snapshot APIs return HTTP 404 for missing collections, and v2 snapshot deletion also returns HTTP 404 for a missing snapshot.
 The v1 response formats and error codes are unchanged.
 See xref:deployment-guide:collection-management.adoc#createsnapshot[collection snapshots] for examples.
-
 
 == Removed Features
 

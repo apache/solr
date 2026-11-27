@@ -62,8 +62,8 @@ public final class SchemaMetadata {
   private final Map<String, Object> entries;
 
   /**
-   * Creates schema metadata from the supplied entry map. Private constructor,
-   * use one of the static factory methods for creation.
+   * Creates schema metadata from the supplied entry map. Private constructor, use one of the static
+   * factory methods for creation.
    *
    * @param entries unmodifiable map with the metadata entries to store
    */
