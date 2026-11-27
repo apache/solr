@@ -1,0 +1,10 @@
+title: >
+  New test option -Ptests.docker (or env TESTS_DOCKER) for Docker (Testcontainers) based tests:
+  false skips them without contacting Docker, true fails them if Docker is unavailable,
+  unset auto-detects (as before).
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: PR#5363
+    url: https://github.com/apache/solr/pull/5363
