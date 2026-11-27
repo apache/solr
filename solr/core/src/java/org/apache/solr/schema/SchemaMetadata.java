@@ -53,7 +53,7 @@ public final class SchemaMetadata {
 
   /**
    * Hard limit on nesting while parsing, applied before validation so that deeply nested input
-   * cannot exhaust the stack. {@link SchemaMetadataValidator} applies the tighter supported limit.
+   * cannot exhaust the stack. {@link SchemaMetadataValidator} may apply a tighter supported limit.
    */
   static final int MAX_PARSE_DEPTH = 10;
 
@@ -61,6 +61,12 @@ public final class SchemaMetadata {
 
   private final Map<String, Object> entries;
 
+  /**
+   * Creates schema metadata from the supplied entry map. Private constructor,
+   * use one of the static factory methods for creation.
+   *
+   * @param entries unmodifiable map with the metadata entries to store
+   */
   private SchemaMetadata(Map<String, Object> entries) {
     this.entries = entries;
   }
