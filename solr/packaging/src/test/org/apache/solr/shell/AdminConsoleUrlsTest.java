@@ -42,9 +42,12 @@ public class AdminConsoleUrlsTest extends SolrCatsTestCase {
   public void assertAdminConsoleStaticAssetsAreRevalidatedAndVersioned() {
     run("solr start");
 
-    http("/solr/libs/solr/index.js")
-        .assertStatus(200)
-        .assertHeaderContains("Cache-Control: no-cache");
+    // The js-client bundle is absent with -PdisableJsClient=true
+    if (!Boolean.getBoolean("tests.jsclient.disabled")) {
+      http("/solr/libs/solr/index.js")
+          .assertStatus(200)
+          .assertHeaderContains("Cache-Control: no-cache");
+    }
 
     http("/solr/").assertStatus(200).assertNotMatches("(src|href)=\"[^\"]+\\.(js|css)\"");
   }
