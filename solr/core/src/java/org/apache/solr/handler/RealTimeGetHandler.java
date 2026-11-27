@@ -43,6 +43,11 @@ public class RealTimeGetHandler extends SearchHandler {
     super.handleRequestBody(req, rsp);
   }
 
+  @Override
+  protected boolean notifiesSearchRequestListeners() {
+    return false;
+  }
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
