@@ -91,6 +91,31 @@ public class S3OutputStreamMockitoTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings("unchecked")
+  public void testAbortDiscardsUpload() throws IOException {
+    when(clientMock.createMultipartUpload((Consumer<CreateMultipartUploadRequest.Builder>) any()))
+        .thenReturn(CreateMultipartUploadResponse.builder().build());
+    when(clientMock.uploadPart((UploadPartRequest) any(), (RequestBody) any()))
+        .thenReturn(UploadPartResponse.builder().build());
+    S3OutputStream stream = new S3OutputStream(clientMock, "key", "bucket");
+    stream.write(largeBuffer);
+    stream.abort();
+    stream.close();
+    verify(clientMock).abortMultipartUpload((Consumer<AbortMultipartUploadRequest.Builder>) any());
+    verify(clientMock, never())
+        .completeMultipartUpload((Consumer<CompleteMultipartUploadRequest.Builder>) any());
+  }
+
+  @SuppressWarnings("unchecked")
+  public void testAbortBeforeAnyPartUploadedCreatesNothing() throws IOException {
+    S3OutputStream stream = new S3OutputStream(clientMock, "key", "bucket");
+    stream.write(new byte[] {1, 2, 3});
+    stream.abort();
+    stream.close();
+    verify(clientMock, never())
+        .createMultipartUpload((Consumer<CreateMultipartUploadRequest.Builder>) any());
+  }
+
+  @SuppressWarnings("unchecked")
   public void testMultiPartUploadAborted() throws IOException {
     when(clientMock.createMultipartUpload((Consumer<CreateMultipartUploadRequest.Builder>) any()))
         .thenReturn(CreateMultipartUploadResponse.builder().build());

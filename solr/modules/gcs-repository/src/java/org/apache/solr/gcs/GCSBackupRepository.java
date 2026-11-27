@@ -51,6 +51,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
@@ -361,6 +362,7 @@ public class GCSBackupRepository extends AbstractBackupRepository {
     blobName = appendTrailingSeparatorIfNecessary(blobName);
     blobName += sourceFileName;
     final BlobId blobId = BlobId.of(bucketName, blobName);
+    boolean success = false;
     try (final ReadChannel readChannel = storage.reader(blobId);
         IndexOutput output = dest.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
       ByteBuffer buffer = ByteBuffer.allocate(readBufferSizeBytes);
@@ -370,6 +372,7 @@ public class GCSBackupRepository extends AbstractBackupRepository {
         output.writeBytes(arr, buffer.position(), buffer.limit() - buffer.position());
         buffer.clear();
       }
+      success = true;
     } catch (IOException e) {
       log.error("Failed to copy index file from GCS: {}/{}", bucketName, blobName, e);
       throw e;
@@ -377,6 +380,10 @@ public class GCSBackupRepository extends AbstractBackupRepository {
       log.error("Failed to copy index file from GCS: {}/{}", bucketName, blobName, e);
       throw new IOException(
           "Failed to copy index file from GCS: " + bucketName + "/" + blobName, e);
+    } finally {
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(dest, destFileName);
+      }
     }
   }
 

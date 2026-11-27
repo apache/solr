@@ -254,34 +254,7 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
     final long maxMirroringBatchSizeBytes = conf.getInt(MAX_REQUEST_SIZE_BYTES);
     Boolean indexUnmirrorableDocs = conf.getBool(INDEX_UNMIRRORABLE_DOCS);
 
-    ModifiableSolrParams mirroredParams = null;
-    if (doMirroring) {
-      // Get the collection name for the core so we can be explicit in the mirrored request
-      CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-      String collection = coreDesc.getCollectionName();
-      if (collection == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Could not determine collection name for "
-                + MirroringUpdateProcessor.class.getSimpleName()
-                + ". Solr may not be running in cloud mode.");
-      }
-
-      mirroredParams = new ModifiableSolrParams(req.getParams());
-      mirroredParams.set("collection", collection);
-      // remove internal version parameter
-      mirroredParams.remove(CommonParams.VERSION_FIELD);
-      // remove fields added by distributed update proc
-      mirroredParams.remove(DISTRIB_UPDATE_PARAM);
-      mirroredParams.remove(DISTRIB_FROM_COLLECTION);
-      mirroredParams.remove(DISTRIB_INPLACE_PREVVERSION);
-      mirroredParams.remove(COMMIT_END_POINT);
-      mirroredParams.remove(DISTRIB_FROM_SHARD);
-      mirroredParams.remove(DISTRIB_FROM_PARENT);
-      mirroredParams.remove(DISTRIB_FROM);
-      // prevent circular mirroring
-      mirroredParams.set(SERVER_SHOULD_MIRROR, Boolean.FALSE.toString());
-    }
+    ModifiableSolrParams mirroredParams = doMirroring ? createMirroredParams(req) : null;
     if (log.isTraceEnabled()) {
       log.trace("Create MirroringUpdateProcessor with mirroredParams={}", mirroredParams);
     }
@@ -297,6 +270,39 @@ public class MirroringUpdateRequestProcessorFactory extends UpdateRequestProcess
         DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM)),
         doMirroring ? mirroringHandler : null,
         producerMetrics);
+  }
+
+  /**
+   * Builds the parameters of mirrored requests from the incoming request: names the collection
+   * explicitly, strips internal distributed-update parameters and disables mirroring on the target.
+   */
+  static ModifiableSolrParams createMirroredParams(SolrQueryRequest req) {
+    // Get the collection name for the core so we can be explicit in the mirrored request
+    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
+    String collection = coreDesc.getCollectionName();
+    if (collection == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not determine collection name for "
+              + MirroringUpdateProcessor.class.getSimpleName()
+              + ". Solr may not be running in cloud mode.");
+    }
+
+    ModifiableSolrParams mirroredParams = new ModifiableSolrParams(req.getParams());
+    mirroredParams.set("collection", collection);
+    // remove internal version parameter
+    mirroredParams.remove(CommonParams.VERSION_FIELD);
+    // remove fields added by distributed update proc
+    mirroredParams.remove(DISTRIB_UPDATE_PARAM);
+    mirroredParams.remove(DISTRIB_FROM_COLLECTION);
+    mirroredParams.remove(DISTRIB_INPLACE_PREVVERSION);
+    mirroredParams.remove(COMMIT_END_POINT);
+    mirroredParams.remove(DISTRIB_FROM_SHARD);
+    mirroredParams.remove(DISTRIB_FROM_PARENT);
+    mirroredParams.remove(DISTRIB_FROM);
+    // prevent circular mirroring
+    mirroredParams.set(SERVER_SHOULD_MIRROR, Boolean.FALSE.toString());
+    return mirroredParams;
   }
 
   public static class NoOpUpdateRequestProcessor extends UpdateRequestProcessor {

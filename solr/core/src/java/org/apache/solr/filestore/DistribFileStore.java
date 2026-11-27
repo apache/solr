@@ -49,7 +49,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -486,6 +485,7 @@ public class DistribFileStore implements FileStore {
 
   @Override
   public void delete(String path) {
+    deleteZKFileEntry(path);
     deleteLocal(path);
     List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
 
@@ -648,11 +648,17 @@ public class DistribFileStore implements FileStore {
     return result;
   }
 
-  public static void deleteZKFileEntry(SolrZkClient client, String path) {
+  private void deleteZKFileEntry(String path) {
     try {
-      client.delete(ZK_PACKAGESTORE + path, -1);
-    } catch (KeeperException | InterruptedException e) {
-      log.error("", e);
+      coreContainer.getZkController().getZkClient().delete(ZK_PACKAGESTORE + path, -1);
+    } catch (KeeperException.NoNodeException e) {
+      // The entry may already be absent during cleanup.
+    } catch (KeeperException e) {
+      throw new SolrException(SERVER_ERROR, "Unable to delete the ZooKeeper entry for " + path, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(
+          SERVER_ERROR, "Interrupted deleting the ZooKeeper entry for " + path, e);
     }
   }
 }

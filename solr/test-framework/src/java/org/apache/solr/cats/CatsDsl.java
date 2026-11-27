@@ -198,6 +198,16 @@ public interface CatsDsl {
   }
 
   /**
+   * Copies a file from the test classpath to the same relative path in the session's working
+   * directory.
+   *
+   * @see #copyResource(String, String)
+   */
+  default Path copyResource(String resource) {
+    return copyResource(resource, resource.startsWith("/") ? resource.substring(1) : resource);
+  }
+
+  /**
    * Copies a file from the test classpath into the session's working directory, for a fixture that
    * is checked in rather than generated — a configuration file, a document, a web page to serve.
    *

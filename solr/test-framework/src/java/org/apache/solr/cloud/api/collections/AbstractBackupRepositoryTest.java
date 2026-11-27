@@ -34,9 +34,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.FilterIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -295,17 +297,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     // Given a file on the local disk with an invalid checksum (e.g. could be encrypted).
     Path sourceDir = createTempDir();
     String fileName = "source-file";
-    String content = "content";
-    try (OutputStream os = PathUtils.newOutputStream(sourceDir.resolve(fileName), false);
-        IndexOutput io = new OutputStreamIndexOutput("", "", os, Long.BYTES)) {
-      byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-      io.writeBytes(bytes, bytes.length);
-      // Instead of writing the checksum with CodecUtil.writeFooter(), write a footer with an
-      // invalid checksum.
-      writeBEInt(io, FOOTER_MAGIC);
-      writeBEInt(io, 0);
-      writeBELong(io, 1);
-    }
+    writeFileWithInvalidFooter(sourceDir, fileName);
 
     BackupRepositoryFactory repoFactory = new BackupRepositoryFactory(plugins);
     try (SolrResourceLoader resourceLoader = new SolrResourceLoader(sourceDir)) {
@@ -332,6 +324,58 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       copyFileToDir(
           sourceDir, fileName, destinationDir, filterRepoName, repoFactory, resourceLoader);
       assertTrue(NoChecksumDelegatingBackupRepository.checksumVerifiedAlternatively);
+    }
+  }
+
+  private void writeFileWithInvalidFooter(Path dir, String fileName) throws IOException {
+    try (OutputStream os = PathUtils.newOutputStream(dir.resolve(fileName), false);
+        IndexOutput io = new OutputStreamIndexOutput("", "", os, Long.BYTES)) {
+      byte[] bytes = "content".getBytes(StandardCharsets.UTF_8);
+      io.writeBytes(bytes, bytes.length);
+      // Instead of writing the checksum with CodecUtil.writeFooter(), write a footer with an
+      // invalid checksum.
+      writeBEInt(io, FOOTER_MAGIC);
+      writeBEInt(io, 0);
+      writeBELong(io, 1);
+    }
+  }
+
+  @Test
+  public void testFailedCopiesLeaveNoPartialFiles() throws Exception {
+    try (BackupRepository repo = getRepository()) {
+      final URI dir = repo.resolve(getBaseUri(), "failed-copies");
+      repo.createDirectory(dir);
+
+      Path sourcePath = createTempDir();
+      writeFileWithInvalidFooter(sourcePath, "corrupt");
+      try (Directory source = newFSDirectory(sourcePath)) {
+        expectThrows(
+            CorruptIndexException.class,
+            () -> repo.copyIndexFileFrom(source, "corrupt", dir, "corrupt"));
+        assertFalse(repo.exists(repo.resolve(dir, "corrupt")));
+
+        try (IndexOutput out = source.createOutput("valid", IOContext.DEFAULT)) {
+          out.writeString("content");
+          CodecUtil.writeFooter(out);
+        }
+        repo.copyIndexFileFrom(source, "valid", dir, "valid");
+      }
+
+      try (Directory failing =
+          new FilterDirectory(newFSDirectory(createTempDir())) {
+            @Override
+            public IndexOutput createOutput(String name, IOContext context) throws IOException {
+              return new FilterIndexOutput("failing", name, super.createOutput(name, context)) {
+                @Override
+                public void writeBytes(byte[] b, int offset, int length) throws IOException {
+                  throw new IOException("injected failure");
+                }
+              };
+            }
+          }) {
+        expectThrows(IOException.class, () -> repo.copyIndexFileTo(dir, "valid", failing, "valid"));
+        assertEquals(0, failing.listAll().length);
+      }
     }
   }
 

@@ -17,9 +17,7 @@
 
 package org.apache.solr.shell;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.Test;
 
 /**
@@ -60,32 +58,11 @@ public class ModulesTest extends SolrCatsTestCase {
 
     env("SOLR_INCLUDE", solrIncludeFile.toString());
     run("solr start");
-    run("solr create -c COLL_NAME -d \"" + analysisExtrasConf() + "\"")
+    copyResource("analysis_extras_config/conf/solrconfig.xml");
+    Path conf = copyResource("analysis_extras_config/conf/schema.xml").getParent();
+    run("solr create -c COLL_NAME -d \"" + conf + "\"")
         .assertContains("Created collection 'COLL_NAME'");
 
     run("solr delete -c COLL_NAME --delete-config");
-  }
-
-  /**
-   * The config set BATS passed as {@code test/analysis_extras_config/conf}, which is relative to
-   * {@code solr/packaging}. A session's working directory is its own scratch space, so the port
-   * hands {@code solr create} an absolute path: the Gradle test JVM's own working directory first,
-   * then the distribution's place inside {@code solr/packaging/build}.
-   */
-  private static Path analysisExtrasConf() {
-    List<Path> candidates =
-        List.of(
-            Path.of("test/analysis_extras_config/conf").toAbsolutePath().normalize(),
-            harnessEnv
-                .solrTip()
-                .getParent()
-                .getParent()
-                .resolve("test/analysis_extras_config/conf"));
-    for (Path candidate : candidates) {
-      if (Files.isDirectory(candidate)) {
-        return candidate;
-      }
-    }
-    throw new AssertionError("Could not find the analysis_extras_config config set: " + candidates);
   }
 }
