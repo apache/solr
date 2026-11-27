@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  A RESTORE to a new collection that fails while restoring its shards now deletes the collection,
+  so that retrying the restore no longer leaves the shards under construction
+type: fixed
+authors:
+  - name: Boyi Dai
+    nick: SpookyJumpyBeans
+links:
+  - name: SOLR-18584
+    url: https://issues.apache.org/jira/browse/SOLR-18584
