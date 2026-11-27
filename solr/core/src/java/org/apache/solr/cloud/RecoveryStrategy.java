@@ -124,6 +124,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private volatile boolean close = false;
+  private boolean startedBuffering = false;
 
   private RecoveryListener recoveryListener;
   private ZkController zkController;
@@ -557,6 +558,38 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
+    boolean successfulRecovery = false;
+    try {
+      successfulRecovery = syncOrReplicateRecovery(core);
+    } finally {
+      dropBufferIfIncomplete(core, successfulRecovery);
+    }
+  }
+
+  private void dropBufferIfIncomplete(SolrCore core, boolean successfulRecovery) {
+    // on shutdown UpdateLog.close() keeps the buffer tlog as an unfinished-recovery marker
+    if (successfulRecovery || !startedBuffering || (cc != null && cc.isShutDown())) {
+      return;
+    }
+    // close() may have interrupted this thread via cancelPrepRecoveryCmd(); tlog I/O would fail
+    boolean interrupted = Thread.interrupted();
+    try {
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      if (ulog != null && ulog.dropBufferedUpdates()) {
+        log.warn(
+            "Recovery did not complete; dropped buffered updates so the update log is ACTIVE. core=[{}]",
+            coreName);
+      }
+    } catch (Exception e) {
+      log.warn("Could not drop buffered updates after incomplete recovery. core=[{}]", coreName, e);
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  private boolean syncOrReplicateRecovery(SolrCore core) throws Exception {
     final RTimer timer = new RTimer();
     boolean successfulRecovery = false;
 
@@ -565,7 +598,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     if (ulog == null) {
       log.error("No UpdateLog found - cannot recover.");
       recoveryFailed(zkController, this.coreDescriptor);
-      return;
+      return false;
     }
 
     // we temporary ignore peersync for tlog replicas
@@ -663,13 +696,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Finished recovery process.");
           setOutcome("becameLeader");
           zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
-          return;
+          return false;
         }
 
         log.info("Begin buffering updates. core=[{}]", coreName);
         Span.current().addEvent("bufferUpdates");
         // recalling buffer updates will drop the old buffer tlog
         ulog.bufferUpdates();
+        startedBuffering = true;
 
         if (log.isInfoEnabled()) {
           log.info(
@@ -820,6 +854,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           successfulRecovery,
           timer.getTime());
     }
+    return successfulRecovery;
   }
 
   /**

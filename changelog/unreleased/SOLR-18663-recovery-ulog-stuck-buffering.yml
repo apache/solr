@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  A recovery attempt that started buffering updates but did not complete (cancelled by leader
+  election or close, interrupted, or out of retries) no longer leaves the update log stuck in
+  BUFFERING, which stopped hard commits from rolling the tlog so it grew without bound.
+type: fixed
+authors:
+  - name: Neta Rose
+links:
+  - name: SOLR-18663
+    url: https://issues.apache.org/jira/browse/SOLR-18663
