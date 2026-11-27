@@ -112,6 +112,8 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
 
   @Test
   public void testRepositoryConfig() {
+    // the retrying wrapper would hide the configured repository class
+    System.setProperty("solr.backup.maxcopyretries", "0");
     PluginInfo[] plugins = new PluginInfo[1];
 
     {

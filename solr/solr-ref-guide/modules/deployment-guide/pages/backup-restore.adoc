@@ -457,6 +457,32 @@ Increasing either value can significantly improve throughput when using cloud st
 Start small and increase based on observed throughput and available resources.
 The configured limit applies across all concurrent backup or restore operations on the node.
 
+=== Retrying Failed File Copies
+
+When copying a single index file to or from a repository fails with a transient error, Solr retries that file before failing the whole operation.
+This applies to every repository and is controlled via system properties or environment variables:
+
+`solr.backup.maxcopyretries`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+Number of times a failed copy of a single index file is retried during backup, restore and install-shard operations, when the failure looks transient (e.g. a read timeout).
+Set to `0` to disable retries.
+Can also be set via the `SOLR_BACKUP_MAXCOPYRETRIES` environment variable.
+
+`solr.backup.copyretrybackoffms`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1000`
+|===
++
+Delay in milliseconds before the first retry of a failed file copy, doubled for each further retry.
+Can also be set via the `SOLR_BACKUP_COPYRETRYBACKOFFMS` environment variable.
+
 === Checksum Verification
 
 By default, all the repository implementations verify the integrity of the index files before they are copied to the destination. However, it is possible to disable this integrity check by setting the optional configuration property `verifyChecksum`.
