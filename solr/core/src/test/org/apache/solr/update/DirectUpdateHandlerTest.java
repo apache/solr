@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.DirectoryReader;
@@ -32,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.index.TieredMergePolicyFactory;
@@ -41,6 +43,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrMetricTestUtils;
+import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -580,6 +583,37 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertTrue(
         "newSearcher was called after postSoftCommitCallback",
         listener.postSoftCommitAt.get() >= listener.newSearcherOpenedAt.get());
+  }
+
+  /** A commitWithin longer than autoCommit maxTime must not delay the hard commit */
+  @Test
+  public void testCommitWithinLongerThanAutoCommitMaxTime() throws Exception {
+    final long maxTimeMillis = 100;
+    final long commitWithinMillis = TimeUnit.HOURS.toMillis(1);
+
+    DirectUpdateHandler2 updater = (DirectUpdateHandler2) h.getCore().getUpdateHandler();
+    // Route commitWithin to the hard commit tracker, as a TLOG replica does
+    updater.setCommitWithinSoftCommit(false);
+
+    updater.softCommitTracker.setTimeUpperBound(-1);
+    updater.softCommitTracker.setDocsUpperBound(-1);
+
+    CommitTracker hardCommitTracker = updater.commitTracker;
+    hardCommitTracker.setOpenSearcher(false);
+    hardCommitTracker.setTimeUpperBound(maxTimeMillis);
+    hardCommitTracker.setDocsUpperBound(-1);
+    assertEquals(0, hardCommitTracker.getCommitCount());
+
+    assertU(add(doc("id", "1"), "commitWithin", Long.toString(commitWithinMillis)));
+
+    new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+        .waitFor(
+            "No hard commit within 10s although autoCommit maxTime is "
+                + maxTimeMillis
+                + "ms; commitWithin of "
+                + commitWithinMillis
+                + "ms was used instead",
+            () -> hardCommitTracker.getCommitCount() > 0);
   }
 
   static class MySolrEventListener implements SolrEventListener {

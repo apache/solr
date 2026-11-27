@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  A commitWithin longer than the configured autoCommit (or autoSoftCommit) maxTime no longer
+  delays that commit past maxTime. Previously, TLOG replicas and cores with commitWithinSoftCommit
+  set to false could go without a hard commit for the full commitWithin, growing the transaction log.
+type: fixed
+authors:
+  - name: Kevin Liang
+links:
+  - name: SOLR-18692
+    url: https://issues.apache.org/jira/browse/SOLR-18692

@@ -126,7 +126,10 @@ public final class CommitTracker implements Runnable {
   }
 
   private void _scheduleCommitWithinIfNeeded(long commitWithin) {
-    long ctime = (commitWithin > 0) ? commitWithin : timeUpperBound;
+    long ctime =
+        (commitWithin > 0 && (timeUpperBound <= 0 || commitWithin < timeUpperBound))
+            ? commitWithin
+            : timeUpperBound;
 
     if (ctime > 0) {
       _scheduleCommitWithin(ctime);
