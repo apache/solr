@@ -20,7 +20,6 @@ package org.apache.solr.handler.designer;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesigner.getConfigSetZkPath;
 import static org.apache.solr.handler.designer.SchemaDesigner.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -67,7 +66,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -584,7 +582,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   ManagedIndexSchema loadLatestSchema(SolrConfig solrConfig) {
     ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
-    factory.init(new NamedList<>());
+    factory.init(SimpleOrderedMap.of());
     return factory.create(DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME, solrConfig, null);
   }
 
@@ -748,29 +746,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     // now restore any missing types / files for the languages we need, optionally adding back
     // dynamic fields too
-    schema = restoreLanguagesFromSources(configSet, schema, langs, dynamicEnabled, copyFrom);
+    schema =
+        restoreLanguageSpecificObjectsAndFiles(configSet, schema, langs, dynamicEnabled, copyFrom);
 
     schema.persistManagedSchema(false);
-    return schema;
-  }
-
-  private ManagedIndexSchema restoreLanguagesFromSources(
-      String configSet,
-      ManagedIndexSchema schema,
-      List<String> langs,
-      boolean dynamicEnabled,
-      String copyFrom)
-      throws IOException {
-    if (!MULTILINGUAL_CONFIGSET_NAME.equals(copyFrom)) {
-      schema =
-          restoreLanguageSpecificObjectsAndFiles(
-              configSet, schema, langs, dynamicEnabled, copyFrom);
-    }
-    if (cc.getConfigSetService().checkConfigExists(MULTILINGUAL_CONFIGSET_NAME)) {
-      schema =
-          restoreLanguageSpecificObjectsAndFiles(
-              configSet, schema, langs, dynamicEnabled, MULTILINGUAL_CONFIGSET_NAME);
-    }
     return schema;
   }
 
@@ -939,18 +918,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               .map(FieldType::getTypeName)
               .collect(Collectors.toSet());
 
-      final ManagedIndexSchema targetSchema = schema;
       List<SchemaField> addDynFields =
           Arrays.stream(copyFromSchema.getDynamicFields())
               .map(IndexSchema.DynamicField::getPrototype)
               .filter(prototype -> langFieldTypeNames.contains(prototype.getType().getTypeName()))
               .filter(prototype -> !existingDynFields.contains(prototype.getName()))
-              .map(
-                  prototype ->
-                      targetSchema.newDynamicField(
-                          prototype.getName(),
-                          prototype.getType().getTypeName(),
-                          prototype.getArgs()))
               .collect(Collectors.toList());
       if (!addDynFields.isEmpty()) {
         schema = schema.addDynamicFields(addDynFields, null, false);
@@ -1003,9 +975,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   protected ManagedIndexSchema restoreDynamicFields(
-      String configSet, ManagedIndexSchema schema, List<String> langs, String copyFrom)
-      throws IOException {
-    schema = restoreLanguagesFromSources(configSet, schema, langs, true, copyFrom);
+      ManagedIndexSchema schema, List<String> langs, String copyFrom) {
     // pull the dynamic fields from the copyFrom schema
     ManagedIndexSchema copyFromSchema = loadLatestSchema(copyFrom);
     IndexSchema.DynamicField[] dynamicFields = copyFromSchema.getDynamicFields();

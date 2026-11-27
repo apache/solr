@@ -32,6 +32,7 @@ import java.util.Map;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.DOMConfigNode;
 import org.w3c.dom.Node;
 
@@ -129,14 +130,14 @@ public class PluginInfo implements MapWriter {
       if (value instanceof List<?> list) {
         if (!list.isEmpty() && list.get(0) instanceof Map) { // this is a subcomponent
           for (Object o : list) {
-            if (o instanceof Map) o = new NamedList<>((Map) o);
+            if (o instanceof Map) o = toNamedList((Map) o);
             initArgs.add(entry.getKey(), o);
           }
         } else {
           initArgs.add(entry.getKey(), value);
         }
       } else {
-        if (value instanceof Map) value = new NamedList((Map) value);
+        if (value instanceof Map) value = toNamedList((Map) value);
         initArgs.add(entry.getKey(), value);
       }
     }
@@ -236,6 +237,12 @@ public class PluginInfo implements MapWriter {
     List<PluginInfo> result = new ArrayList<>();
     for (PluginInfo child : children) if (type.equals(child.type)) result.add(child);
     return result;
+  }
+
+  private static NamedList<Object> toNamedList(Map<String, Object> map) {
+    NamedList<Object> nl = new SimpleOrderedMap<>();
+    nl.addAll(map);
+    return nl;
   }
 
   public static final PluginInfo EMPTY_INFO =

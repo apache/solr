@@ -1,0 +1,8 @@
+title: >
+  S3 and GCS backups no longer leave partial files on timeouts and other I/O errors
+type: fixed
+authors:
+  - name: Jason Gerlowski
+links:
+  - name: SOLR-18643
+    url: https://issues.apache.org/jira/browse/SOLR-18643

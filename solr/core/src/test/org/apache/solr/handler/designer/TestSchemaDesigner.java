@@ -153,50 +153,6 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
   }
 
   @Test
-  public void testDesignerWithoutMultilingualConfigSet() throws Exception {
-    var service = cc.getConfigSetService();
-    String saved = "savedMultilingualForSlimDistribution";
-    service.copyConfig("_multilingual", saved);
-    service.deleteConfig("_multilingual");
-    try {
-      String configSet = "slimDistributionDesign";
-      SchemaDesignerResponse response = schemaDesigner.prepNewSchema(configSet, null);
-      assertNotNull(response.schemaVersion);
-      var helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesigner.newSchemaSuggester());
-      String mutableId = getMutableId(configSet);
-      var schema =
-          helper.syncLanguageSpecificObjectsAndFiles(
-              mutableId,
-              helper.loadLatestSchema(mutableId),
-              List.of(),
-              true,
-              DEFAULT_CONFIGSET_NAME);
-      schema = helper.removeDynamicFields(schema);
-      schema = helper.restoreDynamicFields(mutableId, schema, List.of(), DEFAULT_CONFIGSET_NAME);
-      assertNotNull(schema.getFieldTypeByName("text_general"));
-      assertNotNull(schema.getFieldOrNull("*_txt"));
-      assertNull(schema.getFieldTypeByName("text_fr"));
-    } finally {
-      service.copyConfig(saved, "_multilingual");
-      service.deleteConfig(saved);
-    }
-  }
-
-  @Test
-  public void testBuiltInConfigSetsAreNotEditable() throws Exception {
-    Map<String, Integer> configs = schemaDesigner.listEnabledConfigs();
-    assertFalse(configs.containsKey("_default"));
-    assertFalse(configs.containsKey("_multilingual"));
-    for (String config : List.of("_default", "_multilingual")) {
-      SolrException error =
-          expectThrows(
-              SolrException.class,
-              () -> schemaDesigner.analyze(config, null, null, null, null, null, null, null));
-      assertEquals(400, error.code());
-    }
-  }
-
-  @Test
   @SuppressWarnings("unchecked")
   public void testAddTechproductsProgressively() throws Exception {
     Path docsDir = ExternalPaths.SOURCE_HOME.resolve("example/exampledocs");
@@ -446,7 +402,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertDesignerSettings(expSettings, response);
 
     List<String> filesInResp = response.files;
-    assertEquals(6, filesInResp.size());
+    assertEquals(5, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
 
     schemaVersion = response.schemaVersion;
@@ -466,7 +422,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertDesignerSettings(expSettings, response);
 
     filesInResp = response.files;
-    assertEquals(8, filesInResp.size());
+    assertEquals(7, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
 
     schemaVersion = response.schemaVersion;
@@ -486,7 +442,7 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertDesignerSettings(expSettings, response);
 
     filesInResp = response.files;
-    assertEquals(44, filesInResp.size());
+    assertEquals(43, filesInResp.size());
     assertTrue(filesInResp.contains("lang/stopwords_fr.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_en.txt"));
     assertTrue(filesInResp.contains("lang/stopwords_it.txt"));
