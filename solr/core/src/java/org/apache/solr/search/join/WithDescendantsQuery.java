@@ -18,6 +18,7 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -197,6 +198,7 @@ public class WithDescendantsQuery extends Query {
           .computeIfAbsent(depthOf(term), k -> new ArrayList<>())
           .add(BytesRef.deepCopyOf(term));
     }
+    // note: it's possible some intermediate depths have no paths (docs), and that's fine.
     if (pathsByDepth.size() < 2) {
       return; // the deepest level has no descendants
     }
@@ -205,13 +207,13 @@ public class WithDescendantsQuery extends Query {
     // lastDoc, regardless of how few docs are in matchedSet.
 
     // Process from the deepest level up; "deeperSet" accumulates docs below the current depth.
-    final List<List<BytesRef>> levels = new ArrayList<>(pathsByDepth.descendingMap().values());
+    final Iterator<List<BytesRef>> levels = pathsByDepth.descendingMap().values().iterator();
     final int maxDoc = matchedSet.length();
     final FixedBitSet deeperSet = new FixedBitSet(maxDoc);
-    addDocs(termsEnum, levels.get(0), deeperSet, startDoc, lastDoc);
+    addDocs(termsEnum, levels.next(), deeperSet, startDoc, lastDoc);
     final FixedBitSet atDepthSet = new FixedBitSet(maxDoc);
-    for (int i = 1; i < levels.size(); i++) {
-      addDocs(termsEnum, levels.get(i), atDepthSet, startDoc, lastDoc);
+    while (levels.hasNext()) {
+      addDocs(termsEnum, levels.next(), atDepthSet, startDoc, lastDoc);
       // matchedSet docs at this depth
       final var atDepthDisi = new FixedBitSetIntersectionIterator(atDepthSet, matchedSet);
       for (int doc = atDepthDisi.advance(startDoc);
@@ -219,7 +221,7 @@ public class WithDescendantsQuery extends Query {
           doc = atDepthDisi.nextDoc()) {
         addDescendants(doc, deeperSet, matchedSet);
       }
-      if (i < levels.size() - 1) { // not needed after the shallowest level
+      if (levels.hasNext()) { // not needed after the shallowest level
         deeperSet.or(atDepthSet);
         atDepthSet.clear(startDoc, lastDoc + 1);
       }
