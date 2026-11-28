@@ -79,6 +79,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.DocTransformer;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -900,6 +901,13 @@ public class RealTimeGetComponent extends SearchComponent {
           }
         }
         out.addField(fname, val);
+      }
+      if (sf != null
+          && sf.multiValued()
+          && sf.getType() instanceof DenseVectorField
+          && out.containsKey(fname)
+          && out.getField(fname).getValue() instanceof Number coordinate) {
+        out.setField(fname, List.of(coordinate));
       }
     }
     return out;
