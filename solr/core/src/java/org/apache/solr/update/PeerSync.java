@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -364,7 +365,8 @@ public class PeerSync implements SolrMetricProducer {
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
-  private boolean handleResponse(ShardResponse srsp) {
+  @VisibleForTesting
+  boolean handleResponse(ShardResponse srsp) {
     ShardRequest sreq = srsp.getShardRequest();
 
     if (srsp.getException() != null) {
@@ -413,6 +415,20 @@ public class PeerSync implements SolrMetricProducer {
           && ((SolrException) srsp.getException()).code() == 404) {
         log.warn(
             "{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?",
+            msg(),
+            srsp.getShardAddress(),
+            srsp.getException());
+        return true;
+      }
+
+      if (cantReachIsSuccess
+          && sreq.purpose == SHARD_REQUEST_PURPOSE_GET_VERSIONS
+          && srsp.getException() instanceof SolrException
+          && SolrCoreInitializationException.class
+              .getName()
+              .equals(((SolrException) srsp.getException()).getThrowable())) {
+        log.warn(
+            "{} got a core init failure from {}, counting as success ",
             msg(),
             srsp.getShardAddress(),
             srsp.getException());
