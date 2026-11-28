@@ -167,6 +167,10 @@ When overwriting an existing configset (`overwrite=true`), this parameter tells 
 When uploading an entire configset, the body of the request should be a zip file that contains the configset.
 The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
+Entry paths must be safe: an entry path is unsafe if it is empty, absolute, drive-qualified (such as `C:/...`), or contains `.` or `..` segments.
+All entry paths are checked before anything is written, so if any entry in the zip has an unsafe path, the upload fails with a 400 error naming the entry, and no part of the configset is stored.
+The one exception is a directory entry named `/`, the archive root marker found in configsets exported by older Solr versions: it is ignored.
+
 Here is an example on how to create the zip file named "myconfig.zip" and upload it as a configset named "myConfigSet":
 
 [tabs#uploadconfigset]
