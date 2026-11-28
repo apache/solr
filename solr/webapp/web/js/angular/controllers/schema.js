@@ -73,10 +73,12 @@ solrAdminApp.controller('SchemaController',
                         leftbar.types = [field.type];
                         if (field.dynamicBase) leftbar.dynamicFields = [field.dynamicBase];
                         if (field.copySources && field.copySources.length>0) {
-                            leftbar.copyFieldSources = sortedObjectArray(field.copySources.sort());
+                            leftbar.copyFieldSources = copyFieldReferences(
+                                field.copySources, schema.schema.fields, $scope.name, true);
                         }
                         if (field.copyDests && field.copyDests.length>0) {
-                            leftbar.copyFieldDests = sortedObjectArray(field.copyDests.sort());
+                            leftbar.copyFieldDests = copyFieldReferences(
+                                field.copyDests, schema.schema.fields, $scope.name, false);
                         }
                         $scope.fieldOrType = "field=" + $scope.name;
                     } else if (search["dynamic-field"]) {
@@ -286,14 +288,17 @@ solrAdminApp.controller('SchemaController',
         }
         $scope.addCopyField = function() {
             delete $scope.addCopyFieldErrors;
+            if (!$scope.copyField.source || !$scope.copyField.dest) {
+                $scope.addCopyFieldErrors = ["Both source and destination fields are required."];
+                return;
+            }
             var indexType = $scope.isCloudEnabled ? "collections" : "cores";
-            var schemaChange = [{
-                operationType: "add-copy-field",
-                source: $scope.copyField.source,
-                destinations: [$scope.copyField.dest]
-            }];
-            SchemaV2.bulkSchemaModification(indexType, $routeParams.core, {schemaChange: schemaChange},
-                function(error, data, response) {
+            var rule = {dest: $scope.copyField.dest};
+            if ($scope.copyField.maxChars != null) {
+                rule.maxChars = $scope.copyField.maxChars;
+            }
+            SchemaV2.appendCopyFields(indexType, $routeParams.core, $scope.copyField.source,
+                [rule], function(error, data, response) {
                 $timeout(function() {
                     if (error || (data && data.error)) {
                         if (response && (response.status === 401 || response.status === 403)) {
@@ -345,12 +350,7 @@ solrAdminApp.controller('SchemaController',
         }
         $scope.deleteCopyField = function(field, source, dest) {
             var indexType = $scope.isCloudEnabled ? "collections" : "cores";
-            var schemaChange = [{
-                operationType: "delete-copy-field",
-                source: source,
-                destinations: [dest]
-            }];
-            SchemaV2.bulkSchemaModification(indexType, $routeParams.core, {schemaChange: schemaChange},
+            SchemaV2.deleteCopyFieldsByDestination(indexType, $routeParams.core, source, dest,
                 function(error, data, response) {
                 $timeout(function() {
                     if (error || (data && data.error)) {
@@ -784,12 +784,18 @@ var getFieldTypeManipulationOptions = function() {
     ];
 };
 
-var sortedObjectArray = function(list) {
-    var objarr = [];
-    for (var i in list) {
-      objarr.push({"name": list[i]});
-    }
-    return objarr;
+var copyFieldReferences = function(list, schemaFields, selectedField, incoming) {
+    return list.filter(function(name, index) {
+        return list.indexOf(name) === index;
+    }).sort().map(function(name) {
+        var source = incoming ? name : selectedField;
+        var destination = incoming ? selectedField : name;
+        var field = schemaFields[destination];
+        return {
+            name: name,
+            deletable: !field || (field.copySources || []).indexOf(source) !== -1
+        };
+    });
 };
 
 var shortenPackages = function(className) {

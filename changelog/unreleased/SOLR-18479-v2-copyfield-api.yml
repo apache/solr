@@ -1,0 +1,18 @@
+title: >
+  The v2 Schema API can now manage copy-field rules directly, under
+  `/api/collections/<collection>/schema/copyfields/<sourceField>`.
+  Previously copy-fields were the one schema resource reachable only through the bulk endpoint.
+  Rules are addressed by their source field: `GET` lists that source's rules, `PUT` sets its
+  complete list of destination objects, each with its own optional `maxChars`,
+  `POST` appends destinations without disturbing existing rules,
+  and `DELETE` removes them -- either all of them, or the ones named in a trailing
+  comma-separated path segment.
+  The Admin UI uses these endpoints to add and delete copy-field rules.
+  The Admin UI suppresses invalid delete controls for resolved wildcard-source matches.
+type: added
+authors:
+  - name: Jan Høydahl
+  - name: Eric Pugh  
+links:
+  - name: SOLR-18479
+    url: https://issues.apache.org/jira/browse/SOLR-18479
