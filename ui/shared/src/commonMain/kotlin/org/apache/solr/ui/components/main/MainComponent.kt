@@ -20,6 +20,7 @@ package org.apache.solr.ui.components.main
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.configsets.di.ConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.main.viewmodel.MainViewModel
 
@@ -49,7 +50,8 @@ interface MainComponent {
 
     // TODO Add CollectionsComponent once available
 
-    // TODO Add QueriesAndOperationsComponent once available
+    /** Factory method for the Index & Query section. */
+    fun createIndexQueryViewModel(): IndexQueryViewModel
 
     /**
      * Component of the environment section.

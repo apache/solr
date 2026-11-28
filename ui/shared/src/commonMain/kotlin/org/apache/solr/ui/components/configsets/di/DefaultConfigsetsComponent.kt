@@ -24,6 +24,8 @@ import org.apache.solr.ui.components.configsets.domain.LoadConfigsetsUseCase
 import org.apache.solr.ui.components.configsets.repository.ConfigsetsRepository
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsRouteViewModel
 import org.apache.solr.ui.components.configsets.viewmodel.ConfigsetsViewModel
+import org.apache.solr.ui.components.indexquery.data.HttpIndexQueryRepository
+import org.apache.solr.ui.components.indexquery.viewmodel.IndexQueryViewModel
 import org.apache.solr.ui.utils.AppDispatchers
 import org.apache.solr.ui.utils.platformDispatchers
 
@@ -35,7 +37,7 @@ import org.apache.solr.ui.utils.platformDispatchers
  * @param httpClient The pre-configured HTTP client to use for user registration operations.
  */
 class DefaultConfigsetsComponent(
-    httpClient: HttpClient,
+    private val httpClient: HttpClient,
     private val dispatchers: AppDispatchers = platformDispatchers(),
 ) : ConfigsetsComponent {
 
@@ -52,4 +54,6 @@ class DefaultConfigsetsComponent(
     override fun createConfigsetsViewModel(): ConfigsetsViewModel = ConfigsetsViewModel(loadConfigsetsUseCase, dispatchers)
 
     override fun createConfigsetsOverviewComponent(): ConfigsetsOverviewComponent = DefaultConfigsetsOverviewComponent(configsetsRepository)
+
+    override fun createIndexQueryViewModel(): IndexQueryViewModel = IndexQueryViewModel(HttpIndexQueryRepository(httpClient))
 }

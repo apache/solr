@@ -88,6 +88,7 @@ class MainViewModel(destination: String? = null) : ViewModel() {
     private fun initialScene(destination: String?): MainScene = when (destination) {
         "cluster" -> MainScene.Cluster
         "configsets" -> MainScene.Configsets
+        "index-query" -> MainScene.IndexQuery
         "environment" -> MainScene.Environment
         "logging" -> MainScene.Logging
         else -> MainScene.Configsets
@@ -107,6 +108,9 @@ sealed interface MainScene : NavKey {
     data object Configsets : MainScene
 
     @Serializable
+    data object IndexQuery : MainScene
+
+    @Serializable
     data object Environment : MainScene
 
     @Serializable
@@ -120,6 +124,7 @@ private fun MainMenu.toScene(): MainScene = when (this) {
     // TODO Add additional mappings once more sections are supported
     MainMenu.Cluster -> MainScene.Cluster
     MainMenu.Configsets -> MainScene.Configsets
+    MainMenu.IndexAndQuery -> MainScene.IndexQuery
     MainMenu.Environment -> MainScene.Environment
     MainMenu.Logging -> MainScene.Logging
 
@@ -134,6 +139,7 @@ val MainScene.menuItem: MainMenu
     get() = when (this) {
         MainScene.Cluster -> MainMenu.Cluster
         MainScene.Configsets -> MainMenu.Configsets
+        MainScene.IndexQuery -> MainMenu.IndexAndQuery
         MainScene.Environment -> MainMenu.Environment
         MainScene.Logging -> MainMenu.Logging
     }

@@ -41,6 +41,7 @@ import org.apache.solr.ui.components.main.viewmodel.menuItem
 import org.apache.solr.ui.views.cluster.ClusterContent
 import org.apache.solr.ui.views.configsets.ConfigsetsScene
 import org.apache.solr.ui.views.environment.EnvironmentContent
+import org.apache.solr.ui.views.indexquery.IndexQueryContent
 import org.apache.solr.ui.views.logging.LoggingContent
 import org.apache.solr.ui.views.navigation.NavigationSideBar
 import org.apache.solr.ui.views.navigation.noPredictiveTransition
@@ -98,6 +99,13 @@ fun MainContent(
                         component = component.configsetsComponent,
                         modifier = Modifier.fillMaxWidth()
                             .verticalScroll(scrollState),
+                    )
+                }
+
+                entry<MainScene.IndexQuery> {
+                    IndexQueryContent(
+                        viewModel = viewModel { component.createIndexQueryViewModel() },
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                     )
                 }
 
