@@ -181,6 +181,31 @@ The default value of this timeout is set to 15000 ms and can be adjusted by a sy
 This value should be smaller than `solr.jetty.http.idleTimeout` (Which is 120000 ms by default) and greater than the
 processing time of the largest update request.
 
+==== Connection Reuse in HttpJettySolrClient
+`HttpJettySolrClient` keeps a pool of connections to each Solr node and reuses them across requests.
+By default, a pooled connection is reused for as long as it stays open, and at most 4 HTTP/2 connections are opened per node.
+The following {solr-solrj-jetty-javadocs}/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.Builder.html[`HttpJettySolrClient.Builder`] options change this.
+Defaults are unchanged unless they are set.
+
+`withConnectionMaxDuration(long, TimeUnit)`::
+The maximum time a pooled connection is used for.
+A connection older than this is closed instead of being reused, and a new one is opened when needed.
+Applies to both HTTP/1.1 and HTTP/2.
+
+`withMaxHttp2ConnectionsPerHost(int)`::
+The number of HTTP/2 connections opened per node, over which requests are multiplexed.
+The default is 4.
+For HTTP/1.1, use `withMaxConnectionsPerHost(int)` instead.
+
+`withConnectionIdleTimeout(long, TimeUnit)`::
+How long a connection may go without any traffic before the client closes it.
+This is separate from `withIdleTimeout(long, TimeUnit)`, which limits how long a single request waits for data.
+Set it above the longest expected wait for a response: an HTTP/2 connection that sees no traffic for this long is closed even while a request on it is waiting.
+By default, the client does not close idle connections.
+
+These options configure a new Jetty `HttpClient`, so they cannot be combined with `withHttpClient(HttpJettySolrClient)`, which reuses the `HttpClient` of an existing client.
+To use them with `CloudSolrClient`, pass the configured builder to `CloudSolrClient.Builder.withHttpClientBuilder(...)`.
+
 === Cloud Request Routing
 
 SolrJ `CloudSolrClient` respects the xref:solrcloud-distributed-requests.adoc#shards-preference-parameter[shards.preference parameter].
