@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -235,6 +236,76 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     assertQ(
         "Check the total number of docs", req("q", "int_i:" + finalCount), "//result[@numFound=1]");
+  }
+
+  public void testRepeatedOperationMapsPassThroughUnwrapped() throws Exception {
+    ModifiableSolrParams params =
+        new ModifiableSolrParams()
+            .add("processor", "atomic")
+            .add("atomic.cat", "set")
+            .add("commit", "true");
+    try (SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params)) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = new SolrInputDocument();
+      cmd.solrDoc.addField("id", 1);
+      // the repeated-addField form: one operation map per call, so the field value is a
+      // list of operation maps, already an atomic update for the named field
+      cmd.solrDoc.addField("cat", Map.of("set", "bbb"));
+      cmd.solrDoc.addField("cat", Map.of("add", "ddd"));
+
+      AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
+      factory.inform(h.getCore());
+      CapturingUpdateProcessor next = new CapturingUpdateProcessor();
+      factory.getInstance(cmd.getReq(), new SolrQueryResponse(), next).processAdd(cmd);
+
+      SolrInputDocument passed = next.captured.getSolrInputDocument();
+      assertEquals(
+          List.of(Map.of("set", "bbb"), Map.of("add", "ddd")),
+          new ArrayList<>(passed.getFieldValues("cat")));
+      assertNull(
+          "an already-atomic update must not be stamped with _version_",
+          passed.getFieldValue("_version_"));
+    }
+  }
+
+  public void testPlainMultiValueFieldStillWrapped() throws Exception {
+    ModifiableSolrParams params =
+        new ModifiableSolrParams()
+            .add("processor", "atomic")
+            .add("atomic.cat", "set")
+            .add("commit", "true");
+    try (SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params)) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = new SolrInputDocument();
+      cmd.solrDoc.addField("id", 1);
+      cmd.solrDoc.addField("cat", "human");
+      cmd.solrDoc.addField("cat", "animal");
+
+      AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
+      factory.inform(h.getCore());
+      CapturingUpdateProcessor next = new CapturingUpdateProcessor();
+      factory.getInstance(cmd.getReq(), new SolrQueryResponse(), next).processAdd(cmd);
+
+      SolrInputDocument passed = next.captured.getSolrInputDocument();
+      assertEquals(Map.of("set", List.of("human", "animal")), passed.getFieldValue("cat"));
+      assertNotNull(
+          "a conventional update converted by the factory must be stamped with _version_",
+          passed.getFieldValue("_version_"));
+    }
+  }
+
+  private static class CapturingUpdateProcessor extends UpdateRequestProcessor {
+
+    private AddUpdateCommand captured;
+
+    private CapturingUpdateProcessor() {
+      super(null);
+    }
+
+    @Override
+    public void processAdd(AddUpdateCommand cmd) {
+      captured = cmd;
+    }
   }
 
   private UpdateRequestProcessor createRunUpdateProcessor(
