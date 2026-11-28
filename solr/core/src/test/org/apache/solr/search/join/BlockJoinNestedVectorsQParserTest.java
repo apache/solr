@@ -30,6 +30,8 @@ import org.junit.rules.TestRule;
 public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   private static final List<Float> FLOAT_QUERY_VECTOR = Arrays.asList(1.0f, 1.0f, 1.0f, 1.0f);
   private static final List<Integer> BYTE_QUERY_VECTOR = Arrays.asList(1, 1, 1, 1);
+  private static final List<Float> BINARY_QUANTIZED_QUERY_VECTOR =
+      Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f);
 
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
@@ -91,6 +93,45 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
       docs.add(doc);
     }
 
+    docs.addAll(prepareBinaryQuantizedDocs());
+    return docs;
+  }
+
+  /**
+   * 5 parents with 2 children each, the only documents with a binary quantized vector. Against
+   * {@link #BINARY_QUANTIZED_QUERY_VECTOR}, binary quantization ranks bq_child_3 above the exact
+   * match bq_child_1, so these documents can show re-ranking changing the result.
+   */
+  private static List<SolrInputDocument> prepareBinaryQuantizedDocs() {
+    List<List<Float>> vectors =
+        List.of(
+            Arrays.asList(1f, 2f, 3f, 4f),
+            Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f),
+            Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f),
+            Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f),
+            Arrays.asList(30f, 22f, 35f, 20f),
+            Arrays.asList(40f, 1f, 1f, 200f),
+            Arrays.asList(5f, 10f, 20f, 40f),
+            Arrays.asList(120f, 60f, 30f, 15f),
+            Arrays.asList(200f, 50f, 100f, 25f),
+            Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f));
+    int[][] childVectorsPerParent = {{1, 8}, {4, 9}, {2, 5}, {10, 6}, {3, 7}};
+
+    List<SolrInputDocument> docs = new ArrayList<>(childVectorsPerParent.length);
+    for (int i = 0; i < childVectorsPerParent.length; i++) {
+      SolrInputDocument parent = new SolrInputDocument();
+      parent.setField("id", "bq_parent_" + (i + 1));
+      parent.setField("bq_parent_s", "true");
+      List<SolrInputDocument> children = new ArrayList<>(2);
+      for (int vectorId : childVectorsPerParent[i]) {
+        SolrInputDocument child = new SolrInputDocument();
+        child.setField("id", "bq_child_" + vectorId);
+        child.setField("vector_binary_quantized", vectors.get(vectorId - 1));
+        children.add(child);
+      }
+      parent.setField("vectors", children);
+      docs.add(parent);
+    }
     return docs;
   }
 
@@ -210,6 +251,33 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='1']",
         "//result/doc[1]/str[@name='id'][.='10']");
+  }
+
+  @Test
+  public void childrenRetrievalBinaryQuantized_knnChildrenWithRerankOversample_shouldRerank() {
+    assertQ(
+        req(
+            "q",
+                "{!knn f=vector_binary_quantized topK=3 childrenOf=$allParents}"
+                    + BINARY_QUANTIZED_QUERY_VECTOR,
+            "fl", "id",
+            "allParents", "bq_parent_s:true"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='bq_child_3']",
+        "//result/doc[2]/str[@name='id'][.='bq_child_1']",
+        "//result/doc[3]/str[@name='id'][.='bq_child_4']");
+
+    assertQ(
+        req(
+            "q",
+                "{!knn f=vector_binary_quantized topK=3 rerankOversample=3 childrenOf=$allParents}"
+                    + BINARY_QUANTIZED_QUERY_VECTOR,
+            "fl", "id",
+            "allParents", "bq_parent_s:true"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='bq_child_1']",
+        "//result/doc[2]/str[@name='id'][.='bq_child_4']",
+        "//result/doc[3]/str[@name='id'][.='bq_child_2']");
   }
 
   @Test

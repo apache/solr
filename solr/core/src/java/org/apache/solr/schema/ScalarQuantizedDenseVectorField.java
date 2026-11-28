@@ -111,6 +111,11 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   }
 
   @Override
+  public boolean isQuantized() {
+    return true;
+  }
+
+  @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
     ScalarEncoding encoding = ScalarEncoding.fromNumBits(getBits());
     if (FLAT_ALGORITHM.equals(getKnnAlgorithm())) {
