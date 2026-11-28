@@ -20,6 +20,7 @@ import java.util.Collection;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -65,6 +66,58 @@ public class TestQueryUtils extends SolrTestCaseJ4 {
 
     assertNotEquals(abs, q);
     assertNotEquals(neg2, q);
+  }
+
+  public void testFixNegativeBooleanQuery() {
+    TermQuery tq = new TermQuery(new Term("hi", "there"));
+    TermQuery tq2 = new TermQuery(new Term("wow", "dude"));
+
+    // positive & empty queries are returned as-is
+    BooleanQuery pos =
+        new BooleanQuery.Builder()
+            .add(tq, BooleanClause.Occur.SHOULD)
+            .add(tq2, BooleanClause.Occur.MUST_NOT)
+            .build();
+    assertSame(pos, QueryUtils.fixNegativeQuery(pos));
+    BooleanQuery empty = new BooleanQuery.Builder().build();
+    assertSame(empty, QueryUtils.fixNegativeQuery(empty));
+
+    // negative gets a MatchAllDocs MUST clause, retaining existing clauses & min should match
+    BooleanQuery neg =
+        new BooleanQuery.Builder()
+            .add(tq, BooleanClause.Occur.MUST_NOT)
+            .add(tq2, BooleanClause.Occur.MUST_NOT)
+            .setMinimumNumberShouldMatch(1)
+            .build();
+    BooleanQuery fixed = QueryUtils.fixNegativeQuery(neg);
+    assertNotSame(neg, fixed);
+    assertEquals(3, fixed.clauses().size());
+    assertEquals(1, fixed.getMinimumNumberShouldMatch());
+    assertTrue(fixed.clauses().containsAll(neg.clauses()));
+    assertTrue(
+        fixed
+            .clauses()
+            .contains(new BooleanClause(MatchAllDocsQuery.INSTANCE, BooleanClause.Occur.MUST)));
+    assertFalse(QueryUtils.isNegative(fixed));
+  }
+
+  public void testMakeQueryable() {
+    TermQuery tq = new TermQuery(new Term("hi", "there"));
+    BooleanQuery neg = new BooleanQuery.Builder().add(tq, BooleanClause.Occur.MUST_NOT).build();
+
+    // non-boolean, non-wrapped unchanged
+    assertSame(tq, QueryUtils.makeQueryable(tq));
+
+    // negative boolean fixed
+    Query fixed = QueryUtils.makeQueryable(neg);
+    assertEquals(QueryUtils.fixNegativeQuery(neg), fixed);
+
+    // WrappedQuery unwrapped (including nested)
+    assertSame(tq, QueryUtils.makeQueryable(new WrappedQuery(tq)));
+    assertSame(tq, QueryUtils.makeQueryable(new WrappedQuery(new WrappedQuery(tq))));
+
+    // wrapped negative is unwrapped and fixed
+    assertEquals(fixed, QueryUtils.makeQueryable(new WrappedQuery(neg)));
   }
 
   public void testNegativeQueries() {
