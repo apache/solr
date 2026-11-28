@@ -47,14 +47,12 @@ public class AuthTest extends SolrCatsTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18648")
   public void authRejectsBlockUnknownOptionWithInvalidBoolean() {
     runFail("solr auth enable --type basicAuth --credentials any:any --block-unknown ture")
         .assertContains("Argument [block-unknown] must be either true or false, but was [ture]");
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18648")
   public void authRejectsUpdateIncludeFileOnlyOptionWithInvalidBoolean() {
     runFail(
             "solr auth enable --type basicAuth --credentials any:any --update-include-file-only ture")
