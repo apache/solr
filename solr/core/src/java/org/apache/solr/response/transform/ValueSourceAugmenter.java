@@ -29,6 +29,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Scorable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.QParser;
@@ -59,21 +60,17 @@ public class ValueSourceAugmenter extends DocTransformer {
   }
 
   private static int parseMaxPrefetchSize(QParser qparser) {
-    String raw = qparser != null ? qparser.getParam(PREFETCH_DOCS_PARAM) : null;
-    if (raw == null) {
+    if (qparser == null) {
       return DEFAULT_MAX_PREFETCH_SIZE;
     }
-    try {
-      int value = Integer.parseInt(raw);
-      if (value >= 0) {
-        return value;
-      }
-    } catch (NumberFormatException e) {
-      // fall through
+    SolrParams params = SolrParams.wrapDefaults(qparser.getLocalParams(), qparser.getParams());
+    int value = params.getInt(PREFETCH_DOCS_PARAM, DEFAULT_MAX_PREFETCH_SIZE);
+    if (value < 0) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          PREFETCH_DOCS_PARAM + " must be non-negative: " + value);
     }
-    throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        PREFETCH_DOCS_PARAM + " must be a non-negative integer: " + raw);
+    return value;
   }
 
   @Override
