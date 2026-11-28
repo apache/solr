@@ -65,6 +65,7 @@ Wildcards can be used here, see <<Using Wildcards for Field Names>> below for mo
 This parameter is particularly convenient when the fields in the input JSON are not available in the schema and xref:schemaless-mode.adoc[schemaless mode] is not enabled.
 This will index all the fields into the default search field (using the `df` parameter) and only the `uniqueKey` field is mapped to the corresponding field in the schema.
 If the input JSON does not have a value for the `uniqueKey` field then a UUID is generated for the same.
+Field mapping parameters (`f`) cannot be combined with this parameter: a request that supplies both is rejected with a 400 error, since the mappings would otherwise be silently ignored.
 
 `df`::
 +
