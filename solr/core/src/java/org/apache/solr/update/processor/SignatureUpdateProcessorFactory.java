@@ -162,6 +162,22 @@ public class SignatureUpdateProcessorFactory extends UpdateRequestProcessorFacto
           currDocSigFields = sigFields;
         }
 
+        if (isPartialUpdate) {
+          for (String field : currDocSigFields) {
+            if (doc.getField(field) != null) {
+              throw new SolrException(
+                  ErrorCode.SERVER_ERROR,
+                  "Can't use SignatureUpdateProcessor with partial update request "
+                      + "containing signature field: "
+                      + field);
+            }
+          }
+          // none of the signature fields are in the partial update, so there is nothing to sign;
+          // an empty signature would overwrite or delete unrelated documents
+          if (next != null) next.processAdd(cmd);
+          return;
+        }
+
         Signature sig =
             req.getCore().getResourceLoader().newInstance(signatureClass, Signature.class);
         sig.init(params);
@@ -169,13 +185,6 @@ public class SignatureUpdateProcessorFactory extends UpdateRequestProcessorFacto
         for (String field : currDocSigFields) {
           SolrInputField f = doc.getField(field);
           if (f != null) {
-            if (isPartialUpdate) {
-              throw new SolrException(
-                  ErrorCode.SERVER_ERROR,
-                  "Can't use SignatureUpdateProcessor with partial update request "
-                      + "containing signature field: "
-                      + field);
-            }
             sig.add(field);
             Object o = f.getValue();
             if (o instanceof Collection) {
