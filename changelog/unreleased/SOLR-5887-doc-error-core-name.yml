@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Errors for a bad document in an update (such as an unknown field) now name the core that rejected it.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-5887
+    url: https://issues.apache.org/jira/browse/SOLR-5887
