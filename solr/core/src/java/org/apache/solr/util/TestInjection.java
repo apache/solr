@@ -143,6 +143,8 @@ public class TestInjection {
 
   public static volatile CountDownLatch reindexLatch = null;
 
+  public static volatile CountDownLatch preemptiveCreateLatch = null;
+
   public static volatile String reindexFailure = null;
 
   public static volatile String failIndexFingerprintRequests = null;
@@ -213,6 +215,7 @@ public class TestInjection {
     splitLatch = null;
     directUpdateLatch = null;
     reindexLatch = null;
+    preemptiveCreateLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
@@ -629,6 +632,17 @@ public class TestInjection {
       }
     }
     return true;
+  }
+
+  public static void injectPreemptiveCreateLatch() {
+    CountDownLatch latch = preemptiveCreateLatch;
+    if (latch != null) {
+      try {
+        latch.await(30, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
   private static Pair<Boolean, Integer> parseValue(final String raw) {
