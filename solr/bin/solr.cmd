@@ -150,7 +150,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     )
     IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
       IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreParentPath=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%/.."
+        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreParentPath=%SOLR_SSL_CLIENT_KEY_STORE%/.."
       )
     )
   ) ELSE (

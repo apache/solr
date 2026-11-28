@@ -319,7 +319,7 @@ public class SslTest extends SolrCatsTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18646")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18665")
   public void startSolrWithMtlsNeeded() throws IOException {
     // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
     // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
@@ -444,7 +444,6 @@ public class SslTest extends SolrCatsTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18646")
   public void startSolrWithMtlsWanted() throws IOException {
     // toRealPath() for the same reason SecurityManagerTest canonicalises: the security policy
     // grants on the real path, so a java.io.tmpdir reached through a symlink is not covered and
