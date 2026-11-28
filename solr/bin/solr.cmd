@@ -826,45 +826,43 @@ IF "%SCRIPT_CMD%"=="start" goto start_solr
 IF "%SOLR_STOP_WAIT%"=="" (
   set SOLR_STOP_WAIT=180
 )
-IF "%SOLR_PORT_LISTEN%"=="" (
-  IF "%STOP_ALL%"=="1" (
-    REM Stop all running Solr instances
-    set found_it=0
-    for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
-      set SOME_SOLR_PORT=
-      For /F "delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
-      if NOT "!SOME_SOLR_PORT!"=="" (
-        for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-          @REM j is the ip:port and k is the pid
-          IF NOT "%%k"=="0" (
-            IF "%%j"=="%SOLR_HOST_BIND%:!SOME_SOLR_PORT!" (
-              set found_it=1
-              @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
-              IF "%STOP_PORT%"=="" (
-                set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
-              ) else (
-                set LOCAL_STOP_PORT=%STOP_PORT%
-              )
-              "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-              del "%SOLR_PID_DIR%"\solr-!SOME_SOLR_PORT!.port
-              REM wait for the process to terminate
-              CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
-              REM Kill it if it is still running after the graceful shutdown
-              IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
-                qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
-              ) else (
-                qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
-              )
+IF "%STOP_ALL%"=="1" (
+  REM Stop all running Solr instances
+  set found_it=0
+  for /f "usebackq" %%i in (`dir /b "%SOLR_PID_DIR%" ^| findstr /i "^solr-.*\.port$"`) do (
+    set SOME_SOLR_PORT=
+    For /F "delims=" %%J In ('type "%SOLR_PID_DIR%\%%i"') do set SOME_SOLR_PORT=%%~J
+    if NOT "!SOME_SOLR_PORT!"=="" (
+      for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
+        @REM j is the ip:port and k is the pid
+        IF NOT "%%k"=="0" (
+          IF "%%j"=="%SOLR_HOST_BIND%:!SOME_SOLR_PORT!" (
+            set found_it=1
+            @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
+            IF "%STOP_PORT%"=="" (
+              set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
+            ) else (
+              set LOCAL_STOP_PORT=%STOP_PORT%
+            )
+            "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+            del "%SOLR_PID_DIR%"\solr-!SOME_SOLR_PORT!.port
+            REM wait for the process to terminate
+            CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
+            REM Kill it if it is still running after the graceful shutdown
+            IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+              qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
+            ) else (
+              qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
             )
           )
         )
       )
     )
-    if "!found_it!"=="0" echo No Solr nodes found to stop.
-  ) ELSE (
-    set "SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use --all to stop all running nodes on this host."
-    goto err
   )
+  if "!found_it!"=="0" echo No Solr nodes found to stop.
+) ELSE IF "%SOLR_PORT_LISTEN%"=="" (
+  set "SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use --all to stop all running nodes on this host."
+  goto err
 ) ELSE (
   REM Stop Solr running on specific port
   set found_it=0

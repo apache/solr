@@ -1,0 +1,11 @@
+title: >
+  bin/solr.cmd stop --all now stops every node when SOLR_PORT_LISTEN is set, instead of only that port.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18647
+    url: https://issues.apache.org/jira/browse/SOLR-18647
+  - name: PR#5396
+    url: https://github.com/apache/solr/pull/5396
