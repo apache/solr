@@ -132,6 +132,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.zookeeper.embedded.host|solr.zk.embedded.host|127.0.0.1|Sets the network interface the Embedded ZooKeeper binds to.
 
+|solr.zookeeper.embedded.port||Solr port + 1000|Sets the client port the Embedded ZooKeeper listens on. A `clientPort` in `zoo.cfg` takes precedence.
+
 |solr.zookeeper.server.confdir|zkServerConfDir|Defaults to solr.home dir.|Where to store ZooKeeper configuration when running embedded ZooKeeper.
 
 |solr.zookeeper.server.datadir|zkServerDataDir|Defaults to solr.home/zoo_data dir.|Where to store ZooKeeper data when running embedded ZooKeeper.

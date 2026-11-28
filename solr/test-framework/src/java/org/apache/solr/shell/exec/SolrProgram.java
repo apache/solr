@@ -51,11 +51,8 @@ public final class SolrProgram implements ProgramUnderTest {
    * ports, {@code at(0)} through {@code at(6)}, named by {@link
    * org.apache.solr.shell.env.SolrPorts}.
    *
-   * <p>Four of the seven are passed to {@code bin/solr} today. The embedded ZooKeeper port is
-   * handed over in a {@code zoo.cfg} the harness writes for the class, which {@code SolrZkServer}
-   * reads before falling back to {@code P+1000}; once SOLR-7596 lands it can be passed as {@code
-   * solr.zookeeper.embedded.port} instead, which is why {@code SOLR_ZOOKEEPER_EMBEDDED_PORT} is
-   * already exported.
+   * <p>Four of the seven are passed to {@code bin/solr} today, the embedded ZooKeeper port as
+   * {@code SOLR_ZOOKEEPER_EMBEDDED_PORT}.
    *
    * <p>The three stop ports are allocated but not yet passed. {@code bin/solr} takes one {@code
    * STOP_PORT} per invocation, so a single environment variable would have every node of a class

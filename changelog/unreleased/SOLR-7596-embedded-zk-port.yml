@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  Embedded ZooKeeper port is configurable with solr.zookeeper.embedded.port /
+  SOLR_ZOOKEEPER_EMBEDDED_PORT instead of always solrPort+1000.
+type: added
+authors:
+  - name: Jan Høydahl
+links:
+  - name: SOLR-7596
+    url: https://issues.apache.org/jira/browse/SOLR-7596
