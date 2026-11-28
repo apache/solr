@@ -124,6 +124,10 @@ public class ContainerRequestUtils {
     // Jersey is only used for v2 APIs so we have no need of the janky v2 suffixing (and it impedes
     // matching) - remove if present.
     uri = uri.replace("/solr/____v2", "");
+    // Normalize the /c/ alias to /collections/ so JAX-RS path matching works correctly.
+    // V2HttpCall already resolves the collection from /c/ paths, but Jersey sees the original URI
+    // and its path regex only matches 'cores' or 'collections', not the 'c' shorthand.
+    uri = normalizeCAlias(uri);
 
     final String queryString = httpServletRequest.getQueryString();
     if (queryString != null) {
@@ -139,5 +143,21 @@ public class ContainerRequestUtils {
       return serverAddress.substring(0, serverAddress.length() - 1);
     }
     return serverAddress;
+  }
+
+  /**
+   * Normalizes the {@code /c/} collection alias to {@code /collections/} so that JAX-RS path
+   * matching works correctly. The V2 API supports {@code /c/} as a shorthand for {@code
+   * /collections/}, but JAX-RS path templates use the regex {@code cores|collections} to match the
+   * index-type segment.
+   */
+  static String normalizeCAlias(String uri) {
+    if (uri.startsWith("/c/")) {
+      return "/collections/" + uri.substring(3);
+    }
+    if (uri.equals("/c")) {
+      return "/collections";
+    }
+    return uri;
   }
 }
