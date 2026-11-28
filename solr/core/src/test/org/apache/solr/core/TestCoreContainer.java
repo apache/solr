@@ -33,12 +33,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
 import org.apache.commons.exec.OS;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -904,6 +909,70 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
 
     cc.shutdown();
+  }
+
+  /**
+   * Several reloads of a core that failed to load, issued together once its configuration is fixed:
+   * the core gets loaded once, none of the reloads fails and no init failure is left behind.
+   */
+  @Test
+  public void testConcurrentReloadOfFailedCore() throws Exception {
+    MockCoresLocator cl = new MockCoresLocator();
+    Path solrHome = createTempDir();
+    final CoreContainer cc =
+        new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
+    cl.add(new CoreDescriptor("col_late", solrHome.resolve("col_late"), cc));
+    cc.load();
+    try {
+      assertTrue(
+          "core without configuration should have failed to load",
+          cc.getCoreInitFailures().containsKey("col_late"));
+
+      Path confDir = solrHome.resolve("col_late").resolve("conf");
+      Files.createDirectories(confDir);
+      Files.copy(
+          getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+          confDir.resolve("solrconfig.xml"),
+          StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(
+          getFile("solr/collection1/conf/schema-minimal.xml"),
+          confDir.resolve("schema.xml"),
+          StandardCopyOption.REPLACE_EXISTING);
+
+      final int numReloads = 8;
+      ExecutorService executor =
+          ExecutorUtil.newMDCAwareFixedThreadPool(numReloads, new SolrNamedThreadFactory("reload"));
+      try {
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Throwable>> results = new ArrayList<>();
+        for (int i = 0; i < numReloads; i++) {
+          results.add(
+              executor.submit(
+                  () -> {
+                    start.await();
+                    try {
+                      cc.reload("col_late");
+                      return null;
+                    } catch (Throwable t) {
+                      return t;
+                    }
+                  }));
+        }
+        start.countDown();
+        for (Future<Throwable> result : results) {
+          assertNull("a reload of the failed core failed", result.get());
+        }
+      } finally {
+        ExecutorUtil.shutdownAndAwaitTermination(executor);
+      }
+
+      assertTrue(cc.isLoaded("col_late"));
+      assertTrue(
+          "a core that is loaded must not be listed as failed: " + cc.getCoreInitFailures(),
+          cc.getCoreInitFailures().isEmpty());
+    } finally {
+      cc.shutdown();
+    }
   }
 
   @Test
