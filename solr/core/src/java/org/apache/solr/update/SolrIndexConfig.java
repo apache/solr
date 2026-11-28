@@ -258,7 +258,11 @@ public class SolrIndexConfig implements MapWriter {
     iwc.setMergePolicy(mergePolicy);
     MergeScheduler mergeScheduler = buildMergeScheduler(core.getResourceLoader());
     iwc.setMergeScheduler(mergeScheduler);
-    iwc.setInfoStream(infoStream);
+    // one config is shared by reloads and may not know its core, so tag the stream per core here
+    iwc.setInfoStream(
+        infoStream instanceof LoggingInfoStream
+            ? new LoggingInfoStream(core.getName())
+            : infoStream);
 
     if (mergePolicy instanceof SortingMergePolicy) {
       Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
