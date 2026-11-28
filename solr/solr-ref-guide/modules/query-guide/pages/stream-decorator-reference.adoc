@@ -768,6 +768,7 @@ This is the approach for executing batches of streaming expressions from a `topi
 The `fetch` function iterates a stream and fetches additional fields and adds them to the tuples.
 The `fetch` function fetches in batches to limit the number of calls back to Solr.
 Tuples streamed from the `fetch` function will contain the original fields and the additional fields that were fetched.
+The batch lookup uses `defType=lucene`, even if the target collection's `/select` handler defaults to a different query parser.
 The `fetch` function supports one-to-one fetches.
 Many-to-one fetches, where the stream source contains duplicate keys, will also work, but one-to-many fetches are currently not supported by this function.
 
@@ -778,6 +779,7 @@ Many-to-one fetches, where the stream source contains duplicate keys, will also 
 * `fl`: (Mandatory) The fields to be fetched.
 * `on`: Fields to be used for checking equality of tuples between stream source and fetched records.
 Formatted as `on="fieldNameInTuple=fieldNameInCollection"`.
+Because the collection-side field name is inserted into a local-parameters query, it cannot contain whitespace or `}`, or start with `'`, `"`, or `$`.
 * `batchSize`: (Optional) The batch fetch size.
 
 === fetch Syntax
