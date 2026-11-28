@@ -66,7 +66,6 @@ public class AdminUiCoreAdminStandaloneTest extends AdminUiStandaloneTestBase {
     openPage("swapa/core-overview", By.id("dashboard"));
     waitFor(By.cssSelector("#core-menu .query"));
     waitFor(By.cssSelector("#core-menu .replication"));
-    waitForPageContains("Ping request handler is not configured with a healthcheck file.");
     assertNoSevereConsoleErrors();
   }
 

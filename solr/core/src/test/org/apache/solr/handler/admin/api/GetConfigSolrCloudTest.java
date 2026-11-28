@@ -128,7 +128,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
     assertNotNull(configSection);
     assertTrue(configSection.containsKey("/select"));
-    assertTrue(configSection.containsKey("/admin/ping"));
+    assertTrue(configSection.containsKey("/admin/luke"));
     assertTrue(configSection.containsKey("/graph"));
   }
 
@@ -158,7 +158,7 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   public void testGetRequestHandlersExpandParamsTrue() throws Exception {
     var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
-    request.setComponentName("/admin/ping");
+    request.setComponentName("/admin/luke");
     request.setExpandParams(true);
     var response = request.process(cluster.getSolrClient());
 
@@ -169,25 +169,25 @@ public class GetConfigSolrCloudTest extends SolrCloudTestCase {
 
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
 
-    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
-    assertTrue(pingRHSection.containsKey("_useParamsExpanded_"));
-    assertNotNull(pingRHSection.get("_useParamsExpanded_"));
-    Map<String, Object> expandedPingRHSection =
-        (Map<String, Object>) pingRHSection.get("_useParamsExpanded_");
-    assertEquals("[NOT AVAILABLE]", expandedPingRHSection.get("_ADMIN_PING"));
+    Map<String, Object> lukeRHSection = (Map<String, Object>) configSection.get("/admin/luke");
+    assertTrue(lukeRHSection.containsKey("_useParamsExpanded_"));
+    assertNotNull(lukeRHSection.get("_useParamsExpanded_"));
+    Map<String, Object> expandedLukeRHSection =
+        (Map<String, Object>) lukeRHSection.get("_useParamsExpanded_");
+    assertEquals("[NOT AVAILABLE]", expandedLukeRHSection.get("_ADMIN_LUKE"));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void testGetRequestHandlersOmitsExpandedParamsByDefault() throws Exception {
     var request = new ConfigApi.GetRequestHandler(IndexType.COLLECTION, COLLECTION_NAME);
-    request.setComponentName("/admin/ping");
+    request.setComponentName("/admin/luke");
     var response = request.process(cluster.getSolrClient());
 
     Map<String, Object> configSection = (Map<String, Object>) response.config.get(REQUEST_HANDLERS);
 
-    Map<String, Object> pingRHSection = (Map<String, Object>) configSection.get("/admin/ping");
-    assertFalse(pingRHSection.containsKey("_useParamsExpanded_"));
+    Map<String, Object> lukeRHSection = (Map<String, Object>) configSection.get("/admin/luke");
+    assertFalse(lukeRHSection.containsKey("_useParamsExpanded_"));
   }
 
   @Test

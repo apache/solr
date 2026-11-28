@@ -281,11 +281,6 @@ limitations under the License.
   background-image: url( ../../img/ico/status.png );
 }
 
-#menu .ping small
-{
-  color: #000
-}
-
 #menu li
 {
   border-bottom: 1px solid #f0f0f0;
@@ -394,15 +389,6 @@ limitations under the License.
 #menu #security.global p a,
 #menu #security-standalone.global p a { background-image: url( ../../img/ico/users.png ); }
 
-.sub-menu .ping.error a
-{
-
-  background-color: #ffcccc;
-  background-image: url( ../../img/ico/system-monitor--exclamation.png );
-  border-color: #ffcccc;
-  cursor: help;
-}
-
 .sub-menu .overview a { background-image: url( ../../img/ico/home.png ); }
 .sub-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
 .sub-menu .sqlquery a { background-image: url( ../../img/ico/sql.png ); }
@@ -414,7 +400,6 @@ limitations under the License.
 .sub-menu .schema a { background-image: url( ../../img/ico/book-open-text.png ); }
 .sub-menu .replication a { background-image: url( ../../img/ico/node.png ); }
 .sub-menu .distribution a { background-image: url( ../../img/ico/node-select.png ); }
-.sub-menu .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
 .sub-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
 .sub-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
 .sub-menu .segments a { background-image: url( ../../img/ico/construction.png ); }

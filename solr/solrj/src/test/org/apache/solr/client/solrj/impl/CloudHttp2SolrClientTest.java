@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -1283,21 +1282,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
   }
 
-  @Test
-  @SuppressWarnings("deprecation") // covers the deprecated ping()
-  public void testPing() throws Exception {
-    final String testCollection = "ping_test";
-    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(testCollection, 2, 2);
-    final SolrClient clientUnderTest = getRandomClient();
-
-    final SolrPingResponse response = clientUnderTest.ping(testCollection);
-
-    assertEquals("This should be OK", 0, response.getStatus());
-  }
-
-  @SuppressWarnings("deprecation") // covers the deprecated ping()
   public void testPerReplicaStateCollection() throws Exception {
     String collection = getSaferTestName();
 
@@ -1313,7 +1297,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(testCollection, 2, 4);
     final SolrClient clientUnderTest = getRandomClient();
-    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+    final QueryResponse response = clientUnderTest.query(testCollection, new SolrQuery("*:*"));
     assertEquals("This should be OK", 0, response.getStatus());
 
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);

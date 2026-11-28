@@ -102,7 +102,6 @@
 *** xref:user-managed-distributed-search.adoc[]
 
 * Monitoring Solr
-** xref:ping.adoc[]
 ** xref:healthcheck.adoc[]
 ** xref:configuring-logging.adoc[]
 ** xref:opentelemetry.adoc[]

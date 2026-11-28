@@ -40,6 +40,17 @@ See xref:deployment-guide:collection-management.adoc#createsnapshot[collection s
 
 == Removed Features
 
+=== Ping Request Handler and SolrJ Ping APIs
+
+`PingRequestHandler` and its `/admin/ping` endpoint, deprecated in Solr 10.1, have been removed.
+Remove any explicit `PingRequestHandler` declarations from `solrconfig.xml` before upgrading; otherwise the core cannot load the removed class.
+Update monitoring probes to use `/api/node/health` (V2) or `/solr/admin/info/health` (V1) for node health.
+These endpoints do not execute a query; use a query request when you need to verify that a core or collection can serve searches.
+See xref:deployment-guide:healthcheck.adoc[] for the available health checks.
+
+`SolrPing`, `SolrPingResponse`, and both `SolrClient.ping()` overloads have also been removed.
+SolrJ applications should use `HealthCheckRequest` for node health or `QueryRequest` for a query check.
+
 === Overseer Roles API
 
 The `ADDROLE` and `REMOVEROLE` Collections API commands have been removed, together with their V2 `add-role` and `remove-role` counterparts, the `CollectionAdminRequest.addRole` and `CollectionAdminRequest.removeRole` SolrJ methods, and the `roles` section of the `CLUSTERSTATUS` response.

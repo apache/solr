@@ -1,0 +1,8 @@
+type: removed
+title: Remove the deprecated `/admin/ping` endpoint and SolrJ ping APIs. Use `HealthCheckRequest` for node health or `QueryRequest` to test searches.
+authors:
+  - name: Jason Gerlowski
+  - name: Eric Pugh
+links:
+  - name: SOLR-18417
+    url: https://issues.apache.org/jira/browse/SOLR-18417

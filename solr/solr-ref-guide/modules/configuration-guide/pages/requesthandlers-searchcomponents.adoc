@@ -19,7 +19,7 @@
 After the `<query>` section of `solrconfig.xml`, request handlers and search components are configured.
 
 A _request handler_ processes requests coming to Solr.
-These might be query requests, index update requests or specialized interactions such as xref:deployment-guide:ping.adoc[].
+These might be queries, index updates, or other admin operations.
 
 Not all handlers are defined explicitly in `solrconfig.xml`, many are defined implicitly.
 See xref:implicit-requesthandlers.adoc[] for details.
