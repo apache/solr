@@ -20,7 +20,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,12 +33,8 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SolrProcessManagerTest extends SolrTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   /**
    * Restricts discovery to this class's own mock processes, which is what the marker is for. Unique
    * per run so a developer's own Solr, or another suite on the same machine, is not discovered.
@@ -49,26 +44,31 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static SolrProcessManager solrProcessManager;
   private static Pair<Integer, Process> processHttp;
   private static Pair<Integer, Process> processHttps;
+  private static Path pidDir;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    boolean isWindows = random().nextBoolean();
-    String PID_SUFFIX = isWindows ? ".port" : ".pid";
-    log.info("Simulating pid file on {}", isWindows ? "Windows" : "Linux");
     processHttp = createProcess(findAvailablePort(), false);
     processHttps = createProcess(findAvailablePort(), true);
-    long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
-    long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     System.setProperty(SolrProcessManager.PROCESS_SCAN_MARKER, SCAN_MARKER);
     System.setProperty("solr.port.listen", Integer.toString(processHttp.getKey()));
-    Path pidDir = createTempDir("solr-pid-dir");
+    pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
+    // Both platforms name the file after the port and store the PID in it
+    writePidFile(processHttp);
+    writePidFile(processHttps);
+    Files.writeString(pidDir.resolve("solr-99999.pid"), "99999"); // Stale
+    // The legacy Windows port file is no longer read
     Files.writeString(
-        pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));
-    Files.writeString(
-        pidDir.resolve("solr-" + processHttpsValue + PID_SUFFIX), Long.toString(processHttpsValue));
-    Files.writeString(pidDir.resolve("solr-99999" + PID_SUFFIX), "99999"); // Invalid
+        pidDir.resolve("solr-" + processHttp.getKey() + ".port"),
+        Integer.toString(processHttp.getKey()));
     solrProcessManager = new SolrProcessManager();
+  }
+
+  private static void writePidFile(Pair<Integer, Process> process) throws IOException {
+    Files.writeString(
+        pidDir.resolve("solr-" + process.getKey() + ".pid"),
+        Long.toString(process.getValue().pid()));
   }
 
   @AfterClass
@@ -158,6 +158,11 @@ public class SolrProcessManagerTest extends SolrTestCase {
   public void testScanSolrPidFiles() throws IOException {
     Collection<SolrProcess> processes = solrProcessManager.scanSolrPidFiles();
     assertEquals(2, processes.size());
+    assertFalse(
+        "Stale PID file should have been deleted", Files.exists(pidDir.resolve("solr-99999.pid")));
+    assertTrue(
+        "Legacy .port file should be left alone, not scanned",
+        Files.exists(pidDir.resolve("solr-" + processHttp.getKey() + ".port")));
   }
 
   public void testGetAllRunning() {

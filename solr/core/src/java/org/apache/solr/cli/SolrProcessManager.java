@@ -50,7 +50,7 @@ public class SolrProcessManager {
   private final Map<Long, SolrProcess> pidProcessMap;
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
-  private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
+  private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.pid$");
 
   /**
    * System property ({@code solr.process.scan.marker}, or the {@code SOLR_PROCESS_SCAN_MARKER}
@@ -122,8 +122,7 @@ public class SolrProcessManager {
 
   /**
    * Scans the PID directory for Solr PID files and returns a list of SolrProcesses for each running
-   * Solr instance. If a PID file is found but no process is running, the PID file is deleted. On
-   * Windows, the file is a 'PORT' file containing the port number.
+   * Solr instance. If a PID file is found but no process is running, the PID file is deleted.
    *
    * @return a list of SolrProcesses for each running Solr instance
    */
@@ -136,16 +135,8 @@ public class SolrProcessManager {
         Files.list(pidDir)
             .filter(p -> pidFilePattern.matcher(p.getFileName().toString()).matches())) {
       for (Path p : pidFiles.toList()) {
-        Optional<SolrProcess> process;
-        if (p.toString().endsWith(".port")) {
-          // On Windows, the file is a 'PORT' file containing the port number.
-          Integer port = Integer.valueOf(Files.readAllLines(p).getFirst());
-          process = processForPort(port);
-        } else {
-          // On Linux, the file is a 'PID' file containing the process ID.
-          Long pid = Long.valueOf(Files.readAllLines(p).getFirst());
-          process = getProcessForPid(pid);
-        }
+        Long pid = Long.valueOf(Files.readAllLines(p).getFirst().trim());
+        Optional<SolrProcess> process = getProcessForPid(pid);
         if (process.isPresent()) {
           processes.add(process.get());
         } else {

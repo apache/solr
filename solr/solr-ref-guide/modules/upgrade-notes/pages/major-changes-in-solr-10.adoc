@@ -91,6 +91,11 @@ A request with no other parameters returns every collection.
 
 The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 
+=== Windows PID Files
+
+On Windows, `bin\solr.cmd` now writes a true `solr-<port>.pid` file instead of relying on the `solr-<port>.port` file.
+The `solr-<port>.port` file is deprecated and will no longer be written in Solr 11.0.
+
 == Solr 10.1
 
 === Misc
