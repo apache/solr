@@ -85,6 +85,7 @@ limitations under the License.
   <script src="js/angular/controllers/cores.js?_=${version}"></script>
   <script src="js/angular/controllers/threads.js?_=${version}"></script>
   <script src="js/angular/controllers/java-properties.js?_=${version}"></script>
+  <script src="js/angular/controllers/api-explorer.js?_=${version}"></script>
   <script src="js/angular/controllers/alias-overview.js?_=${version}"></script>
   <script src="js/angular/controllers/core-overview.js?_=${version}"></script>
   <script src="js/angular/controllers/collection-overview.js?_=${version}"></script>
@@ -254,6 +255,8 @@ limitations under the License.
               <li id="java-properties" class="global" ng-class="{active:page=='java-props'}"><p><a href="#/~java-properties">Java Properties</a></p></li>
 
               <li id="threads" class="global" ng-class="{active:page=='threads'}"><p><a href="#/~threads">Thread Dump</a></p></li>
+
+              <li id="api-explorer" class="global" ng-class="{active:page=='api-explorer'}"><p><a href="#/~api-explorer">API Explorer</a></p></li>
 
               <li ng-hide="isCloudEnabled" id="cores" class="global" ng-class="{active:page=='cores'}"><p><a href="#/~cores">Core Admin</a></p></li>
 

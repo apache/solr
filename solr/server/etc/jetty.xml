@@ -90,6 +90,22 @@
           </New>
         </Arg>
       </Call>
+      <!-- The Admin UI's API Explorer loads this one page in an iframe (Scalar manages its
+           own URL hash for deep-linking, which conflicts with ngRoute if mounted directly);
+           this narrower rule runs after the blanket rule above and overrides frame-ancestors
+           for just this path, so same-origin framing isn't blocked. -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">/solr/libs/scalar/index.html</Set>
+            <Set name="headerName">Content-Security-Policy</Set>
+            <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'self'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
+          </New>
+        </Arg>
+      </Call>
+      <!-- Note: /solr/index.html (and /solr/) is served by LoadAdminUiServlet (see web.xml),
+           which sets its own Content-Security-Policy that overrides anything set here - its
+           frame-src 'self' addition (needed by the API Explorer iframe above) lives there. -->
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">

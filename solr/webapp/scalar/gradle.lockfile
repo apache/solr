@@ -1,0 +1,6 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+# To regenerate this file, run: ./gradlew :solr:webapp:scalar:dependencies --write-locks
+@scalar:api-reference:1.46.4=scalarArchive
+empty=jarValidation
