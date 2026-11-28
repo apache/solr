@@ -35,6 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -290,25 +291,29 @@ public class S3BackupRepository extends AbstractBackupRepository {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
       }
 
-      try (OutputStream outputStream = client.pushStream(s3Path)) {
+      try (S3OutputStream outputStream = client.pushStream(s3Path)) {
+        try {
+          byte[] buffer = new byte[CHUNK_SIZE];
+          int bufferLen;
+          long remaining =
+              shouldVerifyChecksum
+                  ? indexInput.length() - CodecUtil.footerLength()
+                  : indexInput.length();
 
-        byte[] buffer = new byte[CHUNK_SIZE];
-        int bufferLen;
-        long remaining =
-            shouldVerifyChecksum
-                ? indexInput.length() - CodecUtil.footerLength()
-                : indexInput.length();
+          while (remaining > 0) {
+            bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
 
-        while (remaining > 0) {
-          bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
-
-          indexInput.readBytes(buffer, 0, bufferLen);
-          outputStream.write(buffer, 0, bufferLen);
-          remaining -= bufferLen;
-        }
-        if (shouldVerifyChecksum) {
-          long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
-          writeFooter(checksum, outputStream);
+            indexInput.readBytes(buffer, 0, bufferLen);
+            outputStream.write(buffer, 0, bufferLen);
+            remaining -= bufferLen;
+          }
+          if (shouldVerifyChecksum) {
+            long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+            writeFooter(checksum, outputStream);
+          }
+        } catch (Throwable t) {
+          outputStream.abort();
+          throw t;
         }
       }
     }
@@ -345,12 +350,18 @@ public class S3BackupRepository extends AbstractBackupRepository {
       log.debug("Download started from S3 '{}'", s3Path);
     }
 
+    boolean success = false;
     try (InputStream inputStream = client.pullStream(s3Path);
         IndexOutput indexOutput = dest.createOutput(destFileName, IOContext.DEFAULT)) {
       byte[] buffer = new byte[CHUNK_SIZE];
       int len;
       while ((len = inputStream.read(buffer)) != -1) {
         indexOutput.writeBytes(buffer, 0, len);
+      }
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(dest, destFileName);
       }
     }
 

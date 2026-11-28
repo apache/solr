@@ -50,7 +50,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -89,8 +89,8 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   public UploadToFileStoreResponse uploadFile(
       String filePath, List<String> sig, InputStream requestBody) {
     final var response = instantiateJerseyResponse(UploadToFileStoreResponse.class);
-    if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-      throw new RuntimeException(PackageAPI.ERR_MSG);
+    if (!coreContainer.getPackageLoader().getPackageStore().isEnabled()) {
+      throw new RuntimeException(PackageStore.ERR_MSG);
     }
     try {
       coreContainer
@@ -282,7 +282,9 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
 
   private void doClusterDelete(String filePath) {
     FileStore.FileType type = fileStore.getType(filePath, true);
-    if (type == FileStore.FileType.NOFILE) {
+    // A registered file may have no copy on any live node; deleting it must still clear the
+    // registration.
+    if (type == FileStore.FileType.NOFILE && !isRegisteredInZk(filePath)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + filePath);
     }
@@ -305,6 +307,20 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     }
   }
 
+  private boolean isRegisteredInZk(String filePath) {
+    try {
+      return coreContainer
+          .getZkController()
+          .getZkClient()
+          .exists(DistribFileStore.ZK_PACKAGESTORE + filePath);
+    } catch (KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
   private void doDelete(String filePath, Boolean localDelete) {
     if (Boolean.TRUE.equals(localDelete)) {
       doLocalDelete(filePath);
@@ -317,12 +333,12 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
   public SolrJerseyResponse deleteFile(String filePath, Boolean localDelete) {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-      throw new RuntimeException(PackageAPI.ERR_MSG);
+    if (!coreContainer.getPackageLoader().getPackageStore().isEnabled()) {
+      throw new RuntimeException(PackageStore.ERR_MSG);
     }
 
     validateName(filePath, true);
-    if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(filePath)) {
+    if (coreContainer.getPackageLoader().getPackageStore().isJarInuse(filePath)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
     }
     doDelete(filePath, localDelete);

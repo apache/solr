@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -30,7 +31,7 @@ import org.apache.solr.update.AddUpdateCommand;
  */
 public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private String myName; // if classname==XyzUpdateProcessorFactory  myName=Xyz
-  protected NamedList<?> initArgs = new NamedList<>();
+  protected NamedList<?> initArgs = new SimpleOrderedMap<>();
   private static ThreadLocal<SolrQueryRequest> REQ = new ThreadLocal<>();
 
   protected SimpleUpdateProcessorFactory() {}

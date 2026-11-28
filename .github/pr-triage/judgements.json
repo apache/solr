@@ -1,5 +1,5 @@
 {
-  "_doc": "Each judgement is a question about what the change warrants on its merits, whatever the author included; the comment compares the verdict with what the PR includes.\nJudgement keys: id, title, question, help_url (the title links there).\nWhat the PR includes: evidence_files (globs; a changed file counts unless removed) minus evidence_exclude, or evidence_title (regex on the PR title). Matching files are hidden from the model. skip_when_included: the model is not asked when the evidence is present.\nChoice questions: choices (the verdict is one of these strings); evidence_value {files, pattern} gives the values the PR provides (group 1 of pattern, matched on added lines); absent_choice is the choice meaning nothing is warranted.\nTop level: model_defaults; max_diff_chars; exclude_patches (patches listed by name only); min_confidence (below it a mismatch is a weak signal); summary_from {files, pattern}: text given to every judgement as the author's own summary (the changelog entry title).",
+  "_doc": "Each judgement is a question about what the change warrants on its merits, whatever the author included; the comment compares the verdict with what the PR includes.\nJudgement keys: id, title, question, help_url (the title links there).\nWhat the PR includes: evidence_files (globs; a changed file counts unless removed) minus evidence_exclude, or evidence_title (regex on the PR title). Matching files are hidden from the model. skip_when_included: the model is not asked when the evidence is present.\nChoice questions: choices (the verdict is one of these strings); evidence_value {files, pattern} gives the values the PR provides (group 1 of pattern, matched on added lines); absent_choice is the choice meaning nothing is warranted; choice_label prefixes an agreeing choice in the comment.\nTop level: model_defaults; max_diff_chars; exclude_patches (patches listed by name only); min_confidence (below it a mismatch is a weak signal); summary_from {files, pattern}: text given to every judgement as the author's own summary (the changelog entry title).",
   "model_defaults": {
     "temperature": 0,
     "max_tokens": 2000,
@@ -41,6 +41,7 @@
         "(not-worthy)"
       ],
       "absent_choice": "(not-worthy)",
+      "choice_label": "type",
       "evidence_value": {
         "files": [
           "changelog/unreleased/**"

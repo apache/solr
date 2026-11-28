@@ -38,5 +38,8 @@ python3 -u dev-tools/scripts/buildAndPushRelease.py --dev-mode --push-local "$TM
 # Unit tests run in the regular CI jobs; here just check that the source release compiles.
 export SMOKETEST_SRC_TEST_TASK=testClasses
 
+# CI may build with a newer JDK than the release JDK.
+export SMOKETEST_SKIP_BUILD_JDK_CHECK=1
+
 python3 -u dev-tools/scripts/smokeTestRelease.py --not-signed --tmp-dir "$TMP_ROOT/smoke" \
   "file://$TMP_ROOT/dist/solr-$VERSION-RC1-rev-$(git rev-parse HEAD)"

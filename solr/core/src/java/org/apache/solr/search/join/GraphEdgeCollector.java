@@ -52,6 +52,8 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
   DocSet skipSet;
   // known leaf nodes
   DocSet leafNodes;
+  // nodes whose edges may be followed (null means all nodes)
+  DocSet expandNodes;
 
   int numHits = 0; // number of documents visited
   BitSet bits; // if not null, used to collect documents visited
@@ -60,11 +62,13 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
 
   SchemaField collectField;
 
-  // skipSet and leafNodes may be null
-  GraphEdgeCollector(SchemaField collectField, DocSet skipSet, DocSet leafNodes) {
+  // skipSet, leafNodes and expandNodes may be null
+  GraphEdgeCollector(
+      SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet expandNodes) {
     this.collectField = collectField;
     this.skipSet = skipSet;
     this.leafNodes = leafNodes;
+    this.expandNodes = expandNodes;
   }
 
   // Set to use to collect docs being visited
@@ -92,8 +96,9 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     numHits++;
 
     // Optimization to not look up edges for a document that is a leaf node (i.e. has no outgoing
-    // edges)
-    if (leafNodes == null || !leafNodes.exists(doc)) {
+    // edges), or that doesn't match the expand filter (collected, but not expanded)
+    if ((leafNodes == null || !leafNodes.exists(doc))
+        && (expandNodes == null || expandNodes.exists(doc))) {
       addEdgeIdsToResult(segDoc);
     }
     // Note: tracking links in for each result would be a huge memory hog... so not implementing at
@@ -126,8 +131,9 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     private BytesRefHash collectorTerms;
     private SortedSetDocValues docTermOrds;
 
-    GraphTermsCollector(SchemaField collectField, DocSet skipSet, DocSet leafNodes) {
-      super(collectField, skipSet, leafNodes);
+    GraphTermsCollector(
+        SchemaField collectField, DocSet skipSet, DocSet leafNodes, DocSet expandNodes) {
+      super(collectField, skipSet, leafNodes, expandNodes);
       this.collectorTerms = new BytesRefHash();
     }
 

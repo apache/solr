@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -83,11 +84,11 @@ public class ReplicateFromLeader {
       final String pollIntervalStr = determinePollInterval(uinfo);
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
 
-      NamedList<Object> followerConfig = new NamedList<>();
+      NamedList<Object> followerConfig = new SimpleOrderedMap<>();
       followerConfig.add(ReplicationHandler.FETCH_FROM_LEADER, Boolean.TRUE);
       followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, Boolean.TRUE);
       followerConfig.add(ReplicationAPIBase.POLL_INTERVAL, pollIntervalStr);
-      NamedList<Object> replicationConfig = new NamedList<>();
+      NamedList<Object> replicationConfig = new SimpleOrderedMap<>();
       replicationConfig.add("follower", followerConfig);
 
       String lastCommitVersion = getCommitVersion(core);

@@ -311,7 +311,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
     }
 
-    final NamedList<Throwable> exceptions = new NamedList<>();
+    final NamedList<Throwable> exceptions = new SimpleOrderedMap<>();
     final NamedList<NamedList<?>> shardResponses =
         new NamedList<>(routes.size() + 1); // +1 for deleteQuery
 
@@ -642,12 +642,17 @@ public abstract class CloudSolrClient extends SolrClient {
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
+      Set<String> missingInputCollections = new HashSet<>();
+      Set<String> requestedCollectionNames =
+          resolveAliases(inputCollections, missingInputCollections);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
-        DocCollection coll = getDocCollection(requestedCollection, null);
+        DocCollection coll =
+            missingInputCollections.contains(requestedCollection)
+                ? null
+                : getDocCollection(requestedCollection, null);
         if (coll == null) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
@@ -726,15 +731,11 @@ public abstract class CloudSolrClient extends SolrClient {
 
       final boolean wasCommError = wasCommError(exc);
 
-      if (wasCommError
-          || (exc instanceof RouteException
-              && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
-      // TODO there are other reasons for 404. We need to change the solr response format from HTML
-      // to structured data to know that
-      ) {
-        // it was a communication error. it is likely that
-        // the node to which the request to be sent is down . So , expire the state
-        // so that the next attempt would fetch the fresh state
+      // 503 emitted on node shutdown and by shard-handler when no replicas available
+      if (wasCommError || errorCode == 503) {
+        // if it was a communication error it is likely that
+        // the node to which the request to be sent is down . So expire the state
+        // so that the next attempt will fetch the fresh state
         // just re-read state for all of them, if it has not been retried
         // in retryExpiryTime time
         if (requestedCollections != null) {
@@ -1060,12 +1061,20 @@ public abstract class CloudSolrClient extends SolrClient {
    * collection existence.
    */
   private Set<String> resolveAliases(List<String> inputCollections) {
+    return resolveAliases(inputCollections, null);
+  }
+
+  private Set<String> resolveAliases(
+      List<String> inputCollections, Set<String> missingInputCollections) {
     if (inputCollections.isEmpty()) {
       return Set.of();
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
       if (getDocCollection(collectionName, -1) == null) {
+        if (missingInputCollections != null) {
+          missingInputCollections.add(collectionName);
+        }
         // perhaps it's an alias
         uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {

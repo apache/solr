@@ -1,0 +1,12 @@
+title: >
+  Listing packages right after deleting a package version no longer returns the deleted version;
+  the delete now takes effect on the handling node at once, and other nodes are told to sync.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18671
+    url: https://issues.apache.org/jira/browse/SOLR-18671
+  - name: PR#5371
+    url: https://github.com/apache/solr/pull/5371

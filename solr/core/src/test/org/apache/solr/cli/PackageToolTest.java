@@ -19,18 +19,26 @@ package org.apache.solr.cli;
 
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.FileStoreApi;
+import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.filestore.FileStore;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SecurityJson;
+import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -56,6 +64,7 @@ public class PackageToolTest extends SolrCloudTestCase {
   // repository.json.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Duration FILE_DELETE_TIMEOUT = Duration.ofSeconds(10);
 
   private static LocalWebServer repositoryServer;
 
@@ -300,6 +309,49 @@ public class PackageToolTest extends SolrCloudTestCase {
           "--credentials",
           SecurityJson.USER_PASS
         });
+
+    var packageRequest = new PackageApi.GetPackage("question-answer");
+    packageRequest.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
+    var versions = packageRequest.process(cluster.getSolrClient()).versions;
+    assertEquals(2, versions.size());
+    for (var version : versions) {
+      List<String> files = new ArrayList<>(version.files);
+      files.add(version.manifest);
+      for (String file : files) {
+        assertTrue(cluster.getZkClient().exists("/packagestore" + file));
+      }
+
+      var deleteManifest = new FileStoreApi.DeleteFile(version.manifest);
+      deleteManifest.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
+      var exc =
+          expectThrows(
+              RemoteSolrException.class, () -> deleteManifest.process(cluster.getSolrClient()));
+      assertEquals(400, exc.code());
+      assertTrue(cluster.getZkClient().exists("/packagestore" + version.manifest));
+
+      run(
+          new String[] {
+            "--solr-url",
+            solrUrl,
+            "uninstall",
+            "question-answer:" + version.version,
+            "--credentials",
+            SecurityJson.USER_PASS
+          });
+
+      for (String file : files) {
+        assertFalse(cluster.getZkClient().exists("/packagestore" + file));
+        new TimeOut(FILE_DELETE_TIMEOUT, TimeSource.NANO_TIME)
+            .waitFor(
+                "Package file was not deleted on all nodes: " + file,
+                () ->
+                    cluster.getJettySolrRunners().stream()
+                        .allMatch(
+                            jetty ->
+                                jetty.getCoreContainer().getFileStore().getType(file, false)
+                                    == FileStore.FileType.NOFILE));
+      }
+    }
   }
 
   void assertPackageVersion(

@@ -66,14 +66,12 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.ClusterFileStore;
-import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -473,10 +471,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   void deleteStoredSampleDocs(String configSet) {
-    String path = getSampleDocsPathFromConfigSet(configSet);
-    // why do I have to do this in two stages?
-    DistribFileStore.deleteZKFileEntry(cc.getZkController().getZkClient(), path);
-    cc.getFileStore().delete(path);
+    cc.getFileStore().delete(getSampleDocsPathFromConfigSet(configSet));
   }
 
   @SuppressWarnings("unchecked")
@@ -587,7 +582,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   ManagedIndexSchema loadLatestSchema(SolrConfig solrConfig) {
     ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
-    factory.init(new NamedList<>());
+    factory.init(SimpleOrderedMap.of());
     return factory.create(DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME, solrConfig, null);
   }
 

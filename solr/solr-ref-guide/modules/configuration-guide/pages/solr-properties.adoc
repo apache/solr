@@ -36,6 +36,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
 
+|solr.backup.copyretrybackoffms||1000|Specifies the delay in milliseconds before the first retry of a failed backup/restore file copy, doubled for each further retry. See xref:deployment-guide:backup-restore.adoc#retrying-failed-file-copies[Retrying Failed File Copies].
+
+|solr.backup.maxcopyretries||2|Specifies how many times a failed copy of a single index file is retried during backup, restore and install-shard operations. Set to `0` to disable retries. See xref:deployment-guide:backup-restore.adoc#retrying-failed-file-copies[Retrying Failed File Copies].
+
 |solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
 
 |solr.cloud.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
@@ -45,8 +49,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
 
 |solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
-
-|solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
 
 |solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr. Often ends in `/conf`.
 
@@ -124,7 +126,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.zookeeper.client.connect.timeout|zkConnectTimeout|15 seconds.|How long before timing out opening connection to ZooKeeper.
 
-|solr.zookeeper.client.timeout|zkClientTimeout|30 seconds.|How long before timing out connection to ZooKeeper.
+|solr.zookeeper.client.timeout|zkClientTimeout|30000 milliseconds.|Default ZooKeeper client session timeout. Also sets the connection and session timeouts for the ZooKeeper check during node startup.
 
 |solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
 
