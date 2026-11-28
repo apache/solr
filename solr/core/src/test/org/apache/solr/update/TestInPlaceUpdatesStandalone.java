@@ -105,6 +105,9 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
       SchemaField field = schema.getField(fieldName);
       assertTrue(field.toString(), field.stored());
     }
+    SchemaField skipListField = schema.getField("skip_list_long");
+    assertTrue(skipListField.hasDocValuesSkipList());
+    assertFalse(AtomicUpdateDocumentMerger.isSupportedFieldForInPlaceUpdate(skipListField));
 
     // Don't close this client, it would shut down the CoreContainer
     client = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
@@ -1603,6 +1606,29 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertQ(req("q", "title_s:first4"), "//*[@numFound='1']"); // the new value does reflect
     assertQ(req("q", "title_s:first1"), "//*[@numFound='0']"); // but the old value does not exist
     assertQ(req("q", "title_s:third"), "//*[@numFound='0']"); // doc3 does not exist
+  }
+
+  @Test
+  public void testAtomicIncOnDocValuesSkipListField() throws Exception {
+    long version =
+        addAndGetVersion(sdoc("id", "1", "title_s", "first", "skip_list_long", 10), null);
+    assertU(commit());
+
+    version = addAndAssertVersion(version, "id", "1", "skip_list_long", map("inc", 5));
+    assertU(commit());
+
+    assertQ(
+        req("q", "id:1", "fl", "id,skip_list_long,title_s"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/long[@name='skip_list_long'][.='15']",
+        "//result/doc[1]/str[@name='title_s'][.='first']");
+
+    version = addAndAssertVersion(version, "id", "1", "skip_list_long", map("set", 42));
+    assertU(commit());
+    assertQ(
+        req("q", "id:1", "fl", "skip_list_long"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/long[@name='skip_list_long'][.='42']");
   }
 
   /**

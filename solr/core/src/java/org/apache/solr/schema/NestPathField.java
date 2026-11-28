@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -78,7 +77,8 @@ public class NestPathField extends StrField {
     }
 
     final BytesRef bytes = getBytesRef(value); // unmodified, unlike the indexed term
-    final IndexableField dvField = new SortedDocValuesField(field.getName(), bytes);
+    final IndexableField dvField =
+        createSortedDocValuesField(field.getName(), bytes, field.hasDocValuesSkipList());
 
     return termField == null ? List.of(dvField) : List.of(termField, dvField);
   }

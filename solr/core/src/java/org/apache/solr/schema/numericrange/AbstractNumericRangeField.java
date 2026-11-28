@@ -64,6 +64,12 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  */
 public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
 
+  @Override
+  protected void checkSupportsDocValuesSkipList() {
+    throw new SolrException(
+        ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values skip lists");
+  }
+
   /**
    * Marker interface for parsed range value objects. Implemented by the inner {@code RangeValue}
    * classes of concrete subclasses so that {@link #toNativeType(Object)} can identify already-

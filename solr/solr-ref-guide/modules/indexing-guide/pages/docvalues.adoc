@@ -65,6 +65,27 @@ Enabling a field for docValues only requires adding `docValues="true"` to the fi
 [IMPORTANT]
 If you have already indexed data into your Solr index, you will need to completely reindex your content after changing your field definitions in the schema in order to successfully use docValues.
 
+[[docvalues-skip-lists]]
+=== DocValues Skip Lists
+
+Lucene can optionally write a skip index on top of DocValues (`docValuesSkipList="true"`).
+With a skip index, DocValues range queries can approach points/BKD throughput when field values are correlated with document order -- for example when documents are inserted in value order, or when the index is sorted on that field -- without keeping a separate points tree on disk.
+
+This is opt-in and requires `docValues="true"`.
+It is supported for field types that use Lucene `NUMERIC`, `SORTED_NUMERIC`, `SORTED`, or `SORTED_SET` DocValues -- for example numeric/date PointField types, `StrField`, `BoolField`, `EnumFieldType`, and the collation/sortable text types.
+`LatLonPointSpatialField` does not support skip lists.
+`BinaryField` and numeric range field types (`IntRangeField`, `LongRangeField`, `FloatRangeField`, `DoubleRangeField`) use `BINARY` DocValues and also do not support skip lists.
+
+Example:
+
+[source,xml]
+----
+<field name="price" type="plong" indexed="false" stored="false" docValues="true" docValuesSkipList="true" />
+----
+
+If values are uncorrelated with doc id order, skip-list range query speed falls back toward plain DocValues performance.
+Enabling or disabling skip lists requires a full reindex of affected fields.
+
 DocValues are only available for specific field types.
 The types chosen determine the underlying Lucene docValue type that will be used.
 The available Solr field types are:
