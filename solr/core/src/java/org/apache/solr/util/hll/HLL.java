@@ -663,9 +663,20 @@ public class HLL implements Cloneable {
    *
    * @param other the other {@link HLL} instance to union into this one. This cannot be <code>null
    *     </code>.
+   * @throws IllegalArgumentException if the register count or register width differs
    */
   public void union(final HLL other) {
-    // TODO: verify HLLs are compatible
+    if (log2m != other.log2m || regwidth != other.regwidth) {
+      throw new IllegalArgumentException(
+          "Cannot union HLLs with different precision: log2m="
+              + log2m
+              + ", regwidth="
+              + regwidth
+              + " versus log2m="
+              + other.log2m
+              + ", regwidth="
+              + other.regwidth);
+    }
     final HLLType otherType = other.getType();
 
     if (type.equals(otherType)) {
