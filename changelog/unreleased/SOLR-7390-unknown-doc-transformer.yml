@@ -1,0 +1,8 @@
+title: >
+  Requesting an unknown document transformer in fl, for example fl=id,[nosuch], now fails with a 400 Bad Request instead of being silently ignored.
+type: changed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-7390
+    url: https://issues.apache.org/jira/browse/SOLR-7390
