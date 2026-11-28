@@ -1,0 +1,9 @@
+title: The V2 ConfigSets clone API uses `_default` when `baseConfigSet` is omitted, null, or empty.
+type: fixed
+authors:
+  - name: openworld-maker
+    nick: openworld-maker
+  - name: Gaurav Singh
+links:
+  - name: SOLR-18214
+    url: https://issues.apache.org/jira/browse/SOLR-18214
