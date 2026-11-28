@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -44,7 +45,14 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
+import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
@@ -771,6 +779,191 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   private static void assertIsTimeout(Throwable t) {
     assertThat(t.getMessage(), containsStringIgnoringCase("Timeout"));
+  }
+
+  private static final long CONNECTION_MAX_DURATION_MS = 50;
+
+  /** How long to keep sending requests before giving up on seeing a replaced connection. */
+  private static final long CONNECTION_REPLACED_DEADLINE_MS = 100 * CONNECTION_MAX_DURATION_MS;
+
+  @Test
+  public void testConnectionMaxDurationIsApplied() throws Exception {
+    for (boolean useHttp1_1 : new boolean[] {false, true}) {
+      try (Http2SolrClient client =
+          new Http2SolrClient.Builder(getBaseUrl())
+              .useHttp1_1(useHttp1_1)
+              .withConnectionMaxDuration(CONNECTION_MAX_DURATION_MS, TimeUnit.MILLISECONDS)
+              .build()) {
+        queryCollection(client);
+        assertEquals(
+            "useHttp1_1=" + useHttp1_1,
+            CONNECTION_MAX_DURATION_MS,
+            connectionPool(client).getMaxDuration());
+      }
+    }
+  }
+
+  @Test
+  public void testConnectionReplacedAfterMaxDuration() throws Exception {
+    for (boolean useHttp1_1 : new boolean[] {false, true}) {
+      try (Http2SolrClient client =
+          new Http2SolrClient.Builder(getBaseUrl())
+              .useHttp1_1(useHttp1_1)
+              .withConnectionMaxDuration(CONNECTION_MAX_DURATION_MS, TimeUnit.MILLISECONDS)
+              .build()) {
+        queryCollection(client);
+        Connection first = idleConnection(client);
+        new TimeOut(CONNECTION_REPLACED_DEADLINE_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME)
+            .waitFor(
+                "connection was not replaced, useHttp1_1=" + useHttp1_1,
+                () -> {
+                  queryCollection(client);
+                  return idleConnection(client) != first;
+                });
+      }
+    }
+  }
+
+  @Test
+  public void testConnectionReusedWithoutMaxDuration() throws Exception {
+    for (boolean useHttp1_1 : new boolean[] {false, true}) {
+      try (Http2SolrClient client =
+          new Http2SolrClient.Builder(getBaseUrl()).useHttp1_1(useHttp1_1).build()) {
+        queryCollection(client);
+        Connection first = idleConnection(client);
+        queryCollection(client);
+        assertSame("useHttp1_1=" + useHttp1_1, first, idleConnection(client));
+        assertEquals(0, connectionPool(client).getMaxDuration());
+      }
+    }
+  }
+
+  @Test
+  public void testConnectionMaxDurationWithHttpClient() {
+    try (Http2SolrClient seed = new Http2SolrClient.Builder(getBaseUrl()).build()) {
+      expectThrows(
+          IllegalArgumentException.class,
+          () ->
+              new Http2SolrClient.Builder(getBaseUrl())
+                  .withHttpClient(seed)
+                  .withConnectionMaxDuration(CONNECTION_MAX_DURATION_MS, TimeUnit.MILLISECONDS)
+                  .build());
+    }
+  }
+
+  private static final int MAX_HTTP2_CONNECTIONS = 8;
+
+  @Test
+  public void testMaxHttp2ConnectionsPerHost() throws Exception {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl())
+            .useHttp1_1(false)
+            .withMaxHttp2ConnectionsPerHost(MAX_HTTP2_CONNECTIONS)
+            .build()) {
+      queryCollection(client);
+      assertEquals(MAX_HTTP2_CONNECTIONS, client.getHttpClient().getMaxConnectionsPerDestination());
+      assertEquals(MAX_HTTP2_CONNECTIONS, connectionPool(client).getMaxConnectionCount());
+    }
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl()).useHttp1_1(false).build()) {
+      queryCollection(client);
+      assertEquals(
+          Http2SolrClient.DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST,
+          connectionPool(client).getMaxConnectionCount());
+    }
+  }
+
+  @Test
+  public void testMaxHttp2ConnectionsPerHostIgnoredForHttp1() {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl())
+            .useHttp1_1(true)
+            .withMaxHttp2ConnectionsPerHost(MAX_HTTP2_CONNECTIONS)
+            .build()) {
+      assertEquals(
+          new HttpClient().getMaxConnectionsPerDestination(),
+          client.getHttpClient().getMaxConnectionsPerDestination());
+    }
+  }
+
+  @Test
+  public void testMaxHttp2ConnectionsPerHostValidation() {
+    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(getBaseUrl());
+    expectThrows(IllegalArgumentException.class, () -> builder.withMaxHttp2ConnectionsPerHost(0));
+  }
+
+  private static final long CONNECTION_IDLE_TIMEOUT_MS = 200;
+
+  /** How long to wait for the client to close an idle connection. */
+  private static final long CONNECTION_CLOSED_DEADLINE_MS = 50 * CONNECTION_IDLE_TIMEOUT_MS;
+
+  @Test
+  public void testConnectionIdleTimeoutClosesIdleConnections() throws Exception {
+    for (boolean useHttp1_1 : new boolean[] {false, true}) {
+      try (Http2SolrClient client =
+          new Http2SolrClient.Builder(getBaseUrl())
+              .useHttp1_1(useHttp1_1)
+              .withConnectionIdleTimeout(CONNECTION_IDLE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+              .build()) {
+        assertEquals(CONNECTION_IDLE_TIMEOUT_MS, client.getHttpClient().getIdleTimeout());
+        queryCollection(client);
+        new TimeOut(CONNECTION_CLOSED_DEADLINE_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME)
+            .waitFor(
+                "idle connection was not closed, useHttp1_1=" + useHttp1_1,
+                () -> connectionPool(client).getConnectionCount() == 0);
+        queryCollection(client);
+      }
+    }
+  }
+
+  @Test
+  public void testNoConnectionIdleTimeoutByDefault() {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(getBaseUrl()).build()) {
+      assertEquals(-1, client.getHttpClient().getIdleTimeout());
+    }
+  }
+
+  @Test
+  public void testConnectionOptionsWithHttpClient() {
+    try (Http2SolrClient seed = new Http2SolrClient.Builder(getBaseUrl()).build()) {
+      expectThrows(
+          IllegalArgumentException.class,
+          () ->
+              new Http2SolrClient.Builder(getBaseUrl())
+                  .withHttpClient(seed)
+                  .withMaxHttp2ConnectionsPerHost(MAX_HTTP2_CONNECTIONS)
+                  .build());
+      expectThrows(
+          IllegalArgumentException.class,
+          () ->
+              new Http2SolrClient.Builder(getBaseUrl())
+                  .withHttpClient(seed)
+                  .withConnectionIdleTimeout(CONNECTION_IDLE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                  .build());
+    }
+  }
+
+  private static void queryCollection(Http2SolrClient client) {
+    try {
+      client.query(COLLECTION_1, new SolrQuery("*:*"));
+    } catch (SolrServerException | IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static AbstractConnectionPool connectionPool(Http2SolrClient client) {
+    List<Destination> destinations = client.getHttpClient().getDestinations();
+    assertEquals(1, destinations.size());
+    return (AbstractConnectionPool) ((HttpDestination) destinations.get(0)).getConnectionPool();
+  }
+
+  /** The pooled connection the next request would use, without opening a new one. */
+  private static Connection idleConnection(Http2SolrClient client) {
+    AbstractConnectionPool pool = connectionPool(client);
+    Connection connection = pool.acquire(false);
+    assertNotNull("no idle connection in " + pool, connection);
+    pool.release(connection);
+    return connection;
   }
 
   /* Missed tests : - set cookies via interceptor - invariant params - compression */

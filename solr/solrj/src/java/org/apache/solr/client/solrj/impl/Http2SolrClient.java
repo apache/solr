@@ -67,6 +67,8 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
@@ -117,6 +119,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
       "solr.solrj.http.jetty.async_requests.max";
 
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
+
+  /** Connections opened per destination over HTTP/2, unless the builder sets another limit. */
+  public static final int DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST = 4;
+
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
@@ -149,7 +155,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
           || builder.proxyHost != null
           || builder.sslConfig != null
           || builder.cookieStore != null
-          || builder.keyStoreReloadIntervalSecs != null) {
+          || builder.keyStoreReloadIntervalSecs != null
+          || builder.connectionMaxDurationMillis != null
+          || builder.maxHttp2ConnectionsPerHost != null
+          || builder.connectionIdleTimeoutMillis != null) {
         throw new IllegalArgumentException(
             "You cannot provide the HttpClient and also specify options that are used to build a new client");
       }
@@ -304,7 +313,23 @@ public class Http2SolrClient extends HttpSolrClientBase {
       HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport);
-      httpClient.setMaxConnectionsPerDestination(4);
+      httpClient.setMaxConnectionsPerDestination(
+          builder.maxHttp2ConnectionsPerHost != null
+              ? builder.maxHttp2ConnectionsPerHost
+              : DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST);
+    }
+
+    if (builder.connectionMaxDurationMillis != null && builder.connectionMaxDurationMillis > 0) {
+      long maxDurationMillis = builder.connectionMaxDurationMillis;
+      ConnectionPool.Factory poolFactory = transport.getConnectionPoolFactory();
+      transport.setConnectionPoolFactory(
+          destination -> {
+            ConnectionPool pool = poolFactory.newConnectionPool(destination);
+            if (pool instanceof AbstractConnectionPool) {
+              ((AbstractConnectionPool) pool).setMaxDuration(maxDurationMillis);
+            }
+            return pool;
+          });
     }
 
     httpClient.setExecutor(this.executor);
@@ -315,7 +340,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
     httpClient.setConnectTimeout(builder.getConnectionTimeoutMillis());
-    httpClient.setIdleTimeout(-1); // don't enforce an idle timeout at this level
+    httpClient.setIdleTimeout(
+        builder.connectionIdleTimeoutMillis != null && builder.connectionIdleTimeoutMillis > 0
+            ? builder.connectionIdleTimeoutMillis
+            : -1);
     // note: idle & request timeouts are set per request
 
     var cookieStore = builder.getCookieStore();
@@ -1112,6 +1140,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
+    protected Long connectionMaxDurationMillis;
+
+    protected Integer maxHttp2ConnectionsPerHost;
+
+    protected Long connectionIdleTimeoutMillis;
+
     private List<HttpListenerFactory> listenerFactory;
 
     public Builder() {
@@ -1194,8 +1228,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
+     * Set maxConnectionsPerHost for http1 connections. The number of http2 connections is set with
+     * {@link #withMaxHttp2ConnectionsPerHost(int)}.
      *
      * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
      */
@@ -1218,6 +1252,62 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
       if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
         this.keyStoreReloadIntervalSecs = 1L;
+      }
+      return this;
+    }
+
+    /**
+     * Set the maximum time a pooled connection may be used for. Once a connection is older than
+     * this, it is closed instead of being reused, and a new connection is opened when needed. This
+     * applies to both HTTP/1.1 and HTTP/2 connections. If unset, 0 or less, connections are reused
+     * for as long as they stay open.
+     *
+     * @param duration Maximum connection lifetime
+     * @param unit The unit for the duration
+     * @return This builder
+     */
+    public Http2SolrClient.Builder withConnectionMaxDuration(long duration, TimeUnit unit) {
+      this.connectionMaxDurationMillis = unit.toMillis(duration);
+      if (this.connectionMaxDurationMillis == 0 && duration > 0) {
+        this.connectionMaxDurationMillis = 1L;
+      }
+      return this;
+    }
+
+    /**
+     * Set the maximum number of HTTP/2 connections opened per destination. Requests are multiplexed
+     * over these connections. Has no effect when using HTTP/1.1; see {@link
+     * #withMaxConnectionsPerHost(int)} for that. Defaults to {@value
+     * Http2SolrClient#DEFAULT_MAX_HTTP2_CONNECTIONS_PER_HOST}.
+     *
+     * @param max Maximum HTTP/2 connections per destination, at least 1
+     * @return This builder
+     */
+    public Http2SolrClient.Builder withMaxHttp2ConnectionsPerHost(int max) {
+      if (max < 1) {
+        throw new IllegalArgumentException(
+            "maxHttp2ConnectionsPerHost must be at least 1, got " + max);
+      }
+      this.maxHttp2ConnectionsPerHost = max;
+      return this;
+    }
+
+    /**
+     * Set how long a connection may go without any traffic before it is closed. This applies to
+     * both HTTP/1.1 and HTTP/2 connections. It is separate from {@link #withIdleTimeout(long,
+     * TimeUnit)}, which limits how long a single request may wait for data. Set it above the
+     * longest expected wait for a response: an HTTP/2 connection that sees no traffic for this long
+     * is closed even while a request on it is waiting. If unset, 0 or less, idle connections are
+     * not closed by the client.
+     *
+     * @param timeout Idle timeout for connections
+     * @param unit The unit for the timeout
+     * @return This builder
+     */
+    public Http2SolrClient.Builder withConnectionIdleTimeout(long timeout, TimeUnit unit) {
+      this.connectionIdleTimeoutMillis = unit.toMillis(timeout);
+      if (this.connectionIdleTimeoutMillis == 0 && timeout > 0) {
+        this.connectionIdleTimeoutMillis = 1L;
       }
       return this;
     }
