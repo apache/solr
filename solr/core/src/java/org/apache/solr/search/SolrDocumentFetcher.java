@@ -937,15 +937,11 @@ public class SolrDocumentFetcher {
   }
 
   /**
-   * Returns a mutable field filter for prefetch, or null to skip prefetch. Preserve the original
-   * explicit-field filter; only pattern selections expand stored fields and apply DocValues
-   * substitution. An empty pattern filter can still gain fields from highlighting.
+   * Returns a mutable field filter for prefetch, or null to skip prefetch. The filter holds the
+   * stored fields the selection needs loaded, cleared when DocValues can substitute for every one
+   * of them. An empty filter can still gain fields from highlighting.
    */
   public Set<String> getStoredFieldsToPrefetch(ReturnFields returnFields) {
-    if (!returnFields.hasPatternMatching()) {
-      Set<String> explicitFields = returnFields.getLuceneFieldNames();
-      return explicitFields == null ? null : new HashSet<>(explicitFields);
-    }
     Set<String> storedFields = getStoredFieldsToLoad(returnFields);
     if (canSubstituteStoredFields(storedFields)) {
       storedFields.clear();

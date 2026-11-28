@@ -1173,6 +1173,50 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertDocValuesOnlyPrefetch("missing_*", null, null);
   }
 
+  @Test
+  public void testExplicitNonStoredDocValuesPrefetch() throws Exception {
+    assertDocValuesOnlyPrefetch("prefetch_s_dvo", "prefetch_s_dvo", "source");
+  }
+
+  @Test
+  public void testExplicitSubstitutedDocValuesPrefetch() throws Exception {
+    assertDocValuesOnlyPrefetch("prefetch_idv", "prefetch_idv", "7");
+  }
+
+  @Test
+  public void testExplicitMixedPrefetchStillWarms() throws Exception {
+    assertU(
+        adoc("id", "7788", "title", "keyword", "prefetch_idv", "7", "unrelated_s", "unrelated"));
+    assertU(commit());
+    try {
+      try (SolrQueryRequest req =
+          req("q", "title:keyword", "fq", "id:7788", "fl", "prefetch_idv,title", "wt", "xml")) {
+        SolrDocumentFetcher fetcher = req.getSearcher().getDocFetcher();
+        assertTrue(fetcher.isLazyFieldLoadingEnabled());
+        fetcher.getDocumentCache().clear();
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        h.getCore().execute(h.getCore().getRequestHandler("/select"), req, rsp);
+        assertNull(rsp.getException());
+        DocList docs = ((ResultContext) rsp.getResponse()).getDocList();
+        assertEquals(1, docs.size());
+        int docId = docs.iterator().nextDoc();
+        Document doc = fetcher.getDocumentCache().get(docId);
+        assertNotNull("Expected stored-document prefetch for a mixed explicit fl", doc);
+        assertNotNull(doc.getField("title"));
+        String response = req.getResponseWriter().writeToString(req, rsp);
+        assertNull(
+            BaseTestHarness.validateXPath(
+                response, "//result/doc/*[@name='prefetch_idv'][normalize-space(.)='7']"));
+        assertNull(
+            BaseTestHarness.validateXPath(
+                response, "//result/doc/*[@name='title'][normalize-space(.)='keyword']"));
+      }
+    } finally {
+      assertU(delI("7788"));
+      assertU(commit());
+    }
+  }
+
   private void assertDocValuesOnlyPrefetch(String selection, String field, String value)
       throws Exception {
     assertU(

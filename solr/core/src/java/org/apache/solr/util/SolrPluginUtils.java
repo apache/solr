@@ -247,9 +247,9 @@ public class SolrPluginUtils {
       if (null != keyField) fieldFilter.add(keyField.getName());
     }
 
-    // A glob may match no stored fields or need only DocValues. Check after highlighting has
-    // added its fields to avoid warming a cache entry made up only of lazy placeholders.
-    if (returnFields.hasPatternMatching() && fieldFilter.isEmpty()) {
+    // A selection may match no stored fields or need only DocValues. Check after highlighting
+    // has added its fields to avoid warming a cache entry made up only of lazy placeholders.
+    if (fieldFilter.isEmpty()) {
       return;
     }
 
