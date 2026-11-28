@@ -1,0 +1,8 @@
+title: >
+  Sorting by _docid_ in a distributed search no longer fails with an IndexOutOfBoundsException while merging shard responses.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-6975
+    url: https://issues.apache.org/jira/browse/SOLR-6975
