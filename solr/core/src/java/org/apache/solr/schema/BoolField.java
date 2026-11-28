@@ -46,7 +46,8 @@ import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** */
-public class BoolField extends PrimitiveFieldType {
+public class BoolField extends PrimitiveFieldType
+    implements FieldType.ExternalizeStoredValuesAsObjects {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     field.checkSortability();
