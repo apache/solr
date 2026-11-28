@@ -257,7 +257,15 @@ public class CommandHandler {
     }
 
     try {
-      searcher.search(query, collector);
+      try {
+        searcher.search(query, collector);
+      } finally {
+        // let a post filter (e.g. an AnalyticsQuery collector) report its results, as
+        // SolrIndexSearcher does for non grouped searches
+        if (filter.postFilter != null) {
+          filter.postFilter.complete();
+        }
+      }
     } catch (ExitableDirectoryReader.ExitingReaderException x) {
       log.warn("Query: {}; ", query, x);
     }
