@@ -22,12 +22,15 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -37,6 +40,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.CoreAdminOperation;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -54,6 +58,9 @@ public class SyncStrategy {
   private final ShardHandler shardHandler;
 
   private volatile boolean isClosed;
+
+  /** Released on close, so that a recovery request waiting to be retried stops waiting. */
+  private final CountDownLatch closedLatch = new CountDownLatch(1);
 
   private final HttpJettySolrClient solrClient;
 
@@ -367,6 +374,7 @@ public class SyncStrategy {
 
   public void close() {
     this.isClosed = true;
+    closedLatch.countDown();
   }
 
   public void requestRecoveries() {
@@ -378,6 +386,12 @@ public class SyncStrategy {
       }
     }
   }
+
+  /** Delay before retrying a recovery request that hit a still-loading replica core. */
+  private static final long RECOVERY_RETRY_DELAY_MS = 10000;
+
+  /** Attempts for a recovery request when the replica core is still loading. */
+  private static final int RECOVERY_REQUEST_ATTEMPTS = 3;
 
   private void requestRecovery(
       final ZkNodeProps leaderProps, final String baseUrl, final String coreName)
@@ -391,24 +405,89 @@ public class SyncStrategy {
           RequestRecovery recoverRequestCmd = new RequestRecovery();
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
           recoverRequestCmd.setCoreName(coreName);
-          try (SolrClient client =
-              new HttpJettySolrClient.Builder(baseUrl)
-                  .withHttpClient(solrClient)
-                  .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
-                  .build()) {
-            client.request(recoverRequestCmd);
-          } catch (Throwable t) {
-            log.error(
-                "{}: Could not tell a replica to recover",
-                ZkCoreNodeProps.getCoreUrl(leaderProps),
-                t);
-            if (t instanceof Error) {
-              throw (Error) t;
-            }
-          }
+          sendRecoveryRequestWithRetry(
+              () -> sendRecoveryRequest(baseUrl, recoverRequestCmd),
+              closedLatch,
+              RECOVERY_RETRY_DELAY_MS,
+              ZkCoreNodeProps.getCoreUrl(leaderProps),
+              coreName);
         };
 
     updateExecutor.execute(runnable);
+  }
+
+  /** A single attempt at sending a recovery request. */
+  @FunctionalInterface
+  interface RecoveryRequestSender {
+    void send() throws Throwable;
+  }
+
+  /**
+   * Sends a recovery request, retrying only when the replica answers with the "core is still
+   * loading" 503 (see {@link #isCoreStillLoading}). Any other failure is logged and dropped, since
+   * recovery requests are best-effort nudges. An {@link Error} from any attempt is rethrown. The
+   * wait before a retry ends as soon as {@code closed} is released. Package-private and static so
+   * tests can drive it with a fake sender and a zero retry delay.
+   */
+  static void sendRecoveryRequestWithRetry(
+      RecoveryRequestSender sender,
+      CountDownLatch closed,
+      long retryDelayMs,
+      String replicaUrl,
+      String coreName) {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        sender.send();
+        return;
+      } catch (Throwable t) {
+        if (t instanceof Error) {
+          throw (Error) t;
+        }
+        if (closed.getCount() > 0 && isCoreStillLoading(t) && attempt < RECOVERY_REQUEST_ATTEMPTS) {
+          // The replica's core hasn't finished loading; wait a bit and retry
+          int nextAttempt = attempt + 1;
+          log.warn(
+              "{}: replica core {} is still loading, retrying recovery request (attempt {}/{})",
+              replicaUrl,
+              coreName,
+              nextAttempt,
+              RECOVERY_REQUEST_ATTEMPTS);
+          try {
+            if (closed.await(retryDelayMs, TimeUnit.MILLISECONDS)) {
+              return;
+            }
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          continue;
+        }
+        log.error("{}: Could not tell a replica to recover", replicaUrl, t);
+        return;
+      }
+    }
+  }
+
+  private void sendRecoveryRequest(String baseUrl, RequestRecovery recoverRequestCmd)
+      throws SolrServerException, IOException {
+    try (SolrClient client =
+        new HttpJettySolrClient.Builder(baseUrl)
+            .withHttpClient(solrClient)
+            .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
+            .build()) {
+      client.request(recoverRequestCmd);
+    }
+  }
+
+  private static boolean isCoreStillLoading(Throwable t) {
+    if (!(t instanceof RemoteSolrException rse)
+        || rse.code() != SolrException.ErrorCode.SERVICE_UNAVAILABLE.code) {
+      return false;
+    }
+    // Only the "core is still loading" 503 of REQUESTRECOVERY is retriable; another 503, such as
+    // one from a proxy, is not.
+    String msg = rse.getMessage();
+    return msg != null && msg.contains(CoreAdminOperation.CORE_STILL_LOADING_MESSAGE_SUFFIX);
   }
 
   public static ModifiableSolrParams params(String... params) {
