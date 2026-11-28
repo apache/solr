@@ -1,0 +1,11 @@
+title: >
+  Delete-by-query now also deletes the nested descendants of the documents it matches, when the
+  schema has _nest_path_, thus preventing orphaned child documents. Opt out with the
+  withDescendants=false local param.
+type: changed
+authors:
+  - name: David Smiley
+    nick: dsmiley
+links:
+  - name: SOLR-18199
+    url: https://issues.apache.org/jira/browse/SOLR-18199

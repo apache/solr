@@ -1430,8 +1430,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             else out.append(',');
             if (val instanceof SolrInputDocument) {
               json((SolrInputDocument) val, out);
+            } else {
+              out.append(JSONUtil.toJSON(val));
             }
-            out.append(JSONUtil.toJSON(val));
           }
           out.append(']');
         } else if (sfield.getValue() instanceof SolrInputDocument) {

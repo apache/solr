@@ -39,6 +39,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -568,6 +569,51 @@ public class TestRecovery extends SolrTestCaseJ4 {
             assertJQ(
                 req("q", "*:*"), "/response/numFound==8") // RDBQ5_1+3children+RDBQ5_2+3children
         );
+  }
+
+  @Test
+  public void testLogReplayWithReorderedDBQAndNestedDescendants() throws Exception {
+    testLogReplayWithReorderedDBQWrapper(
+        () -> {
+          String v1010 = getNextVersion();
+          String v1012 = getNextVersion();
+          String v1013 = getNextVersion();
+          String v1017_del = "-" + getNextVersion();
+          String v1018 = getNextVersion();
+
+          // 1010 - will be deleted, including descendants
+          updateJ(jsonAdd(nestedTree("RDBQ6_1", v1010)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1018 - should be kept, including descendants
+          updateJ(jsonAdd(nestedTree("RDBQ6_2", v1018)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1017 - delete should affect only older docs, and their descendants
+          updateJ(
+              jsonDelQ("id:RDBQ6_1 id:RDBQ6_2 id:RDBQ6_3 id:RDBQ6_4.0"),
+              params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", v1017_del));
+          // 1012 - reordered; will be deleted, including descendants
+          updateJ(jsonAdd(nestedTree("RDBQ6_3", v1012)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+          // 1013 - reordered; only the mid-level child RDBQ6_4.0 and its children will be deleted
+          updateJ(jsonAdd(nestedTree("RDBQ6_4", v1013)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
+        },
+        () -> {
+          assertJQ(req("q", "*:*"), "/response/numFound==11");
+          assertJQ(req("q", "_root_:RDBQ6_2"), "/response/numFound==7");
+          assertJQ(req("q", "_root_:RDBQ6_4"), "/response/numFound==4");
+          assertJQ(req("q", "id:RDBQ6_4.1*"), "/response/numFound==3");
+        });
+  }
+
+  /** A root with labeled children and grandchildren: 7 docs in total. */
+  private static SolrInputDocument nestedTree(String id, String version) {
+    return sdoc(
+        "id",
+        id,
+        "_version_",
+        version,
+        "kids",
+        sdocs(
+            sdoc("id", id + ".0", "subs", sdocs(sdoc("id", id + ".0.0"), sdoc("id", id + ".0.1"))),
+            sdoc(
+                "id", id + ".1", "subs", sdocs(sdoc("id", id + ".1.0"), sdoc("id", id + ".1.1")))));
   }
 
   private void testLogReplayWithReorderedDBQWrapper(ThrowingRunnable act, ThrowingRunnable assrt)

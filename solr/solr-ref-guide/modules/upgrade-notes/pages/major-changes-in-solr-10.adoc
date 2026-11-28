@@ -91,6 +91,13 @@ A request with no other parameters returns every collection.
 
 The v1 `CLUSTERSTATUS` command is unchanged, and `includeAll` still defaults to true.
 
+=== Delete-by-Query Deletes Nested Descendants
+
+When the schema has the `\_nest_path_` field, a delete-by-query now also deletes all nested descendants of the documents it matches, at any depth.
+Previously, a query matching a parent but not all of its descendants left orphaned child documents behind, violating Solr's integrity assumptions for nested documents.
+To opt out, add the `withDescendants=false` local param to the query, e.g., `{!lucene withDescendants=false}category:obsolete`.
+See xref:indexing-guide:indexing-nested-documents.adoc[] for details.
+
 == Solr 10.1
 
 === Misc

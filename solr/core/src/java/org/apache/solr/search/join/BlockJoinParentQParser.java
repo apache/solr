@@ -49,6 +49,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 
@@ -326,8 +327,16 @@ public class BlockJoinParentQParser extends FiltersQParser {
    */
   public static BitSetProducer getCachedBitSetProducer(
       final SolrQueryRequest request, Query query) {
+    return getCachedBitSetProducer(request.getSearcher(), query);
+  }
+
+  /**
+   * Returns a Lucene {@link BitSetProducer}, typically cached by query. Note that BSP itself
+   * internally caches a per-segment {@link BitSet}.
+   */
+  public static BitSetProducer getCachedBitSetProducer(SolrIndexSearcher searcher, Query query) {
     @SuppressWarnings("unchecked")
-    SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
+    SolrCache<Query, BitSetProducer> parentCache = searcher.getCache(CACHE_NAME);
     // lazily retrieve from solr cache
     if (parentCache != null) {
       try {
