@@ -75,3 +75,15 @@ Plugins that use them, for example custom request handlers or update processors,
 SolrJ clients write request content with `RequestWriter.ContentWriter` instead.
 
 The unused `ContentStreamBase.create(RequestWriter, SolrRequest)` and `ContentStreamBase.setSize(Long)` methods have been removed.
+
+== Update Request Processors
+
+=== TextProfileSignature tie-breaking
+
+`TextProfileSignature` now breaks ties between tokens that share the same quantized frequency by comparing the token strings.
+That makes the signature stable across internal `HashMap` rehashes (SOLR-18200).
+
+For profiles whose tied tokens previously appeared in a different order, the signature value can change.
+Documents already in the index keep their old signatures, so `overwriteDupes` may no longer match them on a later add.
+If the signature field is also the unique key, a later add can get a different document ID.
+Rebuild or reindex if you rely on matching existing `TextProfileSignature` values.
