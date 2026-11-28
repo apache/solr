@@ -20,7 +20,11 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
@@ -300,6 +304,8 @@ class SubQueryAugmenter extends DocTransformer {
     }
   }
 
+  private static final Pattern ROW_REFERENCE = Pattern.compile("\\$\\{?row\\.([\\w.\\-]*\\w)");
+
   private final String name;
   private final SolrParams baseSubParams;
   private final String prefix;
@@ -307,6 +313,7 @@ class SubQueryAugmenter extends DocTransformer {
   private final SolrClient server;
   private final String coreName;
   private final Principal principal;
+  private final String[] extraRequestFields;
 
   public SubQueryAugmenter(
       SolrClient server,
@@ -323,11 +330,35 @@ class SubQueryAugmenter extends DocTransformer {
     this.server = server;
     this.coreName = coreName;
     this.principal = principal;
+    this.extraRequestFields = findRowReferences(baseSubParams);
+  }
+
+  /** Collects the field names referenced as <code>$row.field</code> in the subquery parameters. */
+  private static String[] findRowReferences(SolrParams subParams) {
+    final Set<String> fieldNames = new LinkedHashSet<>();
+    final Iterator<String> names = subParams.getParameterNamesIterator();
+    while (names.hasNext()) {
+      final String[] values = subParams.getParams(names.next());
+      if (values != null) {
+        for (String value : values) {
+          final Matcher matcher = ROW_REFERENCE.matcher(value);
+          while (matcher.find()) {
+            fieldNames.add(matcher.group(1));
+          }
+        }
+      }
+    }
+    return fieldNames.toArray(new String[0]);
   }
 
   @Override
   public String getName() {
     return name;
+  }
+
+  @Override
+  public String[] getExtraRequestFields() {
+    return extraRequestFields;
   }
 
   /**

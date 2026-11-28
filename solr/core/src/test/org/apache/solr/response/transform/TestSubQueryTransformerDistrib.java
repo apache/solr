@@ -240,6 +240,47 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testRowFieldNotInFlDistributed() throws Exception {
+    int peopleMultiplier = atLeast(1);
+    int deptMultiplier = atLeast(1);
+
+    createIndex(people, peopleMultiplier, depts, deptMultiplier);
+
+    final ModifiableSolrParams params =
+        params(
+            new String[] {
+              "q",
+              "name_s:dave",
+              "fl",
+              "name_s_dv,depts:[subquery]",
+              "rows",
+              "" + peopleMultiplier,
+              "depts.q",
+              "{!terms f=dept_id_s v=$row.dept_ss_dv}",
+              "depts.fl",
+              "text_t" + (differentUniqueId ? ",id:notid" : ""),
+              "depts.rows",
+              "" + (deptMultiplier * 2),
+              "depts.collection",
+              "departments",
+              differentUniqueId ? "depts.distrib.singlePass" : "notnecessary",
+              "true"
+            });
+
+    final QueryRequest qr = withBasicAuth(new QueryRequest(params));
+    final QueryResponse rsp = qr.process(cluster.getSolrClient(), people + "," + depts);
+    final SolrDocumentList hits = rsp.getResults();
+
+    assertEquals(peopleMultiplier, hits.getNumFound());
+    for (SolrDocument doc : hits) {
+      assertEquals("dave", doc.getFieldValue("name_s_dv"));
+      assertNull(doc.getFieldValue("dept_ss_dv"));
+      SolrDocumentList relDepts = (SolrDocumentList) doc.getFieldValue("depts");
+      assertEquals("dave works in both depts " + rsp, deptMultiplier * 2, relDepts.getNumFound());
+    }
+  }
+
   private String anyWt() {
     String[] wts = new String[] {"javabin", "xml", "json"};
     return wts[random().nextInt(wts.length)];
