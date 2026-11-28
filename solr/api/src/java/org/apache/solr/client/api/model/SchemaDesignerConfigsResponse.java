@@ -17,6 +17,8 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import java.util.Map;
 
 /** Response body for the Schema Designer list-configs endpoint. */
@@ -28,4 +30,19 @@ public class SchemaDesignerConfigsResponse extends SolrJerseyResponse {
    */
   @JsonProperty("configSets")
   public Map<String, Integer> configSets;
+
+  @Schema(
+      description = "Language choices supplied by the _multilingual configset, ordered by name.")
+  @JsonProperty("availableLanguages")
+  public List<Language> availableLanguages;
+
+  /** A language supplied by the multilingual schema. */
+  @Schema(name = "SchemaDesignerLanguage")
+  public static class Language {
+    @JsonProperty("code")
+    public String code;
+
+    @JsonProperty("name")
+    public String name;
+  }
 }

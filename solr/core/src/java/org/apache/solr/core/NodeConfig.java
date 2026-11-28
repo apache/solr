@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.CoreContainerProvider;
@@ -82,6 +83,8 @@ public class NodeConfig {
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
 
   private final String configSetServiceClass;
+
+  private final List<String> bootstrapConfigSetNames;
 
   private final String coreAdminHandlerClass;
 
@@ -158,6 +161,7 @@ public class NodeConfig {
       List<String> allowZkHosts,
       boolean hideStackTraces,
       String configSetServiceClass,
+      List<String> bootstrapConfigSetNames,
       String modules,
       Set<String> hiddenSysProps) {
     // all Path params here are absolute and normalized.
@@ -197,6 +201,7 @@ public class NodeConfig {
     this.allowZkHosts = allowZkHosts;
     this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
+    this.bootstrapConfigSetNames = bootstrapConfigSetNames;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
     this.hiddenSysPropPattern =
@@ -262,6 +267,15 @@ public class NodeConfig {
 
   public String getConfigSetServiceClass() {
     return this.configSetServiceClass;
+  }
+
+  /**
+   * Names of the bundled configsets uploaded to ZooKeeper at startup.
+   *
+   * @see #SOLR_CONFIGSET_BOOTSTRAP_NAMES
+   */
+  public List<String> getBootstrapConfigSetNames() {
+    return bootstrapConfigSetNames;
   }
 
   public String getNodeName() {
@@ -486,6 +500,13 @@ public class NodeConfig {
 
   public static final String REDACTED_SYS_PROP_VALUE = "--REDACTED--";
 
+  /**
+   * Comma-delimited names of the bundled configsets to upload to ZooKeeper at startup, each read
+   * from {@code server/solr/configsets/<name>/conf} under the install dir. Names whose directory is
+   * missing are skipped.
+   */
+  public static final String SOLR_CONFIGSET_BOOTSTRAP_NAMES = "solr.configset.bootstrap.names";
+
   /** Returns the system property value, or "--REDACTED--" if the system property is hidden */
   public String getRedactedSysPropValue(String sysPropName) {
     return hiddenSysPropPattern.test(sysPropName)
@@ -586,6 +607,12 @@ public class NodeConfig {
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
+    private List<String> bootstrapConfigSetNames =
+        EnvUtils.getPropertyAsList(
+            SOLR_CONFIGSET_BOOTSTRAP_NAMES,
+            List.of(
+                ConfigSetsHandler.DEFAULT_CONFIGSET_NAME,
+                ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME));
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Map.of();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
@@ -827,6 +854,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setBootstrapConfigSetNames(List<String> bootstrapConfigSetNames) {
+      this.bootstrapConfigSetNames = List.copyOf(bootstrapConfigSetNames);
+      return this;
+    }
+
     /**
      * Set list of modules to add to class path
      *
@@ -911,6 +943,7 @@ public class NodeConfig {
           allowZkHosts,
           hideStackTrace,
           configSetServiceClass,
+          bootstrapConfigSetNames,
           modules,
           resolveHiddenSysProps(hiddenSysProps));
     }

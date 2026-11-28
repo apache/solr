@@ -69,6 +69,11 @@ public class TestSchemaDesignerSolrJ extends SolrCloudTestCase {
   public void testTypedBodyRoundTrip() throws Exception {
     final String configSet = "solrjSmoke";
 
+    var configs = new SchemaDesignerApi.ListDesignerConfigs().process(cluster.getSolrClient());
+    assertTrue(
+        configs.availableLanguages.stream()
+            .anyMatch(language -> "en".equals(language.code) && "English".equals(language.name)));
+
     // POST /schema-designer/{configSet}/prep — no body, baseline that SolrJ wiring works
     SchemaDesignerResponse prep =
         new SchemaDesignerApi.PrepNewSchema(configSet).process(cluster.getSolrClient());

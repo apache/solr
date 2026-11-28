@@ -49,6 +49,7 @@ image::schema-designer/new-schema.png[image,width=500]
 
 Choose a short name that reflects the intended use case for your new schema. You'll need to choose a source schema to copy as the starting point for your new schema.
 Solr includes a `_default` schema which provides a good starting place for building a custom schema for your search application.
+Use the *Language(s)* selector in the schema editor to add language-specific text analysis from the built-in `_multilingual` configset.
 Once a schema is published, it can be used to create new schemas and will be listed in the *Copy from* drop-down list in the dialog.
 
 Once you create the new schema, the next step is to upload or paste a sample of the data you intend to index into Solr.
@@ -152,7 +153,7 @@ Consequently, the Schema Designer focuses primarily on the schema aspects of a C
 
 When you click on the root node of the Schema Editor tree, you can refine top-level schema properties, including:
 
-* Languages: The `_default` schema includes text fields for a number of common languages. You can include all text analyzers in your schema or select a subset based on the languages your search application needs to support. The designer will remove all the unnecessary field types for languages you don't need. For more information about text analysis and languages, see xref:language-analysis.adoc[].
+* Languages: Select all built-in languages or a subset for your application. The designer adds missing language-specific field types and supporting files from `_multilingual`, preserving existing field-type definitions in the copied schema, and removes field types for unselected languages. For more information about text analysis and languages, see xref:language-analysis.adoc[].
 * Dynamic fields allow Solr to index fields that you did not explicitly define in your schema. Dynamic fields can make your application less brittle by providing some flexibility in the documents you can add to Solr. It is recommended to keep the default set of dynamic fields enabled for your schema. Unchecking this option removes all dynamic fields from your schema. For more information about dynamic fields, see xref:dynamic-fields.adoc[].
 * Field guessing (aka "schemaless mode") allows Solr to detect the "best" field type for unknown fields encountered during indexing. Field guessing also performs some field transformations, such as removing spaces from field names. If you use the schema designer to create your schema based on sample documents, you may not need to enable this feature. However, with this feature disabled, you need to make sure the incoming data matches the schema exactly or indexing errors may occur. For more information about schemaless mode, see xref:schemaless-mode.adoc[].
 * Enabling this feature adds the `_root_` and `_nest_path_` fields to your schema. For more information about indexing nested child documents, see xref:indexing-nested-documents.adoc[].

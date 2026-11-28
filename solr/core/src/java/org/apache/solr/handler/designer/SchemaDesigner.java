@@ -19,6 +19,7 @@ package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
@@ -100,7 +101,8 @@ import org.slf4j.LoggerFactory;
 public class SchemaDesigner extends JerseyResource
     implements SchemaDesignerApi, SchemaDesignerConstants {
 
-  private static final Set<String> excludeConfigSetNames = Set.of(DEFAULT_CONFIGSET_NAME);
+  private static final Set<String> excludeConfigSetNames =
+      Set.of(DEFAULT_CONFIGSET_NAME, MULTILINGUAL_CONFIGSET_NAME);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -422,6 +424,7 @@ public class SchemaDesigner extends JerseyResource
   public SchemaDesignerConfigsResponse listDesignerConfigs() throws Exception {
     final var response = instantiateJerseyResponse(SchemaDesignerConfigsResponse.class);
     response.configSets = listEnabledConfigs();
+    response.availableLanguages = configSetHelper.listAvailableLanguages();
     return response;
   }
 
@@ -701,12 +704,10 @@ public class SchemaDesigner extends JerseyResource
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
 
     // don't let the user edit the _default configSet with the designer (for now)
-    if (DEFAULT_CONFIGSET_NAME.equals(configSet)) {
+    if (excludeConfigSetNames.contains(configSet)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "'"
-              + DEFAULT_CONFIGSET_NAME
-              + "' is a reserved configSet name! Please choose a different name.");
+          "'" + configSet + "' is a reserved configSet name! Please choose a different name.");
     }
     validateNewConfigSetName(configSet);
 
@@ -773,7 +774,7 @@ public class SchemaDesigner extends JerseyResource
       if (!enableDynamicFields) {
         schema = configSetHelper.removeDynamicFields(schema);
       } else {
-        schema = configSetHelper.restoreDynamicFields(schema, langs, copyFrom);
+        schema = configSetHelper.restoreDynamicFields(mutableId, schema, langs, copyFrom);
       }
     }
 
@@ -1048,6 +1049,15 @@ public class SchemaDesigner extends JerseyResource
 
     SchemaDesignerSettings settings = settingsDAO.getSettings(solrConfig);
     if (isNew) {
+      if (DEFAULT_CONFIGSET_NAME.equals(copyFrom) && configExists(MULTILINGUAL_CONFIGSET_NAME)) {
+        schema =
+            configSetHelper.restoreLanguageSpecificObjectsAndFiles(
+                mutableId,
+                schema,
+                settings.getLanguages(),
+                settings.dynamicFieldsEnabled(),
+                MULTILINGUAL_CONFIGSET_NAME);
+      }
       if (!configSet.equals(copyFrom)) {
         settings.setDisabled(false);
       }

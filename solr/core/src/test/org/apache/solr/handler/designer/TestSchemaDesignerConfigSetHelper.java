@@ -25,15 +25,19 @@ import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.filestore.FileStore;
@@ -79,6 +83,165 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
   }
 
   @Test
+  public void testDefaultConfigSetContainsGenericTypesOnly() throws Exception {
+    ManagedIndexSchema schema = helper.loadLatestSchema(DEFAULT_CONFIGSET_NAME);
+    assertNotNull(schema.getFieldTypeByName("text_general"));
+    assertNull(schema.getFieldTypeByName("text_en"));
+    assertNull(schema.getFieldTypeByName("text_fr"));
+    assertNull(schema.getFieldOrNull("*_txt_en"));
+    assertFalse(
+        cc.getConfigSetService()
+            .getAllConfigFiles(DEFAULT_CONFIGSET_NAME)
+            .contains("lang/stopwords_en.txt"));
+  }
+
+  @Test
+  public void testMultilingualConfigSetIsBootstrapped() throws Exception {
+    assertTrue(cc.getConfigSetService().checkConfigExists("_multilingual"));
+    ManagedIndexSchema schema = helper.loadLatestSchema("_multilingual");
+    assertNotNull(schema.getFieldTypeByName("text_general"));
+    assertNotNull(schema.getFieldTypeByName("text_en"));
+    assertNotNull(schema.getFieldTypeByName("text_fr"));
+    assertNotNull(schema.getFieldOrNull("*_txt_en"));
+    assertNotNull(schema.getFieldOrNull("*_txt_fr"));
+    assertTrue(
+        cc.getConfigSetService()
+            .getAllConfigFiles("_multilingual")
+            .contains("lang/protwords_en.txt"));
+  }
+
+  @Test
+  public void testBootstrapMultilingualOutsideAllowedPaths() throws Exception {
+    var service = cc.getConfigSetService();
+    var allowedPaths = cc.getAllowPaths();
+    var originalAllowedPaths = Set.copyOf(allowedPaths);
+    String saved = "savedMultilingualForBootstrap";
+    service.copyConfig("_multilingual", saved);
+    try {
+      // TODO: Harden startup configset uploads with a shared allowPaths policy for both
+      // _default and _multilingual.
+      allowedPaths.clear();
+      expectThrows(
+          SolrException.class, () -> cc.assertPathAllowed(ExternalPaths.MULTILINGUAL_CONFIGSET));
+      service.deleteConfig("_multilingual");
+
+      ConfigSetService.createConfigSetService(cc);
+
+      assertNotNull(helper.loadLatestSchema("_multilingual").getFieldTypeByName("text_fr"));
+      assertTrue(allowedPaths.isEmpty());
+    } finally {
+      allowedPaths.addAll(originalAllowedPaths);
+      service.deleteConfig("_multilingual");
+      service.copyConfig(saved, "_multilingual");
+      service.deleteConfig(saved);
+    }
+  }
+
+  @Test
+  public void testBootstrapPreservesExistingMultilingualConfigSet() throws Exception {
+    var service = cc.getConfigSetService();
+    String file = "lang/stopwords_fr.txt";
+    byte[] original = service.downloadFileFromConfig("_multilingual", file);
+    byte[] customized = "custom-stopword\n".getBytes(StandardCharsets.UTF_8);
+    try {
+      service.uploadFileToConfig("_multilingual", file, customized, true);
+      ConfigSetService.createConfigSetService(cc);
+      assertArrayEquals(customized, service.downloadFileFromConfig("_multilingual", file));
+    } finally {
+      service.uploadFileToConfig("_multilingual", file, original, true);
+    }
+  }
+
+  @Test
+  public void testLanguageRestorePreservesCustomSource() throws Exception {
+    String source = "customLanguageSource";
+    var service = cc.getConfigSetService();
+    service.copyConfig("_multilingual", source);
+    ManagedIndexSchema custom = helper.loadLatestSchema(source);
+    custom =
+        custom.replaceFieldType(
+            "text_fr",
+            "solr.TextField",
+            Map.of(
+                "name",
+                "text_fr",
+                "class",
+                "solr.TextField",
+                "positionIncrementGap",
+                "222",
+                "analyzer",
+                Map.of("tokenizer", Map.of("name", "keyword"))));
+    custom = custom.deleteDynamicFields(List.of("*_txt_fr"));
+    custom = helper.removeLanguageSpecificObjectsAndFiles(source, custom, List.of("fr"));
+    custom.persistManagedSchema(false);
+    byte[] stopwords = "custom-stopword\n".getBytes(StandardCharsets.UTF_8);
+    service.uploadFileToConfig(source, "lang/stopwords_fr.txt", stopwords, true);
+
+    String target = getMutableId("languageRestorePreservesCustomSource");
+    service.copyConfig(DEFAULT_CONFIGSET_NAME, target);
+    ManagedIndexSchema schema =
+        helper.syncLanguageSpecificObjectsAndFiles(
+            target, helper.loadLatestSchema(target), List.of("fr", "es"), true, source);
+    assertEquals(
+        222,
+        schema.getFieldTypeByName("text_fr").getIndexAnalyzer().getPositionIncrementGap("title"));
+    assertEquals(
+        222,
+        schema
+            .getFieldOrNull("*_txt_fr")
+            .getType()
+            .getIndexAnalyzer()
+            .getPositionIncrementGap("title"));
+    assertNotNull(schema.getFieldTypeByName("text_es"));
+    assertNotNull(schema.getFieldOrNull("*_txt_es"));
+    assertArrayEquals(stopwords, service.downloadFileFromConfig(target, "lang/stopwords_fr.txt"));
+    assertNotNull(helper.loadLatestSchema(target).getFieldTypeByName("text_es"));
+
+    String originalDefault = "originalDefaultForLanguageRestore";
+    service.copyConfig(DEFAULT_CONFIGSET_NAME, originalDefault);
+    try {
+      service.deleteConfig(DEFAULT_CONFIGSET_NAME);
+      service.copyConfig(source, DEFAULT_CONFIGSET_NAME);
+      String upgradeTarget = getMutableId("restoreFromExistingDefault");
+      service.copyConfig(originalDefault, upgradeTarget);
+      ManagedIndexSchema restored =
+          helper.syncLanguageSpecificObjectsAndFiles(
+              upgradeTarget,
+              helper.loadLatestSchema(upgradeTarget),
+              List.of("fr"),
+              true,
+              DEFAULT_CONFIGSET_NAME);
+      assertEquals(
+          222,
+          restored
+              .getFieldTypeByName("text_fr")
+              .getIndexAnalyzer()
+              .getPositionIncrementGap("title"));
+      assertArrayEquals(
+          stopwords, service.downloadFileFromConfig(upgradeTarget, "lang/stopwords_fr.txt"));
+    } finally {
+      service.deleteConfig(DEFAULT_CONFIGSET_NAME);
+      service.copyConfig(originalDefault, DEFAULT_CONFIGSET_NAME);
+      service.deleteConfig(originalDefault);
+    }
+  }
+
+  @Test
+  public void testRestoreLanguageDynamicFieldsFromSlimDefault() throws Exception {
+    String target = getMutableId("restoreLanguageDynamicFields");
+    cc.getConfigSetService().copyConfig(DEFAULT_CONFIGSET_NAME, target);
+    ManagedIndexSchema schema =
+        helper.syncLanguageSpecificObjectsAndFiles(
+            target, helper.loadLatestSchema(target), List.of("fr"), false, DEFAULT_CONFIGSET_NAME);
+    assertNull(schema.getFieldOrNull("*_txt_fr"));
+    schema = helper.restoreDynamicFields(target, schema, List.of("fr"), DEFAULT_CONFIGSET_NAME);
+    assertNotNull(schema.getFieldOrNull("*_txt_fr"));
+    assertNull(schema.getFieldOrNull("*_txt_en"));
+    schema.persistManagedSchema(false);
+    assertNotNull(helper.loadLatestSchema(target).getFieldOrNull("*_txt_fr"));
+  }
+
+  @Test
   public void testSetupMutable() throws Exception {
     String configSet = "testSetupMutable";
     String mutableId = getMutableId(configSet);
@@ -110,7 +273,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
     assertEquals(2, schema.getSchemaZkVersion());
 
     byte[] zipped = DownloadConfigSet.zipConfigSet(cc.getConfigSetService(), mutableId);
@@ -119,8 +282,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
   @Test
   public void testDownloadAndZip() throws IOException {
-    byte[] zipped =
-        DownloadConfigSet.zipConfigSet(cc.getConfigSetService(), DEFAULT_CONFIGSET_NAME);
+    byte[] zipped = DownloadConfigSet.zipConfigSet(cc.getConfigSetService(), "_multilingual");
     ZipInputStream stream = new ZipInputStream(new ByteArrayInputStream(zipped));
 
     boolean foundSolrConfig = false;
@@ -151,28 +313,28 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, List.of("en"), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, List.of("en"), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, List.of("en"), false, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, List.of("en"), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Arrays.asList("en", "fr"), false, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Arrays.asList("en", "fr"), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, Arrays.asList("en", "fr"), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, Arrays.asList("en", "fr"), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertTrue(
@@ -194,7 +356,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, List.of("fr"), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, List.of("fr"), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en")); // being used, so not removed
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertTrue(
@@ -207,7 +369,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, List.of(), true, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNotNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
@@ -217,7 +379,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
 
     schema =
         helper.syncLanguageSpecificObjectsAndFiles(
-            configSet, schema, List.of(), false, DEFAULT_CONFIGSET_NAME);
+            mutableId, schema, List.of(), false, DEFAULT_CONFIGSET_NAME);
     assertNotNull(schema.getFieldTypeByName("text_en"));
     assertNull(schema.getFieldOrNull("*_txt_en"));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
@@ -284,7 +446,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertEquals(schema.getSchemaZkVersion(), helper.getCurrentSchemaVersion(mutableId));
     helper.createCollection(mutableId, mutableId);
 
-    Map<String, Object> addField = Map.of("name", "title", "type", "text_en");
+    Map<String, Object> addField = Map.of("name", "title", "type", "text_general");
     String addedFieldName = helper.addSchemaObject(configSet, Map.of("add-field", addField));
     assertEquals("title", addedFieldName);
 

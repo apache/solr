@@ -114,10 +114,11 @@ public abstract class ConfigSetService {
   }
 
   private void bootstrapConfigSet(CoreContainer coreContainer) {
-    // bootstrap _default conf and solr.configset.bootstrap.confdir if provided via system property
+    // bootstrap the bundled configsets and solr.configset.bootstrap.confdir if provided
     try {
-      // _default conf
-      bootstrapDefaultConf();
+      for (String name : coreContainer.getConfig().getBootstrapConfigSetNames()) {
+        bootstrapBundledConf(name);
+      }
 
       // bootstrap_confdir
       String confDir = EnvUtils.getProperty("solr.configset.bootstrap.confdir");
@@ -130,8 +131,11 @@ public abstract class ConfigSetService {
     }
   }
 
-  private void bootstrapDefaultConf() throws IOException {
-    if (this.checkConfigExists("_default") == false) {
+  private void bootstrapBundledConf(String name) throws IOException {
+    if (checkConfigExists(name)) {
+      return;
+    }
+    if (ConfigSetsHandler.DEFAULT_CONFIGSET_NAME.equals(name)) {
       Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
@@ -139,8 +143,19 @@ public abstract class ConfigSetService {
             "intended to be the default. Current 'solr.configset.default.confdir' value:",
             EnvUtils.getProperty(SOLR_CONFIGSET_DEFAULT_CONFDIR));
       } else {
-        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
+        uploadConfig(name, configDirPath);
       }
+      return;
+    }
+    String installDir = EnvUtils.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
+    Path configDir =
+        installDir == null
+            ? null
+            : Path.of(installDir, "server", "solr", "configsets", name, "conf");
+    if (configDir != null && Files.isDirectory(configDir)) {
+      uploadConfig(name, configDir);
+    } else {
+      log.info("Not uploading configset {}: no bundled directory at {}", name, configDir);
     }
   }
 

@@ -20,6 +20,7 @@ package org.apache.solr.handler.designer;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesigner.getConfigSetZkPath;
 import static org.apache.solr.handler.designer.SchemaDesigner.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -35,9 +36,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -46,6 +49,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.solr.client.api.model.SchemaDesignerConfigsResponse.Language;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -580,6 +584,35 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     return loadLatestSchema(loadSolrConfig(configSet));
   }
 
+  List<Language> listAvailableLanguages() throws IOException {
+    if (!cc.getConfigSetService().checkConfigExists(MULTILINGUAL_CONFIGSET_NAME)) {
+      return List.of();
+    }
+    return loadLatestSchema(MULTILINGUAL_CONFIGSET_NAME).getFieldTypes().values().stream()
+        .filter(this::isTextType)
+        .map(FieldType::getTypeName)
+        .filter(name -> name.matches("text_[a-z]{2,3}"))
+        .map(name -> name.substring(TEXT_PREFIX_LEN))
+        .filter(code -> !includeLangIds.contains(code))
+        .map(
+            code -> {
+              Language language = new Language();
+              language.code = code;
+              language.name =
+                  switch (code) {
+                    case "cjk" -> "CJK bigram";
+                    default ->
+                        new Locale.Builder()
+                            .setLanguageTag(code)
+                            .build()
+                            .getDisplayLanguage(Locale.ENGLISH);
+                  };
+              return language;
+            })
+        .sorted(Comparator.comparing(language -> language.name))
+        .toList();
+  }
+
   ManagedIndexSchema loadLatestSchema(SolrConfig solrConfig) {
     ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
     factory.init(SimpleOrderedMap.of());
@@ -746,10 +779,29 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     // now restore any missing types / files for the languages we need, optionally adding back
     // dynamic fields too
-    schema =
-        restoreLanguageSpecificObjectsAndFiles(configSet, schema, langs, dynamicEnabled, copyFrom);
+    schema = restoreLanguagesFromSources(configSet, schema, langs, dynamicEnabled, copyFrom);
 
     schema.persistManagedSchema(false);
+    return schema;
+  }
+
+  private ManagedIndexSchema restoreLanguagesFromSources(
+      String configSet,
+      ManagedIndexSchema schema,
+      List<String> langs,
+      boolean dynamicEnabled,
+      String copyFrom)
+      throws IOException {
+    if (!MULTILINGUAL_CONFIGSET_NAME.equals(copyFrom)) {
+      schema =
+          restoreLanguageSpecificObjectsAndFiles(
+              configSet, schema, langs, dynamicEnabled, copyFrom);
+    }
+    if (cc.getConfigSetService().checkConfigExists(MULTILINGUAL_CONFIGSET_NAME)) {
+      schema =
+          restoreLanguageSpecificObjectsAndFiles(
+              configSet, schema, langs, dynamicEnabled, MULTILINGUAL_CONFIGSET_NAME);
+    }
     return schema;
   }
 
@@ -918,11 +970,18 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               .map(FieldType::getTypeName)
               .collect(Collectors.toSet());
 
+      final ManagedIndexSchema targetSchema = schema;
       List<SchemaField> addDynFields =
           Arrays.stream(copyFromSchema.getDynamicFields())
               .map(IndexSchema.DynamicField::getPrototype)
               .filter(prototype -> langFieldTypeNames.contains(prototype.getType().getTypeName()))
               .filter(prototype -> !existingDynFields.contains(prototype.getName()))
+              .map(
+                  prototype ->
+                      targetSchema.newDynamicField(
+                          prototype.getName(),
+                          prototype.getType().getTypeName(),
+                          prototype.getArgs()))
               .collect(Collectors.toList());
       if (!addDynFields.isEmpty()) {
         schema = schema.addDynamicFields(addDynFields, null, false);
@@ -975,7 +1034,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   protected ManagedIndexSchema restoreDynamicFields(
-      ManagedIndexSchema schema, List<String> langs, String copyFrom) {
+      String configSet, ManagedIndexSchema schema, List<String> langs, String copyFrom)
+      throws IOException {
+    schema = restoreLanguagesFromSources(configSet, schema, langs, true, copyFrom);
     // pull the dynamic fields from the copyFrom schema
     ManagedIndexSchema copyFromSchema = loadLatestSchema(copyFrom);
     IndexSchema.DynamicField[] dynamicFields = copyFromSchema.getDynamicFields();
