@@ -910,10 +910,10 @@ IF NOT EXIST "%SOLR_HOME%\" (
 )
 
 @REM Handle overriding where logs are written to
-IF [%SOLR_LOGS_DIR%] == [] (
+IF NOT DEFINED SOLR_LOGS_DIR (
   set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
 ) ELSE (
-  set SOLR_LOGS_DIR=%SOLR_LOGS_DIR:"=%
+  set "SOLR_LOGS_DIR=!SOLR_LOGS_DIR:"=!"
 )
 
 set "EXAMPLE_DIR=%SOLR_TIP%\example"

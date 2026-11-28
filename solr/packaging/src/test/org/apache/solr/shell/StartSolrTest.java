@@ -148,6 +148,19 @@ public class StartSolrTest extends SolrCatsTestCase {
   }
 
   @Test
+  public void logsDirWithASpace() {
+    Path logsDir = mkdirs("my logs");
+    env("SOLR_LOGS_DIR", logsDir.toString());
+
+    run("solr start");
+    run("solr assert --started http://localhost:${SOLR_PORT} --timeout 5000");
+    assertTrue(Files.exists(logsDir.resolve("solr.log")));
+
+    run("solr stop --all");
+    run("solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000");
+  }
+
+  @Test
   public void cFlagPrintsNoOpWarningAndStillStartsInCloudMode() {
     run("solr start -c")
         .assertContains("WARNING: -c/--cloud is a no-op. Solr starts in cloud mode by default.");
