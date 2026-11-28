@@ -59,15 +59,20 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
     // We are using a proxy in front of S3Mock to be able to test connection loss
     proxy = new SocketProxy();
     proxy.open(URI.create(s3MockContainer.getHttpEndpoint()));
-    client =
-        new S3StorageClient(
-            BUCKET_NAME,
-            null,
-            "us-east-1",
-            "",
-            false,
-            "http://localhost:" + proxy.getListenPort(),
-            false);
+    client = newClient(null);
+  }
+
+  /** A client that reaches S3Mock through the proxy, with the given encryption settings. */
+  S3StorageClient newClient(S3BackupRepositoryConfig.EncryptionConfig encryption) {
+    return new S3StorageClient(
+        BUCKET_NAME,
+        null,
+        "us-east-1",
+        "",
+        false,
+        "http://localhost:" + proxy.getListenPort(),
+        false,
+        encryption);
   }
 
   /**
