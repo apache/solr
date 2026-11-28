@@ -436,6 +436,24 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         "//arr[@name='#foo_s']/str[.='how now brown cow']");
   }
 
+  @Test
+  public void testDigitLeadingFieldName() {
+    // "1001_s" matches the "*_s" dynamic field; it must be a plain field, not a numeric constant
+    ReturnFields rf = new SolrReturnFields(req("fl", "1001_s,id"));
+    assertTrue(rf.wantsField("1001_s"));
+    assertTrue(rf.wantsField("id"));
+    assertNull(rf.getTransformer());
+  }
+
+  @Test
+  public void testDigitLeadingNumberWithoutSchemaFieldStaysConstant() {
+    // "1001" is not a field in schema12.xml, so it must still be a numeric constant
+    ReturnFields rf = new SolrReturnFields(req("fl", "1001,id"));
+    assertNotNull(rf.getTransformer());
+    assertFalse(rf.getLuceneFieldNames().contains("1001"));
+    assertTrue(rf.wantsField("id"));
+  }
+
   /**
    * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument}
    * respects the {@link ReturnFields} and doesn't unnecessarily convert Fields that aren't needed.
