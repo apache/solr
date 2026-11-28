@@ -17,6 +17,10 @@
 
 package org.apache.solr.cli;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -32,11 +36,13 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -307,21 +313,61 @@ public class StatusTool extends ToolBase {
 
   /**
    * Wait for Solr to come online and return true if it does, false otherwise. A node that rejects
-   * the request as unauthenticated or unauthorized counts as online.
+   * the request as unauthenticated or unauthorized counts as online. So does a node whose port
+   * accepts connections but which this host cannot talk to, such as one requiring a client
+   * certificate this host's name does not match; it is given {@link #UNREACHABLE_GRACE_MS} to
+   * finish starting.
    *
    * @return true if Solr comes online, false otherwise
    */
   public boolean waitForSolrUp(String pidUrl) throws Exception {
-    try {
-      waitToSeeSolrUp(pidUrl, credentials, maxWaitSecs, TimeUnit.SECONDS);
-      return true;
-    } catch (TimeoutException timeout) {
-      return false;
-    } catch (Exception e) {
-      if (CLIUtils.exceptionIsAuthRelated(e)) {
+    return waitForSolrUp(pidUrl, maxWaitSecs);
+  }
+
+  @SuppressWarnings("BusyWait")
+  boolean waitForSolrUp(String pidUrl, long maxWaitSecs) throws Exception {
+    long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(maxWaitSecs);
+    int unreachable = 0;
+    while (System.nanoTime() < timeout) {
+      try {
+        getStatus(pidUrl, credentials);
         return true;
+      } catch (Exception e) {
+        if (CLIUtils.exceptionIsAuthRelated(e)) {
+          return true;
+        }
+        Throwable rootCause = SolrException.getRootCause(e);
+        boolean noHttpResponse =
+            rootCause instanceof IOException || rootCause instanceof SolrServerException;
+        if (noHttpResponse && isListening(pidUrl)) {
+          if (++unreachable >= 2) {
+            CLIO.err(
+                "WARNING: Solr is listening at "
+                    + pidUrl
+                    + " but this host cannot connect to it ("
+                    + rootCause
+                    + "); assuming it has started.");
+            Thread.sleep(UNREACHABLE_GRACE_MS);
+            return true;
+          }
+        } else {
+          unreachable = 0;
+        }
       }
-      throw e;
+      Thread.sleep(2000L);
+    }
+    return false;
+  }
+
+  private static final long UNREACHABLE_GRACE_MS = 3000L;
+
+  private static boolean isListening(String url) {
+    try (Socket socket = new Socket()) {
+      URI uri = new URI(url);
+      socket.connect(new InetSocketAddress(uri.getHost(), CLIUtils.portFromUrl(url)), 1000);
+      return true;
+    } catch (Exception e) {
+      return false;
     }
   }
 

@@ -154,7 +154,6 @@ public class SslTest extends SolrCatsTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18665")
   @EnabledOnShell(BASH) // curl --resolve has no cross-shell equivalent; see the class javadoc.
   public void useDifferentHostnameWithCurlResolve() {
     Path keystore = createKeystore("solr-ssl", "solr-ssl", "test.solr.apache.org", "127.0.0.1");
