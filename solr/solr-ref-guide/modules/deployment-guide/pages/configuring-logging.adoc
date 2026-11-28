@@ -33,6 +33,12 @@ Note that log levels will also be reset on next Solr restart.
 .The Logging Screen
 image::configuring-logging/logging.png[Logging Screen]
 
+In SolrCloud, the recent-messages viewer shows messages from the node selected in the Node picker by default.
+Select *Show messages from all nodes* to combine messages from the current live nodes, with a Node column identifying each message's source.
+If a node cannot be read, the viewer names it and retains messages returned by the other nodes.
+In standalone mode, the viewer reads only the local node.
+This selection affects message viewing; log-level changes still apply to all nodes in a SolrCloud cluster.
+
 This part of the Admin Web interface allows you to set the logging level for many different log categories.
 Fortunately, any categories that are *unset* will have the logging level of its parent.
 This makes it possible to change many categories at once by adjusting the logging level of their parent.

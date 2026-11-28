@@ -19,11 +19,21 @@ limitations under the License.
   <div id="viewer">
     <div class="block">
       <h2><span>{{watcher}}</span></h2>
+      <label ng-if="isCloudEnabled">
+        <input id="log-all-nodes" type="checkbox" ng-model="logView.allNodes" ng-change="refresh()" />
+        Show messages from all nodes
+      </label>
     </div>
+    <div id="log-node-errors" role="status" ng-if="failedLogNodes.length">
+      Could not load messages from:
+      <span ng-repeat="node in failedLogNodes">{{node}}{{$last ? '' : ', '}}</span>
+    </div>
+    <div id="log-discovery-error" role="status" ng-if="logDiscoveryError">Could not list live nodes.</div>
     <table class="has-data" border="0" cellpadding="0" cellspacing="0">
       <thead>
         <tr>
           <th class="time">Time (<span>{{timezone}}</span>)</th>
+          <th ng-if="logView.allNodes">Node</th>
           <th class="level">Level</th>
           <th class="core">Core</th>
           <th class="logger">Logger</th>
@@ -33,18 +43,19 @@ limitations under the License.
       <tbody ng-repeat="event in events">
         <tr ng-click="toggleRow(event)" class="{{event.trace ? 'has-trace': ''}} {{'level-'+event.level.toLowerCase()}}">
           <td class="span"><a><span>{{ timezone == "UTC" ? event.utc_time : event.local_time }}</span></a></td>
+          <td ng-if="logView.allNodes" class="node">{{event.node}}</td>
           <td class="level span"><a><span>{{ event.level }} {{event.showTrace}}</span></span></a></td>
           <td class="span"><a><span>{{ event.core }}</span></a></td>
           <td class="span"><a><span><abbr title="{{event.logger}}">{{event.loggerBase}}</abbr></span></a></td>
           <td class="message span"><a><span>{{ event.message }}</span></a></td>
         </tr>
         <tr class="trace" ng-show="event.showTrace && event.trace">
-          <td colspan="4"><pre>{{event.trace}}</pre></td>
+          <td colspan="{{logView.allNodes ? 6 : 5}}"><pre>{{event.trace}}</pre></td>
         </tr>
       </tbody>
       <tfoot>
         <tr ng-show="events.length==0">
-          <td colspan="4">No Events available</td>
+          <td colspan="{{logView.allNodes ? 6 : 5}}">No Events available</td>
         </tr>
      </tfoot>
     </table>

@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -58,6 +59,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -416,6 +418,59 @@ public abstract class AdminUiTestBase extends SolrCloudTestCase {
     }
     throw new AssertionError(
         "Timed out waiting for " + description + " at " + locator, lastException);
+  }
+
+  /** Captures request URLs and node targets without retaining authentication headers. */
+  protected static void startNodeRequestCapture() {
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            """
+            var prototype = XMLHttpRequest.prototype;
+            var capture = {
+              open: prototype.open, set: prototype.setRequestHeader, send: prototype.send,
+              requests: []
+            };
+            window.nodeRequestCapture = capture;
+            prototype.open = function(method, url) {
+              this.nodeRequest = {method: method, url: String(url), target: null};
+              return capture.open.apply(this, arguments);
+            };
+            prototype.setRequestHeader = function(name, value) {
+              if (this.nodeRequest && name.toLowerCase() === 'x-solr-targetnode') {
+                this.nodeRequest.target = String(value);
+              }
+              return capture.set.apply(this, arguments);
+            };
+            prototype.send = function() {
+              if (this.nodeRequest) {
+                capture.requests.push(this.nodeRequest);
+              }
+              return capture.send.apply(this, arguments);
+            };
+            """);
+  }
+
+  @SuppressWarnings("unchecked")
+  protected static List<Map<String, Object>> capturedNodeRequests(String path) {
+    List<Map<String, Object>> requests =
+        (List<Map<String, Object>>)
+            ((JavascriptExecutor) driver)
+                .executeScript("return window.nodeRequestCapture.requests;");
+    return requests.stream().filter(r -> r.get("url").toString().contains(path)).toList();
+  }
+
+  protected static void stopNodeRequestCapture() {
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            """
+            var capture = window.nodeRequestCapture;
+            if (capture) {
+              XMLHttpRequest.prototype.open = capture.open;
+              XMLHttpRequest.prototype.setRequestHeader = capture.set;
+              XMLHttpRequest.prototype.send = capture.send;
+              delete window.nodeRequestCapture;
+            }
+            """);
   }
 
   /**

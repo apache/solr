@@ -71,6 +71,27 @@ public class AdminUiLoggingStandaloneTest extends AdminUiStandaloneTestBase {
     assertNoSevereConsoleErrors();
   }
 
+  @Test
+  public void testLogMessagesStayLocalWithoutNodeDiscovery() throws Exception {
+    openPage("", By.id("index"));
+    startNodeRequestCapture();
+    try {
+      driver.get(baseUrl + "/index.html#/~logging");
+      waitFor(By.id("viewer"));
+      waitUntil(
+          "the local log-message request was sent",
+          () -> !capturedNodeRequests("/api/node/logging/messages").isEmpty());
+      Map<String, Object> request = capturedNodeRequests("/api/node/logging/messages").get(0);
+      assertNull(request.get("target"));
+      assertFalse(request.get("url").toString().matches(".*[?&]nodes?=.*"));
+      assertTrue(capturedNodeRequests("/api/cluster/nodes").isEmpty());
+      assertTrue(driver.findElements(By.id("log-all-nodes")).isEmpty());
+      assertNoSevereConsoleErrors();
+    } finally {
+      stopNodeRequestCapture();
+    }
+  }
+
   /**
    * Asserts the level a logger was explicitly set to, or with {@code expectedLevel} null, that the
    * logger has no explicit level (it then reports the inherited effective level with set=false).
