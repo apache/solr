@@ -823,6 +823,13 @@ public class PeerSync implements SolrMetricProducer {
         } else if (Math.abs(ourUpdates.get(ourUpdatesIndex))
             < Math.abs(otherVersions.get(otherUpdatesIndex))) {
           ourUpdatesIndex--;
+        } else if (Math.abs(ourUpdates.get(ourUpdatesIndex))
+            == Math.abs(otherVersions.get(otherUpdatesIndex))) {
+          // the same version with a different sign (an add on one side, a delete on the other)
+          // is not something we can request a range for; step over it, otherwise neither index
+          // moves and this loop never ends (SOLR-11475)
+          ourUpdatesIndex--;
+          otherUpdatesIndex--;
         } else {
           long rangeStart = otherVersions.get(otherUpdatesIndex);
           while (otherUpdatesIndex >= 0
