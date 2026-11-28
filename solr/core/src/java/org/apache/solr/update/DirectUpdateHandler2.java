@@ -770,7 +770,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       synchronized (solrCoreState.getUpdateLock()) {
 
         // We are reopening a searcher before applying the deletes to overcome LUCENE-7344.
-        // Once LUCENE-7344 is resolved, we can consider removing this.
+        // TODO track if no pending in-place updates exist to avoid paying this cost
         if (ulog != null) ulog.openRealtimeSearcher();
 
         if (delAll) {
