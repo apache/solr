@@ -85,6 +85,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   private static final int NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER = -1;
 
+  /** Start of the {@link IllegalArgumentException} message IndexWriter throws at its doc limit. */
+  private static final String MAX_DOCS_MESSAGE_PREFIX =
+      "number of documents in the index cannot exceed";
+
   protected final SolrCoreState solrCoreState;
 
   // stats
@@ -416,6 +420,21 @@ public class DirectUpdateHandler2 extends UpdateHandler
           "Server error writing document id " + cmd.getPrintableId() + " to the index.";
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg, e);
     } catch (IllegalArgumentException iae) {
+      // Lucene gives no typed signal for the max-docs condition, so recognition keys on the
+      // wording of its exception message in the pinned Lucene (10.4.0). If a future Lucene
+      // rewords that message, this branch stops matching and the exception falls through to
+      // the generic mapping below; it cannot misfire on a different exception.
+      if (iae.getMessage() != null && iae.getMessage().startsWith(MAX_DOCS_MESSAGE_PREFIX)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Cannot add document id "
+                + cmd.getPrintableId()
+                + ": this core has reached the maximum number of documents a single Lucene index can hold ("
+                + iae.getMessage()
+                + "). Delete documents and optimize (deleted documents still count against"
+                + " the limit until they are merged away), or split the shard.",
+            iae);
+      }
       String errorDetails =
           (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
               ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
