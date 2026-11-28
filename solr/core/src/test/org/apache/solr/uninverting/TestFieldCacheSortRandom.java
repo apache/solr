@@ -199,8 +199,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
                 + sort);
       }
 
-      // Compute expected results:
-      f.matchValues.sort(
+      final Comparator<BytesRef> valueOrder =
           new Comparator<BytesRef>() {
             @Override
             public int compare(BytesRef a, BytesRef b) {
@@ -208,35 +207,52 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
                 if (b == null) {
                   return 0;
                 }
-                if (sortMissingLast) {
-                  return 1;
-                } else {
-                  return -1;
-                }
+                return sortMissingLast ? 1 : -1;
               } else if (b == null) {
-                if (sortMissingLast) {
-                  return -1;
-                } else {
-                  return 1;
-                }
-              } else {
-                return a.compareTo(b);
+                return sortMissingLast ? -1 : 1;
               }
+              return a.compareTo(b);
+            }
+          };
+      final Map<Integer, ExpectedHit> expectedByDocID = new HashMap<>();
+      for (ExpectedHit expectedHit : f.matchHits) {
+        ExpectedHit previous = expectedByDocID.putIfAbsent(expectedHit.docID, expectedHit);
+        if (previous != null) {
+          assertEquals(
+              "Different sort values observed for document " + expectedHit.docID,
+              0,
+              valueOrder.compare(previous.value, expectedHit.value));
+        }
+      }
+      final List<ExpectedHit> expected = new ArrayList<>(expectedByDocID.values());
+      expected.sort(
+          new Comparator<ExpectedHit>() {
+            @Override
+            public int compare(ExpectedHit first, ExpectedHit second) {
+              int comparison = valueOrder.compare(first.value, second.value);
+              comparison = reverse ? -Integer.signum(comparison) : Integer.signum(comparison);
+              if (comparison == 0) {
+                return Integer.compare(first.docID, second.docID);
+              }
+              return comparison;
             }
           });
-
-      if (reverse) {
-        Collections.reverse(f.matchValues);
-      }
-      final List<BytesRef> expected = f.matchValues;
+      final int expectedHitCount = Math.min(hitCount, expected.size());
       if (VERBOSE) {
         System.out.println("  expected:");
-        for (int idx = 0; idx < expected.size(); idx++) {
-          BytesRef br = expected.get(idx);
+        for (int idx = 0; idx < expectedHitCount; idx++) {
+          ExpectedHit hit = expected.get(idx);
+          BytesRef br = hit.value;
           if (br == null && missingIsNull == false) {
             br = new BytesRef();
           }
-          System.out.println("    " + idx + ": " + (br == null ? "<missing>" : br.utf8ToString()));
+          System.out.println(
+              "    "
+                  + idx
+                  + ": "
+                  + (br == null ? "<missing>" : br.utf8ToString())
+                  + " id="
+                  + hit.docID);
           if (idx == hitCount - 1) {
             break;
           }
@@ -265,40 +281,67 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         }
       }
 
-      // For both STRING and STRING_VAL types in Lucene 10+, the internal sorting behavior
-      // has changed and can return different types (String vs BytesRef) depending on load
-      // conditions.
-      // The manual BytesRef.compareTo() used in this test doesn't reliably match the actual Lucene
-      // sort order under all conditions.
-      // Instead, we validate that the sorting is working correctly by checking that:
-      // 1. No exceptions are thrown during sorting
-      // 2. Returned values are valid String, BytesRef or null
-      // 3. The number of results matches expectations
-      // This ensures field cache sorting works without assuming specific sort implementation
-      // details.
-      for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
+      assertEquals(
+          "Unexpected number of hits for iteration " + iter + " with sort " + sort,
+          expectedHitCount,
+          hits.scoreDocs.length);
+      for (int hitIDX = 0; hitIDX < expectedHitCount; hitIDX++) {
         final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
+        final ExpectedHit expectedHit = expected.get(hitIDX);
+        assertEquals(
+            "Unexpected document at position "
+                + hitIDX
+                + " in iteration "
+                + iter
+                + " with sort "
+                + sort,
+            expectedHit.docID,
+            fd.doc);
         Object sortValue = fd.fields[0];
         assertTrue(
             "Sort value should be String, BytesRef or null, but was: "
                 + (sortValue == null ? "null" : sortValue.getClass().getSimpleName()),
             sortValue == null || sortValue instanceof BytesRef || sortValue instanceof String);
+        final BytesRef actualValue;
+        if (sortValue instanceof BytesRef) {
+          actualValue = (BytesRef) sortValue;
+        } else if (sortValue instanceof String) {
+          actualValue = new BytesRef((String) sortValue);
+        } else {
+          actualValue = null;
+        }
+        assertEquals(
+            "Unexpected sort value at position "
+                + hitIDX
+                + " in iteration "
+                + iter
+                + " with sort "
+                + sort,
+            0,
+            valueOrder.compare(expectedHit.value, actualValue));
       }
-
-      // Skip exact order comparison for both STRING and STRING_VAL due to Lucene 10 changes
-      continue;
     }
 
     r.close();
     dir.close();
   }
 
+  private static class ExpectedHit {
+    private final BytesRef value;
+    private final int docID;
+
+    private ExpectedHit(BytesRef value, int docID) {
+      this.value = value;
+      this.docID = docID;
+    }
+  }
+
   private static class RandomQuery extends Query {
     private final long seed;
     private float density;
     private final List<BytesRef> docValues;
-    public final List<BytesRef> matchValues =
-        Collections.synchronizedList(new ArrayList<BytesRef>());
+    public final List<ExpectedHit> matchHits =
+        Collections.synchronizedList(new ArrayList<ExpectedHit>());
 
     // density should be 0.0 ... 1.0
     public RandomQuery(long seed, float density, List<BytesRef> docValues) {
@@ -322,7 +365,9 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
               bits.set(docID);
               // System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
               assertEquals(docID, idSource.advance(docID));
-              matchValues.add(docValues.get((int) idSource.longValue()));
+              matchHits.add(
+                  new ExpectedHit(
+                      docValues.get((int) idSource.longValue()), context.docBase + docID));
             }
           }
 
