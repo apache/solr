@@ -105,7 +105,8 @@ fun getHttpClientWithBearerTokens(
                 BearerTokens(accessToken, refreshToken)
             }
             refreshTokens {
-                TODO("Not implemented yet")
+                // Token refresh is not implemented; let the caller handle the 401 response.
+                null
             }
             this.realm = realm
             sendWithoutRequest { true }

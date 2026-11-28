@@ -66,6 +66,7 @@
   <string name="configsets_request_handlers">Request Handlers / Dispatchers</string>
   <string name="configsets_search_components">Search Components</string>
   <string name="no_configsets">No configsets available</string>
+  <string name="configsets_tab_unavailable">This section is not available yet.</string>
 
   <!-- Placeholders (ph) -->
   <string name="ph_solr_url">http://127.0.0.1:8983/</string>
@@ -101,4 +102,13 @@
   <string name="label_username">Username</string>
 
   <!-- Uncategorized -->
+  <string name="label_collection_core">Collection / Core</string>
+  <string name="label_request_handler">Request Handler</string>
+  <string name="placeholder_select_request_handler">Select a request handler</string>
+  <string name="no_collections_available">No collections are available</string>
+  <string name="no_request_handlers">This collection has no request handlers</string>
+  <string name="index_query_error">The request could not be completed</string>
+  <string name="index_query_authentication_error">Authentication is required. Please sign in again.</string>
+  <string name="index_query_collections_forbidden">You do not have access to list collections.</string>
+  <string name="index_query_handlers_forbidden">You do not have access to load request handlers for this collection.</string>
 </resources>
