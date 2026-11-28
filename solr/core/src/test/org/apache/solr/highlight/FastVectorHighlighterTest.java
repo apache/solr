@@ -91,6 +91,37 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
         "//lst[@name='1']/arr[@name='tv_text']/str[.='basic fast <fvpre>vector</em> highlighter test']");
   }
 
+  /**
+   * SOLR-4540: with a wildcard hl.fl most matching fields are absent from a given document. The FVH
+   * path must not do any per-field work for those (here: an unknown fragmentsBuilder configured for
+   * the absent field would be rejected if the field were processed).
+   */
+  @Test
+  public void testFieldAbsentFromDocIsSkipped() {
+    clearIndex();
+    assertU(adoc("id", "1", "tv_a", "alpha vector text"));
+    assertU(adoc("id", "2", "tv_b", "beta vector text", "tv_c", "gamma vector text"));
+    assertU(commit());
+
+    assertQ(
+        "only the field the document has is highlighted; absent fields cost nothing",
+        req(
+            "q",
+            "tv_a:alpha",
+            "hl",
+            "true",
+            "hl.method",
+            "fastVector",
+            "hl.fl",
+            "tv_*",
+            "f.tv_b.hl.fragmentsBuilder",
+            "noSuchBuilder",
+            "f.tv_c.hl.fragmentsBuilder",
+            "noSuchBuilder"),
+        "//lst[@name='highlighting']/lst[@name='1']/arr[@name='tv_a']/str[contains(.,'alpha')]",
+        "count(//lst[@name='highlighting']/lst[@name='1']/arr)=1");
+  }
+
   private static DefaultSolrHighlighter getHighlighter() {
     var hl =
         (HighlightComponent)
