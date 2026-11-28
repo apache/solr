@@ -89,6 +89,26 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testHighlightQueryInsideFunctionQuery() {
+    assertU(adoc("t_text", "lorem ipsum", "id", "1"));
+    assertU(commit());
+    assertQ(
+        "function query wrapping a query",
+        req(
+            "q",
+            "{!func}query($v1)",
+            "v1",
+            "{!dismax qf=t_text}lorem",
+            "hl",
+            "true",
+            "hl.fl",
+            "t_text",
+            "hl.method",
+            "original"),
+        "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str='<em>lorem</em> ipsum'");
+  }
+
+  @Test
   public void testMergeContiguous() {
     HashMap<String, String> args = new HashMap<>();
     args.put(HighlightParams.HIGHLIGHT, "true");

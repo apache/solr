@@ -37,6 +37,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
@@ -295,7 +297,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms)
         throws IOException {
       // these queries are not supported in lucene highlighting out of the box since 8.0
-      if (query instanceof ToParentBlockJoinQuery) {
+      if (query instanceof FunctionQuery
+          && ((FunctionQuery) query).getValueSource() instanceof QueryValueSource) {
+        QueryValueSource source = (QueryValueSource) ((FunctionQuery) query).getValueSource();
+        extract(source.getQuery(), boost, terms);
+      } else if (query instanceof ToParentBlockJoinQuery) {
         extract(((ToParentBlockJoinQuery) query).getChildQuery(), boost, terms);
       } else if (query instanceof ToChildBlockJoinQuery) {
         extract(((ToChildBlockJoinQuery) query).getParentQuery(), boost, terms);
