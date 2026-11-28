@@ -30,6 +30,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
@@ -115,6 +116,7 @@ public class CreateShard extends AdminAPIBase implements CreateShardApi {
       }
     }
     requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
+    requestBody.timeout = params.getInt(TIMEOUT);
     requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
     requestBody.async = params.get(ASYNC);
     requestBody.properties =
@@ -153,6 +155,7 @@ public class CreateShard extends AdminAPIBase implements CreateShardApi {
     insertIfNotNull(remoteMessage, TLOG_REPLICAS, requestBody.tlogReplicas);
     insertIfNotNull(remoteMessage, PULL_REPLICAS, requestBody.pullReplicas);
     insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
+    insertIfNotNull(remoteMessage, TIMEOUT, requestBody.timeout);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
 
     if (requestBody.properties != null) {
