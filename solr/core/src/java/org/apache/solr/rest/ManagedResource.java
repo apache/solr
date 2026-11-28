@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.slf4j.Logger;
@@ -140,6 +141,14 @@ public abstract class ManagedResource {
     return RestManager.ManagedEndpoint.class;
   }
 
+  private static NamedList<Object> toInitArgs(Map<String, Object> initArgsMap) {
+    NamedList<Object> initArgs = new SimpleOrderedMap<>();
+    if (initArgsMap != null) {
+      initArgs.addAll(initArgsMap);
+    }
+    return initArgs;
+  }
+
   /**
    * Called from {@link #doPut(BaseSolrResource,Object)} to update this resource's init args using
    * the given updatedArgs
@@ -174,7 +183,7 @@ public abstract class ManagedResource {
 
     Object managedData = processStoredData(data);
 
-    if (managedInitArgs == null) managedInitArgs = new NamedList<>();
+    if (managedInitArgs == null) managedInitArgs = new SimpleOrderedMap<>();
 
     onManagedDataLoadedFromStorage(managedInitArgs, managedData);
   }
@@ -193,7 +202,7 @@ public abstract class ManagedResource {
       Map<String, Object> jsonMap = (Map<String, Object>) data;
       @SuppressWarnings({"unchecked"})
       Map<String, Object> initArgsMap = (Map<String, Object>) jsonMap.get(INIT_ARGS_JSON_FIELD);
-      managedInitArgs = new NamedList<>(initArgsMap);
+      managedInitArgs = toInitArgs(initArgsMap);
       log.info("Loaded initArgs {} for {}", managedInitArgs, resourceId);
 
       if (jsonMap.containsKey(MANAGED_JSON_LIST_FIELD)) {
@@ -361,7 +370,7 @@ public abstract class ManagedResource {
           || jsonMap.containsKey(MANAGED_JSON_LIST_FIELD)
           || jsonMap.containsKey(MANAGED_JSON_MAP_FIELD)) {
         Map<String, Object> initArgsMap = (Map<String, Object>) jsonMap.get(INIT_ARGS_JSON_FIELD);
-        updatedInitArgs = updateInitArgs(new NamedList<>(initArgsMap));
+        updatedInitArgs = updateInitArgs(toInitArgs(initArgsMap));
 
         if (jsonMap.containsKey(MANAGED_JSON_LIST_FIELD)) {
           managedData = jsonMap.get(MANAGED_JSON_LIST_FIELD);

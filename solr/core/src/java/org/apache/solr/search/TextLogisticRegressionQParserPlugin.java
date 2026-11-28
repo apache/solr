@@ -37,6 +37,7 @@ import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -216,7 +217,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
         }
       }
 
-      NamedList<Object> analytics = new NamedList<>();
+      NamedList<Object> analytics = new SimpleOrderedMap<>();
       rbsp.rsp.add("logit", analytics);
 
       List<Double> outWeights = new ArrayList<>();

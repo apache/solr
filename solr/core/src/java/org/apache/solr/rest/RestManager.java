@@ -431,7 +431,7 @@ public class RestManager {
 
       Object managedData = processStoredData(data);
 
-      if (managedInitArgs == null) managedInitArgs = new NamedList<>();
+      if (managedInitArgs == null) managedInitArgs = new SimpleOrderedMap<>();
 
       if (managedData != null) onManagedDataLoadedFromStorage(managedInitArgs, managedData);
     }

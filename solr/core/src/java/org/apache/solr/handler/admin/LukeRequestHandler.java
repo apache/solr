@@ -1234,7 +1234,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     // TODO? should this be a list or a map?
     public NamedList<Integer> toNamedList() {
-      NamedList<Integer> nl = new NamedList<>();
+      NamedList<Integer> nl = new SimpleOrderedMap<>();
       for (int bucket = 0; bucket <= _maxBucket; bucket++) {
         nl.add("" + (1 << bucket), _buckets[bucket]);
       }

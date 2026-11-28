@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.Command;
@@ -56,7 +57,7 @@ public class SearchGroupsResultTransformer
   public NamedList<NamedList<Object>> transform(List<Command<?>> data) throws IOException {
     final NamedList<NamedList<Object>> result = new NamedList<>(data.size());
     for (Command<?> command : data) {
-      final NamedList<Object> commandResult = new NamedList<>(2);
+      final NamedList<Object> commandResult = new SimpleOrderedMap<>(2);
       if (command instanceof SearchGroupsFieldCommand fieldCommand) {
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
@@ -150,7 +151,7 @@ public class SearchGroupsResultTransformer
 
   private NamedList<Object[]> serializeSearchGroup(
       Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
-    final NamedList<Object[]> result = new NamedList<>(data.size());
+    final NamedList<Object[]> result = new SimpleOrderedMap<>(data.size());
 
     SortField[] groupSortField = command.getGroupSort().getSort();
     for (SearchGroup<BytesRef> searchGroup : data) {
