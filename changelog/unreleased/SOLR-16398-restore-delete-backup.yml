@@ -1,0 +1,9 @@
+title: >
+  Add v2 API to restore a core from backup and to delete a backup of a core.
+type: added
+authors:
+  - name: Jalaz Kumar
+    nick: jaykay12
+links:
+  - name: SOLR-16398
+    url: https://issues.apache.org/jira/browse/SOLR-16398

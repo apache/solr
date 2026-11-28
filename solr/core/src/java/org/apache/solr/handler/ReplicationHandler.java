@@ -17,6 +17,9 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.CHECKSUM;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.COMPRESSION;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.CONF_FILE_SHORT;
@@ -90,7 +93,6 @@ import org.apache.solr.client.api.model.RestoreStatusResponse.RestoreStatus;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -314,7 +316,9 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
-      restore(new ModifiableSolrParams(solrParams), rsp, req);
+      restore(
+          solrParams.get(NAME), solrParams.get(BACKUP_LOCATION), solrParams.get(BACKUP_REPOSITORY));
+      rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_RESTORE_STATUS)) {
       final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
       final RestoreStatusResponse restoreStatus = coreReplicationAPI.fetchRestoreStatus();
@@ -328,7 +332,13 @@ public class ReplicationHandler extends RequestHandlerBase
             new Exception(restoreStatus.restoreStatus.exception));
       }
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
-      deleteSnapshot(new ModifiableSolrParams(solrParams), rsp);
+      solrParams.required().get(NAME);
+      deleteBackup(
+          solrParams.get(NAME),
+          solrParams.get(BACKUP_LOCATION),
+          solrParams.get(BACKUP_REPOSITORY),
+          solrParams.get(COMMIT_NAME));
+      rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       fetchIndex(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
@@ -425,16 +435,7 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   @SuppressWarnings("deprecation")
-  private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp) {
-    params.required().get(NAME);
-
-    String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-    String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-
-    // commitName is not documented in ref guide for the backup option.
-    // copying to here, an dit may be that both are just null?
-    String commitName = params.get(CoreAdminParams.COMMIT_NAME);
-
+  public void deleteBackup(String name, String location, String repoName, String commitName) {
     CoreContainer cc = core.getCoreContainer();
     BackupRepository repo = null;
     if (repoName != null) {
@@ -457,11 +458,9 @@ public class ReplicationHandler extends RequestHandlerBase
     }
 
     URI locationUri = repo.createDirectoryURI(location);
-    SnapShooter snapShooter =
-        new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
+    SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, name, commitName);
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
-    rsp.add(STATUS, OK_STATUS);
   }
 
   private void fetchIndex(SolrParams solrParams, SolrQueryResponse rsp)
@@ -591,16 +590,13 @@ public class ReplicationHandler extends RequestHandlerBase
     return indexFetchLock.isLocked();
   }
 
-  private void restore(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req)
-      throws IOException {
+  public void restore(String name, String location, String repoName) throws IOException {
     if (restoreFuture != null && !restoreFuture.isDone()) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "Restore in progress. Cannot run multiple restore operations" + "for the same core");
     }
-    String name = params.get(NAME);
-    String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-    String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+
     CoreContainer cc = core.getCoreContainer();
     BackupRepository repo = null;
     if (repoName != null) {
@@ -654,7 +650,6 @@ public class ReplicationHandler extends RequestHandlerBase
       MDC.put("RestoreCore.backupName", name);
       restoreFuture = restoreExecutor.submit(restoreCore);
       currentRestoreName = name;
-      rsp.add(STATUS, OK_STATUS);
     } finally {
       MDC.remove("RestoreCore.core");
       MDC.remove("RestoreCore.backupLocation");
@@ -696,9 +691,9 @@ public class ReplicationHandler extends RequestHandlerBase
   private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
       int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM, 0);
-      String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-      String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-      String commitName = params.get(CoreAdminParams.COMMIT_NAME);
+      String location = params.get(BACKUP_LOCATION);
+      String repoName = params.get(BACKUP_REPOSITORY);
+      String commitName = params.get(COMMIT_NAME);
       String name = params.get(NAME);
       doSnapShoot(
           numberToKeep,

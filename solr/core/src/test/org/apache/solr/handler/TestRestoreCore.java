@@ -22,12 +22,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -96,7 +99,7 @@ public class TestRestoreCore extends SolrTestCaseJ4 {
         new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     final String oldBackupDir = backupStatus.checkBackupSuccess();
     String snapshotName = null;
-    String location;
+    String location = null;
     String params = "";
     String baseUrl = leaderJetty.getBaseUrl().toString();
 
@@ -153,8 +156,19 @@ public class TestRestoreCore extends SolrTestCaseJ4 {
         }
       }
 
-      TestReplicationHandlerBackup.runBackupCommand(
-          leaderJetty, ReplicationHandler.CMD_RESTORE, params);
+      if (random().nextBoolean()) {
+        TestReplicationHandlerBackup.runBackupCommand(
+            leaderJetty, ReplicationHandler.CMD_RESTORE, params);
+      } else {
+        final Map<String, Object> requestBody = new HashMap<>();
+        if (snapshotName != null) requestBody.put("name", snapshotName);
+        if (location != null) requestBody.put("location", location);
+        leaderClient.request(
+            new V2Request.Builder("/cores/" + DEFAULT_TEST_CORENAME + "/replication/restore")
+                .POST()
+                .withPayload(requestBody)
+                .build());
+      }
 
       while (!TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
         Thread.sleep(1000);

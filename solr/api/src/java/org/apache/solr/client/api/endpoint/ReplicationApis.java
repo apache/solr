@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -37,6 +38,7 @@ import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.ReplicationDetailsResponse;
 import org.apache.solr.client.api.model.ReplicationEnabledRequestBody;
 import org.apache.solr.client.api.model.ReplicationPollingRequestBody;
+import org.apache.solr.client.api.model.ReplicationRestoreRequestBody;
 import org.apache.solr.client.api.model.RestoreStatusResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
@@ -56,6 +58,18 @@ public interface ReplicationApis {
           @QueryParam("follower")
           @DefaultValue("true")
           Boolean follower);
+
+  @POST
+  @CoreApiParameters
+  @Path("/restore")
+  @Operation(
+      summary = "Restore the index of the specified core from a backup.",
+      description = "Restore runs asynchronously; use the restore status API to track progress",
+      tags = {"replication"})
+  SolrJerseyResponse restoreIndex(
+      @RequestBody(description = "Identifies the backup to restore")
+          ReplicationRestoreRequestBody requestBody)
+      throws IOException;
 
   @GET
   @CoreApiParameters

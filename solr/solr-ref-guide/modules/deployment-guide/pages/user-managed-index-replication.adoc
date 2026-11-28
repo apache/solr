@@ -650,10 +650,30 @@ For file system repository, location defaults to the core's dataDir (data direct
 `restore`::
 Restore a backup from a backup repository.
 +
+[tabs#restore-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://{leaderHost}:{port}/solr/{coreName}/replication?command=restore
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' -d '{"name": "backup_name"}' \
+http://{leaderHost}:{port}/api/cores/{coreName}/replication/restore
+----
+====
+======
 +
 This command is used to restore a backup.
+It is asynchronous; use `restorestatus` to track the progress.
 There are several supported request parameters:
 
 `name`::: (optional) Backup name.
@@ -701,10 +721,29 @@ If it failed then an "exception" will also be sent in the response.
 `deletebackup`::
 Delete any backup created using the `backup` command.
 +
-[source,bash]
-http://{leaderHost}:{port} /solr/{coreName}/replication?command=deletebackup
+[tabs#deletebackup-request]
+======
+V1 API::
 +
-There are two supported parameters:
+====
+[source,bash]
+----
+http://{leaderHost}:{port}/solr/{coreName}/replication?command=deletebackup&name={backupName}
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X DELETE http://{leaderHost}:{port}/api/cores/{coreName}/replication/backups/{backupName}
+----
+====
+======
++
+The deletion happens asynchronously.
+There are three supported parameters:
 
 `name`::: The name of the snapshot.
 A snapshot with the name `snapshot._name_` must exist or an error will be returned.

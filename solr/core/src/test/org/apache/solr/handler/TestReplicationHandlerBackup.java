@@ -39,6 +39,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -223,8 +224,17 @@ public class TestReplicationHandlerBackup extends SolrTestCaseJ4 {
     for (int i = 0; i < 2; i++) {
       final Path p = Path.of(leader.getDataDir(), "snapshot." + backupNames[i]);
       assertTrue("WTF: Backup doesn't exist: " + p, Files.exists(p));
-      runBackupCommand(
-          leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" + backupNames[i]);
+      if (random().nextBoolean()) {
+        runBackupCommand(
+            leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" + backupNames[i]);
+      } else {
+        leaderClient.request(
+            new V2Request.Builder(
+                    "/cores/" + DEFAULT_TEST_CORENAME + "/replication/backups/" + backupNames[i])
+                .DELETE()
+                .build());
+      }
+
       backupStatus.waitForBackupDeletionSuccess(backupNames[i], 30);
       assertFalse("backup still exists after deletion: " + p, Files.exists(p));
     }

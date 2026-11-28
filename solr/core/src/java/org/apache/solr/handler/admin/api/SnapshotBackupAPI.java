@@ -28,6 +28,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ReplicationBackupApis;
 import org.apache.solr.client.api.model.ReplicationBackupRequestBody;
 import org.apache.solr.client.api.model.ReplicationBackupResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -64,6 +65,16 @@ public class SnapshotBackupAPI extends JerseyResource implements ReplicationBack
       @RequestBody ReplicationBackupRequestBody backupReplicationPayload) {
     ensureRequiredRequestBodyProvided(backupReplicationPayload);
     return doBackup(backupReplicationPayload);
+  }
+
+  @Override
+  @PermissionName(CORE_EDIT_PERM)
+  public SolrJerseyResponse deleteBackup(String name, String location, String repository) {
+    ensureRequiredParameterProvided("name", name);
+    final var replicationHandler =
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+    replicationHandler.deleteBackup(name, location, repository, null);
+    return instantiateJerseyResponse(SolrJerseyResponse.class);
   }
 
   private ReplicationBackupResponse doBackup(
