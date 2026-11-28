@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -443,7 +444,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
           queuePerQuery.push(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
-      List<ShardDoc> shardDocsPerQuery = new ArrayList<>(queuePerQuery.resultIds(0).values());
+      List<ShardDoc> shardDocsPerQuery = new ArrayList<>(queuePerQuery.pageDocs(0));
       shardDocsPerQuery.sort(Comparator.comparingInt(a -> a.positionInResponse));
       shardDocMap.put(queriesToCombineKeys[queryIndex], shardDocsPerQuery);
       // a sub-query list is complete iff every match reached the fusion pool
@@ -643,6 +644,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
 
     // get the resultSize as expected and fetch that shardDoc from the queue, putting it in a map
     int resultSize = max(0, queue.size() - rb.getSortSpec().getOffset());
+    final ShardDoc[] pageDocs = new ShardDoc[resultSize];
     for (int i = resultSize - 1; i >= 0; i--) {
       ShardDoc shardDoc = queue.pop();
       shardDoc.positionInResponse = i;
@@ -651,7 +653,9 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
         shardDoc.score = Float.NaN;
       }
       resultIds.put(shardDoc.id.toString(), shardDoc);
+      pageDocs[i] = shardDoc;
     }
+    rb.pageShardDocs = Arrays.asList(pageDocs);
     responseDocs.setMaxScore(maxScore);
     for (int i = 0; i < resultSize; i++) responseDocs.add(null);
     return resultIds;
