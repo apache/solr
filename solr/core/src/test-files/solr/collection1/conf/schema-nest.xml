@@ -35,6 +35,7 @@
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="date_dt" type="date" indexed="true" stored="true"/>
 
   <!-- required to test updates nested inplaceUpdates -->
   <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false"/>
