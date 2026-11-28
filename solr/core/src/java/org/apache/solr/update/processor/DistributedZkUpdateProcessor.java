@@ -155,6 +155,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
+    if ("true".equals(req.getParams().get(COMMIT_END_POINT))) {
+      // A commit marked as an end point, such as an auto commit, applies to this core only:
+      // it is never forwarded to the leader or distributed to replicas.
+      doLocalCommit(cmd);
+      return;
+    }
+
     clusterState = zkController.getClusterState();
 
     assert TestInjection.injectFailUpdateRequests();
