@@ -1,0 +1,16 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  `bin/solr start` now learns that the node has started from a state file written by Jetty,
+  instead of by calling the node over HTTP. The wait no longer fails for a node that is not
+  reachable on localhost, such as one with a TLS certificate issued for another host name. On
+  Windows, `bin\solr.cmd start` no longer also waits for other Solr nodes on the same host.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18336
+    url: https://issues.apache.org/jira/browse/SOLR-18336
+  - name: SOLR-18665
+    url: https://issues.apache.org/jira/browse/SOLR-18665
