@@ -271,10 +271,7 @@ REM Handle all other commands by simply running SolrCLI
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%SOLR_TIP%\lib\*;%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI %*
-if errorlevel 1 (
-   exit /b 1
-)
-goto done
+exit /b %ERRORLEVEL%
 
 :set_script_cmd
 set SCRIPT_CMD=%1

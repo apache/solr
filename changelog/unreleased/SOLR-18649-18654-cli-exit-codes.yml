@@ -1,0 +1,13 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: >
+  `solr --help` now exits 0. A bare `solr`, or a parent command with no
+  subcommand (`zk`, `snapshot`, `package`), exits 2.
+type: fixed
+authors:
+  - name: Prithvi S.
+    nick: iprithv
+links:
+  - name: SOLR-18649
+    url: https://issues.apache.org/jira/browse/SOLR-18649
+  - name: SOLR-18654
+    url: https://issues.apache.org/jira/browse/SOLR-18654
