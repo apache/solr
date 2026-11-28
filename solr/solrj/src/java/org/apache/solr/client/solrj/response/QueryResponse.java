@@ -56,6 +56,7 @@ public class QueryResponse extends SolrResponseBase {
   private String _cancellationInfo = null;
   private String _taskStatusCheckInfo = null;
   private String _cursorMarkNext = null;
+  private String _cursorMarkPrevious = null;
 
   // Grouping response
   private NamedList<Object> _groupedInfo = null;
@@ -169,6 +170,7 @@ public class QueryResponse extends SolrResponseBase {
         case "cancellationResult" -> _cancellationInfo = (String) val;
         case "taskResult" -> _taskStatusCheckInfo = (String) val;
         case CursorMarkParams.CURSOR_MARK_NEXT -> _cursorMarkNext = (String) val;
+        case CursorMarkParams.CURSOR_MARK_PREVIOUS -> _cursorMarkPrevious = (String) val;
       }
     }
     if (_facetInfo != null) extractFacetInfo(_facetInfo);
@@ -631,5 +633,10 @@ public class QueryResponse extends SolrResponseBase {
 
   public String getNextCursorMark() {
     return _cursorMarkNext;
+  }
+
+  /** Returns the cursor to request the preceding page in the original sort order. */
+  public String getPreviousCursorMark() {
+    return _cursorMarkPrevious;
   }
 }
