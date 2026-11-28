@@ -553,7 +553,7 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "delete-permission": 3
 }' http://localhost:8983/solr/admin/authorization
 
-To address a permission by id, send `id` instead of `index`. `delete-permission` takes `{"id": "..."}` the same way:
+To address a permission by id, send `id` instead of `index`. `delete-permission` takes `{"id": "..."}` the same way; its object form accepts only `id`, so delete by index with the bare number shown above:
 
 [source,bash]
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{

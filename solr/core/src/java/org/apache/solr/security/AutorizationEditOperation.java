@@ -233,7 +233,8 @@ enum AutorizationEditOperation {
     return permissions;
   }
 
-  // Derived from position and content, so every node backfills the same ids for one config.
+  // Derived from position and content, not random, so a read that backfills without persisting
+  // returns the same ids on every node and every call.
   private static void ensureIds(List<Map<String, Object>> permissions) {
     Set<Object> seen = new HashSet<>();
     for (int i = 0; i < permissions.size(); i++) {
