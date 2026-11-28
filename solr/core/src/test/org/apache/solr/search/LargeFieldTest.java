@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.misc.document.LazyDocument;
@@ -86,11 +87,17 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     assertU(adoc(ID_FLD, "101", LAZY_FIELD, "lzy", BIG_FIELD, bigFieldValue));
     assertU(commit());
 
-    // trigger the ID_FLD to get into the doc cache; don't reference other fields
-    assertQ(req("q", "101", "df", ID_FLD, "fl", ID_FLD)); // eager load ID_FLD; rest are lazy
+    assertQ(req("q", "101", "df", ID_FLD, "fl", ID_FLD));
 
-    // fetch the document; we know it will be from the documentCache, docId 0
-    final Document d = h.getCore().withSearcher(searcher -> searcher.getDocFetcher().doc(0));
+    // fetch the document from the documentCache, docId 0, loading only ID_FLD so the
+    // other fields stay lazy
+    final Document d =
+        h.getCore()
+            .withSearcher(
+                searcher -> {
+                  searcher.getDocFetcher().doc(0, Set.of(ID_FLD));
+                  return searcher.getDocFetcher().doc(0);
+                });
 
     assertEager(d, ID_FLD);
     assertLazyNotLoaded(d, LAZY_FIELD);
