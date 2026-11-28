@@ -341,6 +341,12 @@ class SubQueryAugmenter extends DocTransformer {
   }
 
   @Override
+  public boolean requiresFullDocumentForRTG() {
+    // Subrequest parameter resolution can read arbitrary fields from the parent row.
+    return true;
+  }
+
+  @Override
   public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
 
     final SolrParams docWithDeprefixed =

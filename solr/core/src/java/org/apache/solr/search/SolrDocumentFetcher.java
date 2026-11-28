@@ -788,11 +788,11 @@ public class SolrDocumentFetcher {
     private final DocValuesIteratorCache reuseDvIters;
 
     RetrieveFieldsOptimizer(SolrReturnFields solrReturnFields) {
-      this.storedFields = calcStoredFieldsForReturn(solrReturnFields);
+      this.storedFields = getStoredFieldsToLoad(solrReturnFields);
       this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
       this.solrReturnFields = solrReturnFields;
 
-      if (storedFields != null && dvsCanSubstituteStored.containsAll(storedFields)) {
+      if (canSubstituteStoredFields(storedFields)) {
         dvFields.addAll(storedFields);
         storedFields.clear();
       }
@@ -824,41 +824,6 @@ public class SolrDocumentFetcher {
     // who uses all of these?
     private ReturnFields getReturnFields() {
       return solrReturnFields;
-    }
-
-    private Set<String> calcStoredFieldsForReturn(ReturnFields returnFields) {
-      final Set<String> storedFields = new HashSet<>();
-      Set<String> fnames = returnFields.getLuceneFieldNames();
-      if (returnFields.returnsAllFields()) {
-        return null;
-      } else if (returnFields.hasPatternMatching()) {
-        for (String s : getAllStored()) {
-          if (returnFields.loadsField(s)) {
-            storedFields.add(s);
-          }
-        }
-      } else if (fnames != null) {
-        storedFields.addAll(fnames);
-        storedFields.removeIf(
-            (String name) -> {
-              SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
-              if (schemaField == null) {
-                // Get it from the stored fields if, for some reason, we can't get the schema.
-                return false;
-              }
-              if (schemaField.stored() && schemaField.multiValued()) {
-                // must return multivalued fields from stored data if possible.
-                return false;
-              }
-              if (schemaField.stored() == false) {
-                // if it's not stored, no choice but to return from DV.
-                return true;
-              }
-              return false;
-            });
-      }
-      storedFields.remove(SolrReturnFields.SCORE);
-      return storedFields;
     }
 
     private Set<String> calcDocValueFieldsForReturn(ReturnFields returnFields) {
@@ -930,5 +895,61 @@ public class SolrDocumentFetcher {
       }
       return sdoc;
     }
+  }
+
+  /**
+   * Returns the stored fields selected by the response and its transformers, before DocValues
+   * substitution. A null result means all stored fields; otherwise the returned set is mutable.
+   */
+  public Set<String> getStoredFieldsToLoad(ReturnFields returnFields) {
+    final Set<String> storedFields = new HashSet<>();
+    Set<String> fnames = returnFields.getLuceneFieldNames();
+    if (returnFields.returnsAllFields()) {
+      return null;
+    } else if (returnFields.hasPatternMatching()) {
+      for (String s : getAllStored()) {
+        if (returnFields.loadsField(s)) {
+          storedFields.add(s);
+        }
+      }
+    } else if (fnames != null) {
+      storedFields.addAll(fnames);
+      storedFields.removeIf(
+          (String name) -> {
+            SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
+            if (schemaField == null) {
+              // Get it from the stored fields if, for some reason, we can't get the schema.
+              return false;
+            }
+            if (schemaField.stored() && schemaField.multiValued()) {
+              // must return multivalued fields from stored data if possible.
+              return false;
+            }
+            if (schemaField.stored() == false) {
+              // if it's not stored, no choice but to return from DV.
+              return true;
+            }
+            return false;
+          });
+    }
+    storedFields.remove(SolrReturnFields.SCORE);
+    return storedFields;
+  }
+
+  /**
+   * Returns a mutable field filter for prefetch, or null to skip prefetch. The filter holds the
+   * stored fields the selection needs loaded, cleared when DocValues can substitute for every one
+   * of them. An empty filter can still gain fields from highlighting.
+   */
+  public Set<String> getStoredFieldsToPrefetch(ReturnFields returnFields) {
+    Set<String> storedFields = getStoredFieldsToLoad(returnFields);
+    if (canSubstituteStoredFields(storedFields)) {
+      storedFields.clear();
+    }
+    return storedFields;
+  }
+
+  private boolean canSubstituteStoredFields(Set<String> storedFields) {
+    return storedFields != null && dvsCanSubstituteStored.containsAll(storedFields);
   }
 }

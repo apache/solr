@@ -229,31 +229,33 @@ public class SolrPluginUtils {
     }
 
     ReturnFields returnFields = res.getReturnFields();
-    if (returnFields.getLuceneFieldNames() != null) {
-      Set<String> fieldFilter = returnFields.getLuceneFieldNames();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+    Set<String> fieldFilter = docFetcher.getStoredFieldsToPrefetch(returnFields);
+    if (fieldFilter == null) {
+      return;
+    }
 
-      if (rb.doHighlights) {
-        // copy return fields list
-        fieldFilter = new HashSet<>(fieldFilter);
-        // add highlight fields
+    if (rb.doHighlights) {
+      HighlightComponent hl =
+          (HighlightComponent)
+              req.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+      SolrHighlighter highlighter = hl.getHighlighter(req.getParams());
+      Collections.addAll(fieldFilter, highlighter.getHighlightFields(query, req, null));
 
-        HighlightComponent hl =
-            (HighlightComponent)
-                req.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-        SolrHighlighter highlighter = hl.getHighlighter(req.getParams());
-        Collections.addAll(fieldFilter, highlighter.getHighlightFields(query, req, null));
+      // fetch unique key if one exists.
+      SchemaField keyField = searcher.getSchema().getUniqueKeyField();
+      if (null != keyField) fieldFilter.add(keyField.getName());
+    }
 
-        // fetch unique key if one exists.
-        SchemaField keyField = searcher.getSchema().getUniqueKeyField();
-        if (null != keyField) fieldFilter.add(keyField.getName());
-      }
+    // A selection may match no stored fields or need only DocValues. Check after highlighting
+    // has added its fields to avoid warming a cache entry made up only of lazy placeholders.
+    if (fieldFilter.isEmpty()) {
+      return;
+    }
 
-      // get documents
-      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-      DocIterator iter = docs.iterator();
-      for (int i = 0; i < docs.size(); i++) {
-        docFetcher.doc(iter.nextDoc(), fieldFilter);
-      }
+    DocIterator iter = docs.iterator();
+    for (int i = 0; i < docs.size(); i++) {
+      docFetcher.doc(iter.nextDoc(), fieldFilter);
     }
   }
 

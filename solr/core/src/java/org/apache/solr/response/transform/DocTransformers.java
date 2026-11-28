@@ -84,4 +84,9 @@ public class DocTransformers extends DocTransformer {
   public boolean needsSolrIndexSearcher() {
     return children.stream().anyMatch(DocTransformer::needsSolrIndexSearcher);
   }
+
+  @Override
+  public boolean requiresFullDocumentForRTG() {
+    return children.stream().anyMatch(DocTransformer::requiresFullDocumentForRTG);
+  }
 }

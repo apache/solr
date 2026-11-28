@@ -505,6 +505,85 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "//result/doc[count(*)=2]");
   }
 
+  public void testGlobRTGUncommittedFields() {
+    assertU(delI("7782"));
+    assertU(
+        adoc(
+            "id", "7782",
+            "title", "keyword",
+            "source_s", "source",
+            "unrelated_s", "unrelated"));
+    try {
+      assertQ(req("q", "id:7782"), "//result[@numFound='0']");
+      for (String fq : new String[] {"", "id:7782"}) {
+        for (String selection : new String[] {"title", "tit*"}) {
+          assertQ(
+              reqWithPath(
+                  "/get",
+                  "id",
+                  "7782",
+                  "fq",
+                  fq,
+                  "wt",
+                  "xml",
+                  "fl",
+                  selection + ",x:[json f=source_s],unrelated_s:[value v=synthetic]"),
+              "//doc/*[@name='title'][normalize-space(.)='keyword']",
+              "//doc/*[@name='x'][normalize-space(.)='source']",
+              "//doc/*[@name='unrelated_s'][normalize-space(.)='synthetic']",
+              "//doc[count(*)=3]");
+        }
+      }
+      assertQ(req("q", "id:7782"), "//result[@numFound='0']");
+    } finally {
+      assertU(delI("7782"));
+    }
+  }
+
+  public void testBatchedGlobRTGAcrossCommittedAndUncommittedDocs() throws Exception {
+    assertJQ(
+        reqWithPath("/get", "ids", "42,44,99", "fl", "id,val_*,subj*"),
+        "/response/docs==[{'id':'42','val_i':1,'subject':'aaa'},"
+            + "{'id':'44','val_i':4,'subject':'aaa'},"
+            + "{'id':'99','val_i':1,'subject':'uncommitted'}]");
+  }
+
+  public void testGlobRTGSubqueryUsesUnrequestedStoredField() {
+    // Do not hard-commit the shared fixture that other tests expect to stay in the tlog.
+    assertU(delI("99"));
+    assertU(adoc("id", "7783", "val_i", "4", "subject", "aaa"));
+    try {
+      for (boolean committed : new boolean[] {false, true}) {
+        if (committed) {
+          assertU(commit());
+        }
+        assertQ(
+            "committed=" + committed,
+            reqWithPath(
+                "/get",
+                "id",
+                "7783",
+                "wt",
+                "xml",
+                "fl",
+                "val_*,related:[subquery],marker:[value v=ok]",
+                "related.q",
+                "{!terms f=subject v=$row.subject}",
+                "related.fq",
+                "id:44",
+                "related.fl",
+                "id"),
+            "/response/doc/int[@name='val_i'][.=4]",
+            "/response/doc/str[@name='marker'][.='ok']",
+            "/response/doc/result[@name='related'][@numFound='1']/doc/str[@name='id'][.='44']",
+            "count(/response/doc/*[@name='subject'])=0");
+      }
+    } finally {
+      assertU(delI("7783"));
+      assertU(commit());
+    }
+  }
+
   public void testGlobsAndTransformerFieldRTG() {
     // behavior shouldn't matter if we are committed or uncommitted
     for (String id : Arrays.asList("42", "99")) {
