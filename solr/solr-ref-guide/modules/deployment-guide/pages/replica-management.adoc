@@ -244,6 +244,8 @@ Altering these entries by specifying `property._name_=_value_` is an expert-leve
 +
 If `true`, the request will complete only when all affected replicas become active.
 If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
+An operator can make the cluster-wide default `true` without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=true` on each Solr node.
+Unlike CREATE, CREATESHARD and SPLITSHARD -- whose replicas start empty -- a replica added here must recover from its leader, and that recovery has no bounded duration, so this command keeps the pre-SOLR-18367 default.
 
 `async`::
 +
@@ -432,6 +434,18 @@ Deletion will not occur and creation will not be rolled back in the event of a t
 +
 For replicas that use shared filesystems, allow an "in-place" move that reuses shared data.
 Defaults to `true`, but is ignored if the replica does not have the property `shared_storage` with a value of `true`.
+
+`waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the request will complete only when all affected replicas become active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
+An operator can make the cluster-wide default `true` without changing any client by setting the system property `solr.cloud.waitForFinalState.enabled=true` on each Solr node.
+Because the move runs ADDREPLICA on the destination, the new replica must recover from its leader, and that recovery has no bounded duration, so this command keeps the pre-SOLR-18367 default.
 
 `async`::
 +

@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODES;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODES;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -73,7 +72,6 @@ public class MigrateReplicas extends AdminAPIBase implements MigrateReplicasApi 
       }
       insertIfNotNull(remoteMessage, SOURCE_NODES, requestBody.sourceNodes);
       insertIfNotNull(remoteMessage, TARGET_NODES, requestBody.targetNodes);
-      insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
     } else {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

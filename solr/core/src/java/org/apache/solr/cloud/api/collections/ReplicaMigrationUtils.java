@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
@@ -106,7 +107,10 @@ public class ReplicaMigrationUtils {
           sourceReplica
               .toFullProps()
               .plus("parallel", String.valueOf(parallel))
-              .plus(CoreAdminParams.NODE, targetNode);
+              .plus(CoreAdminParams.NODE, targetNode)
+              // this method has its own watcher/latch below, conditioned on waitForFinalState;
+              // don't let AddReplicaCmd's own wait run (and block on) first.
+              .plus(CommonAdminParams.WAIT_FOR_FINAL_STATE, "false");
       NamedList<Object> nl = new NamedList<>();
       final ZkNodeProps addedReplica =
           new AddReplicaCmd(ccc)
