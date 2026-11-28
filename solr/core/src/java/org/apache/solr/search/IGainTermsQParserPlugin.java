@@ -149,7 +149,6 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     public void complete() throws IOException {
       NamedList<Double> analytics = new NamedList<>();
       NamedList<Integer> topFreq = new NamedList<>();
-      NamedList<Integer> allFreq = new NamedList<>();
 
       rb.rsp.add("featuredTerms", analytics);
       rb.rsp.add("docFreq", topFreq);
@@ -200,7 +199,6 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
 
       for (TermWithScore topTerm : topTerms) {
         analytics.add(topTerm.term, topTerm.score);
-        topFreq.add(topTerm.term, allFreq.get(topTerm.term));
       }
 
       if (this.delegate instanceof DelegatingCollector) {

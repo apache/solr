@@ -1,0 +1,12 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+title: >
+  The {!igain} query parser no longer lists each featured term twice in its docFreq section, the
+  second time with a null value; clients reading the section as a map saw null for those terms.
+type: fixed
+authors:
+  - name: Ivan Šarić
+    nick: isaric
+links:
+  - name: SOLR-18677
+    url: https://issues.apache.org/jira/browse/SOLR-18677
