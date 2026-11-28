@@ -1,0 +1,12 @@
+title: >
+  On Windows, nodes started by a bin/solr.cmd -e example now honour the caller's SOLR_* settings,
+  such as SOLR_HEAP, SOLR_OPTS and SOLR_INCLUDE, as they already did on Linux and macOS.
+type: fixed
+authors:
+  - name: Jan Høydahl
+    nick: janhoy
+links:
+  - name: SOLR-18650
+    url: https://issues.apache.org/jira/browse/SOLR-18650
+  - name: PR#5399
+    url: https://github.com/apache/solr/pull/5399
