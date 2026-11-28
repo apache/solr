@@ -3079,6 +3079,34 @@ public class StreamingTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testTupleStreamGetShardsWithMissingManualShardMapping() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.put(
+        "shards", Map.of("otherCollection", List.of("http://example.com/solr/other")));
+
+    List<String> shards = TupleStream.getShards(solrConnection, COLLECTIONORALIAS, streamContext);
+    assertTrue("Missing manual shard mapping should return an empty list", shards.isEmpty());
+  }
+
+  @Test
+  public void testTupleStreamGetShardsLocalFilterDoesNotMutateContextShards() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    List<String> configuredShards = new ArrayList<>();
+    configuredShards.add("http://example.com/solr/coreA");
+    configuredShards.add("http://example.com/solr/coreB");
+    streamContext.put("shards", Map.of(COLLECTIONORALIAS, configuredShards));
+    streamContext.setLocal(true);
+    streamContext.put("core", "coreA");
+
+    List<String> filteredShards =
+        TupleStream.getShards(solrConnection, COLLECTIONORALIAS, streamContext);
+    assertEquals(List.of("http://example.com/solr/coreA"), filteredShards);
+    assertEquals(
+        List.of("http://example.com/solr/coreA", "http://example.com/solr/coreB"),
+        configuredShards);
+  }
+
   public void testTupleStreamSorting(
       StreamContext streamContext,
       SolrParams solrParams,
@@ -3238,5 +3266,65 @@ public class StreamingTest extends SolrCloudTestCase {
     } finally {
       solrClientCache.close();
     }
+  }
+
+  @Test
+  public void testCloudStreamMissingManualShardMappingFailsClearly() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.put(
+        "shards", Map.of("otherCollection", List.of("http://example.com/solr/other")));
+    SolrParams searchParams = params("q", "*:*", "fl", "a_i", "sort", "a_i asc");
+
+    try (CloudSolrStream solrStream =
+        new CloudSolrStream(solrConnection, COLLECTIONORALIAS, searchParams)) {
+      solrStream.setStreamContext(streamContext);
+      IOException e = expectThrows(IOException.class, solrStream::open);
+      assertTrue(e.getMessage(), e.getMessage().contains("No shards available"));
+    }
+  }
+
+  @Test
+  public void testSignificantTermsStreamMissingManualShardMappingFailsClearly() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.put(
+        "shards", Map.of("otherCollection", List.of("http://example.com/solr/other")));
+    SignificantTermsStream stream =
+        new SignificantTermsStream(
+            solrConnection, COLLECTIONORALIAS, params("q", "*:*"), "a_s", 0.01f, 1f, 1, 5);
+    stream.setStreamContext(streamContext);
+    IOException e =
+        expectThrows(
+            IOException.class,
+            () -> {
+              stream.open();
+              stream.read();
+            });
+    assertTrue(e.getMessage(), e.getMessage().contains("No shards for collection"));
+  }
+
+  @Test
+  public void testDeepRandomStreamMissingManualShardMappingFailsClearly() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.put(
+        "shards", Map.of("otherCollection", List.of("http://example.com/solr/other")));
+    StreamFactory factory = new StreamFactory().withFunctionName("random", DeepRandomStream.class);
+    DeepRandomStream stream =
+        new DeepRandomStream(
+            StreamExpressionParser.parse(
+                "random("
+                    + COLLECTIONORALIAS
+                    + ", q=\"*:*\", rows=\"10\", fl=\"id\", solrConnection=\""
+                    + zkHost
+                    + "\")"),
+            factory);
+    stream.setStreamContext(streamContext);
+    IOException e =
+        expectThrows(
+            IOException.class,
+            () -> {
+              stream.open();
+              stream.read();
+            });
+    assertTrue(e.getMessage(), e.getMessage().contains("No shards for collection"));
   }
 }

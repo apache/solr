@@ -278,6 +278,12 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
       List<String> shardUrls =
           getShards(this.solrConnection, this.collection, this.streamContext, mParams);
+      if (shardUrls.isEmpty()) {
+        throw new IllegalArgumentException(
+            "No shards for collection "
+                + collection
+                + ". Check the manual shards entry in the stream context or the replica state.");
+      }
 
       String rows = mParams.get(ROWS);
       int r = Integer.parseInt(rows);
