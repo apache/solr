@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +35,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -157,6 +159,69 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     concentratePropByRestartingJettys();
     sendRebalanceCommand();
     checkPreferredsAreLeaders();
+  }
+
+  @Test
+  public void testV2RebalanceLeaders() throws Exception {
+    final String collection = "v2RebalanceLeaders";
+    CollectionAdminRequest.createCollection(collection, COLLECTION_NAME, 2, 2)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collection, 2, 4);
+
+    final Map<String, String> preferredLeaders = new HashMap<>();
+    for (Slice slice : getCollectionState(collection).getSlices()) {
+      final Replica preferred =
+          slice.getReplicas().stream()
+              .filter(replica -> !replica.getName().equals(slice.getLeader().getName()))
+              .findFirst()
+              .orElseThrow();
+      preferredLeaders.put(slice.getName(), preferred.getName());
+      CollectionAdminRequest.addReplicaProperty(
+              collection, slice.getName(), preferred.getName(), "preferredLeader", "true")
+          .process(cluster.getSolrClient());
+    }
+    waitForState(
+        "Expected preferred leader properties before rebalancing",
+        collection,
+        c ->
+            c != null
+                && preferredLeaders.entrySet().stream()
+                    .allMatch(
+                        entry ->
+                            c.getSlice(entry.getKey())
+                                .getReplica(entry.getValue())
+                                .getBool("property.preferredleader", false)));
+
+    final var request = new CollectionsApi.RebalanceLeaders(collection);
+    request.setMaxAtOnce(2);
+    request.setMaxWaitSeconds(30);
+    final var response = request.process(cluster.getSolrClient());
+    assertEquals(0, response.responseHeader.status);
+
+    assertEquals(
+        Map.of("Success", "All active replicas with the preferredLeader property set are leaders"),
+        response.summary);
+    assertNotNull(response.successes);
+    assertEquals(preferredLeaders.keySet(), response.successes.keySet());
+    for (var result : response.successes.values()) {
+      assertEquals("success", result.get("status"));
+      assertNotNull(result.get("msg"));
+    }
+    waitForState(
+        "Expected every preferred replica to become leader",
+        collection,
+        c ->
+            c != null
+                && preferredLeaders.entrySet().stream()
+                    .allMatch(
+                        entry -> {
+                          final Replica leader = c.getSlice(entry.getKey()).getLeader();
+                          return leader != null && entry.getValue().equals(leader.getName());
+                        }));
+
+    final var alreadyBalanced = request.process(cluster.getSolrClient());
+    assertEquals(0, alreadyBalanced.responseHeader.status);
+    assertEquals(Set.copyOf(preferredLeaders.values()), alreadyBalanced.alreadyLeaders.keySet());
   }
 
   @Test

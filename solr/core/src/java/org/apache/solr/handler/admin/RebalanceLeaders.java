@@ -20,12 +20,10 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID_HEADER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,11 +44,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,13 +95,14 @@ import org.slf4j.LoggerFactory;
  * <p>All this of course assuming the preferedLeader is alive and well and is assigned for any given
  * shard.
  */
-class RebalanceLeaders {
+public class RebalanceLeaders {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  final SolrQueryRequest req;
-  final SolrQueryResponse rsp;
   final CollectionsHandler collectionsHandler;
   final CoreContainer coreContainer;
+  private final int maxAtOnce;
+  private final int maxWaitSeconds;
+  private final String callingLockId;
   private final Set<String> asyncRequests = new HashSet<>();
   static final String INACTIVE_PREFERREDS = "inactivePreferreds";
   static final String ALREADY_LEADERS = "alreadyLeaders";
@@ -112,22 +110,43 @@ class RebalanceLeaders {
   final SimpleOrderedMap<SimpleOrderedMap<SimpleOrderedMap<String>>> results =
       new SimpleOrderedMap<>();
   final Map<String, String> pendingOps = new HashMap<>();
-  private String collectionName;
+  private final String collectionName;
 
-  RebalanceLeaders(
-      SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler collectionsHandler) {
-    this.req = req;
-    this.rsp = rsp;
+  public RebalanceLeaders(
+      String collectionName,
+      int maxAtOnce,
+      int maxWaitSeconds,
+      String callingLockId,
+      CollectionsHandler collectionsHandler) {
+    this.collectionName = collectionName;
+    this.maxAtOnce = maxAtOnce;
+    this.maxWaitSeconds = maxWaitSeconds;
+    this.callingLockId = callingLockId;
     this.collectionsHandler = collectionsHandler;
     coreContainer = collectionsHandler.getCoreContainer();
   }
 
-  void execute() throws Exception {
+  @VisibleForTesting
+  public int getMaxAtOnce() {
+    return maxAtOnce;
+  }
+
+  @VisibleForTesting
+  public int getMaxWaitSeconds() {
+    return maxWaitSeconds;
+  }
+
+  @VisibleForTesting
+  public String getCallingLockId() {
+    return callingLockId;
+  }
+
+  public NamedList<Object> execute() throws Exception {
     DocCollection dc = checkParams();
 
-    int max = req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE);
+    int max = maxAtOnce;
     if (max <= 0) max = Integer.MAX_VALUE;
-    int maxWaitSecs = req.getParams().getInt(MAX_WAIT_SECONDS_PROP, 60);
+    int maxWaitSecs = maxWaitSeconds;
 
     // If there are a maximum number of simultaneous requests specified, we have to pause when we
     // have that many outstanding requests and wait for at least one to finish before going on the
@@ -162,16 +181,14 @@ class RebalanceLeaders {
     } else {
       summary.add("Failure", "Not all active replicas with preferredLeader property are leaders");
     }
-    rsp.getValues().add(SUMMARY, summary); // we want this first.
-
-    rsp.getValues().addAll(results);
+    SimpleOrderedMap<Object> response = new SimpleOrderedMap<>();
+    response.add(SUMMARY, summary); // we want this first.
+    response.addAll(results);
+    return response;
   }
 
   // Insure that ll required parameters are there and the doc colection exists.
   private DocCollection checkParams() throws KeeperException, InterruptedException {
-    req.getParams().required().check(COLLECTION_PROP);
-
-    collectionName = req.getParams().get(COLLECTION_PROP);
     if (StrUtils.isBlank(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -461,9 +478,7 @@ class RebalanceLeaders {
 
     // ignore response; we construct our own
     collectionsHandler.submitCollectionApiCommand(
-        new AdminCmdContext(
-            REBALANCELEADERS, asyncId, (String) req.getContext().get(CALLING_LOCK_ID_HEADER)),
-        new ZkNodeProps(propMap));
+        new AdminCmdContext(REBALANCELEADERS, asyncId, callingLockId), new ZkNodeProps(propMap));
   }
 
   // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.
