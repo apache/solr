@@ -406,6 +406,31 @@ JMH is highly configurable, and users are encouraged to look through the samples
 for exposure around what options are available. A good tutorial for learning JMH basics is
 found [here](http://tutorials.jenkov.com/java-performance/jmh.html#return-value-from-benchmark-method)
 
+### Search query concurrent-load benchmark
+
+`KnnConcurrentLoad.searchQuery` compares KNN, KNN with term/range pre-filters, selective term,
+range, and match-all query latency on the same fixed corpus. It logs the actual segment count, a
+hash of the results, and shared search-pool task counts per iteration. Set `queryShape` to `knn`,
+`knnTermFilter`, `knnRangeFilter`, `term`, `range`, or `matchAll`, then run with `-t 1`, `-t 2`, or
+`-t 4` to vary concurrent clients.
+
+Compare these settings:
+
+| Search pool | `multiThreaded` | JMH parameter |
+|---:|---:|---|
+| 0 | `false` | `-p searchThreads=0 -p multiThreaded=false` |
+| 4 | `false` | `-p searchThreads=4 -p multiThreaded=false` |
+| 4 | `true` | `-p searchThreads=4 -p multiThreaded=true` |
+
+For example, this runs the pool-enabled, single-threaded term-query case with four clients:
+
+```zsh
+./jmh.sh KnnConcurrentLoad.searchQuery -p queryShape=term -p numDocs=500000 -p searchThreads=4 -p multiThreaded=false -t 4
+```
+
+Repeat with `-t 1` and `-t 2`. Keep the document count, JMH settings, and client count the same
+when comparing pool configurations.
+
 ## Additional Documentation
 
 ### 📚 Profilers
