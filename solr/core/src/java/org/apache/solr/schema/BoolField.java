@@ -204,7 +204,7 @@ public class BoolField extends PrimitiveFieldType {
 
       fval = docval;
     }
-    return List.of(fval);
+    return fval == null ? List.of() : List.of(fval);
   }
 
   @Override
