@@ -32,6 +32,7 @@
 ** xref:block-join-query-parser.adoc[]
 ** xref:global-ordinals-join-query-parser.adoc[]
 ** xref:join-query-parser.adoc[]
+** xref:auxindexjoin-query-parser.adoc[]
 ** xref:spatial-search.adoc[]
 ** xref:dense-vector-search.adoc[]
 *** xref:text-to-vector.adoc[]
