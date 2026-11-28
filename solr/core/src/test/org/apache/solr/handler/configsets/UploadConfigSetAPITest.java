@@ -18,6 +18,8 @@
 package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,8 +33,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.FileSystemConfigSetService;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,7 +108,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     InputStream zipStream = createZipStream("solrconfig.xml", "<config/>");
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    final var response = api.uploadConfigSet(configSetName, true, false, zipStream);
+    final var response = api.uploadConfigSet(configSetName, true, false, null, null, zipStream);
 
     assertNotNull(response);
     assertTrue(
@@ -125,7 +129,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
             "stopwords.txt", "a\nthe");
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    final var response = api.uploadConfigSet(configSetName, true, false, zipStream);
+    final var response = api.uploadConfigSet(configSetName, true, false, null, null, zipStream);
 
     assertNotNull(response);
     assertTrue(configSetService.checkConfigExists(configSetName));
@@ -148,7 +152,8 @@ public class UploadConfigSetAPITest extends SolrTestCase {
       final var api = new UploadConfigSet(mockCoreContainer, null, null);
       final var ex =
           assertThrows(
-              SolrException.class, () -> api.uploadConfigSet("newconfig", true, false, emptyZip));
+              SolrException.class,
+              () -> api.uploadConfigSet("newconfig", true, false, null, null, emptyZip));
 
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
       assertTrue(
@@ -165,7 +170,8 @@ public class UploadConfigSetAPITest extends SolrTestCase {
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
     // This should fail either as bad ZIP or as empty ZIP
-    assertThrows(Exception.class, () -> api.uploadConfigSet("newconfig", true, false, notAZip));
+    assertThrows(
+        Exception.class, () -> api.uploadConfigSet("newconfig", true, false, null, null, notAZip));
   }
 
   @Test
@@ -177,7 +183,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     // Upload new content with overwrite=true
     InputStream zipStream = createZipStream("solrconfig.xml", "<new-config/>");
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    final var response = api.uploadConfigSet(configSetName, true, false, zipStream);
+    final var response = api.uploadConfigSet(configSetName, true, false, null, null, zipStream);
 
     assertNotNull(response);
 
@@ -197,7 +203,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
       final var ex =
           assertThrows(
               SolrException.class,
-              () -> api.uploadConfigSet(configSetName, false, false, zipStream));
+              () -> api.uploadConfigSet(configSetName, false, false, null, null, zipStream));
 
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
       assertTrue(
@@ -222,7 +228,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     // Upload new ZIP with only one file and cleanup=true
     InputStream zipStream = createZipStream("solrconfig.xml", "<new-config/>");
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    final var response = api.uploadConfigSet(configSetName, true, true, zipStream);
+    final var response = api.uploadConfigSet(configSetName, true, true, null, null, zipStream);
 
     assertNotNull(response);
 
@@ -251,7 +257,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     // Upload new ZIP with only one file and cleanup=false
     InputStream zipStream = createZipStream("solrconfig.xml", "<new-config/>");
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    final var response = api.uploadConfigSet(configSetName, true, false, zipStream);
+    final var response = api.uploadConfigSet(configSetName, true, false, null, null, zipStream);
 
     assertNotNull(response);
 
@@ -271,7 +277,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
     // Pass null for overwrite and cleanup - should use defaults (overwrite=true, cleanup=false)
-    final var response = api.uploadConfigSet(configSetName, null, null, zipStream);
+    final var response = api.uploadConfigSet(configSetName, null, null, null, null, zipStream);
 
     assertNotNull(response);
     assertTrue(configSetService.checkConfigExists(configSetName));
@@ -294,7 +300,7 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     InputStream zipStream = new ByteArrayInputStream(baos.toByteArray());
 
     final var api = new UploadConfigSet(mockCoreContainer, null, null);
-    final var response = api.uploadConfigSet(configSetName, true, false, zipStream);
+    final var response = api.uploadConfigSet(configSetName, true, false, null, null, zipStream);
 
     assertNotNull(response);
     assertTrue(configSetService.checkConfigExists(configSetName));
@@ -303,5 +309,27 @@ public class UploadConfigSetAPITest extends SolrTestCase {
     byte[] uploadedData =
         configSetService.downloadFileFromConfig(configSetName, "conf/solrconfig.xml");
     assertEquals("<config/>", new String(uploadedData, StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testRepositoryLocationMustBeAllowedPath() throws Exception {
+    final Path disallowed = createTempDir("disallowed");
+    final var repository = new LocalFileSystemRepository();
+    repository.init(new NamedList<>());
+    when(mockCoreContainer.newBackupRepository(any())).thenReturn(repository);
+    doThrow(new SolrException(SolrException.ErrorCode.FORBIDDEN, "path not allowed"))
+        .when(mockCoreContainer)
+        .assertPathAllowed(any());
+
+    final var api = new UploadConfigSet(mockCoreContainer, null, null);
+    final var e =
+        expectThrows(
+            SolrException.class,
+            () ->
+                api.uploadConfigSet(
+                    "newconfig", true, false, "local", disallowed.toString(), null));
+
+    assertEquals(SolrException.ErrorCode.FORBIDDEN.code, e.code());
+    assertFalse(configSetService.checkConfigExists("newconfig"));
   }
 }
