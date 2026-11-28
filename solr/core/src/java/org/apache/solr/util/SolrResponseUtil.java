@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.util.Objects;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -52,12 +53,18 @@ public class SolrResponseUtil {
                     SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           return null;
         } else {
-          log.warn("corrupted response on {} : {}", srsp.getShardRequest(), solrResponse);
+          String shardIdentifier = getShardIdentifierForLogging(srsp);
+          log.warn(
+              "corrupted response on {} : missing response section {}, response has {} top-level entries, shard request purpose {}",
+              shardIdentifier,
+              shardResponseKey,
+              response.size(),
+              srsp.getShardRequest().purpose);
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               shardResponseKey
                   + " is absent in response from "
-                  + srsp.getNodeName()
+                  + shardIdentifier
                   + ", but "
                   + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
                   + " isn't set in the response.");
@@ -69,9 +76,34 @@ public class SolrResponseUtil {
       } else {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to read " + shardResponseKey + " info for shard: " + srsp.getShard(),
+            "Unable to read "
+                + shardResponseKey
+                + " info for shard: "
+                + getShardIdentifierForLogging(srsp),
             ex);
       }
+    }
+  }
+
+  private static String getShardIdentifierForLogging(ShardResponse srsp) {
+    String nodeName = srsp.getNodeName();
+    if (nodeName != null) {
+      return nodeName;
+    }
+    String shardAddress = srsp.getShardAddress();
+    if (shardAddress == null) {
+      return "unknown";
+    }
+    try {
+      URI uri = URI.create(shardAddress);
+      String host = uri.getHost();
+      if (host == null) {
+        return "unknown";
+      }
+      int port = uri.getPort();
+      return port == -1 ? host : host + ":" + port;
+    } catch (IllegalArgumentException e) {
+      return "unknown";
     }
   }
 }
