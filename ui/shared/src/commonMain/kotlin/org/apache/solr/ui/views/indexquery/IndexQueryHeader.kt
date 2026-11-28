@@ -57,6 +57,10 @@ fun IndexQueryHeader(
 ) {
     val hasCollectionSelection = collectionDropdown.selectedKey != null
     val noCollections = !hasError && !collectionDropdown.isLoading && collectionDropdown.options.isEmpty()
+    val noRequestHandlers = hasCollectionSelection &&
+        !hasError &&
+        !requestHandlers.isLoading &&
+        requestHandlers.options.isEmpty()
     val requestHandlersDropdown = requestHandlers.copy(
         isEnabled = requestHandlers.isEnabled &&
             !collectionDropdown.isLoading &&
@@ -89,12 +93,7 @@ fun IndexQueryHeader(
                 modifier = Modifier.testTag("index_query_no_collections"),
             )
         }
-        if (
-            hasCollectionSelection &&
-            !hasError &&
-            !requestHandlers.isLoading &&
-            requestHandlers.options.isEmpty()
-        ) {
+        if (noRequestHandlers) {
             Text(
                 text = stringResource(Res.string.no_request_handlers),
                 style = MaterialTheme.typography.bodyMedium,
