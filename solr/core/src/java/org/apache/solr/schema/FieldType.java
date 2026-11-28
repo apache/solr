@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
@@ -111,6 +112,7 @@ public abstract class FieldType extends FieldProperties {
   protected int properties;
   private boolean isExplicitQueryAnalyzer;
   private boolean isExplicitAnalyzer;
+  private SchemaMetadata metadata = SchemaMetadata.EMPTY;
 
   /** Returns true if fields of this type should be tokenized */
   public boolean isTokenized() {
@@ -236,7 +238,8 @@ public abstract class FieldType extends FieldProperties {
               + this.getClass().getName()
               + ")"
               + " invalid arguments:"
-              + initArgs);
+              + initArgs
+              + SchemaMetadata.attributeHint(initArgs.keySet()));
     }
   }
 
@@ -257,6 +260,15 @@ public abstract class FieldType extends FieldProperties {
   /** The Name of this FieldType as specified in the schema file */
   public String getTypeName() {
     return typeName;
+  }
+
+  /** Descriptive metadata of this field type, never null. */
+  public SchemaMetadata getMetadata() {
+    return metadata;
+  }
+
+  void setMetadata(SchemaMetadata metadata) {
+    this.metadata = Objects.requireNonNull(metadata);
   }
 
   void setTypeName(String typeName) {
@@ -1342,6 +1354,9 @@ public abstract class FieldType extends FieldProperties {
         namedPropertyValues.add(
             MULTI_TERM_ANALYZER, getAnalyzerProperties(((TextField) this).getMultiTermAnalyzer()));
       }
+    }
+    if (!metadata.isEmpty()) {
+      namedPropertyValues.add(SchemaMetadata.META, metadata.toMap());
     }
 
     return namedPropertyValues;

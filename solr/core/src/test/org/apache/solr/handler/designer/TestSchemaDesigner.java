@@ -62,6 +62,7 @@ import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SchemaMetadata;
 import org.apache.solr.util.ContentStream;
 import org.apache.solr.util.ContentStreamBase;
 import org.apache.solr.util.ExternalPaths;
@@ -631,6 +632,22 @@ public class TestSchemaDesigner extends SolrCloudTestCase implements SchemaDesig
     assertTrue(schemaField.stored());
     List<String> srcFields = schema.getCopySources("_text_");
     assertEquals(List.of(fieldName), srcFields);
+
+    // metadata equal to the field type's metadata is kept, not dropped as inherited
+    Map<String, Object> meta = Map.of("dc:description", "keywords");
+    Map<String, Object> typeArgs =
+        new HashMap<>(schema.getFieldTypeByName("strings").getNamedPropertyValues(false));
+    typeArgs.put(SchemaMetadata.META, meta);
+    schema = schema.replaceFieldType("strings", (String) typeArgs.get("class"), typeArgs);
+    schema.persistManagedSchema(false);
+    schema = schemaDesigner.loadLatestSchema(mutableId);
+    updateField =
+        Map.of("name", fieldName, "type", "strings", "stored", false, SchemaMetadata.META, meta);
+    configSetHelper.updateField(configSet, updateField, schema);
+    schema = schemaDesigner.loadLatestSchema(mutableId);
+    schemaField = schema.getField(fieldName);
+    assertFalse(schemaField.stored());
+    assertEquals("keywords", schemaField.getMetadata().get("dc:description"));
   }
 
   @SuppressWarnings({"unchecked"})

@@ -124,6 +124,7 @@ public class IndexSchema {
   protected String name;
   protected final Version luceneVersion;
   protected float version;
+  protected SchemaMetadata metadata = SchemaMetadata.EMPTY;
   protected final SolrResourceLoader loader;
   protected final SolrClassLoader solrClassLoader;
   protected final Properties substitutableProperties;
@@ -229,6 +230,11 @@ public class IndexSchema {
   /** Sets the name of the resource used to instantiate this schema. */
   public void setResourceName(String resourceName) {
     this.resourceName = resourceName;
+  }
+
+  /** Descriptive metadata of the whole schema, never null. */
+  public SchemaMetadata getMetadata() {
+    return metadata;
   }
 
   /** Gets the name of the schema as specified in the schema resource. */
@@ -512,6 +518,7 @@ public class IndexSchema {
       name = rootNode.attributes().get("name");
 
       version = Float.parseFloat(rootNode.attributes().getOrDefault("version", "1.0f"));
+      metadata = SchemaMetadata.fromConfigNode(rootNode, "schema");
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader =
@@ -705,8 +712,9 @@ public class IndexSchema {
       if (null != args.get(REQUIRED)) {
         explicitRequiredProp.put(name, Boolean.valueOf(args.get(REQUIRED)));
       }
+      SchemaMetadata metadata = SchemaMetadata.fromConfigNode(node, "field '" + name + "'");
 
-      SchemaField f = SchemaField.create(name, ft, args);
+      SchemaField f = SchemaField.create(name, ft, args, metadata);
 
       if (node.name().equals(FIELD)) {
         SchemaField old = fields.put(f.getName(), f);
@@ -1576,6 +1584,9 @@ public class IndexSchema {
     public enum Handler {
       NAME(IndexSchema.NAME, sp -> sp.schema.getSchemaName()),
       VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
+      META(
+          SchemaMetadata.META,
+          sp -> sp.schema.metadata.isEmpty() ? null : sp.schema.metadata.toMap()),
       UNIQUE_KEY(IndexSchema.UNIQUE_KEY, sp -> sp.schema.uniqueKeyFieldName),
       SIMILARITY(
           IndexSchema.SIMILARITY,

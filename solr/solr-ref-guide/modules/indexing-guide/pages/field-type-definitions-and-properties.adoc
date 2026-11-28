@@ -251,6 +251,20 @@ Finally, for faceting, use the primary author only via a `StrField`:
 
 `Schildt, Herbert`
 
+== Field Type Metadata
+
+A field type can carry descriptive metadata in a `<meta>` child element, in the same format as xref:fields.adoc#field-metadata[field metadata].
+It is not inherited by the fields of that type.
+
+[source,xml]
+----
+<fieldType name="price" class="solr.FloatPointField">
+  <meta>
+    <str name="ext:unit">EUR</str>
+  </meta>
+</fieldType>
+----
+
 == Field Type Similarity
 
 A field type may optionally specify a `<similarity/>` that will be used when scoring documents that refer to fields with this type, as long as the "global" similarity for the collection allows it.

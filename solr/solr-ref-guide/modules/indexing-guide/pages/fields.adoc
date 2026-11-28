@@ -74,3 +74,39 @@ The table below is reproduced from xref:field-type-definitions-and-properties.ad
 --
 include::field-type-definitions-and-properties.adoc[tag=field-params]
 --
+
+== Field Metadata
+
+A field can carry descriptive metadata, such as a description, an owner or a unit, in a `<meta>` child element.
+Solr stores and returns this metadata but never uses it for indexing, querying or schema compatibility checks.
+The same `<meta>` element can also be added to a xref:dynamic-fields.adoc[dynamic field], a xref:field-type-definitions-and-properties.adoc[field type], and the `<schema>` element itself.
+
+[source,xml]
+----
+<field name="id" type="string" indexed="true" stored="true">
+  <meta>
+    <str name="dc:description">Unique document identifier</str>
+    <int name="ext:max_length">32</int>
+    <bool name="ext:internal">false</bool>
+    <arr name="dc:subject"><str>catalog</str><str>pk</str></arr>
+    <lst name="ext:owner"><str name="team">catalog</str></lst>
+  </meta>
+</field>
+----
+
+Each child of `<meta>` is a typed entry: `str`, `int`, `long`, `float`, `double`, `bool` or `null`, or a nested `lst` (named entries) or `arr` (a list).
+Every entry needs a `name`, and names must be unique within the same element.
+Names start with a letter and contain only letters, digits, `_`, `.`, `:` and `-`.
+Nesting is limited to three levels.
+Solr refuses to load a schema with an unknown tag, a missing or duplicate name, or an invalid name in a `<meta>` element.
+
+Metadata is returned as a `meta` object in the field's properties, for example from the xref:schema-api.adoc[Schema API].
+
+`description`, `meta` and `metadata` are not field properties, so they cannot be used as attributes.
+
+[NOTE]
+====
+Solr versions without metadata support ignore the `<meta>` element.
+In a cluster that is being upgraded, a node running an older version that rewrites the managed schema drops all metadata.
+Add metadata only after every node runs a version that supports it.
+====

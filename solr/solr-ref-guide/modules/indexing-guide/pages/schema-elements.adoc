@@ -43,6 +43,7 @@ This example is not real XML, but shows the primary elements that make up a sche
 [source,xml]
 ----
 <schema>
+  <meta>
   <types>
     <fieldType>
   <fields>
@@ -62,6 +63,8 @@ These are supplemented by `copyFields`, described in xref:copy-fields.adoc[], an
 The `uniqueKey` described in <<Unique Key>> below must always be defined.
 
 A default `similarity` will be used, but can be modified as described in the section <<Similarity>> below.
+
+An optional `meta` element holds descriptive metadata about the schema as a whole, as described in <<Schema Metadata>> below.
 
 .Types and fields are optional tags
 [NOTE]
@@ -89,6 +92,25 @@ You can use `UUIDUpdateProcessorFactory` to have `uniqueKey` values generated au
 
 Further, the operation will fail if the `uniqueKey` field is used, but is multivalued (or inherits the multivalued-ness from the `fieldtype`).
 However, `uniqueKey` will continue to work, as long as the field is properly used.
+
+== Schema Metadata
+
+The `<schema>` element can contain one `<meta>` element with descriptive metadata about the schema as a whole, such as what the collection holds or who owns it.
+Solr stores and returns this metadata but never uses it for indexing or querying.
+
+[source,xml]
+----
+<schema name="example" version="1.7">
+  <meta>
+    <str name="dc:description">Product catalog</str>
+    <str name="ext:owner">catalog-team</str>
+  </meta>
+  ...
+</schema>
+----
+
+The `<meta>` element uses the same typed entries as field metadata, described in xref:fields.adoc#field-metadata[Field Metadata].
+It is returned as a `meta` property of the schema, for example from the xref:schema-api.adoc[Schema API].
 
 == Similarity
 

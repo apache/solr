@@ -41,6 +41,7 @@ import org.apache.solr.handler.configsets.DownloadConfigSet;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SchemaMetadata;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -76,6 +77,45 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     assertNotNull(cc);
     helper = new SchemaDesignerConfigSetHelper(cc, SchemaDesigner.newSchemaSuggester());
+  }
+
+  @Test
+  public void testLanguageRestoreKeepsDynamicFieldMetadata() throws Exception {
+    String source = "metadataLanguageSource";
+    var service = cc.getConfigSetService();
+    service.copyConfig(DEFAULT_CONFIGSET_NAME, source);
+    ManagedIndexSchema custom = helper.loadLatestSchema(source);
+    custom =
+        custom.replaceDynamicField(
+            "*_txt_es",
+            custom.getFieldTypeByName("text_es"),
+            Map.of(
+                "indexed",
+                "true",
+                "stored",
+                "true",
+                SchemaMetadata.META,
+                Map.of("dc:description", "Spanish text")));
+    custom.persistManagedSchema(false);
+
+    String target = getMutableId("languageRestoreKeepsMetadata");
+    service.copyConfig(DEFAULT_CONFIGSET_NAME, target);
+    ManagedIndexSchema targetSchema = helper.loadLatestSchema(target);
+    targetSchema = targetSchema.deleteDynamicFields(List.of("*_txt_es"));
+    targetSchema.persistManagedSchema(false);
+
+    ManagedIndexSchema schema =
+        helper.syncLanguageSpecificObjectsAndFiles(
+            target, helper.loadLatestSchema(target), List.of("es"), true, source);
+    assertEquals(
+        "Spanish text", schema.getFieldOrNull("*_txt_es").getMetadata().get("dc:description"));
+    assertEquals(
+        "Spanish text",
+        helper
+            .loadLatestSchema(target)
+            .getFieldOrNull("*_txt_es")
+            .getMetadata()
+            .get("dc:description"));
   }
 
   @Test

@@ -33,6 +33,7 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaMetadata;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.ReturnFields;
 import org.slf4j.Logger;
@@ -97,7 +98,9 @@ public class SchemaXmlWriter extends TextResponseWriter {
       if (schemaPropName.equals(IndexSchema.NAME) || schemaPropName.equals(IndexSchema.VERSION)) {
         continue;
       }
-      if (schemaPropName.equals(IndexSchema.UNIQUE_KEY)) {
+      if (schemaPropName.equals(SchemaMetadata.META)) {
+        writeMeta((Map<String, Object>) val);
+      } else if (schemaPropName.equals(IndexSchema.UNIQUE_KEY)) {
         openStartTag(IndexSchema.UNIQUE_KEY);
         closeStartTag(false);
         writer.write(val.toString());
@@ -109,21 +112,13 @@ public class SchemaXmlWriter extends TextResponseWriter {
       } else if (schemaPropName.equals(IndexSchema.FIELDS)) {
         List<SimpleOrderedMap<Object>> fieldPropertiesList = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> fieldProperties : fieldPropertiesList) {
-          openStartTag(IndexSchema.FIELD);
-          for (Entry<String, Object> fieldProperty : fieldProperties) {
-            writeAttr(fieldProperty.getKey(), fieldProperty.getValue().toString());
-          }
-          closeStartTag(true);
+          writeField(IndexSchema.FIELD, fieldProperties);
         }
       } else if (schemaPropName.equals(IndexSchema.DYNAMIC_FIELDS)) {
         List<SimpleOrderedMap<Object>> dynamicFieldPropertiesList =
             (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> dynamicFieldProperties : dynamicFieldPropertiesList) {
-          openStartTag(IndexSchema.DYNAMIC_FIELD);
-          for (Entry<String, Object> dynamicFieldProperty : dynamicFieldProperties) {
-            writeAttr(dynamicFieldProperty.getKey(), dynamicFieldProperty.getValue().toString());
-          }
-          closeStartTag(true);
+          writeField(IndexSchema.DYNAMIC_FIELD, dynamicFieldProperties);
         }
       } else if (schemaPropName.equals(IndexSchema.COPY_FIELDS)) {
         List<SimpleOrderedMap<Object>> copyFieldPropertiesList =
@@ -144,6 +139,63 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   @SuppressWarnings({"unchecked"})
+  private void writeField(String tag, SimpleOrderedMap<Object> fieldProperties) throws IOException {
+    Map<String, Object> meta = null;
+    openStartTag(tag);
+    for (Entry<String, Object> fieldProperty : fieldProperties) {
+      if (SchemaMetadata.META.equals(fieldProperty.getKey())) {
+        meta = (Map<String, Object>) fieldProperty.getValue();
+      } else {
+        writeAttr(fieldProperty.getKey(), fieldProperty.getValue().toString());
+      }
+    }
+    if (meta == null) {
+      closeStartTag(true);
+    } else {
+      closeStartTag(false);
+      incLevel();
+      writeMeta(meta);
+      decLevel();
+      endTag(tag);
+    }
+  }
+
+  /** Writes a {@code <meta>} element with typed children. */
+  private void writeMeta(Map<String, Object> meta) throws IOException {
+    openStartTag(SchemaMetadata.META);
+    closeStartTag(false);
+    incLevel();
+    for (Entry<String, Object> entry : meta.entrySet()) {
+      writeVal(entry.getKey(), escapePropertyRefs(entry.getValue()));
+    }
+    decLevel();
+    endTag(SchemaMetadata.META);
+  }
+
+  /**
+   * Doubles every {@code $} in string values. Schema text goes through property substitution on
+   * load, which turns {@code $$} back into {@code $}, so metadata values round-trip unchanged
+   * instead of being treated as {@code ${...}} references.
+   */
+  @SuppressWarnings({"unchecked"})
+  private static Object escapePropertyRefs(Object value) {
+    if (value instanceof String s) {
+      return s.replace("$", "$$");
+    }
+    if (value instanceof SimpleOrderedMap<?> map) {
+      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>(map.size());
+      for (Map.Entry<String, ?> e : map) {
+        result.add(e.getKey(), escapePropertyRefs(e.getValue()));
+      }
+      return result;
+    }
+    if (value instanceof List<?> list) {
+      return list.stream().map(SchemaXmlWriter::escapePropertyRefs).toList();
+    }
+    return value;
+  }
+
+  @SuppressWarnings({"unchecked"})
   private void writeFieldTypes(List<SimpleOrderedMap<Object>> fieldTypePropertiesList)
       throws IOException {
     for (SimpleOrderedMap<Object> fieldTypeProperties : fieldTypePropertiesList) {
@@ -152,6 +204,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
       SimpleOrderedMap<Object> queryAnalyzerProperties = null;
       SimpleOrderedMap<Object> multiTermAnalyzerProperties = null;
       SimpleOrderedMap<Object> perFieldSimilarityProperties = null;
+      Map<String, Object> metaProperties = null;
       openStartTag(IndexSchema.FIELD_TYPE);
 
       for (Entry<String, Object> fieldTypeProperty : fieldTypeProperties) {
@@ -169,6 +222,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
               multiTermAnalyzerProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
           case FieldType.SIMILARITY ->
               perFieldSimilarityProperties = (SimpleOrderedMap<Object>) fieldTypePropValue;
+          case SchemaMetadata.META -> metaProperties = (Map<String, Object>) fieldTypePropValue;
           default -> writeAttr(fieldTypePropName, fieldTypePropValue.toString());
         }
       }
@@ -178,12 +232,14 @@ public class SchemaXmlWriter extends TextResponseWriter {
               && null == indexAnalyzerProperties
               && null == queryAnalyzerProperties
               && null == multiTermAnalyzerProperties
-              && null == perFieldSimilarityProperties;
+              && null == perFieldSimilarityProperties
+              && null == metaProperties;
       if (isEmptyTag) {
         closeStartTag(true);
       } else {
         closeStartTag(false);
         incLevel();
+        if (null != metaProperties) writeMeta(metaProperties);
         if (null != analyzerProperties) writeAnalyzer(analyzerProperties, null);
         if (null != indexAnalyzerProperties)
           writeAnalyzer(indexAnalyzerProperties, FieldType.INDEX);
@@ -206,7 +262,11 @@ public class SchemaXmlWriter extends TextResponseWriter {
     if (similarityProperties.size() > 1) {
       closeStartTag(false);
       incLevel();
-      writeNamedList(null, similarityProperties);
+      for (Entry<String, Object> entry : similarityProperties) {
+        if (!SimilarityFactory.CLASS_NAME.equals(entry.getKey())) {
+          writeVal(entry.getKey(), entry.getValue());
+        }
+      }
       decLevel();
       endTag(IndexSchema.SIMILARITY);
     } else {
@@ -325,12 +385,16 @@ public class SchemaXmlWriter extends TextResponseWriter {
 
   @Override
   public void writeNamedList(String name, NamedList<?> val) throws IOException {
-    // name is ignored - this method is only used for SimilarityFactory
-    for (Map.Entry<String, ?> entry : val) {
-      String valName = entry.getKey();
-      if (!valName.equals(SimilarityFactory.CLASS_NAME)) {
-        writeVal(valName, entry.getValue());
+    int sz = val.size();
+    startTag("lst", name, sz <= 0);
+    if (sz > 0) {
+      incLevel();
+      for (Map.Entry<String, ?> entry : val) {
+        writeVal(entry.getKey(), entry.getValue());
       }
+      decLevel();
+      if (doIndent) indent();
+      writer.write("</lst>");
     }
   }
 

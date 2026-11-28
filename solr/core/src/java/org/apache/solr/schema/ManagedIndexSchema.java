@@ -1197,7 +1197,8 @@ public final class ManagedIndexSchema extends IndexSchema {
 
           // Add the replacement field
           SchemaField replacementField =
-              SchemaField.create(fieldName, replacementFieldType, oldField.getArgs());
+              SchemaField.create(
+                  fieldName, replacementFieldType, oldField.getArgs(), oldField.getMetadata());
           // Save the new field to be added after iteration is finished
           replacementFields.add(replacementField);
           if (null != replacementField.getDefaultValue()) {
@@ -1248,7 +1249,10 @@ public final class ManagedIndexSchema extends IndexSchema {
           newSchema.dynamicFields[i] =
               new DynamicField(
                   SchemaField.create(
-                      prototype.getName(), replacementFieldType, prototype.getArgs()));
+                      prototype.getName(),
+                      replacementFieldType,
+                      prototype.getArgs(),
+                      prototype.getMetadata()));
         }
       }
       // Find dynamic copy fields where the destination field's type is being replaced
@@ -1426,6 +1430,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     newSchema.name = name;
     newSchema.version = version;
+    newSchema.metadata = metadata;
     newSchema.similarity = similarity;
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;

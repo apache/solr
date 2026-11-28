@@ -1,0 +1,10 @@
+title: >
+  Add descriptive metadata in a <meta> child element of the schema,
+  field types, fields and dynamic fields, using typed entries (str, int, long, float,
+  double, bool, null, nested lst and arr).
+type: added
+authors:
+  - name: Andrzej Białecki
+links:
+  - name: SOLR-18678
+    url: https://issues.apache.org/jira/browse/SOLR-18678
