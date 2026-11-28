@@ -119,6 +119,10 @@ With a user-managed cluster, you will need to place `security.json` on each node
 You can use the authentication and authorization APIs, but with a user-managed cluster you will need to make the same API requests on each node separately.
 You can also edit `security.json` by hand if you prefer.
 
+In standalone mode on a POSIX file system, Solr saves `security.json` by writing a new file and renaming it over the old one, so a reader never sees a partial file.
+The new file does not keep POSIX ACLs or SELinux labels from the old file, so set them again after an edit.
+A hard-linked `security.json` is written in place instead, so its links keep sharing the same content.
+
 [#configuring-authentication]
 == Authentication
 
