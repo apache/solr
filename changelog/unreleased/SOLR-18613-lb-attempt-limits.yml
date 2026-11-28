@@ -1,0 +1,10 @@
+title: >
+  Enforce LBSolrClient request attempt limits across live endpoints and zombie fallback,
+  avoid retrying exhausted live endpoints, and preserve identifiable attempt-limit
+  exhaustion in synchronous and asynchronous requests.
+type: fixed
+authors:
+  - name: Nick Shanin
+links:
+  - name: SOLR-18613
+    url: https://issues.apache.org/jira/browse/SOLR-18613
