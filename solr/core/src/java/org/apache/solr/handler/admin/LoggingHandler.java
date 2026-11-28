@@ -88,7 +88,7 @@ public class LoggingHandler extends RequestHandlerBase {
       }
       squashV2Response(rsp, loggingApi.fetchLocalLogMessages(time));
     } else {
-      squashV2Response(rsp, loggingApi.listAllLoggersAndLevels());
+      squashV2Response(rsp, loggingApi.listAllLoggersAndLevels(null));
     }
 
     rsp.setHttpCaching(false);
