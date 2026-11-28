@@ -1,49 +1,7 @@
 {"phases":[
     {
       "description":"phase 0",
-      "spans":[
-        {
-          "name":"ReloadCollectionCmd",
-          "kind":"CLIENT",
-          "db.instance":"collection1",
-          "children":[
-            {
-              "name":"reload:/admin/cores",
-              "kind":"SERVER",
-              "db.instance":"collection1_shard1_replica_nN",
-              "db.type":"solr",
-              "http.request.method":"POST",
-              "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/admin/cores",
-              "http.params":"action=RELOAD"},
-            {
-              "name":"reload:/admin/cores",
-              "kind":"SERVER",
-              "db.instance":"collection1_shard1_replica_nN",
-              "db.type":"solr",
-              "http.request.method":"POST",
-              "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/admin/cores",
-              "http.params":"action=RELOAD"},
-            {
-              "name":"reload:/admin/cores",
-              "kind":"SERVER",
-              "db.instance":"collection1_shard2_replica_nN",
-              "db.type":"solr",
-              "http.request.method":"POST",
-              "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/admin/cores",
-              "http.params":"action=RELOAD"},
-            {
-              "name":"reload:/admin/cores",
-              "kind":"SERVER",
-              "db.instance":"collection1_shard2_replica_nN",
-              "db.type":"solr",
-              "http.request.method":"POST",
-              "http.response.status_code":200,
-              "http.url":"http://NORMALIZED/solr/admin/cores",
-              "http.params":"action=RELOAD"}]},
-        {
+      "spans":[{
           "name":"post:/collections/{collection}/reload",
           "kind":"SERVER",
           "db.instance":"collection1",
@@ -51,7 +9,48 @@
           "http.request.method":"POST",
           "http.response.status_code":200,
           "http.url":"http://NORMALIZED/solr/____v2/collections/collection1/reload",
-          "http.params":"wt=javabin"}]},
+          "http.params":"wt=javabin",
+          "children":[{
+              "name":"ReloadCollectionCmd",
+              "kind":"CLIENT",
+              "db.instance":"collection1",
+              "children":[
+                {
+                  "name":"reload:/admin/cores",
+                  "kind":"SERVER",
+                  "db.instance":"collection1_shard1_replica_nN",
+                  "db.type":"solr",
+                  "http.request.method":"POST",
+                  "http.response.status_code":200,
+                  "http.url":"http://NORMALIZED/solr/admin/cores",
+                  "http.params":"action=RELOAD"},
+                {
+                  "name":"reload:/admin/cores",
+                  "kind":"SERVER",
+                  "db.instance":"collection1_shard1_replica_nN",
+                  "db.type":"solr",
+                  "http.request.method":"POST",
+                  "http.response.status_code":200,
+                  "http.url":"http://NORMALIZED/solr/admin/cores",
+                  "http.params":"action=RELOAD"},
+                {
+                  "name":"reload:/admin/cores",
+                  "kind":"SERVER",
+                  "db.instance":"collection1_shard2_replica_nN",
+                  "db.type":"solr",
+                  "http.request.method":"POST",
+                  "http.response.status_code":200,
+                  "http.url":"http://NORMALIZED/solr/admin/cores",
+                  "http.params":"action=RELOAD"},
+                {
+                  "name":"reload:/admin/cores",
+                  "kind":"SERVER",
+                  "db.instance":"collection1_shard2_replica_nN",
+                  "db.type":"solr",
+                  "http.request.method":"POST",
+                  "http.response.status_code":200,
+                  "http.url":"http://NORMALIZED/solr/admin/cores",
+                  "http.params":"action=RELOAD"}]}]}]},
     {
       "description":"phase 1",
       "spans":[{

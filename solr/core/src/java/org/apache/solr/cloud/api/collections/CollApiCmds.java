@@ -204,8 +204,6 @@ public class CollApiCmds {
   public static class TraceAwareCommand implements CollectionApiCommand {
 
     private final CollectionApiCommand command;
-    private final Context ctx =
-        TraceUtils.extractContext(null); // allows trace id to be generated if missing
 
     public TraceAwareCommand(CollectionApiCommand command) {
       this.command = command;
@@ -219,21 +217,22 @@ public class CollApiCmds {
       final Context localContext;
       if (Span.current().isRecording()) {
         localSpan = null;
-        localContext = ctx;
+        localContext = Context.current();
       } else {
         String collection =
             Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
                 .orElse("unknown");
         boolean isAsync = adminCmdContext.getAsyncId() != null;
+        Context parent = TraceUtils.extractTraceContext(message);
         localSpan =
             TraceUtils.startCollectionApiCommandSpan(
-                command.getClass().getSimpleName(), collection, isAsync);
-        localContext = ctx.with(localSpan);
+                command.getClass().getSimpleName(), collection, isAsync, parent);
+        localContext = parent.with(localSpan);
       }
 
       try (var scope = localContext.makeCurrent()) {
         assert scope != null; // prevent javac warning about scope being unused
-        command.call(adminCmdContext, message, results);
+        command.call(adminCmdContext, TraceUtils.removeTraceContext(message), results);
       } finally {
         if (localSpan != null) {
           localSpan.end();
