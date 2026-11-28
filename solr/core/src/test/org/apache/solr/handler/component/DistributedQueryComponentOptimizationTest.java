@@ -743,10 +743,10 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
       try (SolrClient client =
           new HttpJettySolrClient.Builder(nodeWithoutSecondColl.getBaseUrl().toString()).build()) {
 
-        String collectionsParameter = COLLECTION + "," + secondColl;
+        String collectionsPath = COLLECTION + "," + secondColl;
 
         // Warm up LazyCollectionRef state cache with query
-        client.query(COLLECTION, new SolrQuery("q", "*:*", "collection", collectionsParameter));
+        client.query(collectionsPath, new SolrQuery("q", "*:*"));
 
         // Get ZK metrics from the coordinator node (the one we're querying)
         SolrZKMetricsListener metrics =
@@ -754,7 +754,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
         long existsBefore = metrics.getExistsChecks();
 
         // Query again and assert that exists call is not made
-        client.query(COLLECTION, new SolrQuery("q", "*:*", "collection", collectionsParameter));
+        client.query(collectionsPath, new SolrQuery("q", "*:*"));
         assertEquals(
             "Query should not cause ZK exists checks as collection state should be cached",
             existsBefore,

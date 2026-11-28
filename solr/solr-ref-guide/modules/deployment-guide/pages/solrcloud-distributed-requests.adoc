@@ -276,12 +276,15 @@ Note that if you provide these parameters in a query string, they need to be pro
 
 === collection Parameter
 
-The `collection` parameter allows you to specify a collection or a number of collections on which the query should be executed.
-This allows you to query multiple collections at once and the features of Solr which work in a distributed manner will work across collections.
+The collection named in the URL path governs which collections a query runs against.
+To query several collections at once, name them in the path, as a comma-separated list or through an alias; the features of Solr which work in a distributed manner will work across those collections.
+
+The `collection` parameter can only narrow the set named in the path.
+For example, this request runs against `collection2` only:
 
 [source,plain]
 ----
-http://localhost:8983/solr/collection1/select?collection=collection1,collection2,collection3
+http://localhost:8983/solr/collection1,collection2,collection3/select?collection=collection2
 ----
 
 === \_route_ Parameter
