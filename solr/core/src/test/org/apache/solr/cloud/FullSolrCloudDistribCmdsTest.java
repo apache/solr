@@ -154,6 +154,38 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     checkShardConsistency(collectionName, params("q", "*:*", "rows", "9999", "_trace", "delAll"));
   }
 
+  public void testRealTimeGetImplicitRouterWithoutRoute() throws Exception {
+    // SOLR-8009: /get without _route_ or shards must look on all shards of an implicit collection
+    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final String testCollectionName = "implicit_collection_rtg_" + NAME_COUNTER.getAndIncrement();
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.createCollectionWithImplicitRouter(
+                testCollectionName, "_default", "shard1,shard2", 1)
+            .processAndWait(cloudClient, DEFAULT_TIMEOUT));
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            testCollectionName,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 1));
+
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
+    SolrClient shard1 = cluster.getSolrClient(docCol.getSlice("shard1").getLeader());
+    SolrClient shard2 = cluster.getSolrClient(docCol.getSlice("shard2").getLeader());
+    shard1.add(sdoc("id", "1", "title", "s1 one"));
+    shard1.commit();
+    shard2.add(sdoc("id", "4", "title", "s2 four"));
+    shard2.commit();
+
+    assertNotNull(cloudClient.getById(testCollectionName, "1"));
+    assertNotNull(cloudClient.getById(testCollectionName, "4"));
+    assertEquals("s1 one", cloudClient.getById(testCollectionName, "1").getFirstValue("title"));
+    assertEquals("s2 four", cloudClient.getById(testCollectionName, "4").getFirstValue("title"));
+    assertEquals(2, cloudClient.getById(testCollectionName, Arrays.asList("1", "4")).size());
+    assertNull(cloudClient.getById(testCollectionName, "4", params("_route_", "shard1")));
+  }
+
   public void testDeleteByIdImplicitRouter() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String testCollectionName =
