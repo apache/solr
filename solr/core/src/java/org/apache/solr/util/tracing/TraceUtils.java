@@ -24,12 +24,15 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
@@ -148,6 +151,45 @@ public class TraceUtils {
     textMapPropagator.inject(Context.current(), req, REQUEST_INJECTOR);
   }
 
+  private static final String MESSAGE_TRACE_PREFIX = "_trace.";
+
+  private static final TextMapGetter<ZkNodeProps> MESSAGE_GETTER =
+      new TextMapGetter<>() {
+        @Override
+        public Iterable<String> keys(ZkNodeProps message) {
+          return message.keySet().stream()
+              .filter(k -> k.startsWith(MESSAGE_TRACE_PREFIX))
+              .map(k -> k.substring(MESSAGE_TRACE_PREFIX.length()))
+              .toList();
+        }
+
+        @Override
+        public String get(ZkNodeProps message, String key) {
+          return message.getStr(MESSAGE_TRACE_PREFIX + key);
+        }
+      };
+
+  /** Adds the current trace context to a Collection API message for the Overseer. */
+  public static void injectTraceContext(Map<String, Object> message) {
+    if (Span.current().getSpanContext().isValid()) {
+      getTextMapPropagator()
+          .inject(Context.current(), message, (m, k, v) -> m.put(MESSAGE_TRACE_PREFIX + k, v));
+    }
+  }
+
+  /** Reads the trace context added by {@link #injectTraceContext(Map)}, if any. */
+  public static Context extractTraceContext(ZkNodeProps message) {
+    return getTextMapPropagator().extract(Context.current(), message, MESSAGE_GETTER);
+  }
+
+  /** Returns the message without the keys added by {@link #injectTraceContext(Map)}. */
+  public static ZkNodeProps removeTraceContext(ZkNodeProps message) {
+    Map<String, Object> props = message.shallowCopy();
+    return props.keySet().removeIf(k -> k.startsWith(MESSAGE_TRACE_PREFIX))
+        ? new ZkNodeProps(props)
+        : message;
+  }
+
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {
     Tracer tracer = getTracer(request);
     SpanBuilder spanBuilder =
@@ -172,11 +214,15 @@ public class TraceUtils {
   }
 
   public static Span startCollectionApiCommandSpan(
-      String name, String collection, boolean isAsync) {
+      String name, String collection, boolean isAsync, Context parent) {
     Tracer tracer = getGlobalTracer();
     SpanKind kind = isAsync ? SpanKind.PRODUCER : SpanKind.CLIENT;
     SpanBuilder spanBuilder =
-        tracer.spanBuilder(name).setSpanKind(kind).setAttribute(TAG_DB, collection);
+        tracer
+            .spanBuilder(name)
+            .setParent(parent)
+            .setSpanKind(kind)
+            .setAttribute(TAG_DB, collection);
     return spanBuilder.startSpan();
   }
 }
