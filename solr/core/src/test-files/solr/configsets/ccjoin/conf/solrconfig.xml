@@ -26,6 +26,8 @@
   <requestHandler name="/select" class="solr.SearchHandler" />
 
   <query>
+    <useFilterForSortedQuery>true</useFilterForSortedQuery>
+
     <filterCache
       size="512"
       initialSize="512"
