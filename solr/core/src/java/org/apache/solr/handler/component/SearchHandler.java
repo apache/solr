@@ -102,6 +102,13 @@ public class SearchHandler extends RequestHandlerBase
   private PluginInfo shfInfo;
   private SolrCore core;
 
+  /**
+   * The default set of components that every handler gets. You can change this by defining the
+   * specific components for a handler. It puts the {@link QueryComponent} first as subsequent
+   * components assume that the QueryComponent ran and populated the document list.
+   *
+   * @return A list of component names.
+   */
   protected List<String> getDefaultComponents() {
     ArrayList<String> names = new ArrayList<>(9);
     names.add(QueryComponent.COMPONENT_NAME);
@@ -113,6 +120,7 @@ public class SearchHandler extends RequestHandlerBase
     names.add(DebugComponent.COMPONENT_NAME);
     names.add(ExpandComponent.COMPONENT_NAME);
     names.add(TermsComponent.COMPONENT_NAME);
+    names.add(UBIComponent.COMPONENT_NAME);
 
     return names;
   }
